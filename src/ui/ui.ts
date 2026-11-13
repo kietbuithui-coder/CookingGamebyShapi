@@ -73,14 +73,14 @@ export class UI {
     this.world = add('world');
     // ba chip giờ – thời tiết – chỗ đang đứng nằm chung một hàng cho gọn (hẹp quá thì tự xuống dòng)
     add('hud-tl', `<div class="row"><span class="chip" id="clock"></span><span class="chip" id="wx"></span><span class="chip" id="place"></span></div><div id="stats"></div>`);
-    add('hud-tr', `<div class="row"><span class="chip" id="rep"></span><span class="chip" id="money"></span></div><div class="row" id="menub"><button class="ib hide" id="stowb" title="Cất gánh vào ba lô">${ic('box')}</button><button class="ib" data-p="bag">${ic('bag')}<span class="dot hide" id="bagdot"></span></button><button class="ib" data-p="book">${ic('book')}</button><button class="ib" data-p="map">${ic('map')}</button><button class="ib" data-p="settings">${ic('gear')}</button></div><div class="row"><span class="chip hide" id="debt"></span><span class="chip" id="fps"></span></div>`);
+    add('hud-tr', `<div class="row"><span class="chip" id="rep"></span><span class="chip" id="money"></span></div><div class="row" id="menub"><button class="ib hide" id="stowb" title="Cất gánh vào ba lô">${ic('box')}</button><button class="ib" data-p="bag">${ic('bag')}<span class="dot hide" id="bagdot"></span></button><button class="ib" data-p="book">${ic('book')}</button><button class="ib" data-p="map">${ic('map')}</button><button class="ib" data-p="settings">${ic('gear')}</button></div><div class="row"><span class="chip hide" id="wanted"></span><span class="chip hide" id="debt"></span><span class="chip" id="fps"></span></div>`);
     add('quest', '<small>MỤC TIÊU</small><span></span>'); add('way', '', 'chip hide'); add('events'); add('cross'); add('focus'); add('stam', '<b></b>', 'hide');
     add('act', `<button class="alt hide"></button><button class="main dim">${ic('hand')}</button>`); add('runb', `<button class="run">${ic('run')}</button>`);
     add('act2', `<button class="hit" title="Đấm (F)">${ic('fist')}</button><button class="jump" title="Nhảy (Space)">${ic('jump')}</button>`);
     add('stick', '<i></i>', 'hide'); add('cart', '', 'chip hide'); add('stallchip', '', 'chip hide'); add('toasts');
     add('cook', `<button class="btn small red quit">${ic('x')} Bỏ dở</button><div class="top"><div class="title"></div><div class="steps"></div><div class="hint"></div><div class="prog hide"><div class="meter"><div class="z"></div><div class="v"></div></div><small></small></div></div><div class="heat hide"><small>LỬA</small><div class="meter"><div class="z"></div><div class="v"></div><div class="n"></div></div></div><div class="slider hide"><i>LỬA</i></div><div class="card hide"></div><div class="btns"></div>`, 'hide');
     add('grade', '', 'hide'); add('dlg', '', 'hide'); add('fade'); add('zzz', '', 'hide'); add('modal', '', 'hide'); add('menu', '', 'hide'); add('load', 'Đang dựng thành phố…<small>Gánh Hàng Đường Phố</small>'); add('rotate', 'Hãy xoay ngang điện thoại để chơi thoải mái hơn.<br><br><button class="btn" id="rotok">Cứ chơi dọc</button>', 'want');
-    for (const id of ['clock', 'wx', 'place', 'stats', 'rep', 'money', 'bagdot', 'debt', 'fps', 'stowb']) E[id] = document.getElementById(id)!;
+    for (const id of ['clock', 'wx', 'place', 'stats', 'rep', 'money', 'bagdot', 'debt', 'fps', 'stowb', 'wanted']) E[id] = document.getElementById(id)!;
     E.stowb.onclick = () => { if (ctx.mode === 'play') ctx.stall.stow(); };
     E.stats.innerHTML = [['dish', 'hunger', 'Đói'], ['drop', 'thirst', 'Khát'], ['bolt', 'energy', 'Sức'], ['heart', 'health', 'Khoẻ'], ['sparkle', 'hygiene', 'Sạch'], ['smile', 'mood', 'Vui']].map(([i, k, t]) => `<div class="stat" data-k="${k}" title="${t}">${ic(i)}<i><b></b></i></div>`).join('');
     document.getElementById('rotok')!.onclick = () => E.rotate.classList.remove('want');
@@ -215,6 +215,8 @@ export class UI {
     E.place.innerHTML = `${ic('pin')}${DISTRICT[districtAt(p.x, p.z)].name}`;
     if (g.cash !== this.lastCash) { this.lastCash = g.cash; E.money.innerHTML = `${ic('cash')}${money(g.cash)}`; }
     E.rep.innerHTML = `${ic('star')}${Math.round(g.rep)} · cấp ${level(g)}`;
+    E.wanted.classList.toggle('hide', (g.wanted ?? 0) < 1);
+    if (g.wanted >= 1) { E.wanted.innerHTML = `${ic('badge')}Bị để ý ${Math.round(g.wanted)}%`; E.wanted.style.background = g.wanted >= 45 ? 'rgba(160,30,24,.92)' : 'rgba(40,26,16,.72)'; }
     const td = totalDebt(g); E.debt.classList.toggle('hide', td <= 0); if (td > 0) { const due = Math.min(...g.debts.map((d) => d.due)); E.debt.innerHTML = `${ic('skull')}Nợ ${money(td)} · ${due < g.day ? 'QUÁ HẠN' : due === g.day ? 'hạn hôm nay' : 'còn ' + (due - g.day) + ' ngày'}`; E.debt.style.background = due <= g.day ? 'rgba(160,30,24,.9)' : ''; }
     E.fps.classList.toggle('hide', !ctx.set.fps); if (ctx.set.fps) E.fps.textContent = `${Math.round(this.fpsVal)} FPS · ${ctx.renderer.info.render.calls} lệnh vẽ`;
     for (const s of Array.from(E.stats.children) as HTMLElement[]) { const v = (g.st as any)[s.dataset.k!] as number; (s.querySelector('b') as HTMLElement).style.width = v + '%'; s.classList.toggle('low', v < 22); s.classList.toggle('mid', v >= 22 && v < 45); }

@@ -12,7 +12,7 @@ import { SHOPS } from '../data/shops';
 import { MB, MAT } from '../gfx/mb';
 import { toast } from '../core/bus';
 
-export type NState = 'walk' | 'stand' | 'sit' | 'toStall' | 'queue' | 'fixed' | 'follow' | 'actor' | 'chase' | 'gone';
+export type NState = 'walk' | 'stand' | 'sit' | 'toStall' | 'queue' | 'fixed' | 'follow' | 'actor' | 'chase' | 'cop' | 'gone';
 export interface Npc {
   id: number; rig: Rig; kind: 'ped' | 'fixed' | 'actor' | 'kid'; arch: ArchDef; fem: boolean; name: string; fixedId?: string; regular?: RegularDef;
   x: number; z: number; y: number; yaw: number; speed: number; vel: number; state: NState; pose: Pose; base: number;
@@ -27,6 +27,7 @@ export interface Npc {
 /** Giờ mở cửa của những nơi không phải cửa hàng nguyên liệu. */
 export const PLACE_HOURS: Record<string, [number, number]> = { equip: [7, 20], bank: [8, 17], eatery: [6, 21.5], pawn: [8, 21], scrap: [6, 19], dock: [4.5, 10], motel: [0, 24], hotel: [0, 24], tro: [6, 22], shark: [9, 24], hobo: [0, 24],
   canho: [6, 22], nharieng: [6, 22], cuahang: [6, 21],
+  police: [0, 24],
   hospital: [0, 24],
   // nhân vật phụ: mỗi người chỉ ở chỗ của mình trong một quãng giờ nhất định
   tra_da: [5.5, 22], rap: [14.5, 23], sua_xe: [7, 19], hat_rong: [9, 21], danh_co: [6.5, 18.5], danh_giay: [6, 19.5] };
@@ -176,6 +177,23 @@ export class Npcs {
     if (n.hurt >= 3 || R.chance(0.55)) this.chase(n, 3.4);
     else { this.say(n, R.pick(L.run), 2.6, 4); this.leave(n); }
   }
+  /** Công an phường đi tuần: gọi một chú lại gần để hỏi giấy tờ khi người chơi bị để ý. */
+  sendPolice(): Npc | null {
+    if (ctx.mode !== 'play') return null;
+    if (this.list.some((n) => n.state === 'cop')) return null;
+    const p = ctx.player;
+    // spawnPed chỉ bốc nút cách người chơi ≥16 m, mà công an phải đi bộ tới được ngay → tự bốc nút gần.
+    const ring = NAV.filter((c) => { const d = Math.sqrt(dist2(c.x, c.z, p.x, p.z)); return d >= 9 && d <= 26 && c.tag !== 'alley'; });
+    if (!ring.length) return null;
+    const c = ring[this.R.int(0, ring.length - 1)];
+    const a = ARCH.congan, fem = this.R.chance(a.fem);
+    const n = this.make('ped', a, fem, lookFromArch(a, this.R, fem), c.door ? c.door[0] : c.x, c.door ? c.door[1] : c.z, this.R.range(0, 6.28));
+    n.speed = 2.6; n.state = 'cop'; n.path = []; n.pose = 'walk'; n.hit = false; n.talkT = 0;
+    n.name = 'Công an khu vực';
+    this.say(n, this.R.pick(['Đứng lại chú em!', 'Chú em ơi, lại đây một chút.', 'Giấy tờ đâu, cho xem qua.']), 2.6);
+    ctx.sound.play('shout');
+    return n;
+  }
   /** Đuổi theo người chơi một quãng rồi bỏ đi. */
   chase(n: Npc, secs = 4.5) {
     if (ctx.mode !== 'play' || n.state === 'chase' || n.state === 'fixed') return;
@@ -240,6 +258,12 @@ export class Npcs {
         }
         this.idleOff(n); // đang đi thì không cầm báo, không cầm ly
         n.pose = n.state === 'walk' || n.vel > 0.1 ? 'walk' : n.pose;
+      } else if (n.state === 'cop') {
+        // đi thẳng tới người chơi rồi gọi lại hỏi giấy tờ
+        n.pose = 'walk';
+        const dd = Math.sqrt(pd2) || 0.001;
+        if (dd > 1.9) this.step(n, p.x, p.z, n.speed, dt, 0.9);
+        else if (!n.hit) { n.hit = true; n.state = 'stand'; n.chaseT = 0; ctx.acts.caught(n); }
       } else if (n.state === 'chase') {
         n.chaseT = (n.chaseT ?? 2) - dt; n.pose = 'angry';
         const dd = Math.sqrt(pd2) || 0.001;

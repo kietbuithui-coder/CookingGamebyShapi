@@ -6,7 +6,7 @@ import { FIXED, REGULARS } from '../data/people';
 import type { WeatherId } from '../data/world';
 import { PLACES } from '../world/layout';
 
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 /** Một lô nguyên liệu. fresh 0–100, q chất lượng 0–1, cost giá vốn mỗi đơn vị. */
 export interface Stack { id: string; n: number; fresh: number; q: number; cost: number; }
 /** Mẻ sơ chế sẵn ("cốt" món). */
@@ -35,6 +35,8 @@ export interface Game {
   bag: Stack[]; junk: Record<string, number>; meals: Ready[];
   /** Đồ rơi lúc ngất: còn ở bệnh viện tới hết ngày hôm đó thì quay lại nhận được. */
   lostBag: Stack[]; lostDay: number;
+  /** Mức bị công an để ý (0–100) và giờ còn bị tạm giữ ở phường (0 = tự do). */
+  wanted: number; jailUntil: number;
   gear: Record<string, number>;
   housing: string; paidUntil: number; home: Stack[];
   stall: Stall;
@@ -68,7 +70,7 @@ export function newGame(seed = (Math.random() * 1e9) | 0, ac: 'anh' | 'chị' = 
     v: SAVE_VERSION, seed, ac, day: 0, min: 6 * 60 + 10, cash: 18000, bank: 0,
     st: { hunger: 58, thirst: 55, energy: 82, health: 92, hygiene: 42, mood: 45 }, rep: 0, xp: 0,
     pos: { x: PLACES.camp.x, z: PLACES.camp.z - 1.2, yaw: Math.PI, pitch: 0 },
-    bag: [], junk: {}, meals: [], lostBag: [], lostDay: -1, gear: {}, housing: 'gamcau', paidUntil: 0, home: [],
+    bag: [], junk: {}, meals: [], lostBag: [], lostDay: -1, wanted: 0, jailUntil: 0, gear: {}, housing: 'gamcau', paidUntil: 0, home: [],
     stall: emptyStall(), rec, debts: [], debtSeq: 1, credit: 0,
     led: newLedger(0), hist: [], rel: {}, met: {}, flags: {},
     weather: { now: 'nang', until: 6 * 60 + 10 + 420, next: 'nang', flood: 0, wet: 0 },
@@ -103,6 +105,8 @@ export function migrate(raw: any): Game | null {
     g.lostBag = [];
     g.lostDay = -1;
   }
+  // v6: công an phường. Bản lưu cũ chưa có mức bị để ý và hạn tạm giữ.
+  if ((raw.v ?? 0) < 6) { g.wanted = 0; g.jailUntil = 0; }
   g.v = SAVE_VERSION;
   return g;
 }

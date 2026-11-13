@@ -9,7 +9,7 @@ Thứ tự dưới đây xếp theo phụ thuộc kỹ thuật và theo mức "c
 | Lượt | Nội dung | Vì sao đứng ở vị trí này |
 |---|---|---|
 | 6 | Sửa lỗi vặt · nút nhảy & đánh · xỉu (mất tiền, mất đồ) · bệnh viện | Đụng vào máu, tiền, đồ — nền của mọi thứ phía sau |
-| 7 | Công an, đồn, buồng giam, lao động khổ sai | Cần nút đánh và luật "gây sự" của lượt 6 |
+| 7 | Công an, đồn, buồng giam, lao động khổ sai ✅ | Cần nút đánh và luật "gây sự" của lượt 6 |
 | 8 | Điện thoại (3 mẫu máy, giờ, thu chi, tin nhắn, lướt web) | Gỡ tab thu chi ở góc phải; là cái khung UI cho quán net |
 | 9 | Quán net, chơi game, lướt web tăng tinh thần | Dùng lại UI + túi tiền theo giờ của lượt 8 |
 | 10 | Ô tô đời 2005–2010 · xe đạp · event đua xe đạp · xích đu công viên | Chỉ là cảnh vật + một event, không phụ thuộc hệ nào |
@@ -55,15 +55,29 @@ Hai chỗ làm khác kế hoạch cho đỡ khó chịu: đồ rơi được gi�
 nằm ngoài đường chờ nhặt), và người không đủ tiền thì bệnh viện **ghi sổ luôn** chứ chưa có sổ nợ xã hội —
 để lượt 7 làm cùng hệ thống công an/phạt.
 
-## Lượt 7 — Công an, tù, lao động khổ sai
+## Lượt 7 — Công an phường, tạm giữ, lao động khổ sai ✅ đã xong
 
-Cảnh sát kiểu Việt Nam: một chú công an phường đi tuần theo giờ, một chốt CSGT ở ngã tư (chỉ nhắc nhở,
-không phạt người đi bộ), còi và loa phường. Gây sự giữa phố mà bị nhìn thấy, hoặc đánh người ba lần trong
-một ngày → bị giữ. Đồn công an là một lô có quầy tiếp dân; buồng giam là không gian nhỏ nhìn ra hành lang,
-có giường sắt và cửa sổ. Phạt tiền, hoặc không có tiền thì đi lao động công ích (quét phố, bốc hàng ở bến)
-đủ giờ mới được ra. Ra tù thì uy tín thấp, khách quen nhớ mặt một thời gian.
+**Mức bị để ý.** Mỗi cú đấm cộng 18 điểm "bị để ý" (0–100), mỗi phút trong game tự nguôi 0,25 điểm. Từ 45
+điểm thì công an phường bắt đầu để mắt: một chú từ nút đường gần đó đi thẳng tới, gọi lại hỏi giấy tờ.
 
-**Kiểm thử:** số lần gây sự mới bị bắt, tiền phạt có trần, lao động đủ giờ thì được thả, bản lưu vẫn nạp được.
+**Xử lý tại chỗ.** Bốn lựa chọn: nộp phạt hành chính (60.000₫ + 900₫ mỗi điểm bị để ý + 40.000₫ mỗi lần đã
+vào phường), cãi (40% được tha), bỏ chạy (45% thoát, trượt thì thêm điểm), hoặc đi theo chú về phường.
+
+**Đồn Công an phường.** Một lô mới ở block 12S: biển xanh, băng đỏ, cột cờ, hòm thư góp ý, ghế nhựa ngoài
+sân; trong nhà có bàn tiếp dân (chú Tám trực 24/24), tủ hồ sơ, bình nước, quạt trần, bảng tin, bảng nội quy;
+vách ngăn có cửa song sắt dẫn vào **buồng tạm giữ** — hai giường sắt, chiếu cói, xô nước, cửa sổ song sắt,
+một đống gạch và cây búa.
+
+**Trong buồng.** Án 2–12 giờ tuỳ mức bị để ý và số lần tái phạm. Đập đá một giờ thì bớt một giờ (sàn còn 30
+phút) nhưng mất máu, năng lượng, vệ sinh, tinh thần; nằm giường sắt thì chờ. Ra tù: uy tín −8, tinh thần
+−10, vệ sinh −18, thả trước cửa đồn.
+
+**Chưa làm trong lượt này:** chốt CSGT ở ngã tư, còi và loa phường, lao động công ích ngoài đường (quét
+phố, bốc hàng ở bến) — để dành cho lượt sau khi có xe cộ.
+
+**Kiểm thử:** `tests/police.test.ts` — 12 bài: mức bị để ý tăng/nguôi/ngưỡng gọi công an, tiền phạt theo mức
+và tái phạm, nộp phạt không âm tiền, cãi được thì chỉ bị nhắc, án theo mức và tái phạm, đếm ngược trong
+buồng, đập đá bớt giờ nhưng không dưới 30 phút, ra tù mất uy tín, bản lưu v5 nâng lên v6.
 
 ## Lượt 8 — Điện thoại
 

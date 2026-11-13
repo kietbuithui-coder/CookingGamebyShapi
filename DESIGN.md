@@ -197,7 +197,38 @@ Sức khoẻ tụt khi đói, khát, hết năng lượng hoặc đi mưa lâu (
 
 - **Nhảy** (`Space`, nút mũi tên): nảy 0,46 m trong 0,55 giây, tốn 0,7 năng lượng. Đang cõng gánh/xe đẩy/bao hàng thì không nhảy.
 - **Đấm** (`F`, nút nắm tay): hồi chiêu 0,9 giây, tầm 1,7 m và phải đang nhìn về phía người đó (cos > 0,45), tốn 1,2 năng lượng. Trúng thì người đó la lên, **uy tín −3**, người xung quanh nhìn thấy (−1 nữa nếu từ hai người trở lên), tinh thần +1 (xả). Người đi đường: 55% quay lại đuổi đánh (`chase`), còn lại bỏ đi; đánh ba lần thì chắc chắn bị đuổi. Người đứng bán thì giận 90 giây, không nói chuyện. Trẻ con thì không đấm được.
-- Công an can thiệp là việc của lượt 7.
+- Đấm ai thì **mức bị để ý** tăng 18 điểm (xem 4.16). Không đấm được trẻ con.
+
+### 4.16 Công an phường, tạm giữ và lao động
+
+**Mức bị để ý (`wanted`, 0–100).** Mỗi cú đấm +18. Mỗi phút trong game tự nguôi 0,25 điểm, nên đánh lẻ tẻ
+thì vài tiếng sau là hết. Từ **45 điểm** trở lên thì công an phường bắt đầu để mắt: cứ 2,5 giây một lần, nếu
+chưa có chú nào đang đi tới thì gọi một chú (`Npcs.sendPolice()`) từ nút đường cách 9–26 m, chú đi thẳng tới
+người chơi rồi mở hội thoại xử lý. Nộp phạt xong thì được yên 60 phút, `letGo()` (cãi thắng) trừ 15 điểm và
+cho yên 45 phút.
+
+**Đồn Công an phường** là lô thứ tư của block `12S` (rộng 9 m): mặt tiền biển xanh "CÔNG AN PHƯỜNG" +
+băng đỏ, cột cờ, hòm thư góp ý, ghế nhựa ngoài sân. Trong nhà: bàn tiếp dân (chú Tám đứng sau), tủ hồ sơ,
+bình nước, quạt trần, đồng hồ, bảng tin và bảng nội quy; vách ngăn ở z 6,0 có cửa song sắt dẫn vào **buồng
+tạm giữ** — hai giường sắt, chiếu cói, xô nước, cửa sổ song sắt, một đống gạch và cây búa để lao động.
+
+**Xử lý vi phạm** (`acts.caught`): bốn lựa chọn — nộp phạt hành chính (không đủ tiền thì khoá lựa chọn),
+cãi (40% được tha), bỏ chạy (45% thoát, trượt thì thêm 10 điểm bị để ý) và đi theo chú về phường.
+
+| Việc | Số |
+|---|---|
+| Tiền phạt | `60.000₫ + 900₫ × mức bị để ý + 40.000₫ × số lần đã vào phường` (làm tròn nghìn) |
+| Án tạm giữ | `2 + ⌊mức bị để ý / 18⌋ + 2 × số lần` giờ, chặn trong 2–12 giờ |
+| Đập đá một giờ | −60 phút tù (sàn 30 phút còn lại), −5 máu, −12 năng lượng, −8 vệ sinh, −6 tinh thần, −8 no |
+| Nằm giường sắt | tua 2 giờ (hoặc tới hạn), +14 năng lượng, +2 máu, −2 tinh thần |
+| Ra tù | uy tín −8, tinh thần −10, vệ sinh −18, thả trước cửa đồn |
+
+Vào buồng thì `jailUntil` được đặt, `wanted` về 0, `flags.jail` +1. Trong lúc bị giữ, đi xa quá 6,5 m khỏi
+giường là bị kéo lại kèm lời nhắc. Hết hạn thì `acts.jailOver()` gọi `release()` rồi đặt người chơi trước cửa.
+
+**Chú Tám** (nhân vật cố định `police`, trực 24/24) bấm vào có menu: tự thú để nộp phạt, hỏi bao giờ được
+về (khi đang bị giữ), và chuyện kiểm tra lấn chiếm lòng đường. Chip **"Bị để ý xx%"** hiện ở góc phải HUD,
+đỏ khi từ 45% trở lên.
 
 ## 5. Điều khiển cảm ứng
 
@@ -209,7 +240,7 @@ Sức khoẻ tụt khi đói, khát, hết năng lượng hoặc đi mưa lâu (
 
 ## 6. Lưu game
 
-`localStorage`, khoá `ganhhang.save.v1` (trạng thái) và `ganhhang.settings.v1` (cài đặt). Tự lưu sau việc quan trọng, mỗi 45 giây và khi rời trang. `SAVE_VERSION = 5`; `migrate()` nạp được bản lưu cũ thiếu trường và loại bỏ nguyên liệu không còn tồn tại. Bản lưu trước v4 chưa có sổ `met` nên được coi như đã quen hết người đứng quầy. Bản lưu trước v5 (chưa có bệnh viện) được nâng sức khoẻ lên 45 nếu đang ở 0 — nếu không, mở lên là ngất liền — và thêm sổ đồ thất lạc rỗng. Cài đặt có thêm `ui` (cỡ giao diện và cách xếp nút); `cleanLayout()` làm sạch dữ liệu đọc lên.
+`localStorage`, khoá `ganhhang.save.v1` (trạng thái) và `ganhhang.settings.v1` (cài đặt). Tự lưu sau việc quan trọng, mỗi 45 giây và khi rời trang. `SAVE_VERSION = 6`; `migrate()` nạp được bản lưu cũ thiếu trường và loại bỏ nguyên liệu không còn tồn tại. Bản lưu trước v4 chưa có sổ `met` nên được coi như đã quen hết người đứng quầy. Bản lưu trước v5 (chưa có bệnh viện) được nâng sức khoẻ lên 45 nếu đang ở 0 — nếu không, mở lên là ngất liền — và thêm sổ đồ thất lạc rỗng. Bản lưu trước v6 được cấp `wanted = 0` và `jailUntil = 0` (chưa ai biết mặt). Cài đặt có thêm `ui` (cỡ giao diện và cách xếp nút); `cleanLayout()` làm sạch dữ liệu đọc lên.
 
 ## 7. Kiểm thử
 
@@ -236,7 +267,7 @@ Người chơi đã thử bản đầu và gửi danh sách góp ý; việc đư
 
 **Lượt 3 — nội dung còn thiếu so với bản mô tả đầy đủ: đã xong phần chính** (60 món và thang mở công thức, chỗ chơi lên tinh thần, khách đứng mua, việc lúc rảnh của người đi đường, nút cất gánh, chạy bàn và bốc cảng). Chi tiết ở mục 4.3, 4.10, 4.11.
 
-**Lượt 6 — sức khoẻ và bệnh viện: đã xong** (ngất vì máu 0, viện phí có trần, rơi đồ nhặt lại được trong ngày, Bệnh viện Phước An với khám bệnh – quầy thuốc – phòng hồi sức, nút đấm và nút nhảy). Chi tiết ở mục 4.14–4.15. Các lượt còn lại (công an – tù, điện thoại, quán net, xe cộ 2005–2010, NPC sống động hơn) nằm ở `PLAN.md`.
+**Lượt 6 — sức khoẻ và bệnh viện: đã xong** (ngất vì máu 0, viện phí có trần, rơi đồ nhặt lại được trong ngày, Bệnh viện Phước An với khám bệnh – quầy thuốc – phòng hồi sức, nút đấm và nút nhảy). Chi tiết ở mục 4.14–4.15. **Lượt 7 — công an phường, tạm giữ, lao động: đã xong** (mức bị để ý, công an đi tuần gọi lại, đồn Công an phường có buồng tạm giữ, nộp phạt / cãi / bỏ chạy / theo về phường, đập đá bớt giờ, ra tù mất uy tín). Chi tiết ở mục 4.16. Các lượt còn lại (điện thoại, quán net, xe cộ 2005–2010, NPC sống động hơn) nằm ở `PLAN.md`.
 
 Còn lại:
 
