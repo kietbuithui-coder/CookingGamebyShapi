@@ -1,0 +1,385 @@
+// HOẠT ĐỘNG của người chơi ngoài việc nấu: mua hàng tận tay, trò chuyện – mặc cả, xin tiền, nhặt ve chai, làm thuê,
+// ngủ nghỉ, tắm rửa, thuê chỗ ở, vay mượn. Mọi việc đều diễn ra tại địa điểm thật trong thành phố.
+import * as THREE from 'three';
+import { ctx, MIN_PER_SEC } from './ctx';
+import type { Npc } from './npc';
+import { placeOpen } from './npc';
+import type { SlotDef } from '../world/build';
+import { SHOPS, ShopDef } from '../data/shops';
+import { INGS } from '../data/ingredients';
+import { GEAR, GEAR_LIST, HOUSING, LENDERS, JUNK, JUNK_LIST, TIERS } from '../data/gear';
+import { RECIPE_LIST, RECIPES, toolsFor } from '../data/recipes';
+import { LINES } from '../data/people';
+import { Game, addStack, hourOf, absMin, Stack, weightOf } from '../sim/state';
+import * as R from '../sim/rules';
+import { bus, toast, sfx } from '../core/bus';
+import { rnd, RNG, clamp, money, dist2, round1k, round500, qty, hhmm } from '../core/util';
+import { NAV, groundY, districtAt, DISTRICT } from '../world/layout';
+import { MB, MAT } from '../gfx/mb';
+import { ingModel } from '../gfx/props';
+
+export interface CartLine { id: string; n: number; price: number; fresh: number; q: number; }
+export interface Opt { t: string; sub?: string; off?: boolean; fn?: () => void; }
+export interface Way { x: number; z: number; name: string; }
+const QUESTS = [
+  'Kiếm tiền (xin người qua đường, nhặt ve chai bán cho vựa Tư Rác, vác hàng ở chợ, rửa chén quán Bà Tư) rồi mua QUANG GÁNH ở tiệm Đồ Nghề Ba Tài.',
+  'Sắm dụng cụ cho món đầu tiên: DAO THỚT để làm bánh tráng trộn, hoặc BẾP THAN + VỈ để nướng khoai (thêm dao thớt là nướng được bắp mỡ hành).',
+  'Ra Chợ Xóm Chiều mua nguyên liệu cho món bạn định bán (xem công thức trong Sổ tay).',
+  'Gánh hàng tới một CHỖ BÁN HÀNG (vòng sáng màu vàng) rồi đặt xuống.',
+  'Chạm vào quầy › Thực đơn: bật món, đặt giá, bấm Sơ chế nếu món cần.',
+  'Bấm MỞ BÁN rồi tự tay làm món cho vị khách đầu tiên.',
+  'Bán được 10 phần trong một ngày.',
+  'Thuê phòng trọ của Bác Năm ở Khu Dân Cư để ngủ ngon và cất đồ an toàn.',
+  'Dành dụm 2.400.000₫ để nâng cấp lên XE ĐẨY.',
+  'Đạt uy tín 50 và không còn nợ nần.',
+  'Bạn đã là tay bán hàng có tiếng của khu phố! Học thêm món mới, mở rộng thực đơn và đón chờ bản cập nhật sau.',
+];
+export class Acts {
+  cart: { shop: string; lines: CartLine[]; disc: number; haggled: boolean } | null = null;
+  job: { kind: 'dock'; carrying: boolean } | { kind: 'dishes' } | { kind: 'delivery'; x: number; z: number; name: string; pay: number; until: number } | null = null;
+  way: Way | null = null; beacon: THREE.Mesh; litterMesh: THREE.Mesh | null = null; private glint: THREE.Mesh | null = null; litter: { i: number; x: number; z: number; id: string }[] = []; private litterKey = '';
+  private sleepUntil = 0; private sleepQ = 1; private sleepWhere = ''; private qT = 1; sheltered = false; working = 0;
+  constructor() {
+    this.beacon = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 30, 12, 1, true), new THREE.MeshBasicMaterial({ color: 0xffd24d, transparent: true, opacity: 0.28, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+    this.beacon.visible = false; ctx.scene.add(this.beacon);
+    bus.on('day', () => { this.spawnLitter(); });
+  }
+  get g(): Game { return ctx.g; }
+  D(who: string, npc: Npc | undefined, text: string, opts: Opt[]) { ctx.ui.dialog({ who, npc, text, opts }); }
+  quest() { return QUESTS[Math.min(this.g.quest, QUESTS.length - 1)]; }
+
+  // ───────────────────────── Mua hàng tận tay ─────────────────────────
+  cartTotal() { const c = this.cart; return c ? round500(c.lines.reduce((a, l) => a + l.n * l.price, 0) * (1 - c.disc)) : 0; }
+  cartKg() { return this.cart ? this.cart.lines.reduce((a, l) => a + l.n * INGS[l.id].kg, 0) : 0; }
+  /** Sức chứa còn lại khi đi chợ: túi xách + quầy nếu đang mang theo/đặt ngay gần. */
+  room(): number {
+    const g = this.g, s = g.stall, near = s.where === 'carried' || (s.where === 'placed' && dist2(s.x, s.z, ctx.player.x, ctx.player.z) < 64);
+    return R.carryCap(g) - R.bagWeight(g) + (near ? Math.max(0, R.stallRoom(g)) : 0) - this.cartKg();
+  }
+  take(sl: SlotDef, many = false) {
+    const g = this.g, shop = SHOPS[sl.shop], id = shop.items[sl.idx], d = INGS[id];
+    if (!R.shopOpen(g, shop)) { toast(`${shop.name} đã đóng cửa (mở ${hhmm(shop.open[0] * 60)}–${hhmm(shop.open[1] * 60)}).`, 'warn'); return; }
+    if (!R.shopHas(g, shop, id)) { toast(`Hôm nay ${shop.name} hết ${d.name.toLowerCase()} rồi.`, 'warn', 'box'); return; }
+    if (this.cart && this.cart.shop !== shop.id) { toast(`Bạn để lại hàng chưa tính tiền ở ${SHOPS[this.cart.shop].name}.`, 'info'); this.cart = null; }
+    let n = (shop.bulk ?? 1) * (many ? 5 : 1); const room = this.room();
+    if (d.kg > 0 && n * d.kg > room + 1e-6) n = Math.floor((room + 1e-6) / d.kg);
+    if (n < 1) { toast(g.stall.tier ? 'Xách hết nổi rồi! Mang quầy theo hoặc cất bớt đồ.' : 'Xách hết nổi rồi! (Giỏ xách ở tiệm Ba Tài giúp mang thêm 6 kg.)', 'warn', 'bag'); return; }
+    this.cart ??= { shop: shop.id, lines: [], disc: 0, haggled: false };
+    const ln = this.cart.lines.find((l) => l.id === id);
+    if (ln) ln.n += n; else this.cart.lines.push({ id, n, price: R.shopPrice(g, shop, id), fresh: R.shopFresh(g, shop, id), q: shop.q });
+    sfx('pick'); ctx.ui.float(`+${n} ${d.unit} ${d.name}`, { x: sl.x, y: sl.y + 0.25, z: sl.z }, 'info'); bus.emit('ui', 'cart');
+  }
+  dropCart() { if (this.cart) { this.cart = null; bus.emit('ui', 'cart'); } }
+  private pay(tab = false): boolean {
+    const g = this.g, c = this.cart!, total = this.cartTotal();
+    if (tab) { if (!R.borrow(g, 'tab', total)) return false; } else if (!R.spend(g, total, null)) { toast('Không đủ tiền!', 'bad', 'cash'); return false; }
+    const s = g.stall, near = s.where === 'carried' || (s.where === 'placed' && dist2(s.x, s.z, ctx.player.x, ctx.player.z) < 64), k = 1 - c.disc;
+    for (const l of c.lines) {
+      const d = INGS[l.id], cap = d.kg > 0 ? Math.max(0, Math.floor(((R.carryCap(g) - R.bagWeight(g)) / d.kg) + 1e-6)) : l.n, toBag = near && d.cold && R.stallRoom(g) >= l.n * d.kg ? 0 : Math.min(l.n, cap);
+      const st: Stack = { id: l.id, n: toBag, fresh: l.fresh, q: l.q, cost: l.price * k };
+      if (toBag > 0) addStack(g.bag, st); if (l.n - toBag > 0) addStack(s.store, { ...st, n: l.n - toBag });
+    }
+    R.changeRel(g, c.shop, 1.5 + total / 100000, true); sfx('coin'); this.cart = null; bus.emit('ui', 'cart'); bus.emit('save', 'mua hang'); return true;
+  }
+
+  // ───────────────────────── Trò chuyện với người bán & nhân vật cố định ─────────────────────────
+  talk(n: Npc) {
+    const id = n.fixedId!, g = this.g, shop = SHOPS[id], bye: Opt = { t: 'Thôi, chào nha.' };
+    ctx.npcs.say(n, shop?.say ?? 'Sao đó?', 1.2);
+    if (shop) return this.shopTalk(n, shop);
+    switch (id) {
+      case 'equip': {
+        const rc = R.repairCost(g), opts: Opt[] = [];
+        if (g.stall.tier > 0 && g.stall.cond < 96) opts.push({ t: `Sửa quầy — ${money(rc)}`, sub: `Tình trạng hiện tại ${Math.round(g.stall.cond)}%`, off: g.cash < rc, fn: () => { R.spend(g, rc, 'gear'); g.stall.cond = 100; sfx('fix'); toast('Quầy đã được sửa như mới.', 'good', 'tool'); } });
+        opts.push({ t: 'Bán lại đồ nghề cũ', off: !Object.keys(g.gear).length, fn: () => this.sellGearMenu(n) });
+        opts.push({ t: 'Nên mua gì trước hả chú?', fn: () => this.D(n.name, n, 'Mới vô nghề thì cặp QUANG GÁNH trước đã. Rồi DAO THỚT là làm được bánh tráng trộn. Có BẾP THAN với VỈ thì nướng khoai, nướng bắp. Muốn pha trà đá thì thêm cái NỒI. Cứ đi quanh tiệm, thấy món nào thì chạm vô coi giá.', [bye]) });
+        this.D(n.name, n, 'Tiệm Ba Tài, xe đẩy bếp núc gì cũng có! Hàng bày quanh đó, ưng món nào cứ chạm vô.', [...opts, bye]); break;
+      }
+      case 'bank': this.bankMenu(n); break;
+      case 'shark': this.sharkMenu(n); break;
+      case 'motel': case 'hotel': case 'tro': {
+        const hid = id === 'motel' ? 'nhanghi' : id === 'hotel' ? 'khachsan' : 'tro', h = HOUSING[hid], mine = g.housing === hid, due = mine && g.day >= g.paidUntil, opts: Opt[] = [];
+        if (!mine) opts.push({ t: `Thuê — ${money(h.rent)}/${h.per}`, sub: h.desc, off: g.cash < h.rent, fn: () => { this.moveOut(); if (R.payHousing(g, hid)) { sfx('coin'); toast(`Đã thuê ${h.name}. ${hid === 'tro' ? 'Phòng số 1, cửa xanh bên trái.' : hid === 'nhanghi' ? 'Phòng ngay sau quầy lễ tân.' : 'Phòng 101, cuối sảnh bên trái.'}`, 'good', 'home', true); ctx.stall.refresh(); } } });
+        else if (due || h.per === 'đêm') opts.push({ t: `Đóng tiền ${h.per} tiếp — ${money(h.rent)}`, off: g.cash < h.rent, fn: () => { if (R.spend(g, h.rent, 'rent')) { g.paidUntil = Math.max(g.paidUntil, g.day) + (h.per === 'tuần' ? 7 : 1); sfx('coin'); toast(`Đã đóng tiền, ở được tới hết ngày ${g.paidUntil}.`, 'good', 'home'); } } });
+        if (mine) opts.push({ t: 'Trả phòng', sub: 'Đồ đang cất trong phòng sẽ được dọn theo (phần xách nổi)', fn: () => { this.moveOut(); g.housing = 'gamcau'; g.paidUntil = 9999; toast('Đã trả phòng. Về lại gầm cầu.', 'info', 'home'); ctx.stall.refresh(); } });
+        this.D(n.name, n, mine ? (due ? `Tới hạn đóng ${money(h.rent)} rồi đó nghen.` : `Ở có thoải mái không? Đã đóng tới hết ngày ${g.paidUntil}.`) : id === 'tro' ? `Phòng trọ ${money(h.rent)} một tuần, có khoá, có vòi nước, để đồ thoải mái. Tiền nhà đóng trước.` : id === 'motel' ? `Phòng đơn ${money(h.rent)} một đêm, có nước nóng.` : `Kính chào quý khách. Phòng tiêu chuẩn ${money(h.rent)} một đêm, có máy lạnh và tủ mát.`, [...opts, bye]); break;
+      }
+      case 'eatery': {
+        const h = hourOf(g), wash = (h >= 10 && h < 14.5) || (h >= 17.5 && h < 21), opts: Opt[] = [
+          { t: 'Ăn dĩa cơm bình dân — 25.000₫', sub: 'No bụng, ấm lòng', off: g.cash < 25000, fn: () => { R.spend(g, 25000, 'food'); R.consume(g, { h: 60, t: 12, m: 6 }); sfx('eat'); R.advance(g, 15, this.act()); toast('Một dĩa cơm thịt kho nóng hổi. No căng bụng!', 'good', 'dish'); } },
+          { t: 'Xin rửa chén thuê', sub: wash ? (g.wd.plates >= 2 ? 'Hôm nay rửa đủ rồi' : 'Được 4.000₫ mỗi cái đĩa + một bữa cơm') : 'Chỉ cần người lúc 10–14h30 và 17h30–21h', off: !wash || g.wd.plates >= 2, fn: () => { this.job = { kind: 'dishes' }; this.setWay('sink', 'Bồn rửa chén'); this.D(n.name, n, 'Ừ, vô bếp phía sau đi con. Chồng đĩa dơ ở cạnh bồn rửa đó. Rửa cho sạch nghen!', [{ t: 'Dạ, con làm liền.' }]); } },
+          ...this.learnOpts('eatery', n)];
+        this.D(n.name, n, 'Quán cơm Bà Tư đây. Ăn gì con? Hay kiếm việc?', [...opts, bye]); break;
+      }
+      case 'scrap': case 'pawn': {
+        const list = JUNK_LIST.filter((j) => j.where === id && (g.junk[j.id] ?? 0) > 0), sum = list.reduce((a, j) => a + j.price * g.junk[j.id], 0);
+        this.D(n.name, n, id === 'scrap' ? (list.length ? 'Để coi… ' + list.map((j) => `${g.junk[j.id]} ${j.name.toLowerCase()}`).join(', ') + `. Tui lấy hết ${money(sum)}.` : 'Có ve chai, lon, giấy vụn, sắt thì đem lại đây tui cân. Lượm quanh công viên với mấy thùng rác á.')
+          : (list.length ? 'Đồ lượm được hả? ' + list.map((j) => `${j.name} ${money(j.price)}`).join(', ') + `. Tổng ${money(sum)}, bán không?` : 'Có gì đáng giá thì mang tới. Đồng hồ cũ, radio, nhẫn… tui mua hết.'),
+          [{ t: `Bán hết — ${money(sum)}`, off: !list.length, fn: () => { const v = R.sellJunk(g, id); sfx('coin'); toast(`Bán được ${money(v)}.`, 'good', 'cash'); } }, bye]); break;
+      }
+      case 'dock': {
+        const on = this.job?.kind === 'dock';
+        this.D(n.name, n, on ? `Vác được ${g.wd.sacks} bao rồi. Còn sức thì làm tiếp!` : g.wd.sacks >= 12 ? 'Hôm nay hết hàng rồi em. Mai ra sớm nha.' : 'Cần người vác bao từ xe tải vô sạp gạo Bà Hai. 6.000₫ một bao, vác được bao nhiêu trả bấy nhiêu. Làm không?',
+          [on ? { t: 'Em nghỉ, cảm ơn anh.', fn: () => { this.job = null; ctx.player.setCarry(''); this.way = null; } } : { t: 'Dạ làm!', sub: 'Tốn sức, nhớ ăn uống đầy đủ', off: g.wd.sacks >= 12, fn: () => { this.job = { kind: 'dock', carrying: false }; this.setWay('dock', 'Xe tải — lấy bao hàng'); toast('Ra đuôi xe tải lấy bao hàng, vác tới sạp gạo Bà Hai.', 'info', 'box', true); } }, bye]); break;
+      }
+      case 'hobo': {
+        const first = !g.flags.hobo; g.flags.hobo = 1;
+        const tips = ['Thùng rác xanh mỗi ngày bới được một lần. Lon với chai đem ra vựa Tư Rác ở Xóm Lao Động bán.', 'Trưa 11 giờ chùa Phước An phát cơm chay. Ăn chùa mà ngon!', 'Vòi nước công viên uống đỡ khát, rửa mặt mũi cho đỡ lem luốc. Dơ quá ai mà dám mua đồ ăn của mình.',
+          'Hùng Sẹo cho vay dễ lắm, mà lãi cắt cổ. Trễ hai ngày là nó siết đồ. Cẩn thận nghen con.', 'Ngủ gầm cầu coi chừng mất đồ. Có tiền thì thuê phòng trọ Bác Năm cho chắc.', 'Trời mưa bán đồ nóng, trời nắng bán đồ mát. Ông bà mình dạy vậy đó.'];
+        this.D(n.name, n, first ? 'Lính mới hả? Tui là Bảy, "trưởng khu" gầm cầu này hai chục năm rồi. Nè, cầm ổ bánh mì ăn đỡ đi. Muốn sống thì nghe tui chỉ.' : 'Sao, bữa nay làm ăn được không?', [
+          { t: 'Chú chỉ con cách kiếm sống đi.', fn: () => this.D(n.name, n, rnd.pick(tips), [{ t: 'Dạ, con nhớ rồi.' }]) }, bye]);
+        if (first) { addStack(g.bag, { id: 'banhmi', n: 1, fresh: 80, q: 0.8, cost: 0 }); toast('Ông Bảy cho bạn một ổ bánh mì.', 'good', 'heart'); } break;
+      }
+      default: this.D(n.name, n, '…', [bye]);
+    }
+  }
+  private learnOpts(from: string, n: Npc): Opt[] {
+    const g = this.g;
+    return RECIPE_LIST.filter((r) => r.learn?.from === from && !g.rec[r.id].known).map((r) => ({
+      t: `Học món ${r.name} — ${money(r.learn!.cost)}`, sub: R.level(g) < r.learn!.skill ? `Cần tay nghề cấp ${r.learn!.skill} (đang cấp ${R.level(g)})` : `Cần: ${toolsFor(r).map((t) => (t === 'bep' ? 'bếp' : GEAR[t].name.toLowerCase())).join(', ') || 'không cần dụng cụ'}`,
+      off: g.cash < r.learn!.cost || R.level(g) < r.learn!.skill,
+      fn: () => { if (R.spend(g, r.learn!.cost, 'other')) { g.rec[r.id].known = true; sfx('learn'); toast(`Đã học được món ${r.name}! Xem công thức trong Sổ tay.`, 'good', 'star', true); R.changeRel(g, from, 5); ctx.npcs.say(n, 'Nhớ kỹ nghen, bí quyết nhà nghề đó!', 3, 1); bus.emit('save', 'hoc mon'); } },
+    }));
+  }
+  private shopTalk(n: Npc, shop: ShopDef) {
+    const g = this.g, c = this.cart && this.cart.shop === shop.id ? this.cart : null, total = this.cartTotal(), opts: Opt[] = [], bye: Opt = { t: 'Thôi, chào nha.' };
+    if (c) {
+      const list = c.lines.map((l) => `${qty(l.n)} ${INGS[l.id].unit} ${INGS[l.id].name.toLowerCase()}`).join(', ');
+      opts.push({ t: `Trả tiền — ${money(total)}`, off: g.cash < total, sub: g.cash < total ? `Bạn chỉ có ${money(g.cash)}` : undefined, fn: () => { if (this.pay()) ctx.npcs.say(n, rnd.pick(['Cảm ơn nha, mai ghé nữa!', 'Rồi, của con đây.', 'Buôn may bán đắt nghen!']), 2.5, 1); } });
+      if (shop.haggle > 0 && !c.haggled) for (const ask of [0.1, 0.2]) opts.push({ t: `Mặc cả: xin bớt ${ask * 100}%`, sub: ask > 0.15 ? 'Khó hơn, dễ làm người bán phật ý' : 'Mua nhiều, khách quen thì dễ được bớt', fn: () => { const r = R.haggle(g, shop, ask, total); c.haggled = true; if (r.ok) { c.disc = ask; sfx('good'); } else sfx('nope'); ctx.npcs.say(n, r.line, 3, r.ok ? 1 : 3); setTimeout(() => this.shopTalk(n, shop), 900); } });
+      if (shop.id === 'kiosk') { const lim = R.loanLimit(g, 'tab'); opts.push({ t: `Ghi sổ nợ — ${money(total)}`, sub: `Cô Ba cho thiếu tối đa 100.000₫, trả trong 3 ngày (còn thiếu được ${money(lim)})`, off: total > lim, fn: () => { if (this.pay(true)) ctx.npcs.say(n, 'Ừ, cô ghi sổ. Ba bữa nữa nhớ trả nghen con.', 3); } }); }
+      opts.push({ t: 'Trả lại hàng', fn: () => this.dropCart() });
+      this.D(n.name, n, `${list}. ${c.disc ? `Bớt rồi còn ${money(total)}.` : `Hết thảy ${money(total)}.`}`, [...opts, bye]); return;
+    }
+    if (shop.id === 'kiosk') { const d = g.debts.find((x) => x.lender === 'tab'); if (d) opts.push({ t: `Trả sổ nợ — ${money(d.owed)}`, off: g.cash < d.owed, fn: () => { R.repay(g, d.id, d.owed); sfx('coin'); ctx.npcs.say(n, 'Sòng phẳng vậy cô quý!', 2.5, 1); } }); }
+    opts.push(...this.learnOpts(shop.id, n));
+    if (shop.id === 'pharmacy') opts.push({ t: 'Cho em hỏi về sức khoẻ', fn: () => this.D(n.name, n, g.flags.sick ? 'Em bị cảm rồi đó. Lấy vỉ thuốc cảm trên quầy, uống xong nghỉ ngơi, đừng dầm mưa nữa.' : g.st.health < 50 ? 'Trông em xanh xao lắm. Ăn uống đủ bữa, ngủ đủ giấc là khoẻ lại thôi.' : 'Em khoẻ mạnh bình thường. Nhớ uống đủ nước nha.', [bye]) });
+    opts.push({ t: 'Dạo này buôn bán sao?', fn: () => {
+      const ev = R.activeEvents(g).filter((e) => e.price || e.outOf || e.shop);
+      this.D(n.name, n, ev.length ? ev[0].text : shop.lateSale && hourOf(g) >= shop.open[1] - 2 ? 'Cuối buổi rồi, đồ tươi cô bán rẻ cho hết hàng. Lựa lẹ đi con!' : rnd.pick(['Sáng sớm hàng mới về là tươi nhất đó. Chiều thì rẻ mà hết ngon.', 'Mua quen cô bớt cho. Cứ ghé hoài là thành mối.', 'Ra đường thấy trời chuyển mưa thì bán đồ nóng, đắt như tôm tươi.', 'Vựa đầu mối Tám Lúa bên Khu Kho Bãi bán sỉ rẻ lắm, mà phải đi từ 3 giờ sáng.']), [bye]);
+    } });
+    this.D(n.name, n, `${shop.say} ${shop.id === 'mart' || shop.id === 'pharmacy' ? 'Anh chị cứ lấy hàng trên kệ rồi ra quầy tính tiền ạ.' : 'Lựa gì cứ bốc bỏ giỏ, xong đưa đây tính tiền.'}`, [...opts, bye]);
+  }
+  private sellGearMenu(n: Npc) {
+    const g = this.g, ids = Object.keys(g.gear);
+    this.D(n.name, n, 'Đồ cũ tui mua lại nửa giá, tuỳ còn mới hay không.', [...ids.slice(0, 7).map((id) => ({ t: `${GEAR[id].name} — ${money(R.gearResale(g, id))}`, fn: () => { const v = R.sellGear(g, id); sfx('coin'); toast(`Bán ${GEAR[id].name.toLowerCase()} được ${money(v)}.`, 'info', 'cash'); ctx.stall.refresh(); } })), { t: 'Thôi, để dùng tiếp.' }]);
+  }
+  private bankMenu(n: Npc) {
+    const g = this.g, L = LENDERS.bank, lim = R.loanLimit(g, 'bank'), debt = g.debts.filter((d) => d.lender === 'bank'), opts: Opt[] = [];
+    for (const a of [100000, 500000]) opts.push({ t: `Gửi tiết kiệm ${money(a)}`, off: g.cash < a, fn: () => { g.cash -= a; g.bank += a; bus.emit('cash', -a); sfx('coin'); this.bankMenu(n); } });
+    if (g.bank > 0) opts.push({ t: `Rút hết ${money(g.bank)}`, fn: () => { const a = g.bank; g.cash += a; g.bank = 0; bus.emit('cash', a); sfx('coin'); this.bankMenu(n); } });
+    for (const a of L.amounts) if (a <= lim) opts.push({ t: `Vay ${money(a)}`, sub: `Lãi ${(L.rate * 100).toFixed(1)}%/ngày, trả trong ${L.term} ngày ~ ${money(a * (1 + L.rate * L.term))}`, fn: () => { R.borrow(g, 'bank', a); sfx('coin'); toast(`Đã vay ngân hàng ${money(a)}.`, 'info', 'cash'); } });
+    for (const d of debt) { opts.push({ t: `Trả nợ ${money(Math.min(d.owed, g.cash))} / ${money(d.owed)}`, off: g.cash < 1000, fn: () => { R.repay(g, d.id, g.cash); sfx('coin'); this.bankMenu(n); } }); if (g.day >= d.due - 1) opts.push({ t: 'Xin gia hạn thêm 7 ngày', fn: () => { const r = R.extend(g, d.id); ctx.npcs.say(n, r.line, 3.5, r.ok ? 0 : 3); } }); }
+    const why = lim > 0 ? `Hạn mức vay hiện tại của anh chị là ${money(lim)}.` : g.housing !== 'tro' && g.housing !== 'khachsan' ? 'Để vay vốn cần có chỗ ở ổn định (phòng trọ) và uy tín từ 15.' : g.rep < 15 ? 'Uy tín kinh doanh của anh chị chưa đủ 15 để vay.' : 'Anh chị đã vay hết hạn mức.';
+    this.D(n.name, n, `Ngân hàng Sao Vàng xin chào. Số dư tiết kiệm: ${money(g.bank)} (lãi nhỏ mỗi ngày, không sợ mất trộm). ${why}`, [...opts.slice(0, 7), { t: 'Cảm ơn chị.' }]);
+  }
+  private sharkMenu(n: Npc) {
+    const g = this.g, L = LENDERS.shark, lim = R.loanLimit(g, 'shark'), debt = g.debts.filter((d) => d.lender === 'shark'), opts: Opt[] = [];
+    for (const a of L.amounts) if (a <= lim) opts.push({ t: `Vay nóng ${money(a)}`, sub: `Lãi 3%/ngày, ${L.term} ngày phải trả ~ ${money(a * (1 + L.rate * L.term))}. Trễ là bị siết đồ!`, fn: () => { R.borrow(g, 'shark', a); sfx('coin'); ctx.npcs.say(n, 'Tiền đây. Năm ngày. Nhớ mặt tao đó.', 3, 0); toast(`Đã vay nóng ${money(a)} của Hùng Sẹo.`, 'warn', 'skull', true); } });
+    for (const d of debt) { opts.push({ t: `Trả ${money(Math.min(d.owed, g.cash))} / ${money(d.owed)}`, off: g.cash < 1000, fn: () => { R.repay(g, d.id, g.cash); sfx('coin'); this.sharkMenu(n); } }); opts.push({ t: 'Xin khất thêm 3 ngày', sub: 'Mất phí 8%', fn: () => { const r = R.extend(g, d.id); ctx.npcs.say(n, r.line, 3.5, r.ok ? 0 : 4); } }); }
+    this.D(n.name, n, debt.length ? `Mày còn nợ tao ${money(debt.reduce((a, d) => a + d.owed, 0))}. Hạn ngày ${debt[0].due}. Hôm nay là ngày ${g.day}.` : 'Cần tiền hả? Ở đây không cần giấy tờ. Chỉ cần mày nhớ trả đúng hẹn.', [...opts.slice(0, 7), { t: 'Dạ thôi, em đi.' }]);
+  }
+  /** Dọn đồ khỏi chỗ ở cũ (mang theo phần xách nổi). */
+  private moveOut() { const g = this.g; for (const s of g.home.slice()) { const room = R.carryCap(g) - R.bagWeight(g), k = INGS[s.id].kg > 0 ? Math.min(s.n, Math.floor(room / INGS[s.id].kg)) : s.n; if (k > 0) addStack(g.bag, { ...s, n: k }); } g.home = []; if (g.stall.where === 'home') g.stall.where = 'carried'; }
+
+  buyGear(id: string) {
+    const g = this.g, d = GEAR[id], n = ctx.npcs.fixed.get('equip');
+    if (!placeOpen('equip')) { toast('Tiệm Ba Tài đã đóng cửa (mở 7h–20h).', 'warn'); return; }
+    if (R.has(g, id)) { toast(`Bạn đã có ${d.name.toLowerCase()} rồi.`, 'info'); return; }
+    const need = d.kind === 'stall' && d.tier! > 1 && !R.has(g, TIERS[d.tier! - 1].id) ? `Nên có ${TIERS[d.tier! - 1].name.toLowerCase()} trước.` : '';
+    const block = id === 'tulanh' && g.housing !== 'tro' ? 'Phải thuê phòng trọ mới có chỗ đặt tủ lạnh.' : id === 'sap' ? 'Sạp cố định sẽ mở bán ở bản cập nhật sau.' : '';
+    this.D('Chú Ba Tài', n, `${d.name} — ${money(d.price)}. ${d.desc} ${need}${block}`, [{ t: `Mua — ${money(d.price)}`, off: g.cash < d.price || !!block, sub: g.cash < d.price ? `Còn thiếu ${money(d.price - g.cash)}` : undefined, fn: () => { if (R.buyGear(g, id) === 'ok') { sfx('buy'); toast(`Đã mua ${d.name.toLowerCase()}!` + (d.kind === 'stall' ? ' Bạn đang mang quầy theo người.' : ''), 'good', 'tool', true); ctx.stall.refresh(); } } }, { t: 'Để con tính lại.' }]);
+  }
+
+  // ───────────────────────── Xin tiền ─────────────────────────
+  beg(n: Npc) {
+    const g = this.g, a = n.arch;
+    if (n.asked) { ctx.npcs.say(n, 'Hồi nãy xin rồi mà!', 2, 3); return; }
+    const go = (style: 'lephep' | 'kekho' | 'naini') => {
+      n.asked = true; const w = R.wx(g);
+      let p = a.beg[style] * w.beg / (1 + g.wd.begTired / 9);
+      if (g.stall.tier >= 2) p *= 0.3; if (g.st.hygiene < 30) p *= style === 'kekho' ? 1.15 : 0.85; if (g.st.health < 40) p *= 1.2; if (R.isNight(g)) p *= 0.7;
+      g.wd.begTired += style === 'naini' ? 1.5 : 1; R.advance(g, 2, this.act());
+      if (rnd.chance(clamp(p, 0, 0.92))) {
+        if (rnd.chance(a.beg.food)) { addStack(g.bag, { id: 'banhmi', n: 1, fresh: 85, q: 0.8, cost: 0 }); ctx.npcs.say(n, R.say(rnd.pick(LINES.beg_food), a, n.fem, g), 3, 1); toast('Được cho một ổ bánh mì.', 'good', 'heart'); }
+        else { const amt = Math.max(500, round500(rnd.range(a.beg.amt[0], a.beg.amt[1]) * (style === 'kekho' ? 1.15 : 1))); R.earn(g, amt, 'side'); g.tot.begged += amt; ctx.npcs.say(n, R.say(rnd.pick(LINES.beg_give), a, n.fem, g), 3, 1); sfx('coin'); ctx.ui.float(`+${money(amt)}`, n, 'good'); }
+        g.st.mood = clamp(g.st.mood - 1, 0, 100);
+        if (rnd.chance(0.3)) setTimeout(() => n.state !== 'gone' && ctx.npcs.say(n, R.say(rnd.pick(LINES.beg_chat), a, n.fem, g), 4.5), 3200);
+      } else {
+        const annoyed = style === 'naini' && rnd.chance(0.5);
+        ctx.npcs.say(n, R.say(rnd.pick(annoyed ? LINES.beg_annoyed : LINES.beg_refuse), a, n.fem, g), 2.6, annoyed ? 4 : 3); g.st.mood = clamp(g.st.mood - (annoyed ? 4 : 1.5), 0, 100);
+        if (annoyed) { g.rep = clamp(g.rep - 0.3, 0, 100); sfx('boo'); const cop = ctx.npcs.near(n.x, n.z, 18, (c) => c.arch.id === 'congan'); if (cop) setTimeout(() => { ctx.npcs.say(cop, 'Này! Không được đeo bám làm phiền người đi đường!', 3.5, 4); g.st.mood = clamp(g.st.mood - 5, 0, 100); }, 1500); }
+      }
+    };
+    if (a.id === 'congan') { ctx.npcs.say(n, 'Ăn xin ở đây là không được đâu nhé. Kiếm việc mà làm.', 3, 3); n.asked = true; return; }
+    if (a.id === 'giangho') { ctx.npcs.say(n, 'Biến! Tao còn đang kẹt tiền đây.', 2.5, 4); n.asked = true; return; }
+    this.D(`${n.name} · ${a.name}`, n, 'Bạn bước tới, hơi ngượng. Mở lời thế nào đây?', [
+      { t: 'Lễ phép xin giúp đỡ', sub: '"Dạ, cho con xin chút tiền lẻ mua ổ bánh mì…"', fn: () => go('lephep') },
+      { t: 'Kể hoàn cảnh', sub: '"Con ở quê lên, mất hết giấy tờ, hai ngày chưa ăn gì…"', fn: () => go('kekho') },
+      { t: 'Nài nỉ, bám theo', sub: 'Đôi khi được, nhưng dễ bị mắng — có công an gần đó thì càng rắc rối', fn: () => go('naini') },
+      { t: 'Thôi, ngại quá.' }]);
+  }
+
+  // ───────────────────────── Nhặt ve chai & bới thùng rác ─────────────────────────
+  spawnLitter() {
+    const g = this.g, Rn = new RNG(g.seed + g.day * 977), pts = ctx.world.litter; this.litter = [];
+    pts.forEach(([x, z], i) => { if (!Rn.chance(0.62) || ctx.world.blocked(x, z, 0.2)) return; const id = Rn.weighted(['chai', 'lon', 'bia', 'sat'], (k) => ({ chai: 5, lon: 4, bia: 2, sat: 0.8 }[k]!))!; if (!g.wd.picked.includes(i)) this.litter.push({ i, x, z, id }); });
+    this.litterKey = '';
+  }
+  private drawLitter() {
+    const key = this.litter.map((l) => l.i).join(','); if (key === this.litterKey) return; this.litterKey = key;
+    if (this.litterMesh) { ctx.scene.remove(this.litterMesh); this.litterMesh.geometry.dispose(); this.litterMesh = null; }
+    if (this.glint) { ctx.scene.remove(this.glint); this.glint.geometry.dispose(); this.glint = null; }
+    if (!this.litter.length) return; const m = new MB(), gl = new MB(), Rn = new RNG(5);
+    // Vẽ to hơn thật một chút và thêm đốm sáng lơ lửng phía trên — trên màn hình điện thoại đồ nhỏ rất khó thấy.
+    for (const l of this.litter) { const y = groundY(l.x, l.z) + 0.01, j = JUNK[l.id];
+      if (l.id === 'chai') { const a = Rn.range(0, 3); m.rod(l.x, y + 0.055, l.z, 0.055, 0.3, j.c, Math.PI / 2, 0, 7, a); m.rod(l.x + Math.sin(a) * 0.17, y + 0.055, l.z + Math.cos(a) * 0.17, 0.024, 0.05, 0x2f8fd5, Math.PI / 2, 0, 6, a); }
+      else if (l.id === 'lon') { const a = Rn.range(0, 3); m.rod(l.x, y + 0.05, l.z, 0.05, 0.16, 0xd9463c, Math.PI / 2, 0, 7, a); m.rod(l.x + Math.sin(a) * 0.085, y + 0.05, l.z + Math.cos(a) * 0.085, 0.05, 0.012, j.c, Math.PI / 2, 0, 7, a); m.rod(l.x - Math.sin(a) * 0.085, y + 0.05, l.z - Math.cos(a) * 0.085, 0.05, 0.012, j.c, Math.PI / 2, 0, 7, a); }
+      else if (l.id === 'bia') m.box(l.x, y, l.z, 0.5, 0.035, 0.36, j.c, 0xc9aa7a, 0.1); else { m.box(l.x, y, l.z, 0.32, 0.06, 0.09, j.c, 0x8a7a72); m.rod(l.x + 0.07, y + 0.04, l.z + 0.07, 0.022, 0.36, 0x6a5a52, Math.PI / 2, 0, 5, 1); }
+      gl.sph(l.x, y + 0.5, l.z, 0.04, 0.065, 0.04, 0xffe066, 4, 0xfff6c8);
+    }
+    this.litterMesh = new THREE.Mesh(m.build(), MAT.lit); ctx.scene.add(this.litterMesh);
+    this.glint = new THREE.Mesh(gl.build(), MAT.unlit); ctx.scene.add(this.glint);
+  }
+  pickLitter(l: { i: number; x: number; z: number; id: string }) {
+    const g = this.g, j = JUNK[l.id];
+    if (R.bagWeight(g) + j.kg > R.carryCap(g)) { toast('Túi đầy rồi, không nhặt thêm được.', 'warn', 'bag'); return; }
+    g.junk[l.id] = (g.junk[l.id] ?? 0) + 1; g.wd.picked.push(l.i); this.litter.splice(this.litter.indexOf(l), 1); sfx('pick'); ctx.ui.float(`+1 ${j.name}`, { x: l.x, y: 0.5, z: l.z }, 'info'); g.st.hygiene = clamp(g.st.hygiene - 0.4, 0, 100);
+  }
+  rummage(i: number) {
+    const g = this.g, b = ctx.world.bins[i];
+    if (g.wd.bins[i] === g.day) { toast('Thùng này hôm nay bạn bới rồi, chẳng còn gì.', 'info'); return; }
+    g.wd.bins[i] = g.day; R.advance(g, 4, this.act()); g.st.hygiene = clamp(g.st.hygiene - 4, 0, 100); sfx('rummage');
+    const r = rnd.next(), give = (id: string, n: number) => { g.junk[id] = (g.junk[id] ?? 0) + n; ctx.ui.float(`+${n} ${JUNK[id].name}`, { x: b.x, y: 1.1, z: b.z }, 'info'); };
+    if (r < 0.05) { const id = rnd.pick(['dongho', 'radio', 'nhan']); give(id, 1); toast(`Trúng mánh! Bới được ${JUNK[id].name.toLowerCase()} — đem ra tiệm cầm đồ Chú Lâm bán.`, 'good', 'star', true); }
+    else if (r < 0.2) this.D('Thùng rác', undefined, 'Có nửa ổ bánh mì ai bỏ lại, còn khá lành lặn… Ăn không?', [{ t: 'Ăn luôn (đỡ đói, có thể đau bụng)', fn: () => { R.consume(g, { h: 16, m: -3 }, 0.3); sfx('eat'); } }, { t: 'Thôi, ghê quá.' }]);
+    else if (r < 0.78) { give('chai', rnd.int(1, 3)); if (rnd.chance(0.6)) give('lon', rnd.int(1, 2)); if (rnd.chance(0.25)) give('bia', 1); }
+    else toast('Chỉ toàn rác… chẳng có gì dùng được.', 'info');
+    if (R.bagWeight(g) > R.carryCap(g)) toast('Túi nặng quá rồi, đi chậm hẳn. Đem ve chai đi bán thôi!', 'warn', 'bag');
+  }
+
+  // ───────────────────────── Việc làm thêm ─────────────────────────
+  dockTake() { const j = this.job; if (j?.kind !== 'dock' || j.carrying) return; if (this.g.st.energy < 8) { toast('Kiệt sức rồi, không vác nổi nữa. Đi ăn rồi nghỉ đi.', 'bad'); return; } j.carrying = true; ctx.player.setCarry('sack'); sfx('pick'); this.setWay('v_m_kho', 'Sạp gạo Bà Hai — giao bao hàng'); }
+  dockDrop() {
+    const j = this.job, g = this.g; if (j?.kind !== 'dock' || !j.carrying) return; j.carrying = false; ctx.player.setCarry(''); g.wd.sacks++; R.earn(g, 6000, 'side'); sfx('coin'); g.st.energy = clamp(g.st.energy - 2.5, 0, 100); g.st.hunger = clamp(g.st.hunger - 1.2, 0, 100); g.st.hygiene = clamp(g.st.hygiene - 1, 0, 100);
+    ctx.ui.float('+6.000₫', { x: ctx.player.x + ctx.player.fwd[0], y: 1.3, z: ctx.player.z + ctx.player.fwd[1] }, 'good');
+    if (g.wd.sacks >= 12) { this.job = null; this.way = null; toast('Hết hàng để vác rồi! Hôm nay kiếm được kha khá.', 'good', 'cash'); } else this.setWay('dock', 'Xe tải — lấy bao hàng');
+  }
+  dishes() {
+    const a = ctx.world.anchors.sink, g = this.g, c = Math.cos(a.yaw), s = Math.sin(a.yaw);
+    const st = { x: a.x, y: a.y + 0.02, z: a.z, yaw: a.yaw, cam: new THREE.Vector3(a.x - s * 0.5, a.y + 0.78, a.z - c * 0.5), look: new THREE.Vector3(a.x + s * 0.02, a.y, a.z + c * 0.02) };
+    ctx.player.x = a.x - s * 0.75; ctx.player.z = a.z - c * 0.75; ctx.player.yaw = a.yaw; this.way = null;
+    ctx.cook.wash(st, 8, (score) => {
+      this.job = null; if (score < 0) { toast('Bỏ ngang việc rửa chén, Bà Tư không trả công.', 'warn'); return; }
+      const pay = round1k(8 * 4000 * (0.75 + 0.25 * score)); g.wd.plates++; R.earn(g, pay, 'side'); R.consume(g, { h: 45, t: 10, m: 3 }); g.st.hygiene = clamp(g.st.hygiene + 6, 0, 100); g.st.energy = clamp(g.st.energy - 6, 0, 100); R.changeRel(g, 'eatery', 4, true);
+      const n = ctx.npcs.fixed.get('eatery'); toast(`Rửa xong 8 cái đĩa: nhận ${money(pay)} và một bữa cơm của Bà Tư.`, 'good', 'cash', true); if (n) ctx.npcs.say(n, 'Sạch đó! Ăn cơm đi con rồi hãy về.', 3, 1);
+    });
+  }
+  board() {
+    const g = this.g, j = this.job, opts: Opt[] = [];
+    if (j?.kind === 'delivery') { this.D('Bảng việc làm', undefined, `Bạn đang nhận giao gói hàng tới ${j.name}. Hạn chót ${hhmm(j.until % 1440)}.`, [{ t: 'Trả lại gói hàng (bỏ việc)', fn: () => { this.job = null; ctx.player.setCarry(''); this.way = null; } }, { t: 'Đi giao tiếp.' }]); return; }
+    if (g.wd.deliveries < 4 && !j) {
+      const p = ctx.player, cands = NAV.filter((n) => n.tag === 'home' && n.door && dist2(n.x, n.z, p.x, p.z) > 50 * 50);
+      for (let k = 0; k < 2 && cands.length; k++) {
+        const n = cands[Math.floor(new RNG(g.seed + g.day * 31 + g.wd.deliveries * 7 + k).next() * cands.length)], d = Math.sqrt(dist2(n.x, n.z, p.x, p.z)), pay = round1k(9000 + d * 130), mins = Math.round(d / 3.0 / 60 * MIN_PER_SEC * 60 * 1.9 + 12);
+        const name = `nhà số ${10 + (n.id * 7) % 180}, ${DISTRICT[n.district].name}`;
+        opts.push({ t: `Giao hàng tới ${name}`, sub: `${Math.round(d)} m · công ${money(pay)} · trong ${mins} phút`, fn: () => { this.job = { kind: 'delivery', x: n.door![0], z: n.door![1], name, pay, until: absMin(g) + mins }; ctx.player.setCarry('box'); this.way = { x: n.x, z: n.z, name: 'Giao hàng: ' + name }; g.wd.deliveries++; sfx('pick'); toast('Đã nhận gói hàng. Đi theo cột sáng vàng!', 'info', 'box'); } });
+      }
+    }
+    const h = hourOf(g);
+    this.D('Bảng việc làm hôm nay', undefined, `• Vác hàng ở bến chợ (4h30–10h): 6.000₫/bao — gặp Anh Sáu Lực cạnh xe tải.\n• Rửa chén quán cơm Bà Tư (10h–14h30, 17h30–21h): 32.000₫ + bữa cơm.\n• Thu mua ve chai: vựa Tư Rác, Xóm Lao Động.\n• Giao hàng trong khu phố (còn ${Math.max(0, 4 - g.wd.deliveries)} đơn hôm nay).` + (h < 4.5 || h > 21 ? '\nGiờ này hầu như không có việc.' : ''), [...opts, { t: 'Đóng' }]);
+  }
+  private deliveryCheck() {
+    const j = this.job, g = this.g; if (j?.kind !== 'delivery') return;
+    if (dist2(ctx.player.x, ctx.player.z, j.x, j.z) < 2.6 * 2.6) { const late = absMin(g) > j.until, pay = late ? round1k(j.pay * 0.5) : j.pay; R.earn(g, pay, 'side'); sfx('coin'); ctx.player.setCarry(''); this.job = null; this.way = null; toast(late ? `Giao trễ, chủ nhà chỉ trả ${money(pay)}.` : `Giao hàng đúng hẹn: nhận ${money(pay)}.`, late ? 'warn' : 'good', 'box'); g.rep = clamp(g.rep + (late ? 0 : 0.2), 0, 100); }
+  }
+
+  // ───────────────────────── Ăn uống, tắm rửa, ngủ nghỉ ─────────────────────────
+  eat(list: Stack[], idx: number) {
+    const g = this.g, s = list[idx]; if (!s) return; const d = INGS[s.id]; if (!d.eat) return;
+    R.consume(g, d.eat, s.fresh < 35 ? 0.35 : 0); g.led.food += s.cost; s.n -= 1; if (s.n <= 1e-6) list.splice(idx, 1); sfx(d.eat.t && !d.eat.h ? 'drink' : 'eat'); bus.emit('ui', 'eat');
+  }
+  eatDish(i: number) {
+    const g = this.g, rd = g.stall.ready[i]; if (!rd) return; const r = RECIPES[rd.rid];
+    R.consume(g, { h: r.fill, t: r.cat === 'nuoc' || r.cat === 'che' ? 30 : 4, m: 2 + rd.q * 5 }, rd.q < 0.2 ? 0.3 : 0); g.led.food += rd.cost; rd.n--; if (rd.n <= 0) g.stall.ready.splice(i, 1); sfx('eat'); toast(`Ăn một phần ${r.name.toLowerCase()} của chính mình. ${rd.q > 0.75 ? 'Ngon thật!' : rd.q > 0.45 ? 'Cũng được.' : 'Ờm… dở ẹc.'}`, 'info', 'dish'); bus.emit('ui', 'eat');
+  }
+  wash(kind: 'tap' | 'park' | 'room') {
+    const g = this.g;
+    if (kind === 'tap') { this.D('Vòi nước công cộng', undefined, 'Nước máy chảy mát lạnh.', [{ t: 'Uống cho đỡ khát', fn: () => { R.consume(g, { t: 35 }, 0.04); sfx('drink'); } }, { t: 'Rửa mặt mũi tay chân', sub: 'Sạch hơn một chút (tối đa 60%)', fn: () => { g.st.hygiene = Math.max(g.st.hygiene, Math.min(60, g.st.hygiene + 14)); R.advance(g, 5, this.act()); sfx('splash'); toast('Mát mẻ, đỡ lem luốc hơn rồi.', 'good'); } }, { t: 'Thôi' }]); return; }
+    if (kind === 'park') { if (!R.spend(g, 3000, 'other')) { toast('Tắm ở đây tốn 3.000₫ mà bạn không đủ tiền.', 'bad', 'cash'); return; } }
+    ctx.ui.fade(true, 0.5); setTimeout(() => { g.st.hygiene = kind === 'park' ? Math.max(g.st.hygiene, 86) : 100; g.st.mood = clamp(g.st.mood + 5, 0, 100); g.weather.wet = 0; R.advance(g, 15, this.act()); sfx('splash'); ctx.ui.fade(false, 0.6); toast('Tắm rửa sạch sẽ thơm tho!', 'good'); }, 900);
+  }
+  temple() {
+    const g = this.g, h = hourOf(g);
+    if (h < 11 || h >= 13) { toast('Chùa Phước An phát cơm chay từ 11 giờ tới 13 giờ mỗi ngày.', 'info'); return; }
+    if (g.flags.temple === g.day) { toast('Hôm nay bạn đã nhận cơm chay rồi. Nhường phần cho người khác nhé.', 'info'); return; }
+    g.flags.temple = g.day; R.consume(g, { h: 48, t: 15, m: 5 }); sfx('eat'); R.advance(g, 12, this.act()); toast('Một dĩa cơm chay nóng với canh rau. Nam mô A Di Đà Phật.', 'good', 'heart', true);
+  }
+  canSleep(where: string): string | null {
+    const g = this.g; if (where === 'gamcau' || where === 'ghe') return null;
+    if (g.housing !== where) return 'Đây không phải phòng của bạn.'; if (g.day >= g.paidUntil && HOUSING[where].per === 'đêm') return 'Phòng đã hết hạn thuê.'; return null;
+  }
+  sleepMenu(where: string) {
+    const g = this.g, h = HOUSING[where], err = this.canSleep(where); if (err) { toast(err, 'warn'); return; }
+    if (ctx.stall.customers.length) { toast('Còn khách đang chờ kìa!', 'warn'); return; }
+    const hr = hourOf(g), night = hr >= 19 || hr < 5, till = hr < 5.5 ? 6 : 30, hrs = till - hr;
+    this.D(h.name, undefined, `${h.desc} Bây giờ là ${hhmm(g.min)}. Năng lượng ${Math.round(g.st.energy)}%.` + (g.stall.where === 'placed' && g.stall.tier < 3 ? ' CHÚ Ý: quầy vẫn đang để ngoài chỗ bán — để qua đêm rất dễ mất đồ!' : ''), [
+      { t: night ? `Ngủ tới 6 giờ sáng (${hrs.toFixed(1)} tiếng)` : 'Ngủ một giấc dài (8 tiếng)', fn: () => this.sleep(where, night ? hrs : 8) },
+      { t: 'Chợp mắt 2 tiếng', fn: () => this.sleep(where, 2) }, { t: 'Chưa buồn ngủ.' }]);
+  }
+  sleep(where: string, hours: number) {
+    const g = this.g, h = HOUSING[where]; this.sleepWhere = where; this.sleepUntil = absMin(g) + hours * 60;
+    const wet = where === 'ghe' && R.wx(g).rain > 0.2; this.sleepQ = h.sleep * (wet ? 0.45 : 1) * (g.st.hunger < 15 ? 0.8 : 1);
+    ctx.mode = 'sleep'; ctx.speed = 48; ctx.stall.close(true); ctx.ui.fade(true, 0.8); ctx.ui.sleeping(true); ctx.input.reset(); sfx('sleep');
+    const a = ctx.world.anchors[h.anchor]; if (a) { ctx.player.place(a.x - Math.sin(a.yaw) * 0.2, a.z - Math.cos(a.yaw) * 0.2, a.yaw, 0.2); ctx.player.eyeTarget = Math.max(0.45, a.y - 0.12 + 0.35); }
+  }
+  private wake(reason = '') {
+    const g = this.g, where = this.sleepWhere, h = HOUSING[where]; ctx.mode = 'play'; ctx.speed = MIN_PER_SEC; ctx.player.eyeTarget = 1.6; ctx.ui.fade(false, 1.2); ctx.ui.sleeping(false); sfx('wake');
+    toast(reason || `Tỉnh giấc lúc ${hhmm(g.min)}. Năng lượng ${Math.round(g.st.energy)}%.`, 'info', 'moon');
+    // trộm đêm
+    const risk = (1 - h.safety) * 0.4 + (R.eventOn(g, 'trom') && h.safety < 0.6 ? 0.35 : 0);
+    if (rnd.chance(risk)) {
+      const cash = Math.min(g.cash, round1k(g.cash * rnd.range(0.2, 0.45))), lost = g.home.splice(0, Math.ceil(g.home.length / 2));
+      g.cash -= cash; g.led.loss += cash + lost.reduce((a, s) => a + s.n * s.cost, 0); g.st.mood = clamp(g.st.mood - 10, 0, 100);
+      if (cash > 0 || lost.length) toast(`Bị trộm lúc đang ngủ! Mất ${money(cash)}` + (lost.length ? ' và một phần đồ cất ở đây.' : '.') + ' Gửi tiền ngân hàng hoặc thuê phòng có khoá sẽ an toàn hơn.', 'bad', 'skull', true);
+    }
+    const s = g.stall;
+    if (s.where === 'placed' && s.tier < 3 && dist2(s.x, s.z, ctx.player.x, ctx.player.z) > 30 * 30 && rnd.chance(0.4)) { const v = s.store.reduce((a, x) => a + x.n * x.cost, 0); s.store = []; s.preps = []; s.cond = clamp(s.cond - 15, 0, 100); g.led.loss += v; toast('Quầy để ngoài đường qua đêm bị kẻ gian lấy sạch nguyên liệu!', 'bad', 'skull', true); ctx.stall.refresh(); }
+    bus.emit('save', 'ngu day');
+  }
+  /** Trạng thái hoạt động hiện tại cho mô phỏng chỉ số. */
+  act(): R.Activity {
+    const p = ctx.player, g = this.g, sleeping = ctx.mode === 'sleep';
+    return { moving: p.moving, running: p.running, sleeping, sheltered: this.sheltered, working: ctx.mode === 'cook' || p.carry === 'sack' || this.working > 0, load: clamp(R.bagWeight(g) / R.carryCap(g)) + (p.carry === 'ganh' ? 0.5 : p.carry === 'sack' ? 0.9 : 0), sleepQ: this.sleepQ };
+  }
+  setWay(anchor: string, name: string) { const a = ctx.world.anchors[anchor]; if (a) this.way = { x: a.x, z: a.z, name }; }
+
+  update(dt: number) {
+    const g = this.g, p = ctx.player;
+    this.sheltered = ctx.world.covered(p.x, p.z);
+    if (this.working > 0) this.working -= dt;
+    this.drawLitter(); if (this.glint) { this.glint.position.y = Math.sin(ctx.time * 3) * 0.05; this.glint.visible = ctx.mode === 'play'; }
+    if (ctx.mode === 'sleep') {
+      const woke = absMin(g) >= this.sleepUntil ? '' : g.st.hunger <= 2 ? 'Đói cồn cào làm bạn tỉnh giấc.' : g.st.thirst <= 2 ? 'Khát khô cổ làm bạn tỉnh giấc.' : this.sleepWhere === 'ghe' && g.weather.wet > 60 ? 'Mưa tạt ướt sũng, không ngủ nổi!' : (g.st.energy >= 99.5 && hourOf(g) > 5.5 && hourOf(g) < 19) ? `Ngủ đẫy giấc rồi. Bây giờ là ${hhmm(g.min)}.` : null;
+      if (woke !== null) this.wake(woke);
+    }
+    if (this.cart) { const v = ctx.npcs.fixed.get(this.cart.shop); if (v && dist2(v.x, v.z, p.x, p.z) > 17 * 17) { toast(`Bạn để lại hàng chưa tính tiền ở ${SHOPS[this.cart.shop].name}.`, 'info'); this.dropCart(); } }
+    const j = this.job;
+    if (j?.kind === 'dock') { const h = hourOf(g); if (h > 10.2 && !j.carrying) { this.job = null; this.way = null; toast('Hết giờ bốc hàng buổi sáng.', 'info'); } }
+    this.deliveryCheck();
+    const w = this.way; this.beacon.visible = !!w && ctx.mode === 'play';
+    if (w) { this.beacon.position.set(w.x, 15, w.z); (this.beacon.material as THREE.MeshBasicMaterial).opacity = 0.2 + Math.sin(ctx.time * 3) * 0.08; if (!j && dist2(w.x, w.z, p.x, p.z) < 9) this.way = null; }
+    // mục tiêu hướng dẫn
+    this.qT -= dt; if (this.qT <= 0) { this.qT = 1; const q = g.quest, s = g.stall, sellable = RECIPE_LIST.filter((r) => R.canSell(g, r));
+      const ok = [R.has(g, 'ganh') || s.tier > 0, sellable.length > 0, sellable.some((r) => (R.hasPrep(r) ? R.prepPossible(g, r) > 0 || s.preps.some((x) => x.rid === r.id) : R.finishPossible(g, r) > 0)) || s.ready.length > 0, s.where === 'placed',
+        R.menuOf(g).some((r) => R.available(g, r)), g.tot.served >= 1, g.led.sold >= 10 || g.hist.some((d) => d.sold >= 10), g.housing === 'tro' || g.housing === 'khachsan', s.tier >= 2, g.rep >= 50 && g.debts.length === 0][q];
+      if (ok && q < QUESTS.length - 1) { g.quest++; sfx('quest'); toast('Xong mục tiêu! Tiếp theo: ' + QUESTS[g.quest], 'good', 'star', true); bus.emit('ui', 'quest'); } }
+  }
+  /** Điểm tới gần nhất của một địa danh (dùng cho bản đồ). */
+  places(): Way[] {
+    const A = ctx.world.anchors, P = (k: string, name: string): Way | null => (A[k] ? { x: A[k].x, z: A[k].z, name } : null);
+    return [P('v_equip', 'Đồ Nghề Ba Tài'), P('v_m_rau', 'Chợ Xóm Chiều'), P('v_mart', 'MiniMart 24h'), P('v_kiosk', 'Tạp hoá Cô Ba'), P('v_eatery', 'Quán cơm Bà Tư'), P('v_scrap', 'Vựa ve chai Tư Rác'), P('v_pawn', 'Cầm đồ Chú Lâm'), P('v_bank', 'Ngân hàng Sao Vàng'),
+      P('v_tro', 'Nhà trọ Bác Năm'), P('v_motel', 'Nhà nghỉ Bình Dân'), P('v_hotel', 'Khách sạn Hoa Sen'), P('v_pharmacy', 'Nhà thuốc An Tâm'), P('v_wholesale', 'Vựa đầu mối Tám Lúa'), P('v_temple', 'Chùa Phước An'), P('wash_park', 'Nhà tắm công viên'), P('v_shark', 'Hùng Sẹo (vay nóng)'), P('bed_gamcau', 'Gầm cầu (lều của bạn)'), P('board', 'Bảng việc làm'), P('v_dock', 'Bến bốc hàng')].filter(Boolean) as Way[];
+  }
+}
+export { districtAt, weightOf };
