@@ -3,7 +3,7 @@
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1512; color: var(--ink); font-family: "Baloo 2", system-ui, -apple-system, "Segoe UI", sans-serif; user-select: none; -webkit-user-select: none; overscroll-behavior: none; touch-action: none; }
 canvas#gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
-#ui { position: fixed; inset: 0; pointer-events: none; font-size: clamp(11.5px, 3.5vh, 17px); line-height: 1.25; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+#ui { position: fixed; inset: 0; pointer-events: none; font-size: calc(clamp(11.5px, 3.5vh, 17px) * var(--ui-scale, 1)); line-height: 1.25; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
 #ui > * { position: absolute; }
 .hide { display: none !important; }
 svg.ic { width: 1.25em; height: 1.25em; vertical-align: -0.24em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
@@ -33,7 +33,7 @@ button { font: inherit; color: inherit; border: 0; background: none; padding: 0;
 .ib:active { transform: translateY(2px); border-bottom-width: 2px; } .ib svg.ic { width: 1.5em; height: 1.5em; }
 .ib .dot { position: absolute; right: -.25em; top: -.25em; min-width: 1.2em; height: 1.2em; border-radius: 1em; background: var(--red); color: #fff; font-size: .7em; font-weight: 800; display: grid; place-items: center; padding: 0 .25em; }
 #fps { font-size: .78em; opacity: .85; }
-#quest { left: 50%; top: .5em; transform: translateX(-50%); max-width: min(40vw, 34em); background: rgba(255, 247, 228, .93); border: 2px solid var(--ink); border-radius: .8em; padding: .22em .7em; font-size: .86em; font-weight: 600; text-align: center; pointer-events: auto; }
+#quest { left: 50%; top: .5em; transform: translateX(-50%); max-width: min(40vw, 34em, calc(100vw - 31em)); background: rgba(255, 247, 228, .93); border: 2px solid var(--ink); border-radius: .8em; padding: .22em .7em; font-size: .86em; font-weight: 600; text-align: center; pointer-events: auto; }
 #quest small { display: block; color: var(--red); font-weight: 800; letter-spacing: .04em; font-size: .82em; }
 #quest.min { max-width: 9em; } #quest.min span { display: none; }
 #way { left: 50%; top: 5.2em; transform: translateX(-50%); } #way svg { transition: transform .1s; }
@@ -44,12 +44,13 @@ button { font: inherit; color: inherit; border: 0; background: none; padding: 0;
 #focus { left: 50%; top: 56%; transform: translateX(-50%); text-align: center; max-width: 70vw; }
 #focus b { display: inline-block; background: rgba(40, 26, 16, .82); color: #fff; padding: .15em .7em; border-radius: .7em; font-weight: 700; }
 #focus small { display: block; margin-top: .2em; color: #fff; text-shadow: 0 1px 3px #000, 0 0 6px #000; font-size: .84em; }
-#act { right: 1em; bottom: 1.1em; display: flex; align-items: flex-end; gap: .6em; }
+#act { right: 1em; bottom: 1.1em; display: flex; flex-direction: column; align-items: flex-end; gap: .5em; }
+#runb { right: 7.2em; bottom: 1.1em; }
 #act .main { width: 5.2em; height: 5.2em; border-radius: 50%; background: var(--yellow); border: 3px solid var(--ink); border-bottom-width: 6px; display: grid; place-items: center; font-weight: 800; box-shadow: 0 3px 0 var(--shadow); }
 #act .main svg.ic { width: 2.4em; height: 2.4em; } #act .main:active { transform: translateY(3px); border-bottom-width: 3px; }
 #act .main.dim { opacity: .4; background: var(--paper2); }
 #act .alt { min-width: 3em; height: 3em; border-radius: 1.5em; padding: 0 .6em; background: var(--paper); border: 2px solid var(--ink); border-bottom-width: 4px; font-weight: 800; }
-#act .run { width: 3em; height: 3em; border-radius: 50%; background: var(--paper); border: 2px solid var(--ink); border-bottom-width: 4px; display: grid; place-items: center; } #act .run.on { background: var(--green); color: #fff; }
+#runb .run { width: 3em; height: 3em; border-radius: 50%; background: var(--paper); border: 2px solid var(--ink); border-bottom-width: 4px; display: grid; place-items: center; } #runb .run.on { background: var(--green); color: #fff; }
 #stick { width: 8em; height: 8em; margin: -4em; border-radius: 50%; border: 3px solid rgba(255, 255, 255, .5); background: rgba(255, 255, 255, .1); }
 #stick i { position: absolute; left: 50%; top: 50%; width: 3.4em; height: 3.4em; margin: -1.7em; border-radius: 50%; background: rgba(255, 255, 255, .75); box-shadow: 0 2px 6px rgba(0, 0, 0, .4); }
 #cart { left: 50%; bottom: 1em; transform: translateX(-50%); pointer-events: auto; max-width: 60vw; white-space: normal; text-align: center; background: rgba(255, 247, 228, .95); color: var(--ink); border: 2px solid var(--ink); }
@@ -147,9 +148,27 @@ input[type=range] { width: 100%; accent-color: var(--red); pointer-events: auto;
 #ui.cooking .toast { font-size: .78em; padding: .08em .6em; max-width: 100%; } #ui.cooking .toast span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } #ui.cooking .toast:not(:last-child) { display: none; }
 .flt.stars .ic, #grade .ic { width: 1em; height: 1em; }
 
+/* ───── Sắp xếp nút: lớp phủ mờ, mỗi nhóm nút có một khung kéo được ───── */
+#layed { inset: 0; pointer-events: auto; background: rgba(20, 12, 6, .5); z-index: 60; touch-action: none; }
+#layed .h { position: absolute; border: 2px dashed rgba(255, 255, 255, .85); border-radius: .7em; background: rgba(255, 255, 255, .1); touch-action: none; cursor: grab; }
+#layed .h.on { border-color: var(--yellow); border-style: solid; background: rgba(245, 197, 49, .22); box-shadow: 0 0 0 3px rgba(245, 197, 49, .3); }
+#layed .h span { position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%); white-space: nowrap; font-size: .78em; font-weight: 700; color: #fff; text-shadow: 0 1px 3px #000; padding: 0 0 .2em; pointer-events: none; }
+#layed .h.below span { bottom: auto; top: 100%; padding: .2em 0 0; }
+/* bảng điều khiển luôn nằm trên các khung; mặc định ở mép trên, tự nhảy xuống mép dưới (.low) khi đè lên khung đang xếp */
+#layed .ctl { position: absolute; z-index: 2; left: 50%; top: .5em; transform: translateX(-50%); background: var(--paper); border: 2px solid var(--ink); border-radius: .9em; padding: .4em .8em .55em; text-align: center; display: flex; flex-direction: column; gap: .3em; width: min(94vw, 26em); box-shadow: 0 4px 0 var(--shadow); }
+#layed .ctl.low { top: auto; bottom: .5em; }
+#layed .ctl small { color: var(--ink2); font-weight: 600; font-size: .82em; }
+#layed .ctl .row { display: flex; gap: .45em; align-items: center; justify-content: center; flex-wrap: wrap; }
+#layed .ctl .cur { min-width: 9em; font-weight: 700; font-size: .88em; }
+#layed .ctl .tab { padding: .15em .8em; border-radius: .6em; border: 2px solid var(--line); font-weight: 700; background: var(--paper2); color: var(--ink2); }
+#layed .ctl .tab.on { background: var(--yellow); border-color: var(--ink); color: var(--ink); }
+/* cảnh "khi đi lại" không có nút nấu ăn; cảnh "khi nấu ăn" chỉ có nút nấu ăn mẫu */
+#ui.layout-edit #cook > :not(.btns) { display: none !important; }
+#ui.layout-edit.layout-cook #act, #ui.layout-edit.layout-cook #runb, #ui.layout-edit.layout-cook #menub { visibility: hidden; }
+
 /* ───── Màn dọc: chơi được, nhưng game khuyên xoay ngang ───── */
 @media (orientation: portrait) {
-  #ui { font-size: clamp(11px, 3.6vw, 16px); }
+  #ui { font-size: calc(clamp(11px, 3.6vw, 16px) * var(--ui-scale, 1)); }
   #hud-tl .row { max-width: 54vw; }
   #hud-tr .row:first-child { flex-direction: column-reverse; align-items: flex-end; }
   #quest { left: .6em; right: .6em; top: 11.4em; transform: none; max-width: none; font-size: .84em; }
