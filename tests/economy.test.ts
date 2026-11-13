@@ -281,6 +281,8 @@ describe('vay nợ', () => {
     expect(g.stall.tier).toBe(0);
     expect(g.housing).toBe('gamcau');
     expect(g.cash).toBeLessThanOrEqual(15000);
+    expect(g.cash).toBeGreaterThanOrEqual(5000);   // còn "vài đồng lẻ" như lời dẫn
+    expect(g.quest).toBe(0);                        // mất cả gánh → hướng dẫn quay lại bước sắm gánh
     expect(R.loanLimit(g, 'shark')).toBe(0);
     expect(g.tot.bankrupt).toBe(1);
   });

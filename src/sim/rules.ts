@@ -498,8 +498,8 @@ export function checkBankrupt(g: Game): boolean {
   return assets < od.reduce((a, d) => a + d.owed, 0) * 0.5 || Object.keys(g.gear).length === 0;
 }
 export function goBankrupt(g: Game) {
-  g.debts = []; g.gear = {}; g.stall = emptyStall(); g.bank = 0; g.cash = Math.min(g.cash, 15000); g.home = []; g.bag = []; g.meals = [];
-  g.housing = 'gamcau'; g.credit = g.day + 10; g.rep = Math.round(g.rep * 0.4); g.tot.bankrupt++; g.quest = Math.min(g.quest, 1);
+  g.debts = []; g.gear = {}; g.stall = emptyStall(); g.bank = 0; g.cash = clamp(g.cash, 5000, 15000); g.home = []; g.bag = []; g.meals = [];
+  g.housing = 'gamcau'; g.credit = g.day + 10; g.rep = Math.round(g.rep * 0.4); g.tot.bankrupt++; g.quest = 0;   // mất cả gánh nên phần hướng dẫn quay về bước đầu; các bước sau tự nhảy khi đủ điều kiện
   g.st.mood = 12; for (const r of RECIPE_LIST) g.rec[r.id].on = false;
   bus.emit('save', 'pha san');
 }
