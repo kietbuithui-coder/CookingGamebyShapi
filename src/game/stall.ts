@@ -22,7 +22,7 @@ export interface Station { x: number; y: number; z: number; yaw: number; cam: TH
 export class StallSys {
   group = new THREE.Group(); body: THREE.Mesh | null = null; stock: THREE.Mesh | null = null; tools = new THREE.Group(); sign: THREE.Mesh | null = null;
   customers: Npc[] = []; private acc = 0; private builtKey = ''; private stockKey = ''; private stockT = 0; private cols: (Box2 | Circ)[] = [];
-  private actorT = 0; private actorId = ''; busy: Npc | null = null; rowdy = 0; private signAtlas = new SignAtlas(512); private signMat: THREE.Material;
+  private actorT = 0; private actorId = ''; private actorTries = 0; busy: Npc | null = null; rowdy = 0; private signAtlas = new SignAtlas(512); private signMat: THREE.Material;
   private marks: THREE.Mesh[] = []; private regT = 30;
   constructor() {
     ctx.scene.add(this.group); this.group.add(this.tools); this.group.visible = false;
@@ -234,7 +234,7 @@ export class StallSys {
       const ks = [edgeKey(CORNER['01NE'].id, CORNER['11NW'].id), edgeKey(CORNER['01SE'].id, CORNER['11SW'].id)];
       for (const k of ks) on ? NAV_BLOCK.add(k) : NAV_BLOCK.delete(k); ctx.city.roadblock.visible = on;
     }
-    if (on && e.actor && this.s.where === 'placed') { this.actorId = e.actor; this.actorT = rnd.range(6, 18); }
+    if (on && e.actor && this.s.where === 'placed') { this.actorId = e.actor; this.actorT = rnd.range(6, 18); this.actorTries = 0; }
   }
   private spawnActor() {
     const s = this.s, id = this.actorId, N = ctx.npcs; this.actorId = '';
@@ -244,7 +244,8 @@ export class StallSys {
     let n: Npc | null;
     if (id === 'credit') { const cand = REGULARS.filter((r) => (ctx.g.rel[r.id]?.n ?? 0) > 0); const reg = rnd.pick(cand.length ? cand : REGULARS); n = N.spawnActor(reg.arch, reg.name, id, s.x, s.z, reg.fem); if (n) n.regular = reg; }
     else n = N.spawnActor(d[0], d[1], id, s.x, s.z);
-    if (!n) return;
+    // Chưa tìm được chỗ xuất hiện khuất tầm mắt → lát nữa thử lại, đừng để sự kiện trôi qua mà không ai tới.
+    if (!n) { if (++this.actorTries < 30) { this.actorId = id; this.actorT = 1.5; } return; }
     if (id === 'critic' || id === 'vip') { n.persona = { arch: n.arch, budget: 300000, noise: 1.1 }; }
     n.state = 'actor'; n.slot = this.freeSlot(); this.customers.push(n); if (id === 'rowdy' || id === 'gang') n.base = 4;
     const [x, z] = this.slotPos(n.slot, tier(ctx.g).queue); N.goto(n, x, z, (c) => this.arrived(c));
@@ -315,7 +316,7 @@ export class StallSys {
         this.acc = 0;
         // khách quen ghé đúng giờ của họ
         const h = hourOf(g), reg = REGULARS.find((r) => Math.abs(h - r.hour) < 1.4 && (g.rel[r.id]?.last ?? -1) !== g.day && !this.customers.some((c) => c.regular === r) && rnd.chance(0.22 + (g.rel[r.id]?.v ?? 0) / 110 + g.rep / 300));
-        this.send(reg);
+        if (!this.send(reg)) this.acc = 0.85;   // chưa có ai quanh đây để ghé → thử lại sớm, không bỏ mất lượt khách
       } else if (this.acc > 1.5) this.acc = 1.5;
       if (away && this.customers.length === 0 && dist2(ctx.player.x, ctx.player.z, s.x, s.z) > 40 * 40) { this.close(true); toast('Bạn đi xa quá nên quầy tạm ngưng bán.', 'warn', 'shop'); }
     }
