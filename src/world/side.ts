@@ -11,11 +11,13 @@ export function buildSide(b: Builder) {
   const R = new RNG(3071);
   const D = () => b.detail, L = () => b.lit;
 
-  // ───────── 1. Quán trà đá của Cô Thắm — vỉa hè trước tạp hoá Cô Ba (Xóm Lao Động) ─────────
+  // ───────── 1. Quán trà đá của Cô Thắm — vỉa hè phía trước tạp hoá Cô Ba (Xóm Lao Động) ─────────
   // Mặt tiền hướng Đông: ban công/ô văng của tạp hoá che nắng phía trên, vỉa hè rộng 3 m ở phía +x.
+  // Quán đứng sát mép lòng đường (x ≈ −34,3) để không chắn quầy hàng của tạp hoá; bảng giá treo trên
+  // cây cột dựng cạnh bàn chứ không dán lên tường nhà người ta.
   b.chunk('b02', -59, 59).frame({ tx: 0, tz: 0, yaw: 0 });
   {
-    const x = -35.2, z = 53.4, d = D();
+    const x = -34.3, z = 53.4, d = D();
     // bàn nhựa + 4 ly trà đá + bình trà nóng
     b.table(x, z, 0.62, 0.62, 0.42, 0x2f8fd5, d);
     for (const [ox, oz] of [[-0.16, -0.15], [0.16, -0.15], [-0.16, 0.16], [0.16, 0.16]] as const) {
@@ -29,10 +31,11 @@ export function buildSide(b: Builder) {
     // ghế nhựa cho khách
     plasticStool(d, x + 0.42, 0.13, z - 0.34, 0xd9463c, 0.4); plasticStool(d, x + 0.46, 0.13, z + 0.34, 0x2f8fd5, 0.4);
     plasticStool(d, x - 0.44, 0.13, z + 0.02, 0xd9463c, 0.38);                                    // ghế của cô
-    // biển giá treo trên tường tạp hoá
-    b.signAt(-35.95, 1.62, z, 1.3, 0.42, 'TRÀ ĐÁ 3.000₫', { bg: '#fff7d6', fg: '#7a0f1e', border: '#c8102e' }, 1, 0, 44);
+    // bảng giá dựng cạnh quán, quay ra lòng đường
+    for (const sz of [-0.32, 0.32]) d.box(x + 0.72, 0.13, z + sz, 0.05, 1.42, 0.05, 0x8a6a4a);
+    b.signAt(x + 0.7, 1.12, z, 0.9, 0.32, 'TRÀ ĐÁ 3.000₫', { bg: '#fff7d6', fg: '#7a0f1e', border: '#c8102e' }, 1, 0, 44, true);
     b.collide(x - 0.36, z - 0.36, x + 0.36, z + 0.36); b.collide(x - 0.63, z - 0.6, x - 0.17, z - 0.24);
-    b.anchor('v_tra_da', x - 0.44, 0.53, z + 0.02, Math.PI / 2);          // ngồi trên ghế nhựa (mặt ghế 0,53)
+    b.anchor('v_tra_da', x - 0.44, 0.13, z + 0.02, Math.PI / 2);          // ngồi trên ghế nhựa (mông tự hạ xuống mặt ghế)
     b.anchor('tra_ban', x, 0.55, z, -Math.PI / 2);
   }
 
@@ -130,7 +133,7 @@ export function buildSide(b: Builder) {
     for (let i = 0; i < 6; i++) { d.cyl(x - 0.22 + (i % 3) * 0.22, 0.51, z - 0.16, 0.028, 0.03, i % 2 ? 0xc8102e : 0x1b1c1f, 6); d.cyl(x - 0.22 + (i % 3) * 0.22, 0.51, z + 0.18, 0.028, 0.03, i % 2 ? 0x1b1c1f : 0xc8102e, 6); }
     plasticStool(d, x - 0.06, 0.13, z - 0.72, 0xd9463c, 0.4); plasticStool(d, x + 0.1, 0.13, z + 0.74, 0x2f8fd5, 0.4);
     b.collide(x - 0.34, z - 0.34, x + 0.34, z + 0.34);
-    b.anchor('v_danh_co', x - 0.06, 0.53, z - 0.72, 0);                    // ngồi trên ghế nhựa
+    b.anchor('v_danh_co', x - 0.06, 0.13, z - 0.72, 0);                   // ngồi trên ghế nhựa (mông tự hạ xuống mặt ghế)
   }
 
   // ───────── 6. Bé Bo đánh giày — vỉa hè phố bến xe ─────────
@@ -144,6 +147,6 @@ export function buildSide(b: Builder) {
     plasticStool(d, x - 0.5, 0.13, z - 0.06, 0x2f8fd5, 0.36);                                     // ghế khách
     b.signAt(-23.03, 1.15, z, 0.95, 0.34, 'ĐÁNH GIÀY 5.000₫', { bg: '#fff7d6', fg: '#7a0f1e', border: '#c8102e' }, -1, 0, 36);
     b.collide(x - 0.2, z - 0.2, x + 0.46, z + 0.46);
-    b.anchor('v_danh_giay', x, 0.53, z, -Math.PI / 2);                      // ngồi trên thùng gỗ
+    b.anchor('v_danh_giay', x, 0.13, z, -Math.PI / 2);                     // ngồi trên thùng gỗ (hạ theo tư thế ngồi)
   }
 }

@@ -212,6 +212,8 @@ Người chơi đã thử bản đầu và gửi danh sách góp ý; việc đư
 
 **Lượt 3 — nội dung còn thiếu so với bản mô tả đầy đủ: đã xong phần chính** (60 món và thang mở công thức, chỗ chơi lên tinh thần, khách đứng mua, việc lúc rảnh của người đi đường, nút cất gánh, chạy bàn và bốc cảng). Chi tiết ở mục 4.3, 4.10, 4.11.
 
+Kế hoạch sáu lượt tiếp theo (sức khoẻ – bệnh viện, công an – tù, điện thoại, quán net, xe cộ 2005–2010, NPC sống động hơn) nằm ở `PLAN.md`.
+
 Còn lại:
 
 1. **Đã xong 3 kiểu chỗ ở mới: căn hộ, nhà riêng, cửa hàng kiêm nhà ở** (8/8) — xem mục 4.13.
