@@ -31,6 +31,9 @@ function unitSph(seg: number) {
   return g;
 }
 
+/** Các mặt của hộp theo trục CỤC BỘ: PX = mặt hướng +x, NZ = mặt hướng −z… (dùng cho tham số skip của MB.box). */
+export const FACE = { PX: 1, NX: 2, PZ: 4, NZ: 8, TOP: 16 } as const;
+
 export class MB {
   p: number[] = []; n: number[] = []; c: number[] = []; uv: number[] = []; idx: number[] = [];
   // biến đổi: world = T + Ry(yaw) * (local + O)
@@ -69,14 +72,18 @@ export class MB {
     return this;
   }
 
-  /** Hộp: (x,z) là tâm, y là đáy. top: màu mặt trên, g: tối dần xuống đáy, bottom: có mặt đáy. */
-  box(x: number, y: number, z: number, sx: number, sy: number, sz: number, col: number, top: number = col, g = 0, bottom = false) {
+  /**
+   * Hộp: (x,z) là tâm, y là đáy. top: màu mặt trên, g: tối dần xuống đáy, bottom: có mặt đáy.
+   * skip: bỏ bớt mặt (cộng các hằng FACE). Dùng khi mặt đó đã có một tấm khác phủ lên ĐÚNG mặt phẳng ấy —
+   * hai mặt trùng nhau sẽ nhấp nháy (z-fighting) nên phải bỏ một.
+   */
+  box(x: number, y: number, z: number, sx: number, sy: number, sz: number, col: number, top: number = col, g = 0, bottom = false, skip = 0) {
     const hx = sx / 2, hz = sz / 2, y1 = y + sy;
-    this.quad(x + hx, y, z + hz, x + hx, y, z - hz, x + hx, y1, z - hz, x + hx, y1, z + hz, col, g);
-    this.quad(x - hx, y, z - hz, x - hx, y, z + hz, x - hx, y1, z + hz, x - hx, y1, z - hz, col, g);
-    this.quad(x - hx, y, z + hz, x + hx, y, z + hz, x + hx, y1, z + hz, x - hx, y1, z + hz, col, g);
-    this.quad(x + hx, y, z - hz, x - hx, y, z - hz, x - hx, y1, z - hz, x + hx, y1, z - hz, col, g);
-    this.quad(x - hx, y1, z + hz, x + hx, y1, z + hz, x + hx, y1, z - hz, x - hx, y1, z - hz, top);
+    if (!(skip & FACE.PX)) this.quad(x + hx, y, z + hz, x + hx, y, z - hz, x + hx, y1, z - hz, x + hx, y1, z + hz, col, g);
+    if (!(skip & FACE.NX)) this.quad(x - hx, y, z - hz, x - hx, y, z + hz, x - hx, y1, z + hz, x - hx, y1, z - hz, col, g);
+    if (!(skip & FACE.PZ)) this.quad(x - hx, y, z + hz, x + hx, y, z + hz, x + hx, y1, z + hz, x - hx, y1, z + hz, col, g);
+    if (!(skip & FACE.NZ)) this.quad(x + hx, y, z - hz, x - hx, y, z - hz, x - hx, y1, z - hz, x + hx, y1, z - hz, col, g);
+    if (!(skip & FACE.TOP)) this.quad(x - hx, y1, z + hz, x + hx, y1, z + hz, x + hx, y1, z - hz, x - hx, y1, z - hz, top);
     if (bottom) this.quad(x - hx, y, z - hz, x + hx, y, z - hz, x + hx, y, z + hz, x - hx, y, z + hz, shade(col, 0.7));
     return this;
   }

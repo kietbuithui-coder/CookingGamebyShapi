@@ -51,14 +51,13 @@ function house(b: Builder, l: Lot, R: RNG) {
   L.box(w / 2, 0.12, alc / 2, w - 0.7, 0.04, alc, 0xb9b3a6, 0xc9c3b6);                          // bậc thềm
   // tầng trệt
   const kind = rich ? R.pick(['home', 'home', 'garage']) : R.pick(['shop', 'shop', 'shop', 'closed', 'home', 'home']);
+  let shop: { name: string; st2: SignStyle; blade: number } | null = null, bal1 = false;
   if (kind === 'shop') {
     for (const y of [0.9, 1.5, 2.1]) { L.box(w / 2, y, alc - 0.16, w - 1.0, 0.04, 0.3, 0x8a6a4a, undefined, 0, true); for (let x = 0.7; x < w - 0.7; x += 0.34) if (R.chance(0.8)) D.box(x, y + 0.04, alc - 0.16, 0.24, R.range(0.12, 0.3), 0.2, R.pick(AWN), undefined, 0.15); }
     D.box(w / 2 + R.range(-0.5, 0.5), 0.16, alc - 0.75, Math.min(2.2, w - 1.6), 0.85, 0.5, R.pick([0x8a6a4a, 0xb9c0c8, 0xd9d2c0]), undefined, 0.15);
     const name = R.pick(SHOP_NAMES), st2 = R.pick(SIGN_ST);
-    L.box(w / 2, gh - 0.42, -0.06, w - 0.5, 0.78, 0.08, 0x2a2c30, 0x2a2c30, 0, true);
-    b.signAt(w / 2, gh - 0.38, -0.11, w - 0.62, 0.7, name, st2, 0, -1, 64);
     if (R.chance(0.6)) b.awning(0.3, w - 0.3, gh - 0.5, R.range(1.0, 1.5), R.pick(AWN), R.chance(0.6) ? 0xf7f3e6 : R.pick(AWN), -0.1);
-    if (R.chance(0.3)) { const sx = R.chance(0.5) ? 0.12 : w - 0.12; L.box(sx, gh + 0.4, -0.5, 0.08, 2.2, 0.7, 0x2a2c30, 0x2a2c30, 0, true); b.signAt(sx - 0.05, gh + 0.45, -0.5, 0.62, 2.1, name.split(' ').slice(0, 3).join(' '), { ...st2, vertical: true }, -1, 0, 64, false); b.signAt(sx + 0.05, gh + 0.45, -0.5, 0.62, 2.1, name.split(' ').slice(0, 3).join(' '), { ...st2, vertical: true }, 1, 0, 64, false); }
+    shop = { name, st2, blade: R.chance(0.3) ? (R.chance(0.5) ? 0.12 : w - 0.12) : 0 };
   } else if (kind === 'closed') {
     const c = R.pick([0x8a9aa8, 0x6a8a9a, 0x9a9a92, 0x5a7a6a]);
     L.box(w / 2, 0.12, 0.42, w - 0.74, 2.75, 0.06, c, c, 0.1); for (let y = 0.4; y < 2.8; y += 0.28) L.box(w / 2, y, 0.38, w - 0.76, 0.03, 0.03, shade(c, 0.8), shade(c, 1.2), 0, true);
@@ -75,6 +74,7 @@ function house(b: Builder, l: Lot, R: RNG) {
   // các tầng trên
   for (let f = 1; f < floors; f++) {
     const y0 = gh + (f - 1) * fh, bal = R.chance(0.78);
+    if (f === 1) bal1 = bal;
     if (bal) {
       L.box(w / 2, y0 - 0.02, -0.42, w - 0.36, 0.12, 0.86, trim, trim, 0, true);
       if (rich) { L.box(w / 2, y0 + 0.1, -0.83, w - 0.4, 0.86, 0.04, 0xa8d0e0, 0xdfeef5, 0, true); }
@@ -93,6 +93,21 @@ function house(b: Builder, l: Lot, R: RNG) {
       }
     }
     if (R.chance(0.3)) D.box(w - 0.75, y0 + 2.35, -0.2, 0.8, 0.5, 0.32, 0xe6e9ec, 0xd0d4d8, 0.1, true);
+  }
+  // Biển cửa hàng. Ban công tầng 1 chìa ra 0,85 m ngay ngang tầm biển, nên nếu có ban công thì biển treo ở MẶT TRƯỚC
+  // ban công (kiểu nhà phố quen thuộc); không có thì là hộp đèn gắn trên mặt tiền, nhô ra đủ để vượt mép mái hiên.
+  if (shop) {
+    const zf = bal1 ? -0.86 : -0.02, dep = bal1 ? 0.08 : 0.34, yb = bal1 ? gh - 0.14 : gh - 0.42;
+    L.box(w / 2, yb, zf - dep / 2, w - 0.5, 0.78, dep, 0x2a2c30, 0x2a2c30, 0, true);
+    b.signAt(w / 2, yb + 0.04, zf - dep - 0.012, w - 0.62, 0.7, shop.name, shop.st2, 0, -1, 64);
+    if (shop.blade) {
+      // biển dọc chìa ra đường: phải vượt qua ban công nhà mình lẫn nhà bên cạnh thì đi dọc phố mới đọc được
+      const sx = shop.blade, zc = -1.32, txt = shop.name.split(' ').slice(0, 3).join(' ');
+      L.box(sx, gh + 0.4, zc, 0.08, 2.2, 0.7, 0x2a2c30, 0x2a2c30, 0, true);
+      for (const by of [gh + 0.75, gh + 2.2]) L.box(sx, by, -0.48, 0.04, 0.04, 0.98, 0x3a3d42, undefined, 0, true);
+      b.signAt(sx - 0.052, gh + 0.45, zc, 0.62, 2.1, txt, { ...shop.st2, vertical: true }, -1, 0, 64, false);
+      b.signAt(sx + 0.052, gh + 0.45, zc, 0.62, 2.1, txt, { ...shop.st2, vertical: true }, 1, 0, 64, false);
+    }
   }
   // mái
   if (poor && R.chance(0.6)) { L.quad(w, H, -0.3, 0, H, -0.3, 0, H + 1.1, d / 2, w, H + 1.1, d / 2, 0xb5553a); L.quad(0, H, d, w, H, d, w, H + 1.1, d / 2, 0, H + 1.1, d / 2, 0xa24a32); }
@@ -161,7 +176,12 @@ function sidewalkProps(b: Builder, bx: number, bz: number, R: RNG, dense: boolea
       if (clearAt(x)) continue;
       if (k % 4 === 1) b.lamp(x, -2.62, 0, -1);
       else if (k % 4 === 3 && dense) b.pole(x, -2.66, R);
-      else b.tree(x + R.range(-0.4, 0.4), -2.55, R, R.range(4.6, 6), false);
+      else {
+        // Tán cây thường nằm đúng tầm biển hiệu. Nếu sau cây có biển: trồng cây thân cao (tán trên 4,8 m);
+        // biển quá cao (kho, khách sạn, biển dọc) thì chỗ đó để trống.
+        const tx = x + R.range(-0.4, 0.4), h = R.range(4.6, 6), top = b.signTopBehind(tx, h * 0.36 + 0.25);
+        b.tree(tx, -2.55, R, h, false, true, top > 4.78 ? 'none' : top > 0 ? 'tall' : 'std');
+      }
     }
     if (dense) for (let x = 6.5; x < spans[f] - 6; x += 22.4) { /* dây điện giữa các cột */ }
     b.bin(f === 'N' || f === 'S' ? 1.2 : spans[f] - 1.2, -2.5);
@@ -335,7 +355,7 @@ function underpass(b: Builder, R: RNG) {
   const y = 7.2, c = 0xa9a6a0;
   L.box(0, y, 101, 262, 1.3, 11, c, 0x55585e, 0.1, true);
   for (const z of [95.6, 106.4]) L.box(0, y + 1.3, z, 262, 0.9, 0.3, 0xbfbcb4, 0xcfccc4, 0, true);
-  for (let x = -121; x <= 121; x += 22) { L.box(x, 0, 101, 1.8, y, 2.4, c, c, 0.2); L.box(x, y - 0.9, 101, 2.6, 0.9, 9.6, shade(c, 0.92), c, 0, true); b.collide(x - 0.9, 99.8, x + 0.9, 102.2); if (Math.abs(x) < 100) for (let i = 0; i < 3; i++) L.box(x + R.range(-0.7, 0.7), R.range(0.6, 1.8), 99.79, R.range(0.4, 0.8), R.range(0.3, 0.6), 0.02, R.pick([0xe2402f, 0x2f8fd5, 0xf5c531, 0x3fae5a, 0xf3f0e8]), undefined, 0, true); }
+  for (let x = -121; x <= 121; x += 22) { L.box(x, 0, 101, 1.8, y, 2.4, c, c, 0.2); L.box(x, y - 0.9, 101, 2.6, 0.9, 9.6, shade(c, 0.92), c, 0, true); b.collide(x - 0.9, 99.8, x + 0.9, 102.2); if (Math.abs(x) < 100) for (let i = 0; i < 3; i++) L.box(x + R.range(-0.7, 0.7), R.range(0.6, 1.8), 99.79 - i * 0.012, R.range(0.4, 0.8), R.range(0.3, 0.6), 0.02 + i * 0.024, R.pick([0xe2402f, 0x2f8fd5, 0xf5c531, 0x3fae5a, 0xf3f0e8]), undefined, 0, true); }
   b.world.roofs.push({ x0: -130, z0: 95.5, x1: 130, z1: 106.6 });
   for (let x = -110; x <= 110; x += 22) { D.cyl(x + 11, y + 2.2, 96.2, 0.07, 4.5, 0x6a7078, 5); b.glow.box(x + 11, y + 6.6, 97, 0.5, 0.12, 1.2, 0xfff2cf, 0xdfe3e6, 0, true); }
   // tường chắn + lan can phía kênh
@@ -461,7 +481,7 @@ export function buildCity(): City {
       .replace('#include <emissivemap_fragment>', 'totalEmissiveRadiance = nightCol * smoothstep(0.02, 0.2, lum) * uNight * 1.25;');
   };
   const unlitMat = new THREE.MeshBasicMaterial({ vertexColors: true });
-  const signMat = new THREE.MeshLambertMaterial({ map: atlas.texture, emissive: 0xffffff, emissiveMap: atlas.texture, emissiveIntensity: 0 });
+  const signMat = new THREE.MeshLambertMaterial({ map: atlas.texture, emissive: 0xffffff, emissiveMap: atlas.texture, emissiveIntensity: 0, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -6 });
   const mk = (mb: MB, mat: THREE.Material, name: string, parent: THREE.Object3D, shadow = 0) => {
     if (!mb.count) return undefined;
     const m = new THREE.Mesh(mb.build(), mat); m.name = name; m.matrixAutoUpdate = false; m.castShadow = shadow > 1; m.receiveShadow = shadow > 0; parent.add(m); mb.clear(); return m;

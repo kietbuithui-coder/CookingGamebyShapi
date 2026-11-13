@@ -80,6 +80,8 @@ export class Builder {
   chunks = new Map<string, ChunkSet>(); cur!: ChunkSet;
   lit!: MB; glow!: MB; unlit!: MB; detail!: MB; sign!: MB; tileIn!: MB;
   marks = new MB(); festive = new MB(); roadblock = new MB();
+  /** Các biển hiệu đủ lớn đã dựng (toạ độ thế giới) — để cây xanh, đồ vỉa hè… biết đường tránh, không che mất biển. */
+  signs: { x: number; z: number; y0: number; y1: number; w: number; nx: number; nz: number }[] = [];
   ground: Record<GroundKind, MB> = { asphalt: new MB(true), pave: new MB(true), grass: new MB(true), dirt: new MB(true), tile: new MB(true), concrete: new MB(true), water: new MB(true), wood: new MB(true) };
   private all: MB[] = [];
   fr: Frame = { tx: 0, tz: 0, yaw: 0 }; ox = 0; oz = 0;
@@ -99,6 +101,13 @@ export class Builder {
     this.frame({ tx, tz, yaw: f.yaw + ry }); fn(); this.frame(f, ox, oz);
   }
   W(lx: number, lz: number): [number, number] { return toWorld(this.fr, lx + this.ox, lz + this.oz); }
+  /** Ngược của W: toạ độ thế giới → toạ độ cục bộ của khung hiện tại. */
+  L(wx: number, wz: number): [number, number] {
+    const c = Math.cos(this.fr.yaw), s = Math.sin(this.fr.yaw), dx = wx - this.fr.tx, dz = wz - this.fr.tz;
+    return [dx * c - dz * s - this.ox, dx * s + dz * c - this.oz];
+  }
+  /** Hướng (vectơ) thế giới → cục bộ. */
+  Ldir(wx: number, wz: number): [number, number] { const c = Math.cos(this.fr.yaw), s = Math.sin(this.fr.yaw); return [wx * c - wz * s, wx * s + wz * c]; }
   collide(lx0: number, lz0: number, lx1: number, lz1: number): Box2 {
     const [ax, az] = this.W(lx0, lz0), [bx, bz] = this.W(lx1, lz1);
     const b = { x0: Math.min(ax, bx), z0: Math.min(az, bz), x1: Math.max(ax, bx), z1: Math.max(az, bz) };
@@ -117,6 +126,24 @@ export class Builder {
     const uv = this.atlas.draw(text, w / h, st, px > 40 ? Math.round(px * 0.7) : px), rx = nz, rz = -nx, hw = w / 2;
     this.sign.quad(x - rx * hw, y, z - rz * hw, x + rx * hw, y, z + rz * hw, x + rx * hw, y + h, z + rz * hw, x - rx * hw, y + h, z - rz * hw, 0xffffff, 0, uv.u0, uv.v0, uv.u1, uv.v1);
     if (both) this.sign.quad(x + rx * hw, y, z + rz * hw, x - rx * hw, y, z - rz * hw, x - rx * hw, y + h, z - rz * hw, x + rx * hw, y + h, z + rz * hw, 0xffffff, 0, uv.u0, uv.v0, uv.u1, uv.v1);
+    if (w * h >= 0.25) {
+      const [wx, wz] = this.W(x, z), c = Math.cos(this.fr.yaw), s = Math.sin(this.fr.yaw);
+      this.signs.push({ x: wx, z: wz, y0: y, y1: y + h, w, nx: nx * c + nz * s, nz: -nx * s + nz * c });
+    }
+  }
+  /**
+   * Biển hiệu nào nằm sau một vật cao đặt ở (lx, lz) cục bộ, bán kính r, trên dãy nhà có mặt tiền z = 0?
+   * Trả về mép trên cao nhất của các biển đó (0 nếu không có biển nào).
+   */
+  signTopBehind(lx: number, r: number): number {
+    let top = 0;
+    for (const sg of this.signs) {
+      if (sg.y1 < 2) continue;                                       // biển thấp dưới tầm tán cây
+      const [sx, sz] = this.L(sg.x, sg.z); if (sz < -1.9 || sz > 2.6) continue;      // không thuộc dãy nhà này
+      const [nx] = this.Ldir(sg.nx, sg.nz), half = Math.abs(nx) > 0.7 ? 0.45 : sg.w / 2;   // biển dọc chìa ra: chỉ tính bề dày
+      if (Math.abs(sx - lx) < r + half - 0.15) top = Math.max(top, sg.y1);
+    }
+    return top;
   }
   /** Thanh nối hai điểm (dây điện, lan can, cán ô…). */
   beam(mb: MB, ax: number, ay: number, az: number, bx: number, by: number, bz: number, r: number, col: number, seg = 5) {
@@ -124,10 +151,10 @@ export class Builder {
     mb.rod((ax + bx) / 2, (ay + by) / 2, (az + bz) / 2, r, L, col, Math.acos(dy / L), 0, seg, Math.atan2(dx, dz));
   }
   /** Tường thẳng theo trục cục bộ (có va chạm). */
-  wall(x0: number, z0: number, x1: number, z1: number, h: number, col: number, t = 0.2, y = 0, mb: MB = this.lit, collide = true) {
+  wall(x0: number, z0: number, x1: number, z1: number, h: number, col: number, t = 0.2, y = 0, mb: MB = this.lit, collide = true, skip = 0) {
     const xa = Math.min(x0, x1), xb = Math.max(x0, x1), za = Math.min(z0, z1), zb = Math.max(z0, z1);
     const sx = Math.max(t, xb - xa), sz = Math.max(t, zb - za);
-    mb.box((xa + xb) / 2, y, (za + zb) / 2, sx, h, sz, col, col, 0.06, y > 0);
+    mb.box((xa + xb) / 2, y, (za + zb) / 2, sx, h, sz, col, col, 0.06, y > 0, skip);
     if (collide && y < 1.2) this.collide((xa + xb) / 2 - sx / 2, (za + zb) / 2 - sz / 2, (xa + xb) / 2 + sx / 2, (za + zb) / 2 + sz / 2);
   }
   /** Lót nội thất: sàn, trần và 4 mặt tường quay vào trong (vật liệu tự sáng). gaps: khoảng hở cửa ở mặt trước [x0,x1]. */
@@ -173,14 +200,29 @@ export class Builder {
     mb.sph(x, y + 0.46 * s, z, 0.26 * s, 0.3 * s, 0.26 * s, R.pick([0x4f9a47, 0x3f8a40, 0x6fb85a]), 6, 0x7fc468);
   }
   // ───────── Vật dụng đường phố ─────────
-  tree(x: number, z: number, R: RNG, h = 5.2, flower = false, planter = true) {
+  /**
+   * Cây bóng mát. shape: 'std' tán thấp và rộng · 'tall' thân cao, tán gọn nằm trên 4,8 m (không che biển hiệu, mặt tiền)
+   * · 'none' không trồng (vẫn tiêu đúng số ngẫu nhiên như khi trồng để phần còn lại của thành phố không đổi).
+   */
+  tree(x: number, z: number, R: RNG, h = 5.2, flower = false, planter = true, shape: 'std' | 'tall' | 'none' = 'std') {
     const d = this.lit, trunk = 0x7a5a3c;
-    d.cyl(x, 0, z, 0.2, h * 0.55, trunk, 6, 0.13);
+    const g = [0x4f9a47, 0x5fae4f, 0x3f8a40, 0x6fb85a], c1 = R.pick(g), c2 = R.pick(g), c3 = R.pick(g), c4 = R.pick(g);
+    if (shape === 'none') return;
     if (planter) d.box(x, 0, z, 1.1, 0.16, 1.1, 0xa59f93, 0x5b4636);
-    const g = [0x4f9a47, 0x5fae4f, 0x3f8a40, 0x6fb85a], r = h * 0.36;
-    d.sph(x, h * 0.72, z, r, r * 0.78, r, R.pick(g), 7, R.pick(g));
-    d.sph(x + r * 0.55, h * 0.62, z + r * 0.2, r * 0.62, r * 0.5, r * 0.62, R.pick(g), 6);
-    d.sph(x - r * 0.5, h * 0.66, z - r * 0.35, r * 0.66, r * 0.52, r * 0.66, R.pick(g), 6);
+    if (shape === 'tall') {
+      const top = 5.0 + (h - 4.6) * 0.3, r = 1.7 + (h - 4.6) * 0.12, yc = top + 1.25;
+      d.cyl(x, 0, z, 0.22, top + 0.3, trunk, 6, 0.12);
+      d.sph(x, yc, z, r, r * 0.82, r, c1, 7, c2);
+      d.sph(x + r * 0.5, yc + 0.15, z + r * 0.2, r * 0.6, r * 0.5, r * 0.6, c3, 6);
+      d.sph(x - r * 0.45, yc + 0.3, z - r * 0.3, r * 0.62, r * 0.5, r * 0.62, c4, 6);
+      this.circle(x, z, 0.26);
+      return;
+    }
+    d.cyl(x, 0, z, 0.2, h * 0.55, trunk, 6, 0.13);
+    const r = h * 0.36;
+    d.sph(x, h * 0.72, z, r, r * 0.78, r, c1, 7, c2);
+    d.sph(x + r * 0.55, h * 0.62, z + r * 0.2, r * 0.62, r * 0.5, r * 0.62, c3, 6);
+    d.sph(x - r * 0.5, h * 0.66, z - r * 0.35, r * 0.66, r * 0.52, r * 0.66, c4, 6);
     if (flower) for (let i = 0; i < 9; i++) { const a = R.range(0, 6.28), rr = R.range(0.3, 1) * r; this.detail.sph(x + Math.cos(a) * rr, h * 0.74 + R.range(-0.2, 0.5) * r, z + Math.sin(a) * rr, 0.22, 0.14, 0.22, R.pick([0xe2402f, 0xf0562f, 0xff7a3d]), 5); }
     this.circle(x, z, 0.24);
   }
