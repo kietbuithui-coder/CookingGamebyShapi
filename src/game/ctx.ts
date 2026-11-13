@@ -14,7 +14,21 @@ import type { Interact } from './interact';
 import type { Cook } from '../cook/cook';
 import type { Acts } from './acts';
 
-export interface Settings { quality: number; sfx: number; music: number; sens: number; fps: boolean; auto: boolean; }
+/** Các nhóm nút người chơi tự xếp được: nút tương tác, nút chạy, hàng nút túi/sổ/bản đồ/cài đặt, các nút khi nấu ăn. */
+export type BtnKey = 'act' | 'run' | 'menu' | 'cook';
+export const BTN_KEYS: BtnKey[] = ['act', 'run', 'menu', 'cook'];
+/** x, y: độ lệch so với chỗ mặc định, tính bằng phần bề ngang / bề cao màn hình (để xoay máy, đổi máy vẫn hợp lý) · s: hệ số phóng. */
+export interface BtnPlace { x: number; y: number; s: number; }
+/** scale: cỡ chữ và nút của cả giao diện · L / P: cách xếp riêng cho màn ngang và màn dọc. */
+export interface UiLayout { scale: number; L: Partial<Record<BtnKey, BtnPlace>>; P: Partial<Record<BtnKey, BtnPlace>>; }
+export const UI_SCALE: [number, number] = [0.8, 1.4], BTN_SCALE: [number, number] = [0.6, 1.8];
+const num = (v: unknown, lo: number, hi: number, def: number) => (typeof v === 'number' && isFinite(v) ? Math.max(lo, Math.min(hi, v)) : def);
+/** Làm sạch phần giao diện đọc từ bộ nhớ (có thể thiếu, hỏng hoặc do bản cũ ghi). */
+export function cleanLayout(raw: any): UiLayout {
+  const side = (o: any) => { const out: Partial<Record<BtnKey, BtnPlace>> = {}; if (o && typeof o === 'object') for (const k of BTN_KEYS) { const p = o[k]; if (p && typeof p === 'object') out[k] = { x: num(p.x, -1, 1, 0), y: num(p.y, -1, 1, 0), s: num(p.s, BTN_SCALE[0], BTN_SCALE[1], 1) }; } return out; };
+  return { scale: num(raw?.scale, UI_SCALE[0], UI_SCALE[1], 1), L: side(raw?.L), P: side(raw?.P) };
+}
+export interface Settings { quality: number; sfx: number; music: number; sens: number; fps: boolean; auto: boolean; ui: UiLayout; }
 /** pr: tỉ lệ điểm ảnh tối đa (so với điểm ảnh CSS) · blob: bóng tròn dưới chân NPC khi không có bóng đổ thật. */
 export const QUALITY = [
   { name: 'Rất thấp', pr: 0.7, shadow: 0, shadowSize: 0, npcs: 10, view: 100, lights: 0, blob: true },
@@ -39,8 +53,8 @@ export interface Ctx {
 export const ctx = { mode: 'menu', time: 0, speed: MIN_PER_SEC } as Ctx;
 export const SAVE_KEY = 'ganhhang.save.v1', SET_KEY = 'ganhhang.settings.v1';
 export function loadSettings(mobile: boolean): Settings {
-  const def: Settings = { quality: mobile ? Q_DEFAULT_MOBILE : Q_DEFAULT_DESKTOP, sfx: 0.8, music: 0.5, sens: 1, fps: true, auto: true };
-  try { const s = { ...def, ...JSON.parse(localStorage.getItem(SET_KEY) || '{}') }; s.quality = Math.max(0, Math.min(QUALITY.length - 1, s.quality | 0)); return s; } catch { return def; }
+  const def: Settings = { quality: mobile ? Q_DEFAULT_MOBILE : Q_DEFAULT_DESKTOP, sfx: 0.8, music: 0.5, sens: 1, fps: true, auto: true, ui: cleanLayout(null) };
+  try { const s = { ...def, ...JSON.parse(localStorage.getItem(SET_KEY) || '{}') }; s.quality = Math.max(0, Math.min(QUALITY.length - 1, s.quality | 0)); s.ui = cleanLayout(s.ui); return s; } catch { return def; }
 }
 export function saveSettings() { try { localStorage.setItem(SET_KEY, JSON.stringify(ctx.set)); } catch { /* bộ nhớ đầy hoặc bị chặn */ } }
 

@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { ctx, MIN_PER_SEC } from './ctx';
 import type { Npc } from './npc';
 import { placeOpen } from './npc';
+import { who } from './who';
 import type { SlotDef } from '../world/build';
 import { SHOPS, ShopDef } from '../data/shops';
 import { INGS } from '../data/ingredients';
@@ -83,7 +84,12 @@ export class Acts {
   }
 
   // ───────────────────────── Trò chuyện với người bán & nhân vật cố định ─────────────────────────
+  /** Nói chuyện với người đứng quầy. Lần đầu: hộp thoại còn ghi theo việc họ làm; nói xong mới biết tên. */
   talk(n: Npc) {
+    this.talkTo(n);
+    if (n.fixedId && R.meet(this.g, n.fixedId)) { toast(`Bạn vừa làm quen với ${n.name}.`, 'info', 'heart'); bus.emit('save', 'lam quen'); }
+  }
+  private talkTo(n: Npc) {
     const id = n.fixedId!, g = this.g, shop = SHOPS[id], bye: Opt = { t: 'Thôi, chào nha.' };
     ctx.npcs.say(n, shop?.say ?? 'Sao đó?', 1.2);
     if (shop) return this.shopTalk(n, shop);
@@ -92,8 +98,8 @@ export class Acts {
         const rc = R.repairCost(g), opts: Opt[] = [];
         if (g.stall.tier > 0 && g.stall.cond < 96) opts.push({ t: `Sửa quầy — ${money(rc)}`, sub: `Tình trạng hiện tại ${Math.round(g.stall.cond)}%`, off: g.cash < rc, fn: () => { R.spend(g, rc, 'gear'); g.stall.cond = 100; sfx('fix'); toast('Quầy đã được sửa như mới.', 'good', 'tool'); } });
         opts.push({ t: 'Bán lại đồ nghề cũ', off: !Object.keys(g.gear).length, fn: () => this.sellGearMenu(n) });
-        opts.push({ t: 'Nên mua gì trước hả chú?', fn: () => this.D(n.name, n, 'Mới vô nghề thì cặp QUANG GÁNH trước đã. Rồi DAO THỚT là làm được bánh tráng trộn. Có BẾP THAN với VỈ thì nướng khoai, nướng bắp. Muốn pha trà đá thì thêm cái NỒI. Cứ đi quanh tiệm, thấy món nào thì chạm vô coi giá.', [bye]) });
-        this.D(n.name, n, 'Tiệm Ba Tài, xe đẩy bếp núc gì cũng có! Hàng bày quanh đó, ưng món nào cứ chạm vô.', [...opts, bye]); break;
+        opts.push({ t: 'Nên mua gì trước hả chú?', fn: () => this.D(who(n), n, 'Mới vô nghề thì cặp QUANG GÁNH trước đã. Rồi DAO THỚT là làm được bánh tráng trộn. Có BẾP THAN với VỈ thì nướng khoai, nướng bắp. Muốn pha trà đá thì thêm cái NỒI. Cứ đi quanh tiệm, thấy món nào thì chạm vô coi giá.', [bye]) });
+        this.D(who(n), n, 'Tiệm Ba Tài, xe đẩy bếp núc gì cũng có! Hàng bày quanh đó, ưng món nào cứ chạm vô.', [...opts, bye]); break;
       }
       case 'bank': this.bankMenu(n); break;
       case 'shark': this.sharkMenu(n); break;
@@ -102,35 +108,35 @@ export class Acts {
         if (!mine) opts.push({ t: `Thuê — ${money(h.rent)}/${h.per}`, sub: h.desc, off: g.cash < h.rent, fn: () => { this.moveOut(); if (R.payHousing(g, hid)) { sfx('coin'); toast(`Đã thuê ${h.name}. ${hid === 'tro' ? 'Phòng số 1, cửa xanh bên trái.' : hid === 'nhanghi' ? 'Phòng ngay sau quầy lễ tân.' : 'Phòng 101, cuối sảnh bên trái.'}`, 'good', 'home', true); ctx.stall.refresh(); } } });
         else if (due || h.per === 'đêm') opts.push({ t: `Đóng tiền ${h.per} tiếp — ${money(h.rent)}`, off: g.cash < h.rent, fn: () => { if (R.spend(g, h.rent, 'rent')) { g.paidUntil = Math.max(g.paidUntil, g.day) + (h.per === 'tuần' ? 7 : 1); sfx('coin'); toast(`Đã đóng tiền, ở được tới hết ngày ${g.paidUntil}.`, 'good', 'home'); } } });
         if (mine) opts.push({ t: 'Trả phòng', sub: 'Đồ đang cất trong phòng sẽ được dọn theo (phần xách nổi)', fn: () => { this.moveOut(); g.housing = 'gamcau'; g.paidUntil = 9999; toast('Đã trả phòng. Về lại gầm cầu.', 'info', 'home'); ctx.stall.refresh(); } });
-        this.D(n.name, n, mine ? (due ? `Tới hạn đóng ${money(h.rent)} rồi đó nghen.` : `Ở có thoải mái không? Đã đóng tới hết ngày ${g.paidUntil}.`) : id === 'tro' ? `Phòng trọ ${money(h.rent)} một tuần, có khoá, có vòi nước, để đồ thoải mái. Tiền nhà đóng trước.` : id === 'motel' ? `Phòng đơn ${money(h.rent)} một đêm, có nước nóng.` : `Kính chào quý khách. Phòng tiêu chuẩn ${money(h.rent)} một đêm, có máy lạnh và tủ mát.`, [...opts, bye]); break;
+        this.D(who(n), n, mine ? (due ? `Tới hạn đóng ${money(h.rent)} rồi đó nghen.` : `Ở có thoải mái không? Đã đóng tới hết ngày ${g.paidUntil}.`) : id === 'tro' ? `Phòng trọ ${money(h.rent)} một tuần, có khoá, có vòi nước, để đồ thoải mái. Tiền nhà đóng trước.` : id === 'motel' ? `Phòng đơn ${money(h.rent)} một đêm, có nước nóng.` : `Kính chào quý khách. Phòng tiêu chuẩn ${money(h.rent)} một đêm, có máy lạnh và tủ mát.`, [...opts, bye]); break;
       }
       case 'eatery': {
         const h = hourOf(g), wash = (h >= 10 && h < 14.5) || (h >= 17.5 && h < 21), opts: Opt[] = [
           { t: 'Ăn dĩa cơm bình dân — 25.000₫', sub: 'No bụng, ấm lòng', off: g.cash < 25000, fn: () => { R.spend(g, 25000, 'food'); R.consume(g, { h: 60, t: 12, m: 6 }); sfx('eat'); R.advance(g, 15, this.act()); toast('Một dĩa cơm thịt kho nóng hổi. No căng bụng!', 'good', 'dish'); } },
-          { t: 'Xin rửa chén thuê', sub: wash ? (g.wd.plates >= 2 ? 'Hôm nay rửa đủ rồi' : 'Được 4.000₫ mỗi cái đĩa + một bữa cơm') : 'Chỉ cần người lúc 10–14h30 và 17h30–21h', off: !wash || g.wd.plates >= 2, fn: () => { this.job = { kind: 'dishes' }; this.setWay('sink', 'Bồn rửa chén'); this.D(n.name, n, 'Ừ, vô bếp phía sau đi con. Chồng đĩa dơ ở cạnh bồn rửa đó. Rửa cho sạch nghen!', [{ t: 'Dạ, con làm liền.' }]); } },
+          { t: 'Xin rửa chén thuê', sub: wash ? (g.wd.plates >= 2 ? 'Hôm nay rửa đủ rồi' : 'Được 4.000₫ mỗi cái đĩa + một bữa cơm') : 'Chỉ cần người lúc 10–14h30 và 17h30–21h', off: !wash || g.wd.plates >= 2, fn: () => { this.job = { kind: 'dishes' }; this.setWay('sink', 'Bồn rửa chén'); this.D(who(n), n, 'Ừ, vô bếp phía sau đi con. Chồng đĩa dơ ở cạnh bồn rửa đó. Rửa cho sạch nghen!', [{ t: 'Dạ, con làm liền.' }]); } },
           ...this.learnOpts('eatery', n)];
-        this.D(n.name, n, 'Quán cơm Bà Tư đây. Ăn gì con? Hay kiếm việc?', [...opts, bye]); break;
+        this.D(who(n), n, 'Quán cơm Bà Tư đây. Ăn gì con? Hay kiếm việc?', [...opts, bye]); break;
       }
       case 'scrap': case 'pawn': {
         const list = JUNK_LIST.filter((j) => j.where === id && (g.junk[j.id] ?? 0) > 0), sum = list.reduce((a, j) => a + j.price * g.junk[j.id], 0);
-        this.D(n.name, n, id === 'scrap' ? (list.length ? 'Để coi… ' + list.map((j) => `${g.junk[j.id]} ${j.name.toLowerCase()}`).join(', ') + `. Tui lấy hết ${money(sum)}.` : 'Có ve chai, lon, giấy vụn, sắt thì đem lại đây tui cân. Lượm quanh công viên với mấy thùng rác á.')
+        this.D(who(n), n, id === 'scrap' ? (list.length ? 'Để coi… ' + list.map((j) => `${g.junk[j.id]} ${j.name.toLowerCase()}`).join(', ') + `. Tui lấy hết ${money(sum)}.` : 'Có ve chai, lon, giấy vụn, sắt thì đem lại đây tui cân. Lượm quanh công viên với mấy thùng rác á.')
           : (list.length ? 'Đồ lượm được hả? ' + list.map((j) => `${j.name} ${money(j.price)}`).join(', ') + `. Tổng ${money(sum)}, bán không?` : 'Có gì đáng giá thì mang tới. Đồng hồ cũ, radio, nhẫn… tui mua hết.'),
           [{ t: `Bán hết — ${money(sum)}`, off: !list.length, fn: () => { const v = R.sellJunk(g, id); sfx('coin'); toast(`Bán được ${money(v)}.`, 'good', 'cash'); } }, bye]); break;
       }
       case 'dock': {
         const on = this.job?.kind === 'dock';
-        this.D(n.name, n, on ? `Vác được ${g.wd.sacks} bao rồi. Còn sức thì làm tiếp!` : g.wd.sacks >= 12 ? 'Hôm nay hết hàng rồi em. Mai ra sớm nha.' : 'Cần người vác bao từ xe tải vô sạp gạo Bà Hai. 6.000₫ một bao, vác được bao nhiêu trả bấy nhiêu. Làm không?',
+        this.D(who(n), n, on ? `Vác được ${g.wd.sacks} bao rồi. Còn sức thì làm tiếp!` : g.wd.sacks >= 12 ? 'Hôm nay hết hàng rồi em. Mai ra sớm nha.' : 'Cần người vác bao từ xe tải vô sạp gạo Bà Hai. 6.000₫ một bao, vác được bao nhiêu trả bấy nhiêu. Làm không?',
           [on ? { t: 'Em nghỉ, cảm ơn anh.', fn: () => { this.job = null; ctx.player.setCarry(''); this.way = null; } } : { t: 'Dạ làm!', sub: 'Tốn sức, nhớ ăn uống đầy đủ', off: g.wd.sacks >= 12, fn: () => { this.job = { kind: 'dock', carrying: false }; this.setWay('dock', 'Xe tải — lấy bao hàng'); toast('Ra đuôi xe tải lấy bao hàng, vác tới sạp gạo Bà Hai.', 'info', 'box', true); } }, bye]); break;
       }
       case 'hobo': {
         const first = !g.flags.hobo; g.flags.hobo = 1;
         const tips = ['Thùng rác xanh mỗi ngày bới được một lần. Lon với chai đem ra vựa Tư Rác ở Xóm Lao Động bán.', 'Trưa 11 giờ chùa Phước An phát cơm chay. Ăn chùa mà ngon!', 'Vòi nước công viên uống đỡ khát, rửa mặt mũi cho đỡ lem luốc. Dơ quá ai mà dám mua đồ ăn của mình.',
           'Hùng Sẹo cho vay dễ lắm, mà lãi cắt cổ. Trễ hai ngày là nó siết đồ. Cẩn thận nghen con.', 'Ngủ gầm cầu coi chừng mất đồ. Có tiền thì thuê phòng trọ Bác Năm cho chắc.', 'Trời mưa bán đồ nóng, trời nắng bán đồ mát. Ông bà mình dạy vậy đó.'];
-        this.D(n.name, n, first ? 'Lính mới hả? Tui là Bảy, "trưởng khu" gầm cầu này hai chục năm rồi. Nè, cầm ổ bánh mì ăn đỡ đi. Muốn sống thì nghe tui chỉ.' : 'Sao, bữa nay làm ăn được không?', [
-          { t: 'Chú chỉ con cách kiếm sống đi.', fn: () => this.D(n.name, n, rnd.pick(tips), [{ t: 'Dạ, con nhớ rồi.' }]) }, bye]);
+        this.D(who(n), n, first ? 'Lính mới hả? Tui là Bảy, "trưởng khu" gầm cầu này hai chục năm rồi. Nè, cầm ổ bánh mì ăn đỡ đi. Muốn sống thì nghe tui chỉ.' : 'Sao, bữa nay làm ăn được không?', [
+          { t: 'Chú chỉ con cách kiếm sống đi.', fn: () => this.D(who(n), n, rnd.pick(tips), [{ t: 'Dạ, con nhớ rồi.' }]) }, bye]);
         if (first) { addStack(g.bag, { id: 'banhmi', n: 1, fresh: 80, q: 0.8, cost: 0 }); toast('Ông Bảy cho bạn một ổ bánh mì.', 'good', 'heart'); } break;
       }
-      default: this.D(n.name, n, '…', [bye]);
+      default: this.D(who(n), n, '…', [bye]);
     }
   }
   private learnOpts(from: string, n: Npc): Opt[] {
@@ -149,20 +155,20 @@ export class Acts {
       if (shop.haggle > 0 && !c.haggled) for (const ask of [0.1, 0.2]) opts.push({ t: `Mặc cả: xin bớt ${ask * 100}%`, sub: ask > 0.15 ? 'Khó hơn, dễ làm người bán phật ý' : 'Mua nhiều, khách quen thì dễ được bớt', fn: () => { const r = R.haggle(g, shop, ask, total); c.haggled = true; if (r.ok) { c.disc = ask; sfx('good'); } else sfx('nope'); ctx.npcs.say(n, r.line, 3, r.ok ? 1 : 3); setTimeout(() => this.shopTalk(n, shop), 900); } });
       if (shop.id === 'kiosk') { const lim = R.loanLimit(g, 'tab'); opts.push({ t: `Ghi sổ nợ — ${money(total)}`, sub: `Cô Ba cho thiếu tối đa 100.000₫, trả trong 3 ngày (còn thiếu được ${money(lim)})`, off: total > lim, fn: () => { if (this.pay(true)) ctx.npcs.say(n, 'Ừ, cô ghi sổ. Ba bữa nữa nhớ trả nghen con.', 3); } }); }
       opts.push({ t: 'Trả lại hàng', fn: () => this.dropCart() });
-      this.D(n.name, n, `${list}. ${c.disc ? `Bớt rồi còn ${money(total)}.` : `Hết thảy ${money(total)}.`}`, [...opts, bye]); return;
+      this.D(who(n), n, `${list}. ${c.disc ? `Bớt rồi còn ${money(total)}.` : `Hết thảy ${money(total)}.`}`, [...opts, bye]); return;
     }
     if (shop.id === 'kiosk') { const d = g.debts.find((x) => x.lender === 'tab'); if (d) opts.push({ t: `Trả sổ nợ — ${money(d.owed)}`, off: g.cash < d.owed, fn: () => { R.repay(g, d.id, d.owed); sfx('coin'); ctx.npcs.say(n, 'Sòng phẳng vậy cô quý!', 2.5, 1); } }); }
     opts.push(...this.learnOpts(shop.id, n));
-    if (shop.id === 'pharmacy') opts.push({ t: 'Cho em hỏi về sức khoẻ', fn: () => this.D(n.name, n, g.flags.sick ? 'Em bị cảm rồi đó. Lấy vỉ thuốc cảm trên quầy, uống xong nghỉ ngơi, đừng dầm mưa nữa.' : g.st.health < 50 ? 'Trông em xanh xao lắm. Ăn uống đủ bữa, ngủ đủ giấc là khoẻ lại thôi.' : 'Em khoẻ mạnh bình thường. Nhớ uống đủ nước nha.', [bye]) });
+    if (shop.id === 'pharmacy') opts.push({ t: 'Cho em hỏi về sức khoẻ', fn: () => this.D(who(n), n, g.flags.sick ? 'Em bị cảm rồi đó. Lấy vỉ thuốc cảm trên quầy, uống xong nghỉ ngơi, đừng dầm mưa nữa.' : g.st.health < 50 ? 'Trông em xanh xao lắm. Ăn uống đủ bữa, ngủ đủ giấc là khoẻ lại thôi.' : 'Em khoẻ mạnh bình thường. Nhớ uống đủ nước nha.', [bye]) });
     opts.push({ t: 'Dạo này buôn bán sao?', fn: () => {
       const ev = R.activeEvents(g).filter((e) => e.price || e.outOf || e.shop);
-      this.D(n.name, n, ev.length ? ev[0].text : shop.lateSale && hourOf(g) >= shop.open[1] - 2 ? 'Cuối buổi rồi, đồ tươi cô bán rẻ cho hết hàng. Lựa lẹ đi con!' : rnd.pick(['Sáng sớm hàng mới về là tươi nhất đó. Chiều thì rẻ mà hết ngon.', 'Mua quen cô bớt cho. Cứ ghé hoài là thành mối.', 'Ra đường thấy trời chuyển mưa thì bán đồ nóng, đắt như tôm tươi.', 'Vựa đầu mối Tám Lúa bên Khu Kho Bãi bán sỉ rẻ lắm, mà phải đi từ 3 giờ sáng.']), [bye]);
+      this.D(who(n), n, ev.length ? ev[0].text : shop.lateSale && hourOf(g) >= shop.open[1] - 2 ? 'Cuối buổi rồi, đồ tươi cô bán rẻ cho hết hàng. Lựa lẹ đi con!' : rnd.pick(['Sáng sớm hàng mới về là tươi nhất đó. Chiều thì rẻ mà hết ngon.', 'Mua quen cô bớt cho. Cứ ghé hoài là thành mối.', 'Ra đường thấy trời chuyển mưa thì bán đồ nóng, đắt như tôm tươi.', 'Vựa đầu mối Tám Lúa bên Khu Kho Bãi bán sỉ rẻ lắm, mà phải đi từ 3 giờ sáng.']), [bye]);
     } });
-    this.D(n.name, n, `${shop.say} ${shop.id === 'mart' || shop.id === 'pharmacy' ? 'Anh chị cứ lấy hàng trên kệ rồi ra quầy tính tiền ạ.' : 'Lựa gì cứ bốc bỏ giỏ, xong đưa đây tính tiền.'}`, [...opts, bye]);
+    this.D(who(n), n, `${shop.say} ${shop.id === 'mart' || shop.id === 'pharmacy' ? 'Anh chị cứ lấy hàng trên kệ rồi ra quầy tính tiền ạ.' : 'Lựa gì cứ bốc bỏ giỏ, xong đưa đây tính tiền.'}`, [...opts, bye]);
   }
   private sellGearMenu(n: Npc) {
     const g = this.g, ids = Object.keys(g.gear);
-    this.D(n.name, n, 'Đồ cũ tui mua lại nửa giá, tuỳ còn mới hay không.', [...ids.slice(0, 7).map((id) => ({ t: `${GEAR[id].name} — ${money(R.gearResale(g, id))}`, fn: () => { const v = R.sellGear(g, id); sfx('coin'); toast(`Bán ${GEAR[id].name.toLowerCase()} được ${money(v)}.`, 'info', 'cash'); ctx.stall.refresh(); } })), { t: 'Thôi, để dùng tiếp.' }]);
+    this.D(who(n), n, 'Đồ cũ tui mua lại nửa giá, tuỳ còn mới hay không.', [...ids.slice(0, 7).map((id) => ({ t: `${GEAR[id].name} — ${money(R.gearResale(g, id))}`, fn: () => { const v = R.sellGear(g, id); sfx('coin'); toast(`Bán ${GEAR[id].name.toLowerCase()} được ${money(v)}.`, 'info', 'cash'); ctx.stall.refresh(); } })), { t: 'Thôi, để dùng tiếp.' }]);
   }
   private bankMenu(n: Npc) {
     const g = this.g, L = LENDERS.bank, lim = R.loanLimit(g, 'bank'), debt = g.debts.filter((d) => d.lender === 'bank'), opts: Opt[] = [];
@@ -171,13 +177,13 @@ export class Acts {
     for (const a of L.amounts) if (a <= lim) opts.push({ t: `Vay ${money(a)}`, sub: `Lãi ${(L.rate * 100).toFixed(1)}%/ngày, trả trong ${L.term} ngày ~ ${money(a * (1 + L.rate * L.term))}`, fn: () => { R.borrow(g, 'bank', a); sfx('coin'); toast(`Đã vay ngân hàng ${money(a)}.`, 'info', 'cash'); } });
     for (const d of debt) { opts.push({ t: `Trả nợ ${money(Math.min(d.owed, g.cash))} / ${money(d.owed)}`, off: g.cash < 1000, fn: () => { R.repay(g, d.id, g.cash); sfx('coin'); this.bankMenu(n); } }); if (g.day >= d.due - 1) opts.push({ t: 'Xin gia hạn thêm 7 ngày', fn: () => { const r = R.extend(g, d.id); ctx.npcs.say(n, r.line, 3.5, r.ok ? 0 : 3); } }); }
     const why = lim > 0 ? `Hạn mức vay hiện tại của anh chị là ${money(lim)}.` : g.housing !== 'tro' && g.housing !== 'khachsan' ? 'Để vay vốn cần có chỗ ở ổn định (phòng trọ) và uy tín từ 15.' : g.rep < 15 ? 'Uy tín kinh doanh của anh chị chưa đủ 15 để vay.' : 'Anh chị đã vay hết hạn mức.';
-    this.D(n.name, n, `Ngân hàng Sao Vàng xin chào. Số dư tiết kiệm: ${money(g.bank)} (lãi nhỏ mỗi ngày, không sợ mất trộm). ${why}`, [...opts.slice(0, 7), { t: 'Cảm ơn chị.' }]);
+    this.D(who(n), n, `Ngân hàng Sao Vàng xin chào. Số dư tiết kiệm: ${money(g.bank)} (lãi nhỏ mỗi ngày, không sợ mất trộm). ${why}`, [...opts.slice(0, 7), { t: 'Cảm ơn chị.' }]);
   }
   private sharkMenu(n: Npc) {
     const g = this.g, L = LENDERS.shark, lim = R.loanLimit(g, 'shark'), debt = g.debts.filter((d) => d.lender === 'shark'), opts: Opt[] = [];
     for (const a of L.amounts) if (a <= lim) opts.push({ t: `Vay nóng ${money(a)}`, sub: `Lãi 3%/ngày, ${L.term} ngày phải trả ~ ${money(a * (1 + L.rate * L.term))}. Trễ là bị siết đồ!`, fn: () => { R.borrow(g, 'shark', a); sfx('coin'); ctx.npcs.say(n, 'Tiền đây. Năm ngày. Nhớ mặt tao đó.', 3, 0); toast(`Đã vay nóng ${money(a)} của Hùng Sẹo.`, 'warn', 'skull', true); } });
     for (const d of debt) { opts.push({ t: `Trả ${money(Math.min(d.owed, g.cash))} / ${money(d.owed)}`, off: g.cash < 1000, fn: () => { R.repay(g, d.id, g.cash); sfx('coin'); this.sharkMenu(n); } }); opts.push({ t: 'Xin khất thêm 3 ngày', sub: 'Mất phí 8%', fn: () => { const r = R.extend(g, d.id); ctx.npcs.say(n, r.line, 3.5, r.ok ? 0 : 4); } }); }
-    this.D(n.name, n, debt.length ? `Mày còn nợ tao ${money(debt.reduce((a, d) => a + d.owed, 0))}. Hạn ngày ${debt[0].due}. Hôm nay là ngày ${g.day}.` : 'Cần tiền hả? Ở đây không cần giấy tờ. Chỉ cần mày nhớ trả đúng hẹn.', [...opts.slice(0, 7), { t: 'Dạ thôi, em đi.' }]);
+    this.D(who(n), n, debt.length ? `Mày còn nợ tao ${money(debt.reduce((a, d) => a + d.owed, 0))}. Hạn ngày ${debt[0].due}. Hôm nay là ngày ${g.day}.` : 'Cần tiền hả? Ở đây không cần giấy tờ. Chỉ cần mày nhớ trả đúng hẹn.', [...opts.slice(0, 7), { t: 'Dạ thôi, em đi.' }]);
   }
   /** Dọn đồ khỏi chỗ ở cũ (mang theo phần xách nổi). */
   private moveOut() { const g = this.g; for (const s of g.home.slice()) { const room = R.carryCap(g) - R.bagWeight(g), k = INGS[s.id].kg > 0 ? Math.min(s.n, Math.floor(room / INGS[s.id].kg)) : s.n; if (k > 0) addStack(g.bag, { ...s, n: k }); } g.home = []; if (g.stall.where === 'home') g.stall.where = 'carried'; }
@@ -188,7 +194,7 @@ export class Acts {
     if (R.has(g, id)) { toast(`Bạn đã có ${d.name.toLowerCase()} rồi.`, 'info'); return; }
     const need = d.kind === 'stall' && d.tier! > 1 && !R.has(g, TIERS[d.tier! - 1].id) ? `Nên có ${TIERS[d.tier! - 1].name.toLowerCase()} trước.` : '';
     const block = id === 'tulanh' && g.housing !== 'tro' ? 'Phải thuê phòng trọ mới có chỗ đặt tủ lạnh.' : id === 'sap' ? 'Sạp cố định sẽ mở bán ở bản cập nhật sau.' : '';
-    this.D('Chú Ba Tài', n, `${d.name} — ${money(d.price)}. ${d.desc} ${need}${block}`, [{ t: `Mua — ${money(d.price)}`, off: g.cash < d.price || !!block, sub: g.cash < d.price ? `Còn thiếu ${money(d.price - g.cash)}` : undefined, fn: () => { if (R.buyGear(g, id) === 'ok') { sfx('buy'); toast(`Đã mua ${d.name.toLowerCase()}!` + (d.kind === 'stall' ? ' Bạn đang mang quầy theo người.' : ''), 'good', 'tool', true); ctx.stall.refresh(); } } }, { t: 'Để con tính lại.' }]);
+    this.D(n ? who(n) : 'Chủ tiệm đồ nghề', n, `${d.name} — ${money(d.price)}. ${d.desc} ${need}${block}`, [{ t: `Mua — ${money(d.price)}`, off: g.cash < d.price || !!block, sub: g.cash < d.price ? `Còn thiếu ${money(d.price - g.cash)}` : undefined, fn: () => { if (R.buyGear(g, id) === 'ok') { sfx('buy'); toast(`Đã mua ${d.name.toLowerCase()}!` + (d.kind === 'stall' ? ' Bạn đang mang quầy theo người.' : ''), 'good', 'tool', true); ctx.stall.refresh(); } } }, { t: 'Để con tính lại.' }]);
   }
 
   // ───────────────────────── Xin tiền ─────────────────────────
@@ -213,7 +219,7 @@ export class Acts {
     };
     if (a.id === 'congan') { ctx.npcs.say(n, 'Ăn xin ở đây là không được đâu nhé. Kiếm việc mà làm.', 3, 3); n.asked = true; return; }
     if (a.id === 'giangho') { ctx.npcs.say(n, 'Biến! Tao còn đang kẹt tiền đây.', 2.5, 4); n.asked = true; return; }
-    this.D(`${n.name} · ${a.name}`, n, 'Bạn bước tới, hơi ngượng. Mở lời thế nào đây?', [
+    this.D(who(n), n, 'Bạn bước tới, hơi ngượng. Mở lời thế nào đây?', [
       { t: 'Lễ phép xin giúp đỡ', sub: '"Dạ, cho con xin chút tiền lẻ mua ổ bánh mì…"', fn: () => go('lephep') },
       { t: 'Kể hoàn cảnh', sub: '"Con ở quê lên, mất hết giấy tờ, hai ngày chưa ăn gì…"', fn: () => go('kekho') },
       { t: 'Nài nỉ, bám theo', sub: 'Đôi khi được, nhưng dễ bị mắng — có công an gần đó thì càng rắc rối', fn: () => go('naini') },

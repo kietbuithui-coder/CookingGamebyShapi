@@ -81,6 +81,24 @@ export const NAMES = {
   thu: ['Hai', 'Ba', 'Tư', 'Năm', 'Sáu', 'Bảy', 'Tám', 'Chín', 'Mười', 'Út'],
 };
 
+/**
+ * Người lạ trông ra sao khi nhìn bằng mắt. KHÔNG phải nghề nghiệp: ngoài đường ta không biết ai làm nghề gì,
+ * chỉ nhận ra được bộ đồng phục, tuổi tác, vẻ ngoài. Tên thật và nghề chỉ lộ ra khi đã quen.
+ */
+export const SEEN: Record<ArchId, string> = {
+  congnhan: 'Người lạ', hocsinh: 'Học sinh', vanphong: 'Người lạ', shipper: 'Người lạ', taixe: 'Người lạ', nguoigia: 'Người lớn tuổi',
+  phuhuynh: 'Người lạ', treem: 'Trẻ em', dukhach: 'Khách du lịch', nhagiau: 'Người lạ', vogiacu: 'Người vô gia cư', khotinh: 'Người lạ',
+  phebinh: 'Người lạ', hangrong: 'Người lạ', giangho: 'Người lạ', congan: 'Công an',
+};
+/** Người đứng quầy mà ta chưa từng nói chuyện: chỉ biết họ làm gì ở đó (nhìn là thấy), chưa biết tên. */
+export const FIXED_ROLE: Record<string, string> = {
+  m_rau: 'Người bán rau', m_cu: 'Người bán củ quả', m_thit: 'Người bán thịt', m_haisan: 'Người bán hải sản', m_kho: 'Người bán đồ khô',
+  m_giavi: 'Người bán gia vị', m_trung: 'Người bán trứng', bakery: 'Thợ làm bánh', mart: 'Nhân viên siêu thị', kiosk: 'Cô bán tạp hoá',
+  wholesale: 'Chủ vựa sỉ', pharmacy: 'Dược sĩ', equip: 'Chủ tiệm đồ nghề', eatery: 'Bà chủ quán cơm', scrap: 'Chủ vựa ve chai',
+  pawn: 'Chủ tiệm cầm đồ', bank: 'Nhân viên ngân hàng', shark: 'Gã mặt sẹo', motel: 'Chủ nhà nghỉ', tro: 'Ông chủ trọ',
+  hotel: 'Lễ tân khách sạn', dock: 'Cai bốc vác', hobo: 'Ông lão lang thang',
+};
+
 /** Khách quen có tên, có sở thích riêng — quan hệ được lưu trong save. */
 export interface RegularDef { id: string; name: string; arch: ArchId; fem: boolean; likes: RecipeCat[]; hour: number; note: string; seed: number; }
 export const REGULARS: RegularDef[] = [
@@ -159,7 +177,7 @@ export const FIXED: Record<string, FixedNpcDef> = {
   mart: { id: 'mart', name: 'Bé Na', face: 1, fem: true, shirt: 0x2fae5a, pants: 0x2a2e3a, hair: 0x6a3a22, hat: 0, hairStyle: 1, fat: 0.92, h: 0.95 },
   kiosk: { id: 'kiosk', name: 'Cô Ba', face: 4, fem: true, shirt: 0xc9665a, pants: 0x2a2e3a, hair: 0x3a2a22, hat: 0, hairStyle: 2, fat: 1.2, h: 0.94 },
   wholesale: { id: 'wholesale', name: 'Chú Tám', face: 7, fem: false, shirt: 0x4a5a6a, pants: 0x4a4a42, hair: 0x1e1a18, hat: 2, hairStyle: 0, fat: 1.25, h: 1.02 },
-  pharmacy: { id: 'pharmacy', name: 'Cô Dược', face: 5, fem: true, shirt: 0xf7f7f7, pants: 0x2a2e3a, hair: 0x1e1a18, hat: 0, hairStyle: 2, fat: 0.95, h: 0.96 },
+  pharmacy: { id: 'pharmacy', name: 'Cô Hiền', face: 5, fem: true, shirt: 0xf7f7f7, pants: 0x2a2e3a, hair: 0x1e1a18, hat: 0, hairStyle: 2, fat: 0.95, h: 0.96 },
   equip: { id: 'equip', name: 'Chú Ba Tài', face: 7, fem: false, shirt: 0x3f6a9a, pants: 0x4a4a42, hair: 0x2a2420, hat: 0, hairStyle: 3, fat: 1.2, h: 1.0 },
   eatery: { id: 'eatery', name: 'Bà Tư', face: 4, fem: true, shirt: 0xf3f0e8, pants: 0x2a2e3a, hair: 0xbfbfbc, hat: 0, hairStyle: 2, fat: 1.15, h: 0.93 },
   scrap: { id: 'scrap', name: 'Ông Tư Rác', face: 3, fem: false, shirt: 0x7a6a58, pants: 0x4a4a42, hair: 0xbfbfbc, hat: 4, hairStyle: 3, fat: 0.95, h: 0.97 },

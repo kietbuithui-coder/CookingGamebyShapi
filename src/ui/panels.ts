@@ -1,5 +1,5 @@
 // CÁC BẢNG LỚN: túi đồ, quầy hàng (thực đơn – giá – sơ chế – kho), chỗ cất đồ, sổ tay (công thức, sổ sách, nợ), bản đồ, cài đặt.
-import { ctx, QUALITY, saveSettings, canFullscreen, toggleFullscreen } from '../game/ctx';
+import { ctx, QUALITY, saveSettings, canFullscreen, toggleFullscreen, UI_SCALE } from '../game/ctx';
 import type { UI } from './ui';
 import { ic, el, esc, dishIcon } from './ui';
 import { INGS } from '../data/ingredients';
@@ -100,7 +100,7 @@ export function openPanel(ui: UI, name: string) {
       let body = '';
       if (tab === 'rec') {
         const row = (r: RecipeDef) => { const rs = g.rec[r.id], tools = toolsFor(r).map((t) => (t === 'bep' ? 'bếp' : GEAR[t].name.toLowerCase()));
-          if (!rs.known) return `<div class="item off"><img src="${dishIcon(r)}" style="width:2.4em;height:2.4em;filter:grayscale(1)" alt=""><div class="grow"><b>${r.name}</b><small>Học từ ${FIXED[r.learn!.from]?.name ?? SHOPS[r.learn!.from]?.vendor} (${SHOPS[r.learn!.from]?.name ?? 'Quán cơm Bà Tư'}) — ${money(r.learn!.cost)} · cần tay nghề cấp ${r.learn!.skill}</small></div></div>`;
+          if (!rs.known) return `<div class="item off"><img src="${dishIcon(r)}" style="width:2.4em;height:2.4em;filter:grayscale(1)" alt=""><div class="grow"><b>${r.name}</b><small>Học từ ${R.hasMet(g, r.learn!.from) ? FIXED[r.learn!.from]?.name : R.fixedLabel(g, r.learn!.from).toLowerCase()} (${SHOPS[r.learn!.from]?.name ?? 'Quán cơm Bà Tư'}) — ${money(r.learn!.cost)} · cần tay nghề cấp ${r.learn!.skill}</small></div></div>`;
           return `<div class="item" style="align-items:flex-start"><img src="${dishIcon(r)}" style="width:2.8em;height:2.8em" alt=""><div class="grow"><b>${r.name} <span class="tag">${CAT_LABEL[r.cat]}</span></b><small>${r.desc}</small>
             <small><b>Một phần:</b> ${Object.entries(r.ings).map(([id, n]) => `${INGS[id].name.toLowerCase()} ${qty(n)} ${INGS[id].unit}`).join(' · ')}</small>
             <small><b>Dụng cụ:</b> ${tools.join(', ') || 'không cần'} · <b>Sơ chế</b> (mẻ ${r.batch} phần): ${r.prep.map((s) => ('label' in s && s.label ? s.label : s.t === 'cut' ? `thái ${INGS[s.ing].name.toLowerCase()}` : STEP_NAME[s.t])).join(' › ') || 'không'} · <b>Khi khách gọi:</b> ${r.finish.map((s) => ('label' in s && s.label ? s.label : STEP_NAME[s.t])).join(' › ')}</small>
@@ -115,7 +115,7 @@ export function openPanel(ui: UI, name: string) {
       } else {
         body = `<h4>Nợ nần</h4>` + (g.debts.length ? `<div class="list">${g.debts.map((d) => `<div class="item"><div class="grow"><b>${LENDERS[d.lender].name}: ${money(d.owed)}</b><small>Vay ${money(d.principal)} ngày ${d.taken + 1} · lãi ${(LENDERS[d.lender].rate * 100).toFixed(1)}%/ngày</small></div><span class="tag ${g.day > d.due ? 'bad' : g.day === d.due ? 'warn' : ''}">${g.day > d.due ? 'QUÁ HẠN ' + (g.day - d.due) + ' ngày' : 'hạn: ngày ' + (d.due + 1)}</span></div>`).join('')}</div>` : '<p class="muted">Không nợ ai đồng nào.</p>') +
           `<p class="muted">Tiết kiệm ngân hàng: ${money(g.bank)}. ${g.credit > g.day ? 'Bạn đang bị ngân hàng từ chối cho vay tới ngày ' + (g.credit + 1) + '.' : ''} Trả nợ tại chỗ người cho vay: Ngân hàng Sao Vàng (Phố Văn Phòng), Hùng Sẹo (sân trong Xóm Lao Động), Cô Ba (tạp hoá).</p>
-          <h4>Khách quen</h4><div class="list">${REGULARS.map((r) => { const rel = g.rel[r.id]; return `<div class="item${rel?.n ? '' : ' off'}"><div class="grow"><b>${rel?.n ? r.name : '???'}</b><small>${rel?.n ? r.note + ' Thường ghé lúc ' + hhmm(r.hour * 60) + '. Thích: ' + r.likes.map((c) => CAT_LABEL[c].toLowerCase()).join(', ') + '.' : 'Chưa quen ai ở giờ này.'}</small></div><span class="tag ${(rel?.v ?? 0) > 20 ? 'good' : ''}">${rel?.n ? 'thân ' + Math.round(rel.v) : '—'}</span></div>`; }).join('')}</div>`;
+          <h4>Khách quen</h4><div class="list">${REGULARS.map((r) => { const rel = R.hasMet(g, r.id) ? g.rel[r.id] : undefined; return `<div class="item${rel?.n ? '' : ' off'}"><div class="grow"><b>${rel?.n ? r.name : '???'}</b><small>${rel?.n ? r.note + ' Thường ghé lúc ' + hhmm(r.hour * 60) + '. Thích: ' + r.likes.map((c) => CAT_LABEL[c].toLowerCase()).join(', ') + '.' : 'Chưa quen ai ở giờ này.'}</small></div><span class="tag ${(rel?.v ?? 0) > 20 ? 'good' : ''}">${rel?.n ? 'thân ' + Math.round(rel.v) : '—'}</span></div>`; }).join('')}</div>`;
       }
       draw(`${ic('book')} Sổ tay`, [['rec', 'Công thức'], ['led', 'Sổ sách'], ['debt', 'Nợ & khách quen']], body);
     } else if (name === 'map') {
@@ -125,12 +125,14 @@ export function openPanel(ui: UI, name: string) {
     } else if (name === 'settings') {
       const st = ctx.set;
       acts.q = (i) => { st.quality = i; st.auto = false; ctx.applyQuality(); saveSettings(); }; acts.fps = () => { st.fps = !st.fps; saveSettings(); }; acts.auto = () => { st.auto = !st.auto; saveSettings(); };
-      acts.fs = () => { void toggleFullscreen(); }; acts.save = () => { ctx.save('thu cong'); toast('Đã lưu game.', 'good'); }; acts.menu = () => { ctx.save('ve menu'); ui.closePanel(); ctx.toMenu(); };
+      acts.fs = () => { void toggleFullscreen(); }; acts.layout = () => ui.editLayout(); acts.save = () => { ctx.save('thu cong'); toast('Đã lưu game.', 'good'); }; acts.menu = () => { ctx.save('ve menu'); ui.closePanel(); ctx.toMenu(); };
       draw(`${ic('gear')} Cài đặt`, [], `<h4>Đồ hoạ</h4><div style="display:flex;gap:.4em;flex-wrap:wrap">${QUALITY.map((q, i) => `<button class="btn${st.quality === i ? ' yellow' : ''}" data-a="q" data-i="${i}">${q.name}</button>`).join('')}<button class="btn${st.auto ? ' green' : ''}" data-a="auto">Tự hạ khi giật: ${st.auto ? 'bật' : 'tắt'}</button><button class="btn${st.fps ? ' green' : ''}" data-a="fps">Hiện FPS: ${st.fps ? 'bật' : 'tắt'}</button>${canFullscreen() ? '<button class="btn" data-a="fs">Toàn màn hình</button>' : ''}</div>
+        <h4>Nút bấm và cỡ chữ</h4><div style="display:flex;gap:.6em;align-items:center;flex-wrap:wrap"><button class="btn yellow" data-a="layout">Sắp xếp vị trí, độ lớn các nút</button><span class="muted">Kéo từng nút tới chỗ vừa tay, phóng to hay thu nhỏ tuỳ ý.</span></div>
+        <h4>Cỡ chữ và nút của cả màn hình</h4><input type="range" min="${UI_SCALE[0] * 100}" max="${UI_SCALE[1] * 100}" step="5" value="${Math.round(st.ui.scale * 100)}" data-r="uiscale">
         <h4>Âm thanh hiệu ứng</h4><input type="range" min="0" max="100" value="${Math.round(st.sfx * 100)}" data-r="sfx"><h4>Nhạc nền</h4><input type="range" min="0" max="100" value="${Math.round(st.music * 100)}" data-r="music"><h4>Độ nhạy xoay góc nhìn</h4><input type="range" min="30" max="250" value="${Math.round(st.sens * 100)}" data-r="sens">
         <h4>Cách chơi</h4><p class="muted">Điện thoại: ngón trái kéo để đi, ngón phải vuốt để nhìn, chạm vào người hoặc đồ vật (hay nút tròn vàng) để tương tác. Máy tính: W A S D đi, giữ Shift chạy, kéo chuột để nhìn, E tương tác, Tab túi đồ, B sổ tay, M bản đồ. Game tự lưu sau mỗi việc quan trọng.</p>`,
         `<button class="btn green" data-a="save">Lưu ngay</button><button class="btn" data-a="menu">Về màn hình chính</button>`);
-      M.querySelectorAll('input[type=range]').forEach((inp) => ((inp as HTMLInputElement).oninput = () => { const k = (inp as HTMLElement).dataset.r as 'sfx' | 'music' | 'sens'; st[k] = +(inp as HTMLInputElement).value / 100; ctx.sound.setVol(st.sfx, st.music); saveSettings(); }));
+      M.querySelectorAll('input[type=range]').forEach((inp) => ((inp as HTMLInputElement).oninput = () => { const k = (inp as HTMLElement).dataset.r as 'sfx' | 'music' | 'sens' | 'uiscale', v = +(inp as HTMLInputElement).value / 100; if (k === 'uiscale') { st.ui.scale = v; ui.layout(); } else st[k] = v; ctx.sound.setVol(st.sfx, st.music); saveSettings(); }));
     } else if (name === 'summary') {
       const L = g.hist[g.hist.length - 1]; if (!L) { ui.closePanel(); return; }
       const pf = profitOf(L), kv = (k: string, v: number, neg = false) => (v ? `<div class="kv"><span>${k}</span><b class="${neg ? 'neg' : 'pos'}">${neg ? '−' : '+'}${money(v)}</b></div>` : '');

@@ -27,6 +27,8 @@ Sổ tay (nút hình cuốn sổ) có công thức, sổ sách lời lỗ, nợ 
 | Hành động phụ (×5…) | Nút nhỏ cạnh nút vàng | R |
 | Túi · Sổ tay · Bản đồ · Cài đặt | Bốn nút góc trên phải | Tab · B · M · Esc |
 
+**Tự xếp nút:** vào Cài đặt › *Sắp xếp vị trí, độ lớn các nút* để kéo nút tương tác, nút chạy, hàng nút góc trên và các nút khi nấu ăn tới chỗ vừa tay, phóng to hay thu nhỏ từng nút (60–180%). Màn ngang và màn dọc lưu riêng. Thanh *Cỡ chữ và nút của cả màn hình* phóng cả giao diện (80–140%).
+
 Nên **xoay ngang** điện thoại và bấm **Toàn màn hình** ở màn hình chính (Android). Trên iPhone, dùng "Thêm vào Màn hình chính" để chơi toàn màn hình.
 
 ## Đã có trong bản này
@@ -41,7 +43,8 @@ Nên **xoay ngang** điện thoại và bấm **Toàn màn hình** ở màn hìn
 - **2 bậc quầy chơi được:** gánh hàng rong → xe đẩy; 17 món đồ nghề (bếp gas, thùng đá, ô dù, bàn ghế, bảng hiệu…).
 - **Tiền bạc:** sổ sách lời lỗ từng ngày, giá vốn từng món, gửi tiết kiệm, vay ngân hàng, vay nóng Hùng Sẹo, phá sản và làm lại.
 - **22 sự kiện:** lễ hội, ngày lĩnh lương, giá thịt tăng, cúp điện, cấm đường, đối thủ mở quán, thanh tra vệ sinh, nhà phê bình, khách VIP, thu tiền bảo kê, khách quậy, khách quen xin ăn chịu, trộm đêm…
-- **Chuỗi 11 mục tiêu hướng dẫn**, tự lưu trên máy (localStorage), 4 mức đồ hoạ + tự hạ khi máy giật, bộ đếm FPS.
+- **Người lạ và người quen:** người đi đường chỉ hiện theo vẻ ngoài (Người lạ, Học sinh, Người vô gia cư, Người lớn tuổi, Khách du lịch, Công an…), không lộ tên hay nghề. Người đứng quầy phải nói chuyện một lần mới biết tên; khách quen phải bán cho họ một lần.
+- **Chuỗi 11 mục tiêu hướng dẫn**, tự lưu trên máy (localStorage), 4 mức đồ hoạ + tự hạ khi máy giật, bộ đếm FPS, tự xếp vị trí và độ lớn các nút.
 - Âm thanh và nhạc nền tổng hợp bằng Web Audio (không dùng tệp âm thanh).
 
 ## Chưa có (so với bản mô tả đầy đủ)
@@ -54,9 +57,11 @@ Nên **xoay ngang** điện thoại và bấm **Toàn màn hình** ở màn hìn
 
 ## Đã kiểm thử gì
 
-**Tự động:** 117 bài kiểm thử (`npm test`) cho toàn bộ luật chơi — giá cả, giá vốn, khách mua hay bỏ đi, đánh giá, hư hỏng nguyên liệu, nợ, thời tiết, sự kiện, nâng cấp bản lưu, tính nhất quán dữ liệu, và một bài mô phỏng 45 ngày liên tục.
+**Tự động:** 128 bài kiểm thử (`npm test`) cho toàn bộ luật chơi — giá cả, giá vốn, khách mua hay bỏ đi, đánh giá, hư hỏng nguyên liệu, nợ, thời tiết, sự kiện, nâng cấp bản lưu, tính nhất quán dữ liệu, và một bài mô phỏng 45 ngày liên tục.
 
-**Chạy thật trong Chrome không giao diện** (màn 844×390 ngang và 390×844 dọc, giả lập cảm ứng), không có lỗi console: vào game, chơi mới/chơi tiếp, lưu và nạp lại; đi bằng cần ảo và bàn phím, vuốt nhìn, va chạm tường; xin tiền, nhặt ve chai, bới thùng rác, bán ve chai, vác hàng, rửa chén, giao hàng, cơm chay; mua đồ nghề; bốc hàng – mặc cả – trả tiền; gánh/đẩy quầy, đặt quầy; cả 5 mini-game nấu ăn bằng thao tác chạm; mở bán, khách gọi món, làm món, giao món, nhận tiền và tiền boa; cả 6 nhân vật sự kiện (thanh tra, bảo kê, khách quậy, khách quen xin chịu, nhà phê bình, khách VIP); hội thoại với cả 23 nhân vật; ngân hàng, vay nóng, thuê phòng; ngủ và tổng kết ngày; phá sản và làm lại; ban ngày lẫn ban đêm với mưa nhỏ, mưa to, giông, ngập.
+**Chạy thật trong Chrome không giao diện** (màn 844×390 ngang và 390×844 dọc, giả lập cảm ứng), không có lỗi console: vào game, chơi mới/chơi tiếp, lưu và nạp lại; đi bằng cần ảo và bàn phím, vuốt nhìn, va chạm tường; xin tiền, nhặt ve chai, bới thùng rác, bán ve chai, vác hàng, rửa chén, giao hàng, cơm chay; mua đồ nghề; bốc hàng – mặc cả – trả tiền; gánh/đẩy quầy, đặt quầy; cả 5 mini-game nấu ăn bằng thao tác chạm; mở bán, khách gọi món, làm món, giao món, nhận tiền và tiền boa; cả 6 nhân vật sự kiện (thanh tra, bảo kê, khách quậy, khách quen xin chịu, nhà phê bình, khách VIP); hội thoại với cả 23 nhân vật; ngân hàng, vay nóng, thuê phòng; ngủ và tổng kết ngày; phá sản và làm lại; ban ngày lẫn ban đêm với mưa nhỏ, mưa to, giông, ngập; nhãn người lạ / người quen; màn hình sắp xếp nút (kéo, đổi cỡ, lưu, tải lại, màn dọc).
+
+**Soát hình học tự động** (`tools/probe/steps/audit.mjs`): dò mọi cặp mặt trùng phẳng cùng hướng khác màu trên cả thành phố (nguồn gốc tường nhấp nháy) và bắn tia từ từng biển hiệu để tìm biển bị che. Sau khi sửa: mặt trùng phẳng giảm từ 1.289 m² còn 7,5 m² (phần còn lại là các mặt khuất hoặc cách nhau vài mi-li-mét); biển bị chắn ngay phía trước giảm từ 76 còn 23 trên 156 biển, hầu hết chỉ còn là một thân cây hay cột đèn đứng trước.
 
 **Chưa kiểm được:**
 
@@ -82,7 +87,7 @@ Cần Node.js 20 trở lên.
 ```bash
 npm install
 npm run dev          # máy chủ phát triển, mở địa chỉ được in ra
-npm test             # 117 bài kiểm thử luật chơi
+npm test             # 128 bài kiểm thử luật chơi
 npm run build        # kiểm tra kiểu + đóng gói ra dist/
 npm run build:pages  # kiểm tra kiểu + kiểm thử + đóng gói ra docs/ (GitHub Pages)
 ```
@@ -105,6 +110,7 @@ src/cook/     điều phối nấu ăn và các mini-game
 src/ui/       HUD, hội thoại, các bảng (túi, quầy, sổ tay, bản đồ, cài đặt)
 src/audio/    âm thanh tổng hợp
 tests/        kiểm thử Vitest
+tools/probe/  công cụ thử giao diện và soát hình học bằng Chrome không giao diện (xem README trong đó)
 docs/         bản đóng gói đang phát hành (do build:pages sinh ra, không sửa tay)
 ```
 

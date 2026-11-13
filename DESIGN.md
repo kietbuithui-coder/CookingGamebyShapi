@@ -19,7 +19,7 @@ Một vòng chơi trọn vẹn và thật sự chạy được: **tay trắng �
 
 Hai nguyên tắc giữ cho mã kiểm thử được:
 
-1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 117 bài kiểm thử chạy trong Node trong chưa tới 2 giây.
+1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 128 bài kiểm thử chạy trong Node trong chưa tới 2 giây.
 2. **Mọi ngẫu nhiên trong luật chơi nhận một `RNG` có hạt giống** làm tham số cuối, nên kết quả kiểm thử lặp lại được.
 
 Vòng lặp chính (`src/main.ts`): đọc điều khiển → `advance()` cho thời gian game trôi (0,75 phút game mỗi giây thật, một ngày = 32 phút thật; khi ngủ 48 phút game mỗi giây) → cập nhật người chơi, NPC, quầy, nấu ăn, môi trường → vẽ. `dt` bị chặn ở 50 ms nên máy rất chậm thì game chạy chậm lại chứ không nhảy cóc.
@@ -30,6 +30,8 @@ Vòng lặp chính (`src/main.ts`): đọc điều khiển → `advance()` cho t
 - 10 khu với độ giàu và độ an toàn khác nhau; lượng người theo giờ lấy từ `hourCurve(giờ, khu)`.
 - 4 chỗ bán: Hẻm Công Nhân (miễn phí, ×0,85 người qua lại), Cổng Công Viên (20.000₫, ×1,05), Cổng Chợ (30.000₫, ×1,35), Phố Văn Phòng (60.000₫, ×1,25, cần xe đẩy).
 - Hình học tĩnh được gộp sẵn theo từng khu thành vài lưới lớn; biển hiệu vẽ chung vào một tấm atlas. Nhân vật là khung khối hộp có khuôn mặt vẽ từ atlas.
+- **Không để hai mặt trùng phẳng.** Hai mặt cùng hướng nằm đúng một mặt phẳng sẽ tranh nhau hiển thị (nhấp nháy). Vỏ nhà (`shell`) bỏ mặt trong của tường bao vì lớp lót nội thất đã phủ đúng chỗ đó (`MB.box(..., skip)` với các hằng `FACE`); thứ gì dán lên tường thì nhô ra ít nhất 1–2 cm; vật liệu biển hiệu dùng `polygonOffset` để thắng tấm nền khi nhìn từ xa. `tools/probe/steps/audit.mjs` dò lại toàn thành phố.
+- **Biển hiệu phải đọc được từ dưới đường.** `Builder.signAt` ghi mọi biển đủ lớn vào `Builder.signs`. Biển cửa hàng treo ở mặt trước ban công tầng 1 (nếu có) hoặc là hộp đèn nhô khỏi mép mái; biển dọc chìa ra ngoài tầm ban công. Cây vỉa hè hỏi `signTopBehind()`: sau cây có biển thì trồng dáng thân cao (tán trên 4,8 m), biển cao quá 4,78 m thì để trống chỗ đó. Cây bị bỏ vẫn tiêu đúng số lần gọi ngẫu nhiên nên phần còn lại của thành phố không đổi.
 - Bầu trời là shader riêng (mây lấy từ một tấm nhiễu 256² tạo sẵn), mưa là tối đa 2.400 vệt chạy trên GPU, không rơi dưới mái che. Hễ có mưa, trời chuyển dần sang xám (độ u ám `Env.ov`), nắng dịu đi và mặt đường sẫm lại.
 
 ## 4. Các hệ thống và con số
@@ -96,16 +98,26 @@ Mọi món bán đúng giá thị trường đều có lãi gộp trên 30% khi 
 ### 4.6 Sự kiện
 "Đạo diễn sự kiện" mỗi giờ game gieo xúc xắc, tối đa 2 sự kiện không phải biến động giá cùng lúc, cách nhau ít nhất 150 phút. Sự kiện đổi lượng người, túi tiền, nhu cầu theo nhóm món, giá nguyên liệu, đóng cửa hàng, ép thời tiết, hoặc cử một nhân vật tới quầy (thanh tra, nhà phê bình, đàn em bảo kê, khách say, khách quen xin chịu, khách VIP).
 
+### 4.7 Người lạ và người quen
+Màn hình chỉ cho biết điều người chơi thật sự biết. `who(npc)` (trong `game/who.ts`) trả về:
+
+- người đi đường: nhãn theo vẻ ngoài lấy từ `SEEN` — chỉ những gì nhìn là thấy (đồng phục học sinh, sắc phục công an, tuổi tác, vẻ lang thang, khách Tây), còn lại đều là "Người lạ". Tên và nghề không bao giờ hiện;
+- người đứng quầy: trước lần nói chuyện đầu tiên là việc họ làm ở đó (`FIXED_ROLE`, ví dụ "Bà chủ quán cơm"); sau đó là tên. Hộp thoại đầu tiên vẫn ghi nhãn cũ, nói xong mới có thông báo làm quen;
+- khách quen: lần đầu ghé là người lạ; bán xong lần đầu thì họ tự giới thiệu.
+
+Sổ "đã quen" là `Game.met` (id → ngày làm quen), có trong bản lưu.
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
 - **Chạm nhanh** (nhấc tay trong 0,6 giây, xê dịch dưới 14 px) ở bất kỳ đâu = chạm vào vật gần điểm chạm nhất trong bán kính `max(64 px, 11% chiều cao)`. Thời lượng đo bằng mốc thời gian của chính sự kiện nên máy giật vẫn nhận đúng.
 - Nút tròn vàng thực hiện hành động với vật đang ở giữa màn hình.
 - Trong mini-game, mọi thao tác trỏ được chuyển thẳng cho mini-game.
+- **Người chơi tự xếp nút** (`ui/layout.ts`): bốn nhóm — nút tương tác, nút chạy, hàng nút túi/sổ/bản đồ/cài đặt, các nút khi nấu ăn. Mỗi nhóm lưu độ lệch so với chỗ mặc định tính theo phần bề ngang/bề cao màn hình và một hệ số phóng 0,6–1,8, riêng cho màn ngang và màn dọc. Áp bằng `transform`, và mỗi lần áp đều ép nút nằm trọn trong màn hình. Cỡ chung của giao diện là biến CSS `--ui-scale` (0,8–1,4) nhân vào cỡ chữ gốc; mọi kích thước HUD đều tính bằng `em` nên phóng theo.
 
 ## 6. Lưu game
 
-`localStorage`, khoá `ganhhang.save.v1` (trạng thái) và `ganhhang.settings.v1` (cài đặt). Tự lưu sau việc quan trọng, mỗi 45 giây và khi rời trang. `SAVE_VERSION = 3`; `migrate()` nạp được bản lưu cũ thiếu trường và loại bỏ nguyên liệu không còn tồn tại.
+`localStorage`, khoá `ganhhang.save.v1` (trạng thái) và `ganhhang.settings.v1` (cài đặt). Tự lưu sau việc quan trọng, mỗi 45 giây và khi rời trang. `SAVE_VERSION = 4`; `migrate()` nạp được bản lưu cũ thiếu trường và loại bỏ nguyên liệu không còn tồn tại. Bản lưu trước v4 chưa có sổ `met` nên được coi như đã quen hết người đứng quầy. Cài đặt có thêm `ui` (cỡ giao diện và cách xếp nút); `cleanLayout()` làm sạch dữ liệu đọc lên.
 
 ## 7. Kiểm thử
 
@@ -113,19 +125,36 @@ Mọi món bán đúng giá thị trường đều có lãi gộp trên 30% khi 
 - `tests/economy.test.ts` — tiền, giá chợ, mặc cả, giá vốn, nhiên liệu, sơ chế/hoàn thiện, đồ nghề, vay nợ, phá sản.
 - `tests/customers.test.ts` — quyết định mua, đánh giá, lượng khách.
 - `tests/time.test.ts` — thời gian, chỉ số sinh tồn, thời tiết, sự kiện, chỗ ở, mô phỏng 45 ngày.
-- `tests/data.test.ts` — tính nhất quán dữ liệu (nguyên liệu nào cũng mua được, dụng cụ nào cũng có bán, lưới đường đi liên thông…).
+- `tests/data.test.ts` — tính nhất quán dữ liệu (nguyên liệu nào cũng mua được, dụng cụ nào cũng có bán, lưới đường đi liên thông, nhãn người lạ không lộ nghề hay tên…).
+- `tests/settings.test.ts` — làm sạch dữ liệu bố cục nút.
 
-Phần đồ hoạ và thao tác được chạy thử bằng một kịch bản Puppeteer tạm thời điều khiển Chrome không giao diện (WebGL phần mềm, giả lập cảm ứng), chụp màn hình rồi xem bằng mắt. Kịch bản đó không nằm trong kho. Danh sách cụ thể những gì đã và chưa chạy thử nằm trong README.
+Phần đồ hoạ và thao tác được chạy thử bằng các kịch bản trong `tools/probe/`: một trình chạy Puppeteer điều khiển Chrome không giao diện (WebGL phần mềm, giả lập cảm ứng), bấm chạm như người chơi, chụp màn hình để xem bằng mắt, và soát hình học cả thành phố (mặt trùng phẳng, biển hiệu bị che). Danh sách cụ thể những gì đã và chưa chạy thử nằm trong README.
 
 ## 8. Việc còn dang dở
 
-Xếp theo mức nên làm trước:
+Người chơi đã thử bản đầu và gửi danh sách góp ý; việc được chia thành ba lượt. **Lượt 1 đã xong** (tường nhấp nháy, biển hiệu bị che, tên và nghề của người lạ, tự xếp nút). Còn lại, theo thứ tự sẽ làm:
 
-1. **Đo trên điện thoại thật.** Chưa có số liệu nào. Nếu chậm: gộp các khối cơ thể NPC thành một lưới, dùng instancing cho đồ vật lặp lại, bỏ sương mù theo điểm ảnh ở mức thấp, thêm LOD cho khu ở xa.
-2. **Mở sạp cố định (bậc 3).** Mô hình, sức chứa, hàng chờ đã có; còn thiếu bước chọn chỗ đặt khi mua (không gánh đi được), phí chỗ tính tự động mỗi ngày, và rà lại các nhánh `tier < 3` (mất trộm qua đêm, cất quầy về nhà).
-3. **Nghe thử và cân chỉnh âm thanh.**
-4. **Chơi thử bởi người thật để cân bằng nhịp độ**: tốc độ kiếm vốn ngày đầu, lượng khách lúc uy tín thấp, độ khó các mini-game.
-5. Nội dung: thêm món (đang 26/60), chỗ ở (5/8), các bậc quán ăn — nhà hàng — chuỗi, hệ thống băng nhóm, nhân viên.
-6. Kỹ thuật: tách gói JavaScript (hiện một tệp 923 kB, nén còn 277 kB), service worker để chơi ngoại tuyến, nội thất cửa hàng chi tiết hơn.
+**Lượt 2 — đường phố sống động hơn**
+
+1. Một ít NPC thô lỗ, tỉ lệ thấp: ném giấy vào người chơi, khạc nhổ khi bị xin tiền, chửi đuổi.
+2. Tên người: thêm tên đẹp và tên kiểu "teen", biệt danh trêu đùa — hiện ra khi đã làm quen.
+3. NPC chạy xe trên đường.
+4. Chim bay và tiếng chim, thỉnh thoảng và nho nhỏ.
+5. Nhân vật phụ có tên, tính cách, câu chuyện riêng.
+6. Các điểm nhỏ: góc hip hop, quán trà đá vỉa hè, chỗ làm thêm.
+
+**Lượt 3 — nội dung còn thiếu so với bản mô tả đầy đủ**
+
+1. Món ăn và nguyên liệu: tra cứu các món phổ biến ở Việt Nam, bổ sung cho đủ 60 món (đang 26).
+2. Chỗ ở: thêm 3 kiểu (đang 5/8).
+3. Mở sạp cố định (bậc 3) — mô hình, sức chứa, hàng chờ đã có; còn thiếu bước chọn chỗ đặt khi mua, phí chỗ tính tự động mỗi ngày, và rà lại các nhánh `tier < 3` — rồi tới quán ăn, nhà hàng.
+4. Hệ thống băng nhóm, nhân viên phụ bán.
+
+**Việc nền chưa làm**
+
+- Đo trên điện thoại thật: người chơi báo máy của họ chạy trên 50 khung hình/giây, nhưng chưa rõ đó là máy nào. Nếu máy yếu chạy chậm: gộp các khối cơ thể NPC thành một lưới, dùng instancing cho đồ vật lặp lại, bỏ sương mù theo điểm ảnh ở mức thấp, thêm LOD cho khu ở xa.
+- Nghe thử và cân chỉnh âm thanh.
+- Cân bằng nhịp độ qua chơi thử: tốc độ kiếm vốn ngày đầu, lượng khách lúc uy tín thấp, độ khó các mini-game.
+- Kỹ thuật: tách gói JavaScript (hiện một tệp khoảng 930 kB, nén còn 280 kB), service worker để chơi ngoại tuyến, nội thất cửa hàng chi tiết hơn.
 
 Lỗi nhỏ đã biết: dòng "Dụng cụ" và "Sơ chế" trong Sổ tay còn thừa dấu "·" ở cuối; ở màn dọc HUD chật (game khuyên xoay ngang).

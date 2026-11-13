@@ -44,7 +44,9 @@ async function boot() {
   ctx.applyQuality = () => {
     const q = QUALITY[ctx.set.quality]; renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, q.pr)); resize();
     ctx.env.setShadows(q.shadow > 0, q.shadowSize || 30, q.shadow || 512); ctx.env.viewDist = q.view; camera.far = q.view + 60; camera.updateProjectionMatrix(); ctx.env.setLights(q.lights);
-    for (const c of city.chunks) c.group.traverse((o) => { const m = o as THREE.Mesh; if (m.isMesh && (m.name === 'lit' || m.name === 'detail')) m.castShadow = q.shadow > 0; });
+    for (const c of city.chunks) c.group.traverse((o) => { const m = o as THREE.Mesh; if (m.isMesh && (m.name === 'lit' || m.name === 'detail' || m.name === 'unlit')) m.castShadow = q.shadow > 0; });
+    // ('unlit' cũng đổ bóng: tường bao đã bỏ mặt trong để khỏi trùng với lớp lót nội thất, nên chính lớp lót phải chắn nắng thay,
+    //  nếu không nắng xiên buổi sáng/chiều sẽ lọt xuyên qua tường vào trong nhà.)
   };
   ctx.applyQuality(); window.addEventListener('resize', resize); window.addEventListener('orientationchange', () => setTimeout(resize, 200));
 

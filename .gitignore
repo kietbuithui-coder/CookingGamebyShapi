@@ -1,7 +1,8 @@
-node_modules/
+node_modules
 dist/
 .vite/
 *.log
 .DS_Store
 image-search/
 /tmp-shots/
+tools/probe/out/

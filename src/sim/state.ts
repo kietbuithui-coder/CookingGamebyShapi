@@ -2,10 +2,11 @@
 import { ING_LIST, INGS } from '../data/ingredients';
 import { RECIPE_LIST, START_RECIPES } from '../data/recipes';
 import { JUNK } from '../data/gear';
+import { FIXED, REGULARS } from '../data/people';
 import type { WeatherId } from '../data/world';
 import { PLACES } from '../world/layout';
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 /** Một lô nguyên liệu. fresh 0–100, q chất lượng 0–1, cost giá vốn mỗi đơn vị. */
 export interface Stack { id: string; n: number; fresh: number; q: number; cost: number; }
 /** Mẻ sơ chế sẵn ("cốt" món). */
@@ -39,6 +40,8 @@ export interface Game {
   debts: Debt[]; debtSeq: number; credit: number;
   led: LedgerDay; hist: LedgerDay[];
   rel: Record<string, Rel>;
+  /** Những người đã quen (id nhân vật cố định hoặc khách quen → ngày làm quen). Chưa quen thì chưa biết tên. */
+  met: Record<string, number>;
   flags: Record<string, number>;
   weather: { now: WeatherId; until: number; next: WeatherId; flood: number; wet: number };
   ev: { active: ActiveEvent[]; last: Record<string, number>; check: number; lastStart: number };
@@ -65,7 +68,7 @@ export function newGame(seed = (Math.random() * 1e9) | 0, ac: 'anh' | 'chị' = 
     pos: { x: PLACES.camp.x, z: PLACES.camp.z - 1.2, yaw: Math.PI, pitch: 0 },
     bag: [], junk: {}, meals: [], gear: {}, housing: 'gamcau', paidUntil: 0, home: [],
     stall: emptyStall(), rec, debts: [], debtSeq: 1, credit: 0,
-    led: newLedger(0), hist: [], rel: {}, flags: {},
+    led: newLedger(0), hist: [], rel: {}, met: {}, flags: {},
     weather: { now: 'nang', until: 6 * 60 + 10 + 420, next: 'nang', flood: 0, wet: 0 },
     ev: { active: [], last: {}, check: 9 * 60, lastStart: -999 },
     wd: { litterDay: -1, picked: [], bins: {}, sacks: 0, plates: 0, deliveries: 0, begTired: 0, outOf: [], haggled: {}, job: null },
@@ -83,6 +86,13 @@ export function migrate(raw: any): Game | null {
   const clean = (l: Stack[]) => (Array.isArray(l) ? l.filter((s) => s && INGS[s.id] && s.n > 0) : []);
   g.bag = clean(g.bag); g.home = clean(g.home); g.stall.store = clean(g.stall.store);
   for (const k of Object.keys(g.junk)) if (!JUNK[k]) delete g.junk[k];
+  // Bản lưu trước v4 chưa có sổ "đã quen": người chơi cũ đã thấy tên mọi người rồi nên coi như quen hết,
+  // còn khách quen thì tính những ai từng ghé.
+  if ((raw.v ?? 0) < 4 || !raw.met || typeof raw.met !== 'object') {
+    g.met = {};
+    for (const id of Object.keys(FIXED)) g.met[id] = 0;
+    for (const r of REGULARS) if ((g.rel[r.id]?.n ?? 0) > 0) g.met[r.id] = 0;
+  }
   g.v = SAVE_VERSION;
   return g;
 }

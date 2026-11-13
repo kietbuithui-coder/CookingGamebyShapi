@@ -1,0 +1,10 @@
+{
+  "name": "ganh-hang-probe",
+  "private": true,
+  "type": "module",
+  "description": "Công cụ thử giao diện và soát hình học cho Gánh Hàng Đường Phố (không thuộc bản phát hành).",
+  "dependencies": {
+    "@sparticuz/chromium": "153.0.0",
+    "puppeteer-core": "^25.17.0"
+  }
+}

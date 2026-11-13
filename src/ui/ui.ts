@@ -13,9 +13,10 @@ import { INGS } from '../data/ingredients';
 import { SHOPS } from '../data/shops';
 import { DISTRICT, districtAt } from '../world/layout';
 import { hourOf } from '../sim/state';
-import { activeEvents, totalDebt, level, tier } from '../sim/rules';
+import { activeEvents, totalDebt, level, tier, hasMet, fixedLabel } from '../sim/rules';
 import { stallHint } from '../game/stall';
 import { openPanel } from './panels';
+import { applyLayout, editLayout } from './layout';
 
 const IC: Record<string, string> = {
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/>',
@@ -70,9 +71,9 @@ export class UI {
     const R = this.root, E = this.E, add = (id: string, html = '', cls = '') => { const e = el('div', cls, html, R); e.id = id; E[id] = e; return e; };
     this.world = add('world');
     add('hud-tl', `<div class="row"><span class="chip" id="clock"></span><span class="chip" id="wx"></span></div><div class="row"><span class="chip" id="place"></span></div><div id="stats"></div>`);
-    add('hud-tr', `<div class="row"><span class="chip" id="rep"></span><span class="chip" id="money"></span></div><div class="row"><button class="ib" data-p="bag">${ic('bag')}<span class="dot hide" id="bagdot"></span></button><button class="ib" data-p="book">${ic('book')}</button><button class="ib" data-p="map">${ic('map')}</button><button class="ib" data-p="settings">${ic('gear')}</button></div><div class="row"><span class="chip hide" id="debt"></span><span class="chip" id="fps"></span></div>`);
+    add('hud-tr', `<div class="row"><span class="chip" id="rep"></span><span class="chip" id="money"></span></div><div class="row" id="menub"><button class="ib" data-p="bag">${ic('bag')}<span class="dot hide" id="bagdot"></span></button><button class="ib" data-p="book">${ic('book')}</button><button class="ib" data-p="map">${ic('map')}</button><button class="ib" data-p="settings">${ic('gear')}</button></div><div class="row"><span class="chip hide" id="debt"></span><span class="chip" id="fps"></span></div>`);
     add('quest', '<small>MỤC TIÊU</small><span></span>'); add('way', '', 'chip hide'); add('events'); add('cross'); add('focus'); add('stam', '<b></b>', 'hide');
-    add('act', `<button class="run">${ic('run')}</button><button class="alt hide"></button><button class="main dim">${ic('hand')}</button>`);
+    add('act', `<button class="alt hide"></button><button class="main dim">${ic('hand')}</button>`); add('runb', `<button class="run">${ic('run')}</button>`);
     add('stick', '<i></i>', 'hide'); add('cart', '', 'chip hide'); add('stallchip', '', 'chip hide'); add('toasts');
     add('cook', `<button class="btn small red quit">${ic('x')} Bỏ dở</button><div class="top"><div class="title"></div><div class="steps"></div><div class="hint"></div><div class="prog hide"><div class="meter"><div class="z"></div><div class="v"></div></div><small></small></div></div><div class="heat hide"><small>LỬA</small><div class="meter"><div class="z"></div><div class="v"></div><div class="n"></div></div></div><div class="slider hide"><i>LỬA</i></div><div class="card hide"></div><div class="btns"></div>`, 'hide');
     add('grade', '', 'hide'); add('dlg', '', 'hide'); add('fade'); add('zzz', '', 'hide'); add('modal', '', 'hide'); add('menu', '', 'hide'); add('load', 'Đang dựng thành phố…<small>Gánh Hàng Đường Phố</small>'); add('rotate', 'Hãy xoay ngang điện thoại để chơi thoải mái hơn.<br><br><button class="btn" id="rotok">Cứ chơi dọc</button>', 'want');
@@ -80,21 +81,29 @@ export class UI {
     E.stats.innerHTML = [['dish', 'hunger', 'Đói'], ['drop', 'thirst', 'Khát'], ['bolt', 'energy', 'Sức'], ['heart', 'health', 'Khoẻ'], ['sparkle', 'hygiene', 'Sạch'], ['smile', 'mood', 'Vui']].map(([i, k, t]) => `<div class="stat" data-k="${k}" title="${t}">${ic(i)}<i><b></b></i></div>`).join('');
     document.getElementById('rotok')!.onclick = () => E.rotate.classList.remove('want');
     R.addEventListener('click', (e) => { const b = (e.target as HTMLElement).closest('[data-p]') as HTMLElement | null; if (b && ctx.mode === 'play') { ctx.sound.play('ui'); this.panel(b.dataset.p!); } });
-    const main = E.act.querySelector('.main') as HTMLElement, alt = E.act.querySelector('.alt') as HTMLElement, run = E.act.querySelector('.run') as HTMLElement;
+    const main = E.act.querySelector('.main') as HTMLElement, alt = E.act.querySelector('.alt') as HTMLElement, run = E.runb.querySelector('.run') as HTMLElement;
     main.onclick = () => ctx.interact.trigger(); alt.onclick = () => ctx.interact.triggerAlt(); run.onclick = () => { ctx.input.runLock = !ctx.input.runLock; run.classList.toggle('on', ctx.input.runLock); };
     E.quest.onclick = () => { this.questMin = !this.questMin; E.quest.classList.toggle('min', this.questMin); };
-    E.cart.onclick = () => { const c = ctx.acts.cart; if (c) { const v = ctx.npcs.fixed.get(c.shop); if (v) ctx.acts.way = { x: v.x, z: v.z, name: 'Tính tiền: ' + v.name }; } };
+    E.cart.onclick = () => { const c = ctx.acts.cart; if (c) { const v = ctx.npcs.fixed.get(c.shop); if (v) ctx.acts.way = { x: v.x, z: v.z, name: 'Tính tiền: ' + SHOPS[c.shop].name }; } };
     E.stallchip.onclick = () => { const s = ctx.g.stall; if (s.where === 'placed' || s.where === 'home') ctx.acts.way = { x: s.x, z: s.z, name: 'Quầy của bạn' }; };
     // lớp nấu ăn
     const C = E.cook; (C.querySelector('.quit') as HTMLElement).onclick = () => this.onCookBtn?.('quit', true);
     C.querySelector('.btns')!.addEventListener('pointerdown', (e) => { const b = (e.target as HTMLElement).closest('button'); if (b) { e.preventDefault(); this.onCookBtn?.(b.dataset.id!, true); } });
     const sl = C.querySelector('.slider') as HTMLElement, setS = (e: PointerEvent) => { const r = sl.getBoundingClientRect(), v = clamp(1 - (e.clientY - r.top) / r.height); this.sliderV = v; (sl.firstElementChild as HTMLElement).style.bottom = v * 100 + '%'; this.onCookSlide?.(v); };
     sl.addEventListener('pointerdown', (e) => { sl.setPointerCapture(e.pointerId); setS(e); }); sl.addEventListener('pointermove', (e) => { if (e.buttons || e.pointerType === 'touch') setS(e); });
+    applyLayout(); window.addEventListener('resize', () => applyLayout()); window.addEventListener('orientationchange', () => setTimeout(applyLayout, 250));
     bus.on('toast', (t) => this.toast(t)); bus.on('cash', () => { E.money.classList.remove('bump'); void E.money.offsetWidth; E.money.classList.add('bump'); });
     ctx.input.onStick = (on, ox, oy, dx, dy) => { const s = E.stick; s.classList.toggle('hide', !on); if (on) { s.style.left = ox + 'px'; s.style.top = oy + 'px'; (s.firstElementChild as HTMLElement).style.transform = `translate(${dx}px,${dy}px)`; } };
     ctx.input.onKey = (k) => { if (k === 'e' || k === 'f' || k === ' ' || k === 'enter') { if (this.dlgOpen) (E.dlg.querySelector('.btn:not(.off)') as HTMLElement)?.click(); else ctx.interact.trigger(); } else if (k === 'r') ctx.interact.triggerAlt(); else if (ctx.mode === 'play' && (k === 'tab' || k === 'i')) this.panel('bag'); else if (ctx.mode === 'play' && k === 'm') this.panel('map'); else if (ctx.mode === 'play' && k === 'b') this.panel('book'); else if (k === 'escape') { if (this.modalName) this.closePanel(); else if (ctx.mode === 'play') this.panel('settings'); } else if (k >= '1' && k <= '9' && this.dlgOpen) (E.dlg.querySelectorAll('.btn')[+k - 1] as HTMLElement)?.click(); };
   }
   $(id: string) { return this.E[id]; }
+  /** Áp lại cỡ giao diện và vị trí nút (sau khi đổi cài đặt). */
+  layout() { applyLayout(); }
+  /** Mở màn hình cho người chơi tự xếp vị trí và độ lớn các nút. Game tạm dừng nhận điều khiển trong lúc xếp. */
+  editLayout() {
+    this.closePanel(); this.closeDialog(); ctx.mode = 'panel'; ctx.input.reset();
+    editLayout(() => { ctx.mode = 'play'; bus.emit('toast', { text: 'Đã lưu cách xếp nút.', kind: 'good' }); });
+  }
   loading(t: string | null) { this.E.load.classList.toggle('hide', t === null); if (t) this.E.load.firstChild!.textContent = t; }
   toast(t: Toast) {
     const box = this.E.toasts, e = el('div', 'toast ' + (t.kind ?? 'info'), (t.icon ? ic(t.icon) : '') + `<span>${esc(t.text)}</span>`, box);
@@ -167,8 +176,8 @@ export class UI {
   cookCard(items: { t: string; state: number }[] | null) { const c = this.E.cook.querySelector('.card') as HTMLElement; c.classList.toggle('hide', !items); if (items) c.innerHTML = '<b>Thứ tự cho vào</b>' + items.map((i, k) => `<div class="${i.state === 2 ? 'done' : i.state === 1 ? 'cur' : ''}">${k + 1}. ${esc(i.t)}</div>`).join(''); }
   cookGrade(score: number, text: string) { const g = this.E.grade; g.classList.remove('hide'); const k = Math.max(1, Math.round(score * 5)); g.innerHTML = `${esc(text)}<small>${starsHtml(k)}</small>`; this.gradeT = 1.1; g.style.animation = 'none'; void g.offsetWidth; g.style.animation = ''; }
   cookHide() { this.E.cook.classList.add('hide'); this.E.grade.classList.add('hide'); for (const a of this.labels) a.life = 0; this.labels = []; this.setHud(true); }
-  private setHud(on: boolean) { for (const k of ['hud-tl', 'hud-tr', 'quest', 'act', 'cross', 'focus', 'events', 'way', 'cart', 'stallchip']) this.E[k].style.display = on ? '' : 'none'; if (!on) this.E['hud-tl'].style.display = ''; this.root.classList.toggle('cooking', !on); }
-  hud(on: boolean) { for (const k of ['hud-tl', 'hud-tr', 'quest', 'act', 'cross', 'focus', 'events', 'way', 'cart', 'stallchip', 'toasts', 'stam']) this.E[k].style.display = on ? '' : 'none'; }
+  private setHud(on: boolean) { for (const k of ['hud-tl', 'hud-tr', 'quest', 'act', 'runb', 'cross', 'focus', 'events', 'way', 'cart', 'stallchip']) this.E[k].style.display = on ? '' : 'none'; if (!on) this.E['hud-tl'].style.display = ''; this.root.classList.toggle('cooking', !on); }
+  hud(on: boolean) { for (const k of ['hud-tl', 'hud-tr', 'quest', 'act', 'runb', 'cross', 'focus', 'events', 'way', 'cart', 'stallchip', 'toasts', 'stam']) this.E[k].style.display = on ? '' : 'none'; }
 
   update(dt: number) {
     this.atts = this.atts.filter((a) => this.place(a, dt));
@@ -192,7 +201,7 @@ export class UI {
     const way = ctx.acts.way; E.way.classList.toggle('hide', !way);
     if (way) { const dx = way.x - p.x, dz = way.z - p.z, ang = Math.atan2(dx, dz) - p.yaw; E.way.innerHTML = `<svg class="ic" viewBox="0 0 24 24" style="transform:rotate(${(-ang * 180 / Math.PI).toFixed(0)}deg)">${IC.arrow}</svg>${esc(way.name)} · ${Math.round(Math.hypot(dx, dz))} m`; }
     const evs = activeEvents(g); E.events.innerHTML = evs.map((e) => `<span class="chip${e.danger ? ' danger' : ''}">${ic(e.icon)}${esc(e.name)}</span>`).join('') + (g.flags.sick ? `<span class="chip danger">${ic('heart')}Bị cảm</span>` : '') + (g.weather.wet > 55 ? `<span class="chip">${ic('drop')}Ướt sũng</span>` : '') + (g.weather.flood > 0.35 ? `<span class="chip">${ic('drop')}Ngập khu trũng</span>` : '');
-    const c = ctx.acts.cart; E.cart.classList.toggle('hide', !c); if (c) E.cart.innerHTML = `${ic('bag')}Giỏ: ${c.lines.map((l) => `${l.n} ${INGS[l.id].name.toLowerCase()}`).join(', ')} — <b>${money(ctx.acts.cartTotal())}</b> · đưa ${SHOPS[c.shop].vendor} tính tiền`;
+    const c = ctx.acts.cart; E.cart.classList.toggle('hide', !c); if (c) E.cart.innerHTML = `${ic('bag')}Giỏ: ${c.lines.map((l) => `${l.n} ${INGS[l.id].name.toLowerCase()}`).join(', ')} — <b>${money(ctx.acts.cartTotal())}</b> · đưa ${hasMet(g, c.shop) ? SHOPS[c.shop].vendor : fixedLabel(g, c.shop).toLowerCase()} tính tiền`;
     const s = g.stall; E.stallchip.classList.toggle('hide', s.tier === 0); if (s.tier) E.stallchip.innerHTML = `${ic('shop')}${tier(g).name}: ${stallHint(g)}` + (s.open ? ` · ${ctx.stall.customers.length} khách · hôm nay ${money(g.led.revenue + g.led.tips)}` : '');
     // Thanh sức bền chỉ hiện khi đang hụt so với trần hiện tại (đang chạy hoặc đang hồi), không hiện suốt chỉ vì đói/khát làm trần tụt xuống.
     const st = E.stam; st.classList.toggle('hide', p.stamina > p.staminaCap - 0.02 || ctx.mode !== 'play'); (st.firstElementChild as HTMLElement).style.width = p.stamina * 100 + '%'; st.style.setProperty('--cap', p.staminaCap * 100 + '%');

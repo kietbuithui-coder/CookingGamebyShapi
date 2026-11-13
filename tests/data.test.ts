@@ -4,7 +4,7 @@ import { INGS, ING_LIST } from '../src/data/ingredients';
 import { SHOP_LIST, SHOPS } from '../src/data/shops';
 import { RECIPE_LIST, RECIPES, START_RECIPES, toolsFor, fuelPerPortion, STEP_TOOLS } from '../src/data/recipes';
 import { GEAR, GEAR_LIST, TIERS, HOUSING_LIST, JUNK_LIST } from '../src/data/gear';
-import { ARCH_LIST, REGULARS, ARCH, LINES, FIXED } from '../src/data/people';
+import { ARCH_LIST, REGULARS, ARCH, LINES, FIXED, SEEN, FIXED_ROLE } from '../src/data/people';
 import { WEATHER, EVENT_LIST, hourCurve } from '../src/data/world';
 import { SPOTS, DISTRICT, NAV, findPath, nearestNode, PLACES, districtAt, MAP } from '../src/world/layout';
 
@@ -92,6 +92,25 @@ describe('con người', () => {
   it('khách quen thuộc nhóm có thật', () => {
     expect(REGULARS.length).toBeGreaterThanOrEqual(8);
     for (const r of REGULARS) expect(ARCH[r.arch], r.id).toBeDefined();
+  });
+  it('người lạ chỉ được gọi theo vẻ ngoài, không lộ nghề nghiệp hay tên riêng', () => {
+    // Chỉ những gì nhìn bằng mắt là biết mới được dùng làm nhãn: đồng phục học sinh, sắc phục, tuổi tác, vẻ lang thang, khách Tây.
+    const visible = new Set(['hocsinh', 'vogiacu', 'dukhach', 'congan', 'nguoigia', 'treem']);
+    for (const a of ARCH_LIST) {
+      const label = SEEN[a.id];
+      expect(label, a.id).toBeTruthy();
+      if (!visible.has(a.id)) expect(label, a.id).toBe('Người lạ');
+    }
+    for (const id of ['vanphong', 'shipper', 'taixe', 'congnhan', 'nhagiau', 'phebinh'] as const) expect(SEEN[id]).not.toBe(ARCH[id].name);
+  });
+  it('người đứng quầy nào cũng có nhãn "chưa quen", và nhãn đó không chứa tên riêng của họ', () => {
+    for (const f of Object.values(FIXED)) {
+      const role = FIXED_ROLE[f.id];
+      expect(role, f.id).toBeTruthy();
+      expect(role, f.id).not.toBe(f.name);
+      const given = f.name.split(' ').slice(1).join(' ');     // "Bà Tư" → "Tư", "Chú Ba Tài" → "Ba Tài"
+      if (given.length > 2) expect(role.includes(given), f.id).toBe(false);
+    }
   });
   it('các bộ lời thoại không rỗng', () => {
     for (const [k, v] of Object.entries(LINES)) if (Array.isArray(v)) expect(v.length, k).toBeGreaterThan(0);

@@ -2,7 +2,7 @@
 // Toạ độ cục bộ của lô: x ∈ [0,w] dọc mặt tiền, z ∈ [0,d] đi sâu vào trong, z < 0 là vỉa hè.
 import { Builder, shade } from './build';
 import { Lot } from './layout';
-import { MB, mix } from '../gfx/mb';
+import { MB, mix, FACE } from '../gfx/mb';
 import { RNG } from '../core/util';
 import { SHOPS } from '../data/shops';
 import { INGS } from '../data/ingredients';
@@ -19,18 +19,22 @@ export function shell(b: Builder, o: ShellOpt) {
   const L = b.lit, { w, d, di, h1, H, col } = o, t = 0.2;
   if (H > h1 + 0.2) L.box(w / 2, h1, d / 2, w - 0.04, H - h1, d, col, o.roof ?? shade(col, 0.7), 0, true);
   else L.box(w / 2, h1, d / 2, w + 0.2, 0.16, d + 0.3, o.roof ?? shade(col, 0.75), o.roof ?? shade(col, 0.7), 0, true);
-  b.wall(0.12, 0, 0.12, di, h1, col); b.wall(w - 0.12, 0, w - 0.12, di, h1, col); b.wall(0, di - 0.1, w, di - 0.1, h1, col);
+  // Mặt trong của tường bao đã có lớp lót nội thất (b.interior) nằm đúng trên mặt phẳng đó, nên bỏ đi kẻo hai lớp
+  // trùng nhau nhấp nháy. Tường trước/sau chỉ chạy giữa hai tường hông để không chồng lên nhau ở góc.
+  const X0 = 0.22, X1 = w - 0.22;
+  b.wall(0.12, 0, 0.12, di, h1, col, t, 0, L, true, FACE.PX); b.wall(w - 0.12, 0, w - 0.12, di, h1, col, t, 0, L, true, FACE.NX);
+  b.wall(X0, di - 0.1, X1, di - 0.1, h1, col, t, 0, L, true, FACE.NZ);
   if (di < d - 0.3) { L.box(w / 2, 0, (di + d) / 2, w - 0.04, h1, d - di, col, col, 0.1); b.collide(0, di, w, d); }
-  let x = 0, top = h1;
+  let x = X0, top = h1;
   const ops = o.opens.slice().sort((a, c) => a.x0 - c.x0);
   for (const op of ops) {
     const tp = op.top ?? 2.5, mid = (op.x0 + op.x1) / 2, ww = op.x1 - op.x0; top = Math.min(top, tp);
-    if (op.x0 > x + 0.01) b.wall(x, 0.1, op.x0, 0.1, h1, col);
+    if (op.x0 > x + 0.01) b.wall(x, 0.1, op.x0, 0.1, h1, col, t, 0, L, true, FACE.PZ);
     if (op.sill) { L.box(mid, 0, 0.1, ww, op.sill, t, col, WHITE, 0.1); b.collide(op.x0, 0, op.x1, 0.2); }
-    if (tp < h1) L.box(mid, tp, 0.1, ww, h1 - tp, t, col, col, 0, true);
+    if (tp < h1) L.box(mid, tp, 0.1, ww, h1 - tp, t, col, col, 0, true, FACE.PZ);
     x = op.x1;
   }
-  if (x < w - 0.01) b.wall(x, 0.1, w, 0.1, h1, col);
+  if (x < X1 - 0.01) b.wall(x, 0.1, X1, 0.1, h1, col, t, 0, L, true, FACE.PZ);
   b.interior(0.22, 0.2, w - 0.22, di - 0.2, h1 - 0.03, o.inner, o.floor, o.ceil ?? 0xf3f0e8, ops.map((p) => [p.x0, p.x1]), top);
   b.roofed(0, 0, w, d);
 }

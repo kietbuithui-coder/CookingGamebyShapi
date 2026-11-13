@@ -6,7 +6,7 @@ import { INGS } from '../data/ingredients';
 import { SHOPS, ShopDef } from '../data/shops';
 import { RECIPES, RecipeDef, fuelPerPortion, toolsFor, RECIPE_LIST } from '../data/recipes';
 import { GEAR, HOUSING, LENDERS, TIERS, JUNK } from '../data/gear';
-import { ARCH, ArchDef, LINES } from '../data/people';
+import { ARCH, ArchDef, LINES, FIXED, FIXED_ROLE } from '../data/people';
 import { EVENTS, EVENT_LIST, EventDef, WEATHER, WeatherDef, WeatherId, floodZone, hourCurve } from '../data/world';
 import { District, DISTRICT, SPOTS, districtAt, spotById } from '../world/layout';
 import { Game, Stack, absMin, addStack, countOf, hourOf, newLedger, purge, spoil, takeFrom, weightOf, junkWeight, emptyStall, Debt, coldWeightOf } from './state';
@@ -76,6 +76,12 @@ export function haggle(g: Game, shop: ShopDef, ask: number, total: number, R: RN
   if (!ok) changeRel(g, shop.id, ask > 0.15 ? -3 : -1);
   return { ok, line: R.pick(ok ? good : bad) };
 }
+/** Đã từng làm quen với người này chưa (nhân vật cố định: đã nói chuyện; khách quen: đã bán cho họ một lần)? */
+export const hasMet = (g: Game, id: string) => g.met[id] !== undefined;
+/** Ghi nhận lần đầu làm quen. Trả về true nếu đúng là lần đầu. */
+export function meet(g: Game, id: string): boolean { if (g.met[id] !== undefined) return false; g.met[id] = g.day; return true; }
+/** Tên hiện ra của một người đứng quầy: chưa quen thì chỉ biết họ làm gì ở đó. */
+export const fixedLabel = (g: Game, id: string) => (hasMet(g, id) ? FIXED[id]?.name : FIXED_ROLE[id]) ?? 'Người lạ';
 export function changeRel(g: Game, id: string, dv: number, visit = false) {
   const r = (g.rel[id] ??= { v: 0, n: 0, last: -1 });
   r.v = clamp(r.v + dv, -100, 100);
