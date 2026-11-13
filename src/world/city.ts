@@ -6,6 +6,7 @@ import { MB, MAT } from '../gfx/mb';
 import { SignAtlas, SignStyle, groundTexture, GroundKind } from '../gfx/tex';
 import { RNG, TAU } from '../core/util';
 import { buildPlace, marketStall, spotMark } from './places';
+import { buildSide } from './side';
 import { plasticStool, plasticTable, basketModel, potModel } from '../gfx/props';
 
 const PAL = {
@@ -464,7 +465,9 @@ export function buildCity(): City {
     }
     if (!(bx === 2 && bz === 0) && !(bx === 0 && bz === 1)) sidewalkProps(b, bx, bz, new RNG(bx * 31 + bz * 7 + 3), BLOCK_DENSE[bz][bx]);
   }
-  market(b, new RNG(41)); park(b, new RNG(42)); underpass(b, new RNG(43)); yards(b, new RNG(44)); backdrop(b, new RNG(45));
+  market(b, new RNG(41)); park(b, new RNG(42)); underpass(b, new RNG(43)); yards(b, new RNG(44));
+  buildSide(b);                                          // góc trà đá, sân nhảy, vá xe, hát rong, bàn cờ, đánh giày
+  backdrop(b, new RNG(45));
   // rào chắn "cấm đường" trước chợ (chỉ hiện khi có sự kiện)
   b.frame({ tx: 0, tz: 0, yaw: 0 }); const keepLit = b.lit; (b as any).lit = b.roadblock;
   for (const z of [-25, 25]) for (let i = 0; i < 3; i++) { const x = -32 + i * 2.5; for (let k = 0; k < 2; k++) b.roadblock.box(x, 0.45 + k * 0.36, z, 2.2, 0.2, 0.12, k ? 0xe5482f : 0xf3f0e8, undefined, 0, true); for (const s of [-1, 1]) b.roadblock.box(x + s, 0, z, 0.1, 1.0, 0.1, 0x555a60); }
