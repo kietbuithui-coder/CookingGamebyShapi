@@ -608,4 +608,21 @@ export function buyGear(g: Game, id: string): 'ok' | 'cash' | 'have' {
   bus.emit('save', 'mua do'); return 'ok';
 }
 export function repairCost(g: Game): number { return round1k((100 - g.stall.cond) * (300 + g.stall.tier * 500)); }
-export function addXp(g: Game, score: number) { const l0 = level(g); g.xp += 1 + score * 3; if (level(g) > l0) toast(`Tay nghề lên cấp ${level(g)}! Thao tác nấu dễ chuẩn hơn.`, 'good', 'star'); }
+/**
+ * Món tự mở khi lên cấp: lấy những món chưa biết, tay nghề đã đủ, xếp theo giá tham chiếu tăng dần
+ * — cấp càng cao thì món mở ra càng đắt lời. Mỗi cấp chỉ mở một hai món để người chơi kịp làm quen.
+ */
+export function unlockRecipes(g: Game, n = 2): RecipeDef[] {
+  const lvl = level(g);
+  const pool = RECIPE_LIST.filter((r) => !g.rec[r.id].known && (!r.learn || r.learn.skill <= lvl)).sort((a, b) => a.ref - b.ref || a.id.localeCompare(b.id));
+  const out: RecipeDef[] = [];
+  for (let i = 0; i < n && i < pool.length; i++) { g.rec[pool[i].id].known = true; out.push(pool[i]); }
+  return out;
+}
+export function addXp(g: Game, score: number) {
+  const l0 = level(g); g.xp += 1 + score * 3;
+  if (level(g) <= l0) return;
+  const lv = level(g), got = unlockRecipes(g, lv <= 1 ? 1 : 2);
+  toast(`Tay nghề lên cấp ${lv}! Thao tác nấu dễ chuẩn hơn.`, 'good', 'star');
+  if (got.length) { toast(`Tự nghĩ ra ${got.length > 1 ? 'hai món mới' : 'một món mới'}: ${got.map((r) => r.name).join(', ')}. Xem trong Sổ tay.`, 'good', 'dish', true); bus.emit('save', 'len cap'); }
+}

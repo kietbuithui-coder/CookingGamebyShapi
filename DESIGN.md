@@ -70,6 +70,10 @@ Chất lượng món = `(0,55·điểm + 0,45·điểm·chất_lượng_sơ_ch�
 
 Bếp than tự nguội, phải bấm quạt; gió và mưa (không có ô dù) làm tắt lửa. Một bao than đứng bếp được 22 lần, một bình gas 14 lần.
 
+**Thang mở công thức** (`unlockRecipes` trong `sim/rules.ts`): 4 món biết sẵn, 56 món còn lại chia theo tay nghề 0–4 trong `learn.skill`. Mỗi lần lên cấp, `addXp` gọi `unlockRecipes(g, cấp ≤ 1 ? 1 : 2)`: lọc những món chưa biết mà `learn.skill ≤ cấp`, xếp theo `ref` (giá bán) tăng dần, lấy 1–2 món đầu. Vì `ref` là giá bán chứ không phải giá vốn, thang này cũng chính là thang lãi gộp: cấp càng cao, món càng đắt, lãi càng dày. Cấp tối đa 10 nên mở hết được cả 60 món.
+
+Học tại quán (`acts.learnOpts`) thì khác: mỗi quán chỉ bày **một món rẻ nhất còn thiếu** trong số món quán đó dạy, và chỉ bày khi đã đủ thân (`rel.n ≥ 3` lần nói chuyện, hoặc `rel.v ≥ 25` uy tín) và đủ tay nghề. Nhờ vậy bảng công thức trong Sổ tay không bị lộ hết một lượt — món chỉ hiện ra khi người chơi lên cấp hoặc khi trò chuyện đủ nhiều.
+
 Camera nấu ăn tự đóng khung theo từng mini-game sao cho vùng thao tác chiếm khoảng 60% bề ngang màn ngang (hoặc gần hết bề ngang màn dọc) — xem `Cook.frameCam`.
 
 ### 4.4 Khách hàng
@@ -122,6 +126,30 @@ Bảng `RUDE` (trong `data/people.ts`) chỉ gán trọng số cho vài nhóm: g
 ### 4.9 Nhân vật phụ
 Sáu người trong bảng `SIDE`: Cô Thắm (trà đá), Bin (nhảy dưới gầm cầu), Chú Hậu (vá xe), Cô Hồng (hát rong), Ông Tư (cờ tướng), Bé Bo (đánh giày). Mỗi người có câu mở đầu, câu chào lại khi đã kể hết, và 3 câu chuyện riêng. Mỗi câu chỉ kể được một lần (cờ `side_<id>_<số>` trong `Game.flags`), hết chuyện thì menu chỉ còn việc dùng được ở chỗ đó: mua ly trà đá 3.000₫, phụ bưng trà 40 phút +12.000₫, nhảy thử một bài, nghe hát 10 phút, chơi cờ 25 phút, đánh giày 5.000₫, vá bơm quầy 8.000₫… Các việc này đi qua đúng hệ thống của game (`R.advance`, `R.spend`, `R.consume`, `R.earn`) nên tốn thời gian, tiền và chỉ số như mọi việc khác.
 
+### 4.10 Khách đứng mua và việc lúc rảnh của người đi đường
+
+`Npcs.manageShoppers()` chạy mỗi 2,5–6 giây: với mỗi tiệm có người đứng quầy (`FIXED`) và đang trong giờ mở cửa, cách người chơi 9–52 m, nếu chưa có ai đứng đó thì thêm một người đi đường đứng lựa hàng. Số người tối đa theo mức đồ hoạ (`npcs/12`, 1–3 người). Người này đứng lệch 1,35–1,95 m trước quầy, 16–42 giây rồi đi, thỉnh thoảng thốt một câu ("Cái này bao nhiêu vậy chú?", "Cho con thêm ít rau.").
+
+Người đi đường đứng chờ (không phải khách quen, không phải người đứng quầy) có đồng hồ `idleT` 8–22 giây; hết giờ thì 40% cơ hội làm một việc trong 5–11 giây: **đọc báo** (hai tay cầm tờ báo gấp đôi), **uống nước** (cầm ly nhựa trước bụng — mô hình một khúc tay nên không đưa lên tới miệng được), **tám chuyện** (chỉ khi có người đứng trong 3,4 m; hai người quay vào nhau, tay khoa trước). Sau đó nghỉ 18–50 giây mới tới lượt tiếp theo, nên cả phố chỉ lác đác vài người đang làm gì đó.
+
+### 4.11 Chỗ chơi và hai việc làm thêm
+
+Bảng `FUN_LIST` (`data/fun.ts`) gắn hoạt động vào một cái neo, có giờ mở cửa và giá:
+
+| Chỗ | Hoạt động | Giá | Thời gian | Tinh thần |
+|---|---|---|---|---|
+| Quán cà phê Bóng Đá (`tv_bongda`) | cà phê sữa đá | 20.000₫ | 30 phút | +13 (khát +14) |
+| | hát karaoke | 30.000₫ | 40 phút | +19 (sức −6) |
+| | chen xem trận bóng (khi có sự kiện `bong_da`) | 0 | 30 phút | +12 |
+| Chùa Phước An (`v_temple`) | thắp nhang cầu an | 5.000₫ | 12 phút | +11 |
+| Ghế đá ngoài phố | ngồi nghỉ | 0 | 20 phút | +7 (sức +4) |
+
+Ghế đá nào đã là chỗ ngủ (ghế trong công viên) thì giữ nguyên lời mời ngủ, không thêm lời mời nghỉ — tránh hai nút chồng nhau.
+
+Hai việc làm thêm nằm trong hội thoại chứ không phải bảng riêng: **chạy bàn** ở quán cà phê, 60 phút, công `38.000₫ + uy_tín×120 + max(0, tinh_thần−50)×120`, boa thêm 0–8.000₫ (6.000₫ nếu tinh thần trên 60), đổi lại mất 18 sức, 3 đói, 7 khát; **bốc cá ở cảng**, chỉ 4h30–10h, cần 35 sức, 110 phút, 52.000–68.000₫, mất 30 sức. Cả hai đi qua `R.advance`/`R.earn`/`R.consume` như mọi việc khác.
+
+**Nút cất gánh** (`#stowb` trên HUD, chỉ hiện khi đã có quầy): đang gánh thì đổi qua lại giữa "gánh trên vai" và "gánh trong ba lô" (`Stall.stowed`, `player.setCarry('')`); đang dựng quầy thì nút này gọi `pickUp()` — dọn cả quầy vào ba lô. Sạp cố định (bậc 3) không dọn được nên nút ẩn.
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
@@ -142,6 +170,7 @@ Sáu người trong bảng `SIDE`: Cô Thắm (trà đá), Bin (nhảy dưới g
 - `tests/time.test.ts` — thời gian, chỉ số sinh tồn, thời tiết, sự kiện, chỗ ở, mô phỏng 45 ngày.
 - `tests/data.test.ts` — tính nhất quán dữ liệu (nguyên liệu nào cũng mua được, dụng cụ nào cũng có bán, lưới đường đi liên thông, nhãn người lạ không lộ nghề hay tên…).
 - `tests/settings.test.ts` — làm sạch dữ liệu bố cục nút.
+- `tests/fun.test.ts` — bảng chỗ chơi (mã không trùng, có neo, có giờ hợp lệ, chơi lâu hơn thì lên tinh thần nhiều hơn) và thang mở công thức (cấp 1 mở đúng 1 món, cấp sau mở 2; luôn là món rẻ nhất còn thiếu; không vượt tay nghề; món sau không rẻ hơn món trước; cấp 10 mở đủ 60 món).
 
 Ba bài mới ở lượt 2: mỗi nhân vật phụ phải có tên, nhãn việc, câu mở đầu và ít nhất hai câu chuyện đủ dài; bảng `RUDE` chỉ được có tối đa 8 nhóm và phải có đủ lời cho cả năm kiểu (giấy, khạc nhổ, mắng, đuổi, khạc nhổ khi bị xin tiền); khách quen không được trùng id hay tên và phải có cả tên kiểu học sinh.
 
@@ -153,12 +182,13 @@ Người chơi đã thử bản đầu và gửi danh sách góp ý; việc đư
 
 **Lượt 2 — đường phố sống động hơn: đã xong** (NPC thô lỗ với tỉ lệ thấp, tên đẹp và tên kiểu học sinh, xe chạy trên đường, chim bay và tiếng chim, sáu nhân vật phụ có chuyện riêng, sáu góc phố nhỏ). Chi tiết ở mục 4.7–4.9 và mục 3.
 
-**Lượt 3 — nội dung còn thiếu so với bản mô tả đầy đủ**
+**Lượt 3 — nội dung còn thiếu so với bản mô tả đầy đủ: đã xong phần chính** (60 món và thang mở công thức, chỗ chơi lên tinh thần, khách đứng mua, việc lúc rảnh của người đi đường, nút cất gánh, chạy bàn và bốc cảng). Chi tiết ở mục 4.3, 4.10, 4.11.
 
-1. Món ăn và nguyên liệu: tra cứu các món phổ biến ở Việt Nam, bổ sung cho đủ 60 món (đang 26).
-2. Chỗ ở: thêm 3 kiểu (đang 5/8).
-3. Mở sạp cố định (bậc 3) — mô hình, sức chứa, hàng chờ đã có; còn thiếu bước chọn chỗ đặt khi mua, phí chỗ tính tự động mỗi ngày, và rà lại các nhánh `tier < 3` — rồi tới quán ăn, nhà hàng.
-4. Hệ thống băng nhóm, nhân viên phụ bán.
+Còn lại:
+
+1. Chỗ ở: thêm 3 kiểu (đang 5/8).
+2. Mở sạp cố định (bậc 3) — mô hình, sức chứa, hàng chờ đã có; còn thiếu bước chọn chỗ đặt khi mua, phí chỗ tính tự động mỗi ngày, và rà lại các nhánh `tier < 3` — rồi tới quán ăn, nhà hàng.
+3. Hệ thống băng nhóm, nhân viên phụ bán.
 
 **Việc nền chưa làm**
 

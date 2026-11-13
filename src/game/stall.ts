@@ -35,6 +35,21 @@ export class StallSys {
     bus.on('event', (e) => this.onEvent(e.id, e.on));
   }
   get s() { return ctx.g.stall; }
+  /** Gánh đã cất gọn trong balo: không vẽ trên vai, đi nhanh như tay không. */
+  stowed = false;
+  stow(): boolean {
+    const s = this.s;
+    if (s.tier === 0) { toast('Chưa có gánh mà cất.', 'info'); return false; }
+    // Đang dựng quầy: nút này là "dọn quầy" — gói cả gánh lẫn đồ nghề vào ba lô.
+    if (s.where === 'placed' || s.where === 'home') {
+      if (Math.hypot(s.x - ctx.player.x, s.z - ctx.player.z) > 6) { toast('Quầy ở xa quá, lại gần mới dọn được.', 'warn'); sfx('nope'); return false; }
+      if (!this.pickUp()) return false; toast('Dọn quầy, gói gánh vào ba lô. Muốn bán tiếp thì tìm chỗ khác dựng lại.', 'info', 'bag'); return true; }
+    this.stowed = !this.stowed;
+    ctx.player.setCarry(this.stowed ? '' : s.tier === 1 ? 'ganh' : 'xeday');
+    sfx('pick');
+    toast(this.stowed ? 'Cất gánh vào balo. Tay không, đi nhanh hơn — cần bán thì lấy ra.' : 'Lấy gánh ra, quàng lên vai.', 'info', 'bag');
+    return true;
+  }
   spot(): Spot | undefined { return this.s.spot ? spotById(this.s.spot) : undefined; }
   /** Vị trí làm bếp của quầy hiện tại (toạ độ thế giới). */
   station(): Station {
@@ -56,7 +71,9 @@ export class StallSys {
     if (this.toolMesh) { this.group.remove(this.toolMesh); this.toolMesh.geometry.dispose(); this.toolMesh = null; }
     for (const c of this.cols) c.on = false;
     const show = s.tier > 0 && (s.where === 'placed' || s.where === 'home');
-    this.group.visible = show; ctx.player.setCarry(s.where === 'carried' ? (s.tier === 1 ? 'ganh' : 'xeday') : ctx.player.carry === 'ganh' || ctx.player.carry === 'xeday' ? '' : ctx.player.carry);
+    this.group.visible = show;
+    const carryId = s.tier === 1 ? 'ganh' : 'xeday';
+    ctx.player.setCarry(s.where === 'carried' && !this.stowed ? carryId : ctx.player.carry === 'ganh' || ctx.player.carry === 'xeday' ? '' : ctx.player.carry);
     if (!show) return;
     this.group.position.set(s.x, groundY(s.x, s.z), s.z); this.group.rotation.y = s.yaw;
     const m = new MB(), tm = new MB(), st = stove(g), placed = s.where === 'placed';
@@ -141,7 +158,7 @@ export class StallSys {
     const g = ctx.g, s = g.stall;
     if (s.tier < sp.minTier) { toast(`Chỗ này cần ${TIERS[sp.minTier].name.toLowerCase()} trở lên.`, 'warn'); return false; }
     if (sp.fee > 0 && s.paidDay !== g.day) { if (!spend(g, sp.fee, 'fees')) { toast(`Không đủ ${money(sp.fee)} phí chỗ ở ${sp.name}.`, 'bad', 'cash'); return false; } toast(`Đã đóng ${money(sp.fee)} phí chỗ hôm nay.`, 'info', 'cash'); }
-    s.paidDay = g.day; s.where = 'placed'; s.spot = sp.id; s.x = sp.x; s.z = sp.z; s.yaw = sp.yaw; s.open = false; sfx('place'); this.rebuild(); bus.emit('save', 'dat quay'); return true;
+    s.paidDay = g.day; s.where = 'placed'; s.spot = sp.id; s.x = sp.x; s.z = sp.z; s.yaw = sp.yaw; s.open = false; this.stowed = false; sfx('place'); this.rebuild(); bus.emit('save', 'dat quay'); return true;
   }
   /** Để quầy ở chỗ ở (cạnh giường). */
   storeHome(): boolean {
@@ -152,7 +169,7 @@ export class StallSys {
   pickUp(): boolean {
     const s = this.s; if (s.tier === 0 || s.tier >= 3) { toast('Sạp cố định không dời đi được.', 'warn'); return false; }
     this.close(true); for (const n of this.customers.slice()) this.dismiss(n, false);
-    s.where = 'carried'; s.spot = null; sfx('pick'); this.rebuild(); return true;
+    s.where = 'carried'; s.spot = null; this.stowed = false; sfx('pick'); this.rebuild(); return true;
   }
   open(): boolean {
     const g = ctx.g, s = g.stall;
@@ -338,8 +355,8 @@ export class StallSys {
   reset() { for (const n of this.customers.slice()) this.dismiss(n, false); this.builtKey = ''; this.stockKey = ''; this.busy = null; this.actorId = ''; this.rowdy = 0; ctx.city.roadblock.visible = eventOn(ctx.g, 'cam_duong'); NAV_BLOCK.clear(); if (eventOn(ctx.g, 'cam_duong')) this.onEvent('cam_duong', true); }
   refresh() { this.builtKey = ''; this.stockKey = ''; }
 }
-export function stallHint(g: Game): string {
+export function stallHint(g: Game, stowed = false): string {
   const s = g.stall; if (s.tier === 0) return 'Chưa có quầy';
-  return s.where === 'carried' ? 'Đang mang theo' : s.where === 'home' ? 'Để ở chỗ ở' : s.open ? 'Đang mở bán' : 'Đã đặt, chưa mở';
+  return s.where === 'carried' ? (stowed ? 'Cất trong ba lô' : 'Đang mang theo') : s.where === 'home' ? 'Để ở chỗ ở' : s.open ? 'Đang mở bán' : 'Đã đặt, chưa mở';
 }
 export { level, canSell, stallRoom, addStack, absMin };

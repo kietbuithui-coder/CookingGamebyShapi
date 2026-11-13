@@ -11,7 +11,7 @@ export interface Look {
   skin: number; bag: number; hatCol: number; long: boolean; apron: number; shoe: number;
 }
 export const SKINS = [0xf2c9a4, 0xecbe94, 0xe0aa7c, 0xf6d6b6, 0xd49a6a];
-export type Pose = 'idle' | 'walk' | 'sit' | 'talk' | 'work' | 'carry' | 'wave' | 'lie' | 'angry' | 'dance' | 'ride';
+export type Pose = 'idle' | 'walk' | 'sit' | 'talk' | 'work' | 'carry' | 'wave' | 'lie' | 'angry' | 'dance' | 'ride' | 'read' | 'drink' | 'chat';
 
 export function lookFromArch(a: ArchDef, R: RNG, fem = R.chance(a.fem)): Look {
   let face = R.pick(a.faces);
@@ -147,13 +147,16 @@ export class Rig {
       aL = -1.75 + Math.sin(d) * 0.75; aR = -1.75 - Math.sin(d) * 0.75; aLz = -0.45; aRz = 0.45;
       lL = 0.15 + Math.sin(d) * 0.42; lR = 0.15 - Math.sin(d) * 0.42;
     }
+    else if (p === 'read') { aL = aR = -1.12; aLz = -0.34; aRz = 0.34; }                   // hai tay cầm tờ báo
+    else if (p === 'drink') { aR = -1.05 + Math.sin(this.t * 1.6) * 0.07; aRz = 0.26; aL = -0.16; }   // cầm ly trước bụng, thỉnh thoảng nhấp một ngụm
+    else if (p === 'chat') { aR = -1.15 + Math.sin(this.t * 3.1) * 0.42; aL = -0.55 + Math.cos(this.t * 2.3) * 0.22; aRz = 0.25; aLz = -0.18; }
     else if (p === 'idle') { aL += Math.sin(this.t * 1.3) * 0.04; aR -= Math.sin(this.t * 1.3) * 0.04; }
     const L = this.legL.rotation, R = this.legR.rotation, A = this.armL.rotation, B = this.armR.rotation;
     L.x += (lL - L.x) * k; R.x += (lR - R.x) * k; A.x += (aL - A.x) * k; B.x += (aR - B.x) * k; A.z += (aLz - A.z) * k; B.z += (aRz - B.z) * k;
     const h = this.look.h;
     this.inner.position.y = (walking ? Math.abs(Math.cos(this.phase)) * 0.028 : Math.sin(this.t * 1.6) * 0.004) * h - this.sit * 0.33 * h - this.lie * 0.62 * h
       + (p === 'dance' ? Math.abs(Math.sin(this.t * 6.4)) * 0.05 * h : 0);
-    this.inner.rotation.x = -this.lie * 1.5 + (walking ? 0.04 : 0); this.inner.position.z = this.lie * 0.75 * h;
+    this.inner.rotation.x = -this.lie * 1.5 + (walking ? 0.04 : 0) + (p === 'read' ? 0.16 : p === 'drink' ? -0.08 : 0); this.inner.position.z = this.lie * 0.75 * h;
     this.inner.rotation.z = walking ? Math.sin(this.phase) * 0.025 : 0;
     // biểu cảm: giữ tạm thời rồi về nền, thỉnh thoảng chớp mắt, mấp máy khi nói
     if (this.exprT > 0) { this.exprT -= dt; if (p === 'talk' && this.expr !== 4 && this.expr !== 3) this.setExpr(Math.sin(this.t * 11) > 0 ? 6 : base); }
