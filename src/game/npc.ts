@@ -86,12 +86,14 @@ export class Npcs {
   }
   spawnPed(nearX: number, nearZ: number, minD = 34, maxD = 80, arch?: ArchDef): Npc | null {
     const R = this.R, h = hourOf(ctx.g), p = ctx.player, [fx, fz] = p.fwd;
-    for (let t = 0; t < 14; t++) {
-      const c = NAV[R.int(0, NAV.length - 1)], d2 = dist2(c.x, c.z, nearX, nearZ);
-      if (d2 < minD * minD || d2 > maxD * maxD) continue;
+    // Chỉ bốc trong số các nút nằm đúng vành khoảng cách. (Trước đây bốc đại trên cả bản đồ nên vành hẹp quanh quầy
+    // hay trượt hết cả 14 lần → khách hoặc nhân vật sự kiện lặng lẽ không xuất hiện.)
+    const ring = NAV.filter((c) => { const d2 = dist2(c.x, c.z, nearX, nearZ); return d2 >= minD * minD && d2 <= maxD * maxD && c.tag !== 'alley'; });
+    for (let t = 0; t < 14 && ring.length; t++) {
+      const c = ring.splice(R.int(0, ring.length - 1), 1)[0];
       const sx = c.door ? c.door[0] : c.x, sz = c.door ? c.door[1] : c.z, pd = Math.sqrt(dist2(sx, sz, p.x, p.z));
       const inView = ((sx - p.x) * fx + (sz - p.z) * fz) / (pd || 1) > 0.5;
-      if (pd < 16 || (!c.door && inView && pd < 60) || c.tag === 'alley') continue;
+      if (pd < 16 || (!c.door && inView && pd < 60)) continue;
       const a = arch ?? this.pickArch(c.district, h), fem = R.chance(a.fem);
       const n = this.make('ped', a, fem, lookFromArch(a, R, fem), sx, sz, R.range(0, 6.28));
       n.name = this.name(fem); n.speed = a.speed * R.range(0.9, 1.1); this.route(n, this.destFor(n, c), false);

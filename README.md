@@ -54,15 +54,15 @@ Nên **xoay ngang** điện thoại và bấm **Toàn màn hình** ở màn hìn
 
 ## Đã kiểm thử gì
 
-**Tự động:** 116 bài kiểm thử (`npm test`) cho toàn bộ luật chơi — giá cả, giá vốn, khách mua hay bỏ đi, đánh giá, hư hỏng nguyên liệu, nợ, thời tiết, sự kiện, nâng cấp bản lưu, tính nhất quán dữ liệu, và một bài mô phỏng 45 ngày liên tục.
+**Tự động:** 117 bài kiểm thử (`npm test`) cho toàn bộ luật chơi — giá cả, giá vốn, khách mua hay bỏ đi, đánh giá, hư hỏng nguyên liệu, nợ, thời tiết, sự kiện, nâng cấp bản lưu, tính nhất quán dữ liệu, và một bài mô phỏng 45 ngày liên tục.
 
-**Chạy thật trong Chrome không giao diện** (màn 844×390 ngang và 390×844 dọc, giả lập cảm ứng), không có lỗi console: vào game, chơi mới/chơi tiếp, lưu và nạp lại; đi bằng cần ảo và bàn phím, vuốt nhìn, va chạm tường; xin tiền, nhặt ve chai, bới thùng rác, bán ve chai, vác hàng, rửa chén, giao hàng, cơm chay; mua đồ nghề; bốc hàng – mặc cả – trả tiền; gánh/đẩy quầy, đặt quầy; cả 5 mini-game nấu ăn bằng thao tác chạm; mở bán, khách gọi món, làm món, giao món, nhận tiền và tiền boa; 4 nhân vật sự kiện (thanh tra, bảo kê, khách quậy, khách quen xin chịu); hội thoại với cả 23 nhân vật; ngân hàng, vay nóng, thuê phòng; ngủ và tổng kết ngày; ban đêm, mưa giông, ngập.
+**Chạy thật trong Chrome không giao diện** (màn 844×390 ngang và 390×844 dọc, giả lập cảm ứng), không có lỗi console: vào game, chơi mới/chơi tiếp, lưu và nạp lại; đi bằng cần ảo và bàn phím, vuốt nhìn, va chạm tường; xin tiền, nhặt ve chai, bới thùng rác, bán ve chai, vác hàng, rửa chén, giao hàng, cơm chay; mua đồ nghề; bốc hàng – mặc cả – trả tiền; gánh/đẩy quầy, đặt quầy; cả 5 mini-game nấu ăn bằng thao tác chạm; mở bán, khách gọi món, làm món, giao món, nhận tiền và tiền boa; cả 6 nhân vật sự kiện (thanh tra, bảo kê, khách quậy, khách quen xin chịu, nhà phê bình, khách VIP); hội thoại với cả 23 nhân vật; ngân hàng, vay nóng, thuê phòng; ngủ và tổng kết ngày; phá sản và làm lại; ban ngày lẫn ban đêm với mưa nhỏ, mưa to, giông, ngập.
 
 **Chưa kiểm được:**
 
 - **Điện thoại thật.** Môi trường làm game không có GPU nên không đo được tốc độ khung hình thật. Hãy bật "Hiện FPS" trong Cài đặt và báo lại tên máy + số FPS.
 - **Âm thanh.** Mã chạy không lỗi nhưng chưa ai nghe thử.
-- Nhà phê bình và khách VIP (dùng chung luồng gọi món với khách thường), màn hình phá sản, trộm đêm, các mục tiêu từ bước 7 trở đi, và các buổi chơi dài nhiều giờ.
+- Chưa ai chơi trọn chuỗi mục tiêu theo trình tự thật (mới ép điều kiện để xác nhận 11 bước nối nhau đúng). Trộm đêm và các buổi chơi dài nhiều giờ cũng chưa được chạy thử.
 
 ## Hiệu năng và mức đồ hoạ
 
@@ -82,7 +82,7 @@ Cần Node.js 20 trở lên.
 ```bash
 npm install
 npm run dev          # máy chủ phát triển, mở địa chỉ được in ra
-npm test             # 116 bài kiểm thử luật chơi
+npm test             # 117 bài kiểm thử luật chơi
 npm run build        # kiểm tra kiểu + đóng gói ra dist/
 npm run build:pages  # kiểm tra kiểu + kiểm thử + đóng gói ra docs/ (GitHub Pages)
 ```

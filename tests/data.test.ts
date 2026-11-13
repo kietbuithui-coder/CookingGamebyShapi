@@ -122,6 +122,14 @@ describe('thế giới', () => {
     const from = nearestNode(PLACES.camp.x, PLACES.camp.z);
     for (const s of SPOTS) { const to = nearestNode(s.x, s.z), path = findPath(from.id, to.id); expect(path.length, s.id).toBeGreaterThan(1); expect(path[path.length - 1]).toBe(to.id); }
   });
+  it('quanh mỗi chỗ bán luôn có đủ nút đường đi để khách và nhân vật sự kiện xuất hiện', () => {
+    // Npcs.spawnPed chỉ thả người ở các nút cách quầy 16–42 m và không nằm trong hẻm. Nếu sau này sửa bản đồ làm một
+    // chỗ bán thiếu nút như vậy thì khách vãng lai, thanh tra, nhà phê bình… sẽ lặng lẽ không bao giờ tới.
+    for (const sp of SPOTS) {
+      const ring = NAV.filter((c) => { const d = Math.hypot(c.x - sp.x, c.z - sp.z); return d >= 18 && d <= 38 && c.tag !== 'alley'; });
+      expect(ring.length, sp.id).toBeGreaterThanOrEqual(6);
+    }
+  });
   it('mọi điểm trên bản đồ đều thuộc một khu', () => {
     for (let x = MAP.x0; x <= MAP.x1; x += 12) for (let z = MAP.z0; z <= MAP.z1; z += 12) expect(DISTRICT[districtAt(x, z)]).toBeDefined();
   });

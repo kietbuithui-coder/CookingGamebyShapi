@@ -75,6 +75,8 @@ void main(){ vec3 b = position; float H = 20.0, S = 30.0;
   if (length(p.xz - uCam.xz) < uNear) hide = 1.0;
   vA = (1.0 - hide) * (0.35 + 0.65 * aEnd);
   gl_Position = hide > 0.5 ? vec4(2.0, 2.0, 2.0, 1.0) : projectionMatrix * viewMatrix * vec4(p, 1.0); }`;
+/** Số vệt mưa tối đa (mưa to trở lên vẽ hết; mưa nhỏ vẽ khoảng 2/3). */
+const RAIN_N = 2400;
 const RAIN_FS = `uniform vec3 uCol; uniform float uAlpha; varying float vA; void main(){ gl_FragColor = vec4(uCol, uAlpha * vA); }`;
 
 export class Env {
@@ -82,6 +84,8 @@ export class Env {
   sky: THREE.Mesh; skyU: Record<string, THREE.IUniform>; rain: THREE.LineSegments; rainU: Record<string, THREE.IUniform>;
   fog = new THREE.Fog(0xcfe9fb, 30, 200); pools: THREE.Mesh; poolMat: THREE.MeshBasicMaterial; lights: THREE.PointLight[] = [];
   flood: THREE.Mesh; night = 0; flash = 0; private flashT = 6; rainAmt = 0; private lampT = 0; private time = 0; wet = 0;
+  /** Độ u ám 0–1 của bầu trời, chuyển dần khi đổi thời tiết. Trời mưa thì luôn u ám rõ rệt. */
+  ov = 0;
   private groundMats: THREE.MeshLambertMaterial[] = []; sunDir = new THREE.Vector3(0.4, 0.8, 0.3); viewDist = 190; shadowOn = true; shadowSize = 34;
   thunder: (() => void) | null = null; blackout = false; private dark = 0;
   constructor(public scene: THREE.Scene, public city: City) {
@@ -91,10 +95,10 @@ export class Env {
     this.sky = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 12), new THREE.ShaderMaterial({ vertexShader: SKY_VS, fragmentShader: SKY_FS, uniforms: this.skyU, side: THREE.BackSide, depthWrite: false, depthTest: true, fog: false }));
     this.sky.frustumCulled = false; this.sky.renderOrder = 10; this.sky.scale.setScalar(50); scene.add(this.sky);
     // mưa
-    const N = 1400, pos = new Float32Array(N * 6), end = new Float32Array(N * 2);
+    const N = RAIN_N, pos = new Float32Array(N * 6), end = new Float32Array(N * 2);
     for (let i = 0; i < N; i++) { const x = Math.random() * 30, y = Math.random() * 20, z = Math.random() * 30; pos.set([x, y, z, x, y, z], i * 6); end[i * 2] = 0; end[i * 2 + 1] = 1; }
     const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.BufferAttribute(pos, 3)); rg.setAttribute('aEnd', new THREE.BufferAttribute(end, 1));
-    this.rainU = { uTime: { value: 0 }, uSpeed: { value: 16 }, uLen: { value: 0.7 }, uCam: { value: new THREE.Vector3() }, uWind: { value: new THREE.Vector2() }, uCol: { value: new THREE.Color(0xcfe0f0) }, uAlpha: { value: 0 }, uNear: { value: 0 },
+    this.rainU = { uTime: { value: 0 }, uSpeed: { value: 16 }, uLen: { value: 0.7 }, uCam: { value: new THREE.Vector3() }, uWind: { value: new THREE.Vector2() }, uCol: { value: new THREE.Color(0xe6eff7) }, uAlpha: { value: 0 }, uNear: { value: 0 },
       uRoof: { value: Array.from({ length: 6 }, () => new THREE.Vector4(1e5, 1e5, 1e5, 1e5)) } };
     this.rain = new THREE.LineSegments(rg, new THREE.ShaderMaterial({ vertexShader: RAIN_VS, fragmentShader: RAIN_FS, uniforms: this.rainU, transparent: true, depthWrite: false }));
     this.rain.frustumCulled = false; this.rain.visible = false; this.rain.renderOrder = 5; scene.add(this.rain);
@@ -130,14 +134,15 @@ export class Env {
     const dim = clamp(w.dim, -0.2, 1), dayT = clamp((hour - 5.4) / 13.2);
     const isDay = hour > 5.4 && hour < 18.6;
     this.night = damp(this.night, hour < 5.2 || hour > 19 ? 1 : hour < 6 ? (6 - hour) / 0.8 : hour > 18 ? hour - 18 : 0, 3, dt);
-    // màu trời bị mây che
-    const grey = ca.setRGB(0.5, 0.54, 0.6).multiplyScalar(lerp(1, 0.32, this.night));
-    const d = Math.max(0, dim); top.lerp(grey, d * 0.85); hor.lerp(cb.copy(grey).multiplyScalar(1.15), d * 0.8);
+    // màu trời bị mây che: hễ có mưa là trời phải xám hẳn, nếu không nhìn như nắng đẹp mà lại mưa
+    this.ov = damp(this.ov, clamp(Math.max(Math.max(0, dim) * 1.5, w.rain > 0 ? 0.55 + w.rain * 0.4 : 0)), 0.7, dt);
+    const d = this.ov, grey = ca.setRGB(0.56, 0.59, 0.64).multiplyScalar(lerp(1, 0.32, this.night));
+    top.lerp(grey, d * 0.92); hor.lerp(cb.copy(grey).multiplyScalar(1.12), d * 0.88);
     // hướng mặt trời (ban đêm dùng làm trăng)
     const ang = isDay ? dayT * Math.PI : clamp(((hour + 24 - 18.6) % 24) / 10.8) * Math.PI;
     this.sunDir.set(Math.cos(ang) * 0.82, Math.sin(ang) * 0.92 + 0.14, isDay ? 0.36 : -0.3).normalize();
-    (U.uSunDir.value as THREE.Vector3).copy(this.sunDir); U.uNight.value = this.night; U.uCloud.value = damp(U.uCloud.value, d, 1.5, dt); U.uTime.value = this.time;
-    const si = lerp(a.si, b.si, t) * (1 - d * 0.72), amb = lerp(a.amb, b.amb, t) * (1 - d * 0.3);
+    (U.uSunDir.value as THREE.Vector3).copy(this.sunDir); U.uNight.value = this.night; U.uCloud.value = d; U.uTime.value = this.time;
+    const si = lerp(a.si, b.si, t) * (1 - d * 0.8), amb = lerp(a.amb, b.amb, t) * (1 - d * 0.28);
     this.sun.color.copy(sunC); this.sun.intensity = si * 1.55 + this.flash * 2.5;
     this.hemi.color.copy(top).lerp(cb.setRGB(1, 1, 1), 0.55); lerpHex(a.gnd, b.gnd, t, this.hemi.groundColor); this.hemi.intensity = amb * 2.5 + this.flash * 2;
     const p = cam.position;
@@ -166,9 +171,9 @@ export class Env {
     this.rainAmt = damp(this.rainAmt, w.rain, 0.8, dt);
     const R = this.rainU; this.rain.visible = this.rainAmt > 0.02;
     if (this.rain.visible) {
-      R.uTime.value = this.time; (R.uCam.value as THREE.Vector3).copy(p); R.uAlpha.value = 0.16 + this.rainAmt * 0.3; R.uSpeed.value = 13 + this.rainAmt * 9; R.uLen.value = 0.45 + this.rainAmt * 0.6;
+      R.uTime.value = this.time; (R.uCam.value as THREE.Vector3).copy(p); R.uAlpha.value = 0.3 + this.rainAmt * 0.4; R.uSpeed.value = 13 + this.rainAmt * 9; R.uLen.value = 0.55 + this.rainAmt * 0.85;
       (R.uWind.value as THREE.Vector2).set(w.wind * 9, w.wind * 4); R.uNear.value = covered ? 2.2 : 0;
-      this.rain.geometry.setDrawRange(0, Math.floor(1400 * clamp(0.25 + this.rainAmt)) * 2);
+      this.rain.geometry.setDrawRange(0, Math.floor(RAIN_N * clamp(0.3 + this.rainAmt)) * 2);
       const roofs = this.city.world.roofs, near = roofs.map((r) => ({ r, d: Math.max(r.x0 - p.x, p.x - r.x1, 0) + Math.max(r.z0 - p.z, p.z - r.z1, 0) })).sort((x, y) => x.d - y.d);
       (R.uRoof.value as THREE.Vector4[]).forEach((v, k) => { const q = near[k]; if (q && q.d < 26) v.set(q.r.x0, q.r.z0, q.r.x1, q.r.z1); else v.set(1e5, 1e5, 1e5, 1e5); });
     }
