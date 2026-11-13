@@ -1,8 +1,8 @@
 // Kiểm tra phần "chơi" và thang mở công thức: mỗi lần lên cấp chỉ mở 1–2 món, món rẻ trước, đúng tay nghề.
 import { describe, it, expect } from 'vitest';
-import { FUN_LIST, FUNS, funAt } from '../src/data/fun';
+import { FUN_LIST, FUNS, funAt, funOpenAt, funHoursText, fmtHour } from '../src/data/fun';
 import { RECIPE_LIST, RECIPES } from '../src/data/recipes';
-import { unlockRecipes, addXp, level } from '../src/sim/rules';
+import { unlockRecipes, addXp, level, cafeWage, dockWage } from '../src/sim/rules';
 import { fresh } from './helpers';
 
 describe('chỗ vui chơi', () => {
@@ -87,5 +87,33 @@ describe('thang mở công thức', () => {
       expect(r.learn.skill, r.id).toBeLessThanOrEqual(10);
       expect(RECIPES[r.id], r.id).toBe(r);
     }
+  });
+});
+
+describe('giờ mở cửa và tiền công', () => {
+  it('chỗ chơi đóng ngoài giờ, mở trong giờ', () => {
+    expect(funOpenAt('tv_bongda', 12).length).toBe(funAt('tv_bongda').length);
+    expect(funOpenAt('tv_bongda', 23.5)).toEqual([]);
+    expect(funOpenAt('v_temple', 3)).toEqual([]);
+    expect(funOpenAt('v_temple', 12).length).toBeGreaterThan(0);
+    expect(funHoursText('tv_bongda')).toContain('h');
+    expect(fmtHour(22.5)).toBe('22h30');
+    expect(fmtHour(5)).toBe('5h00');
+  });
+  it('công chạy bàn: theo uy tín và tinh thần, sàn 38.000₫', () => {
+    expect(cafeWage(0, 30)).toBe(38000);
+    expect(cafeWage(0, 50)).toBe(38000);
+    expect(cafeWage(10, 50)).toBeGreaterThan(cafeWage(0, 50));
+    expect(cafeWage(0, 80)).toBeGreaterThan(cafeWage(0, 50));
+    expect(cafeWage(20, 100)).toBeGreaterThan(cafeWage(10, 90));
+    for (const r of [0, 5, 40]) for (const m of [0, 50, 100]) expect(cafeWage(r, m) % 1000).toBe(0);
+  });
+  it('công bốc cá trong khoảng 52.000–68.000₫ và không giảm khi may hơn', () => {
+    expect(dockWage(0)).toBe(52000);
+    expect(dockWage(1)).toBe(68000);
+    expect(dockWage(0.5)).toBeGreaterThan(dockWage(0.4));
+    expect(dockWage(-3)).toBe(52000);
+    expect(dockWage(9)).toBe(68000);
+    for (let i = 0; i <= 20; i++) { const v = dockWage(i / 20); expect(v).toBeGreaterThanOrEqual(52000); expect(v).toBeLessThanOrEqual(68000); }
   });
 });

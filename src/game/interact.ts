@@ -86,7 +86,11 @@ export class Interact {
       }
       case 'stall': return mk(g.stall.open ? 'Quầy hàng (đang mở bán)' : 'Quầy hàng', () => ctx.ui.panel('stall'), 'Thực đơn · Sơ chế · Kho quầy');
       case 'homeStall': return mk('Mang quầy đi', () => { ctx.stall.pickUp(); }, 'Chạm để gánh lên vai', { label: 'Kho', act: () => ctx.ui.panel('stall') });
-      case 'spot': { const sp = c.ref; return mk(`Đặt quầy tại ${sp.name}`, () => ctx.stall.placeAt(sp), (sp.fee ? `Phí chỗ ${money(sp.fee)}/ngày` : 'Miễn phí') + ' · ' + sp.note); }
+      case 'spot': {
+        const sp = c.ref, sap = g.stall.tier >= 3;
+        return mk(`${sap ? 'Dựng sạp' : 'Đặt quầy'} tại ${sp.name}`, () => ctx.stall.placeAt(sp),
+          (sp.fee ? `Phí chỗ ${money(sp.fee)}/ngày` : 'Miễn phí') + ' · ' + sp.note + (sap ? ' · đặt rồi không dời được' : ''));
+      }
       case 'door': {
         const d = c.ref, lock = d.d.lock as string | undefined, ok = !lock || (g.housing === lock && (HOUSING[lock].per !== 'đêm' || g.day < g.paidUntil));
         return mk(d.want ? 'Đóng cửa' : ok ? 'Mở cửa' : 'Cửa khoá', () => { if (!ok) { toast(`Phòng này phải thuê mới vào được (${HOUSING[lock!].name}: ${money(HOUSING[lock!].rent)}/${HOUSING[lock!].per}).`, 'warn', 'home'); sfx('nope'); return; } d.want = d.want ? 0 : 1; sfx('door'); });
