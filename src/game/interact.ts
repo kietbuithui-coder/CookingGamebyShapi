@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { ctx } from './ctx';
 import type { Npc } from './npc';
 import { placeOpen } from './npc';
+import { who, whoIn, known } from './who';
 import { SHOPS } from '../data/shops';
 import { INGS } from '../data/ingredients';
 import { GEAR_LIST, HOUSING, JUNK } from '../data/gear';
@@ -71,11 +72,11 @@ export class Interact {
       }
       case 'npc': {
         const n: Npc = c.ref;
-        if (n.state === 'fixed') { const cart = A.cart && A.cart.shop === n.fixedId; return mk(cart ? `Tính tiền — ${money(A.cartTotal())}` : `Nói chuyện với ${n.name}`, () => { ctx.player.face(n.x, n.z); A.talk(n); }); }
-        if (n.state === 'queue' && n.order) { const r = RECIPES[n.order.rid], have = R.readyCount(g, r.id) >= n.order.n; return mk(have ? `Giao ${n.order.n} ${r.short}` : `Làm ${r.short} cho khách`, () => ctx.stall.serve(n), `${n.name} · ${n.arch.name}` + (n.regular ? ' · khách quen' : '')); }
+        if (n.state === 'fixed') { const cart = A.cart && A.cart.shop === n.fixedId; return mk(cart ? `Tính tiền — ${money(A.cartTotal())}` : `Nói chuyện với ${whoIn(n)}`, () => { ctx.player.face(n.x, n.z); A.talk(n); }); }
+        if (n.state === 'queue' && n.order) { const r = RECIPES[n.order.rid], have = R.readyCount(g, r.id) >= n.order.n; return mk(have ? `Giao ${n.order.n} ${r.short}` : `Làm ${r.short} cho khách`, () => ctx.stall.serve(n), who(n) + (n.regular && known(n) ? ' · khách quen' : '')); }
         if (n.state === 'toStall' || n.state === 'actor' || n.state === 'queue' || n.kind === 'actor') return null;
         if (g.stall.open) return null;
-        return mk(`Xin tiền ${n.name}`, () => { ctx.player.face(n.x, n.z); A.beg(n); }, n.arch.name);
+        return mk(`Xin tiền ${whoIn(n)}`, () => { ctx.player.face(n.x, n.z); A.beg(n); });
       }
       case 'stall': return mk(g.stall.open ? 'Quầy hàng (đang mở bán)' : 'Quầy hàng', () => ctx.ui.panel('stall'), 'Thực đơn · Sơ chế · Kho quầy');
       case 'homeStall': return mk('Mang quầy đi', () => { ctx.stall.pickUp(); }, 'Chạm để gánh lên vai', { label: 'Kho', act: () => ctx.ui.panel('stall') });

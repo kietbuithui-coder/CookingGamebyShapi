@@ -29,7 +29,7 @@ export const SHOP_LIST: ShopDef[] = [
     items: ['banhmi'], say: 'Bánh mì nóng giòn đây!' },
   { id: 'wholesale', name: 'Vựa đầu mối Tám Lúa', vendor: 'Chú Tám', vendorLook: 7, open: [3, 9], priceMul: 0.78, fresh: [85, 98], q: 0.86, haggle: 0.25, bulk: 10,
     items: ['gao', 'nep', 'duong', 'dauan', 'heo', 'ga', 'tom', 'bun', 'banhpho', 'da', 'than'], say: 'Bán sỉ thôi nghe, mười ký trở lên.' },
-  { id: 'pharmacy', name: 'Nhà thuốc An Tâm', vendor: 'Cô Dược', vendorLook: 5, open: [7, 21], priceMul: 1, fresh: [100, 100], q: 1, haggle: 0, card: true,
+  { id: 'pharmacy', name: 'Nhà thuốc An Tâm', vendor: 'Cô Hiền', vendorLook: 5, open: [7, 21], priceMul: 1, fresh: [100, 100], q: 1, haggle: 0, card: true,
     items: ['thuoc'], say: 'Em bị sao? Uống thuốc rồi nghỉ ngơi nhé.' },
 ];
 export const SHOPS: Record<string, ShopDef> = Object.fromEntries(SHOP_LIST.map((s) => [s.id, s]));

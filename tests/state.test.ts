@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { newGame, migrate, addStack, takeFrom, moveStack, spoil, purge, isSpoiled, freshFactor, countOf, weightOf, SAVE_VERSION, Stack } from '../src/sim/state';
 import { START_RECIPES, RECIPE_LIST } from '../src/data/recipes';
 import { INGS } from '../src/data/ingredients';
+import { FIXED, REGULARS } from '../src/data/people';
+import * as R from '../src/sim/rules';
 
 describe('ván mới', () => {
   it('bắt đầu ở gầm cầu lúc 06:10 với 18.000₫ và 4 công thức', () => {
@@ -97,6 +99,26 @@ describe('hư hỏng', () => {
   });
 });
 
+describe('người lạ và người quen', () => {
+  it('ván mới chưa quen ai: người đứng quầy chỉ hiện việc họ làm, nói chuyện rồi mới biết tên', () => {
+    const g = newGame(1);
+    expect(g.met).toEqual({});
+    const role = R.fixedLabel(g, 'eatery');
+    expect(role).not.toBe(FIXED.eatery.name);
+    expect(role).not.toContain('Tư');                  // không lộ tên riêng
+    expect(R.meet(g, 'eatery')).toBe(true);
+    expect(R.meet(g, 'eatery')).toBe(false);           // chỉ "lần đầu" một lần
+    expect(R.fixedLabel(g, 'eatery')).toBe('Bà Tư');
+    expect(R.fixedLabel(g, 'equip')).not.toBe(FIXED.equip.name);
+  });
+  it('khách quen: lần đầu ghé vẫn là người lạ', () => {
+    const g = newGame(1), r = REGULARS[0];
+    R.changeRel(g, r.id, 0, true);                      // họ vừa tới quầy lần đầu
+    expect(R.hasMet(g, r.id)).toBe(false);
+    R.meet(g, r.id);                                    // bán xong mới biết tên
+    expect(R.hasMet(g, r.id)).toBe(true);
+  });
+});
 describe('nâng cấp bản lưu', () => {
   it('từ chối dữ liệu rác', () => {
     expect(migrate(null)).toBeNull();
@@ -116,6 +138,20 @@ describe('nâng cấp bản lưu', () => {
     expect(g.rec.tra_da.price).toBe(7000);
     expect(g.rec.pho_bo).toBeDefined();                // công thức thêm sau vẫn có mặt
     expect(g.wd.picked).toEqual([]);
+  });
+  it('bản lưu cũ (trước v4) coi như đã quen hết người đứng quầy và những khách quen từng ghé', () => {
+    const old: any = { v: 3, seed: 5, day: 12, min: 600, cash: 1000, rel: { chu_ba: { v: 12, n: 3, last: 11 }, co_lan: { v: 0, n: 0, last: -1 } } };
+    const g = migrate(old)!;
+    for (const id of Object.keys(FIXED)) expect(R.hasMet(g, id), id).toBe(true);
+    expect(R.hasMet(g, 'chu_ba')).toBe(true);
+    expect(R.hasMet(g, 'co_lan')).toBe(false);          // chưa từng ghé thì vẫn là người lạ
+    expect(R.fixedLabel(g, 'eatery')).toBe(FIXED.eatery.name);
+  });
+  it('bản lưu v4 giữ nguyên sổ "đã quen"', () => {
+    const raw: any = newGame(3); raw.met = { eatery: 2 };
+    const g = migrate(JSON.parse(JSON.stringify(raw)))!;
+    expect(g.met).toEqual({ eatery: 2 });
+    expect(R.hasMet(g, 'equip')).toBe(false);
   });
   it('bỏ nguyên liệu và ve chai không còn tồn tại trong game', () => {
     const raw: any = newGame(3);
