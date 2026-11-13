@@ -20,3 +20,9 @@ export const FUN_LIST: FunDef[] = [
 export const FUNS: Record<string, FunDef> = Object.fromEntries(FUN_LIST.map((f) => [f.id, f]));
 /** Các chỗ chơi gắn với một địa điểm (neo). */
 export const funAt = (anchor: string) => FUN_LIST.filter((f) => f.anchor === anchor);
+/** Chỗ chơi còn mở ở giờ đã cho (hoạt động không ghi giờ thì mở cả ngày). */
+export const funOpenAt = (anchor: string, hour: number) => funAt(anchor).filter((f) => !f.hours || (hour >= f.hours[0] && hour < f.hours[1]));
+/** 22.5 → "22h30". */
+export const fmtHour = (h: number) => `${Math.floor(h)}h${String(Math.round((h % 1) * 60)).padStart(2, '0')}`;
+/** Giờ mở cửa để nói với người chơi, ví dụ "5h30–23h · 8h–22h30". */
+export const funHoursText = (anchor: string) => [...new Set(funAt(anchor).filter((f) => f.hours).map((f) => f.hours!.map(fmtHour).join('–')))].join(' · ');

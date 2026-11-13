@@ -148,7 +148,16 @@ Ghế đá nào đã là chỗ ngủ (ghế trong công viên) thì giữ nguyê
 
 Hai việc làm thêm nằm trong hội thoại chứ không phải bảng riêng: **chạy bàn** ở quán cà phê, 60 phút, công `38.000₫ + uy_tín×120 + max(0, tinh_thần−50)×120`, boa thêm 0–8.000₫ (6.000₫ nếu tinh thần trên 60), đổi lại mất 18 sức, 3 đói, 7 khát; **bốc cá ở cảng**, chỉ 4h30–10h, cần 35 sức, 110 phút, 52.000–68.000₫, mất 30 sức. Cả hai đi qua `R.advance`/`R.earn`/`R.consume` như mọi việc khác.
 
-**Nút cất gánh** (`#stowb` trên HUD, chỉ hiện khi đã có quầy): đang gánh thì đổi qua lại giữa "gánh trên vai" và "gánh trong ba lô" (`Stall.stowed`, `player.setCarry('')`); đang dựng quầy thì nút này gọi `pickUp()` — dọn cả quầy vào ba lô. Sạp cố định (bậc 3) không dọn được nên nút ẩn.
+**Nút cất gánh** (`#stowb` trên HUD, chỉ hiện khi đã có quầy): đang gánh thì đổi qua lại giữa "gánh trên vai" và "gánh trong ba lô" (`Stall.stowed`, `player.setCarry('')`); đang dựng quầy thì nút này gọi `pickUp()` — dọn cả quầy vào ba lô (chỉ khi đứng trong 6 m và quầy không còn khách xếp hàng). Sạp cố định (bậc 3) không dọn được nên nút ẩn.
+
+### 4.12 Sạp cố định (bậc 3)
+
+Sạp là bậc cuối của nghề: 9.000.000₫ ở tiệm Đồ Nghề Ba Tài, chứa 90 kg, bày 10 món, 7 khách xếp hàng, 20 khay, có mái che thật (`world.roofs`) nên nấu ăn không sợ mưa. Mô hình là quầy gỗ 2,6 m có mái bạt xanh–vàng, cột, có thể thêm bàn ghế nhựa, bảng hiệu, ô dù như mọi bậc khác.
+
+- **Đặt chỗ**: mua xong sạp nằm "trong ba lô" (không vác lên vai, `carryId` rỗng); người chơi chạm vào vòng sáng vàng của một chỗ bán để dựng (`placeAt`). Đặt rồi thì `pickUp()`/`storeHome()` đều từ chối — sạp cố định đúng nghĩa.
+- **Phí chỗ theo ngày**: `stallRent(g)` trả về phí của chỗ đang đặt; đầu mỗi ngày `newDay` gọi `payStallRent(g)` để trừ vào sổ `fees`. Thiếu tiền thì cờ `flags.sapNo` được bật, quầy đóng và chỉ mở lại được khi đóng đủ (`Stall.open()` thử trừ tiền trước). Panel Quầy hiện phí chỗ và nhắc khi đang nợ.
+- **Đổi lại**: quầy để ngoài đường qua đêm **không bị dỡ trộm** (mọi bậc khác đều bị), và bão/ngập chỉ làm hỏng quầy như bình thường.
+- Nhánh `tier < 3` đã rà hết: `pickUp`, `storeHome`, trộm đêm, ô dù (không cần vì đã có mái), nút "Dọn hàng, mang đi" trong panel và nút cất gánh trên HUD đều ẩn với bậc 3.
 
 ## 5. Điều khiển cảm ứng
 
@@ -170,6 +179,7 @@ Hai việc làm thêm nằm trong hội thoại chứ không phải bảng riên
 - `tests/time.test.ts` — thời gian, chỉ số sinh tồn, thời tiết, sự kiện, chỗ ở, mô phỏng 45 ngày.
 - `tests/data.test.ts` — tính nhất quán dữ liệu (nguyên liệu nào cũng mua được, dụng cụ nào cũng có bán, lưới đường đi liên thông, nhãn người lạ không lộ nghề hay tên…).
 - `tests/settings.test.ts` — làm sạch dữ liệu bố cục nút.
+- `tests/stall.test.ts` — sạp cố định: phí chỗ theo ngày, trừ tiền đầu ngày, thiếu tiền thì đóng quầy và treo nợ, mua sạp thì lên bậc 3 và chưa có chỗ.
 - `tests/fun.test.ts` — bảng chỗ chơi (mã không trùng, có neo, có giờ hợp lệ, chơi lâu hơn thì lên tinh thần nhiều hơn) và thang mở công thức (cấp 1 mở đúng 1 món, cấp sau mở 2; luôn là món rẻ nhất còn thiếu; không vượt tay nghề; món sau không rẻ hơn món trước; cấp 10 mở đủ 60 món).
 
 Ba bài mới ở lượt 2: mỗi nhân vật phụ phải có tên, nhãn việc, câu mở đầu và ít nhất hai câu chuyện đủ dài; bảng `RUDE` chỉ được có tối đa 8 nhóm và phải có đủ lời cho cả năm kiểu (giấy, khạc nhổ, mắng, đuổi, khạc nhổ khi bị xin tiền); khách quen không được trùng id hay tên và phải có cả tên kiểu học sinh.
@@ -187,7 +197,7 @@ Người chơi đã thử bản đầu và gửi danh sách góp ý; việc đư
 Còn lại:
 
 1. Chỗ ở: thêm 3 kiểu (đang 5/8).
-2. Mở sạp cố định (bậc 3) — mô hình, sức chứa, hàng chờ đã có; còn thiếu bước chọn chỗ đặt khi mua, phí chỗ tính tự động mỗi ngày, và rà lại các nhánh `tier < 3` — rồi tới quán ăn, nhà hàng.
+2. **Đã xong sạp cố định (bậc 3)** — xem mục 4.12. Còn lại của nhánh này: quán ăn nhỏ, quán có chỗ ngồi, nhà hàng bình dân, chuỗi cửa hàng (mới có tên trong `FUTURE_TIERS`).
 3. Hệ thống băng nhóm, nhân viên phụ bán.
 
 **Việc nền chưa làm**

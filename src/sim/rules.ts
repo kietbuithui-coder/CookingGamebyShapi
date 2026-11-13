@@ -107,6 +107,11 @@ export function recipeCost(g: Game, r: RecipeDef): { ing: number; pack: number; 
   return { ing, pack: r.pack, fuel, total: ing + r.pack + fuel };
 }
 export const marginOf = (price: number, cost: number) => (price > 0 ? (price - cost) / price : 0);
+// ───────────────────────── Việc làm thêm ─────────────────────────
+/** Tiền công một ca chạy bàn (60 phút): theo uy tín và tinh thần lúc nhận việc. */
+export const cafeWage = (rep: number, mood: number) => round1k(38000 + Math.max(0, rep) * 120 + Math.max(0, mood - 50) * 120);
+/** Tiền công một ca bốc cá (110 phút): 52.000–68.000₫, chia bậc theo số ngẫu nhiên 0–1. */
+export const dockWage = (roll: number) => round1k(52000 + clamp(roll, 0, 1) * 16000);
 export const suggestPrice = (g: Game, r: RecipeDef) => Math.max(round1k(recipeCost(g, r).total * 1.9), r.ref);
 export const prepIngs = (r: RecipeDef) => Object.entries(r.ings).filter(([id]) => !r.fin.includes(id));
 export const finIngs = (r: RecipeDef) => Object.entries(r.ings).filter(([id]) => r.fin.includes(id));
@@ -571,6 +576,12 @@ function newDay(g: Game, R: RNG) {
   g.wd.picked = []; g.wd.sacks = 0; g.wd.plates = 0; g.wd.deliveries = 0; g.wd.begTired = Math.max(0, g.wd.begTired - 60); g.wd.haggled = {}; g.wd.litterDay = g.day;
   s.dirt = clamp(s.dirt + 6, 0, 100); s.open = false;
   dailyDebts(g); dailyHousing(g);
+  // sạp cố định: phí chỗ tính tự động mỗi ngày, thiếu tiền thì quầy phải đóng
+  if (stallRent(g) > 0) {
+    const rent = stallRent(g);
+    if (payStallRent(g)) toast(`Phí chỗ sạp hôm nay: ${money(rent)}.`, 'info', 'cash');
+    else toast(`Không đủ ${money(rent)} đóng phí chỗ sạp — quầy đóng cửa tới khi đóng đủ.`, 'bad', 'cash', true);
+  }
   // gửi ngân hàng có lãi nhỏ
   if (g.bank > 0) g.bank += Math.floor(g.bank * 0.0008);
   bus.emit('day', g.day);
@@ -606,6 +617,19 @@ export function buyGear(g: Game, id: string): 'ok' | 'cash' | 'have' {
     g.stall = { ...old, tier: d.tier!, where: 'carried', spot: null, open: false, cond: 100 };
   }
   bus.emit('save', 'mua do'); return 'ok';
+}
+/** Phí chỗ mỗi ngày của quầy đang đặt (chỉ sạp cố định mới đóng theo ngày; gánh/xe đẩy đóng lúc đặt chỗ). */
+export function stallRent(g: Game): number {
+  const s = g.stall;
+  if (s.tier < 3 || s.where !== 'placed' || !s.spot) return 0;
+  return SPOTS.find((p) => p.id === s.spot)?.fee ?? 0;
+}
+/** Thu phí chỗ đầu ngày. Trả về true nếu đã đóng (hoặc không phải đóng). */
+export function payStallRent(g: Game): boolean {
+  const rent = stallRent(g);
+  if (rent <= 0) { delete g.flags.sapNo; return true; }
+  if (!spend(g, rent, 'fees')) { g.flags.sapNo = 1; return false; }
+  delete g.flags.sapNo; g.stall.paidDay = g.day; return true;
 }
 export function repairCost(g: Game): number { return round1k((100 - g.stall.cond) * (300 + g.stall.tier * 500)); }
 /**

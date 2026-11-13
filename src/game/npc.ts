@@ -211,6 +211,7 @@ export class Npcs {
             else this.arrive(n);
           }
         }
+        this.idleOff(n); // đang đi thì không cầm báo, không cầm ly
         n.pose = n.state === 'walk' || n.vel > 0.1 ? 'walk' : n.pose;
       } else if (n.state === 'chase') {
         n.chaseT = (n.chaseT ?? 2) - dt; n.pose = 'angry';
@@ -228,7 +229,7 @@ export class Npcs {
         }
         if (n.chaseT <= 0) { n.hit = false; n.state = 'walk'; n.pose = 'walk'; n.persona = undefined; n.served = true; this.route(n, this.destFor(n, nearestNode(n.x, n.z))); }
       } else if (n.state === 'stand' || n.state === 'sit') {
-        n.timer -= dt; if (n.timer <= 0) { n.pose = 'walk'; this.route(n, this.destFor(n, nearestNode(n.x, n.z))); }
+        n.timer -= dt; if (n.timer <= 0) { this.idleOff(n); n.pose = 'walk'; this.route(n, this.destFor(n, nearestNode(n.x, n.z))); }
       }
       // né người chơi
       if (pd2 < 0.55 * 0.55 && n.state !== 'queue') { const dd = Math.sqrt(pd2) || 0.01; n.x += ((n.x - p.x) / dd) * dt * 1.5; n.z += ((n.z - p.z) / dd) * dt * 1.5; }
@@ -284,7 +285,7 @@ export class Npcs {
     // hành động lúc rảnh
     if (n.idleT2 !== undefined) {
       n.idleT2 -= dt;
-      if (n.idleT2 <= 0) { n.idleT2 = undefined; n.chatWith = undefined; if (n.pose === 'read' || n.pose === 'drink' || n.pose === 'chat') n.pose = 'idle'; rig.hold(null); n.idleT = this.R.range(18, 50); }
+      if (n.idleT2 <= 0) this.idleOff(n);
     } else if (n.state === 'stand' && !n.persona && pd2 < 26 * 26) {
       n.idleT = (n.idleT ?? this.R.range(8, 22)) - dt;
       if (n.idleT <= 0 && this.R.chance(0.4)) this.idleAct(n);
@@ -299,6 +300,7 @@ export class Npcs {
     for (let i = this.browses.length - 1; i >= 0; i--) { const b = this.browses[i]; if (b.n.state !== 'stand' || b.n.hidden || !this.list.includes(b.n)) this.browses.splice(i, 1); }
     const want = clamp(Math.round((q?.npcs ?? 16) / 12), 1, 3);
     if (ctx.mode !== 'play' || this.browses.length >= want) return;
+    if (this.list.length >= Math.round(q.npcs * 1.15)) return; // đừng vượt hạn mức người của mức đồ hoạ
     const cands: string[] = [];
     for (const id of Object.keys(SHOPS)) {
       const a = ctx.world.anchors['v_' + id]; if (!a || !FIXED[id] || this.browses.some((b) => b.shop === id)) continue;
@@ -316,6 +318,15 @@ export class Npcs {
     n.name = this.name(fem); n.state = 'stand'; n.pose = 'idle'; n.timer = R.range(16, 42); n.base = R.range(-0.04, 0.04);
     this.list.push(n); this.browses.push({ n, shop: id });
     if (R.chance(0.55)) this.say(n, R.pick(['Bán cho tôi một phần nghen.', 'Cái này bao nhiêu vậy chú?', 'Cho con thêm ít rau.', 'Tính tiền giúp tôi.', 'Còn tươi không cô?']), 2.6);
+  }
+  /** Thôi đọc báo / uống nước / tám chuyện: trả về dáng đứng thường và bỏ đồ khỏi tay. */
+  private idleOff(n: Npc) {
+    if (n.idleT2 === undefined && n.chatWith === undefined) return;
+    const o = n.chatWith !== undefined ? this.list.find((x) => x.id === n.chatWith) : undefined;
+    n.idleT2 = undefined; n.chatWith = undefined;
+    if (n.pose === 'read' || n.pose === 'drink' || n.pose === 'chat') n.pose = 'idle';
+    n.rig.hold(null); n.idleT = this.R.range(18, 50);
+    if (o) { o.chatWith = undefined; if (o.pose === 'chat') o.pose = 'idle'; o.rig.hold(null); }
   }
   /** Việc lúc rảnh: đọc báo, uống nước, tám chuyện với người bên cạnh (thưa, chỉ khi đang đứng chờ). */
   private idleAct(n: Npc) {
