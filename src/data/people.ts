@@ -97,6 +97,8 @@ export const FIXED_ROLE: Record<string, string> = {
   wholesale: 'Chủ vựa sỉ', pharmacy: 'Dược sĩ', equip: 'Chủ tiệm đồ nghề', eatery: 'Bà chủ quán cơm', scrap: 'Chủ vựa ve chai',
   pawn: 'Chủ tiệm cầm đồ', bank: 'Nhân viên ngân hàng', shark: 'Gã mặt sẹo', motel: 'Chủ nhà nghỉ', tro: 'Ông chủ trọ',
   hotel: 'Lễ tân khách sạn', dock: 'Cai bốc vác', hobo: 'Ông lão lang thang',
+  tra_da: 'Cô bán trà đá', rap: 'Cậu nhóc nhảy đường phố', sua_xe: 'Thợ sửa xe vỉa hè',
+  hat_rong: 'Người hát rong', danh_co: 'Ông già đánh cờ', danh_giay: 'Cậu bé đánh giày',
 };
 
 /** Khách quen có tên, có sở thích riêng — quan hệ được lưu trong save. */
@@ -110,7 +112,73 @@ export const REGULARS: RegularDef[] = [
   { id: 'ong_sau', name: 'Ông Sáu về hưu', arch: 'nguoigia', fem: false, likes: ['bunpho', 'che', 'nuoc'], hour: 6.5, note: 'Ngày nào cũng ghé nếu món ngon.', seed: 16 },
   { id: 'chi_my', name: 'Chị My mẹ bỉm', arch: 'phuhuynh', fem: true, likes: ['che', 'anvat', 'burger'], hour: 17.2, note: 'Hay mua nhiều phần mang về.', seed: 17 },
   { id: 'anh_tai', name: 'Anh Tài thợ hồ', arch: 'congnhan', fem: false, likes: ['com', 'banhmi', 'nuong'], hour: 11.7, note: 'Ăn khoẻ, quý người chịu khó.', seed: 18 },
+  // Tên đẹp và tên "troll" của tụi nhỏ: chỉ những người thực sự quen mới lộ tên, nên đây là những người
+  // người chơi sẽ gặp lại nhiều lần chứ không phải người qua đường.
+  { id: 'chi_ngoc', name: 'Chị Ngọc Hân', arch: 'vanphong', fem: true, likes: ['bunpho', 'nuoc', 'goi'], hour: 11.9, note: 'Tên đẹp, tính kỹ, luôn mua thêm phần mang về.', seed: 21 },
+  { id: 'ca_rot', name: 'Cà Rốt', arch: 'hocsinh', fem: false, likes: ['anvat', 'xien', 'nuoc'], hour: 16.2, note: 'Em út nhóm nhảy của Bin, nói chuyện toàn tiếng lóng.', seed: 22 },
+  { id: 'meo_mun', name: 'Mèo Mun', arch: 'hocsinh', fem: true, likes: ['che', 'chien', 'nuoc'], hour: 17.4, note: 'Tên ở nhóm, đeo tai nghe cả ngày.', seed: 23 },
 ];
+
+/** Nhân vật phụ: người có tên, tính nết và câu chuyện riêng, đứng ở những góc nhỏ ven đường.
+ *  topics: những câu hỏi người chơi mở ra được; đã hỏi rồi thì lần sau không hỏi lại (lưu trong flags). */
+export interface SideTopic { q: string; a: string; }
+export interface SideDef { intro: string; again: string; topics: SideTopic[]; }
+export const SIDE: Record<string, SideDef> = {
+  tra_da: {
+    intro: 'Cô Thắm ngồi bên chiếc bàn nhựa, tay phe phẩy quạt giấy. “Ngồi đi con, nắng lắm.”',
+    again: '“Lại ghé hả? Ngồi đi, cô rót cho ly trà đá.”',
+    topics: [
+      { q: 'Cô bán ở đây bao lâu rồi?', a: 'Ba chục năm rồi con. Hồi đó chỗ này còn là bãi đất trống, cô dựng cái bàn gỗ bán cho mấy anh xe ôm. Giờ xe ôm chạy app hết trơn, mà khách quen cũ vẫn ghé. Ngồi đây là nghe được chuyện của nửa cái xóm.' },
+      { q: 'Con trai cô đâu rồi?', a: 'Nó đi lao động bên Đài, hai năm mới về một lần. Tháng nào cũng gửi tiền về, mà cô có xài đâu — để dành cưới vợ cho nó. Con rảnh thì ghé ngồi, cô kể chuyện cho nghe.' },
+      { q: 'Bán trà đá có lời không cô?', a: 'Lời gì con. Ly ba ngàn, bán năm chục ly mới đủ tiền chợ. Mà cô bán cho vui, cho có người nói chuyện. Bộ con tính bán hàng hả? Bán đi, khổ mà vui, cô ủng hộ.' },
+    ],
+  },
+  rap: {
+    intro: 'Thằng nhóc đội nón lưỡi trai ngược, tai nghe một bên. “Ê, đứng coi chút đi. Tui đang tập bài cho vòng loại.”',
+    again: '“Ghé coi tui tập hả? Ngồi đó đi, khúc này khó lắm.”',
+    topics: [
+      { q: 'Tập nhảy ở đây không ồn à?', a: 'Ồn chứ. Công an xuống hoài. Mà hết chỗ rồi — sân nhà thiếu nhi đóng cửa, quán net thì chật. Gầm cầu này tiếng vang, đúng bài luôn. Nhảy tới khuya là có người đi ngang quăng cho chai nước.' },
+      { q: 'Sao mày không lo học?', a: 'Học buổi sáng mà. Chiều đi giao hàng kiếm tiền mua giày. Má nói nhảy nhót gì, lo học đi. Mà tui thấy đứng trên sân khấu là lúc tui giỏi nhất… Nghe sến ha?' },
+      { q: 'Tên Bin ở đâu ra?', a: 'Tên thật là Bùi Tuấn Anh. Bin là tên nhóm. Trong nhóm còn Cà Rốt, Mèo Mun, Bắp Rang. Kêu tên thật là tui không quay lại đâu đó nghen.' },
+    ],
+  },
+  sua_xe: {
+    intro: 'Chú Hậu đang cạy cái nắp máy, tay dính dầu. “Chờ chút, xong con ốc này đã.”',
+    again: '“Ngồi chơi. Xe cộ gì cần thì nói, chú làm cho.”',
+    topics: [
+      { q: 'Chú sửa xe bao nhiêu năm rồi?', a: 'Ba mươi lăm năm. Chú học nghề từ hồi mười bảy, vá ruột xe đạp cho lính ở bến. Xe máy thời đó hiếm lắm, cả xóm có một chiếc, hư là cả xóm biết.' },
+      { q: 'Giờ sửa xe máy khó hơn hồi xưa không?', a: 'Giờ toàn xe tay ga, phải có máy đọc lỗi. Chú không rành, nên chỉ nhận vá bánh, thay nhớt, bơm hơi. Mà vậy đủ sống. Cái gì mình biết thì làm cho chắc, đừng ham.' },
+      { q: 'Chiếc xe cũ kia của chú hả?', a: 'Chiếc Cub đó hả. Mua năm tám mươi tám, chở vợ đi đám cưới. Giờ không chạy nữa, để đó làm kỷ niệm. Bán thì được mấy đồng, mà bán rồi lấy gì nhớ.' },
+    ],
+  },
+  hat_rong: {
+    intro: 'Cô Hồng ngồi trên ghế nhựa, cây đàn cũ kê trên đùi. “Ngồi nghe một bài không con?”',
+    again: '“Con tới nữa hả. Ngồi đó đi, cô hát bài khác.”',
+    topics: [
+      { q: 'Cô hát ở đây lâu chưa?', a: 'Hát từ hồi còn trong đoàn ca múa. Giờ đoàn giải tán, mắt cũng mờ dần, nên ra đây hát cho người qua đường nghe. Mỗi người bỏ vô thùng vài ngàn, cô đủ tiền chợ. Hát cho vui chứ có ai trả lương đâu con.' },
+      { q: 'Bài cô đang hát nói về gì?', a: 'Về con sông quê cô. Hồi nhỏ cô tắm sông, giờ sông lấp rồi, thành đường lớn. Hát để nhớ thôi, chứ ai còn về đó nữa.' },
+      { q: 'Cô cần con giúp gì không?', a: 'Không cần đâu con. Con ngồi nghe hết một bài là được rồi. Người ta đi ngang qua mà dừng lại nghe, vậy là quý lắm.' },
+    ],
+  },
+  danh_co: {
+    intro: 'Ông Tư ngồi trước bàn cờ tướng, quân đã xếp sẵn. “Có ai chơi không ta? Ngồi đây cả buổi rồi.”',
+    again: '“Lại đây lại đây, làm một ván.”',
+    topics: [
+      { q: 'Ông chơi cờ lâu chưa?', a: 'Từ hồi còn đi làm. Trưa nào cũng ra gốc cây, hai ông một bàn cờ, chơi tới giờ vô ca. Giờ mấy ông đó đi hết rồi, còn tui với cái bàn này. Con chơi được thì chơi, không thì ngồi coi cũng vui.' },
+      { q: 'Sao ông không qua quán cà phê chơi?', a: 'Quán cà phê có máy lạnh, mà tui không quen. Ở đây có bóng cây, có gió, lại có con nít trong xóm ghé coi. Tui chỉ cho tụi nó đi quân, vậy là có chuyện làm.' },
+      { q: 'Hồi xưa ông làm nghề gì?', a: 'Thợ hồ. Cái chợ Xóm Chiều này tui có phần trộn vữa đó nghen. Giờ lưng đau, leo giàn không nổi, nên nghỉ. Nghỉ rồi mới thấy ngày dài ghê.' },
+    ],
+  },
+  danh_giay: {
+    intro: 'Thằng bé ngồi trên cái thùng gỗ, hộp xi đánh giày mở toang. “Anh/chị ơi, đánh giày không? Năm ngàn thôi.”',
+    again: '“Anh/chị tới nữa hả! Ngồi đi, con đánh cho bóng liền.”',
+    topics: [
+      { q: 'Sao không đi học vậy Bo?', a: 'Học buổi sáng rồi mà. Chiều ra đây kiếm tiền… Bà nội bệnh, ba con đi làm xa. Con đánh giày một ngày được sáu chục, đủ mua thuốc cho bà.' },
+      { q: 'Hộp xi này của con hả?', a: 'Của ông Năm để lại. Ông nói đánh giày phải đánh hai lớp, lớp đầu lấy bụi, lớp sau mới bóng. Ông mất rồi, con giữ hộp xi này, còn cái ghế nhỏ này nữa.' },
+      { q: 'Ai dạy con đánh giày?', a: 'Ông Năm chứ ai. Ông nói làm nghề gì cũng phải sạch tay, khách mới tin. Con nhớ hoài câu đó, nên đánh xong là rửa tay liền.' },
+    ],
+  },
+};
 
 // ───────────────────────── Lời thoại ─────────────────────────
 // {self}: NPC tự xưng · {you}: gọi người chơi · {dish}: tên món · {price}: giá · {n}: số lượng
@@ -161,7 +229,20 @@ export const LINES = {
     giangho: ['Khu này của tụi anh.', 'Nhìn gì?', 'Bữa nay thu chưa đủ.'],
     congan: ['Giữ gìn trật tự nha bà con.', 'Không buôn bán lấn chiếm lòng đường.', 'Đi tuần chút.'],
   } as Record<ArchId, string[]>,
+  // ── Xấc xược ──
+  // Chỉ một vài nhóm người có kiểu cư xử này, và chỉ thỉnh thoảng (xem RUDE): ném giấy, khạc nhổ,
+  // mắng, đuổi. Đủ để người chơi thấy đường phố không phải lúc nào cũng dễ chịu, không đủ để thành phiền.
+  rude: {
+    paper: ['Hê hê.', 'Cầm lấy nè!', 'Nhìn gì đó?', 'Ê, đồ ăn xin!'],
+    spit: ['Hứ.', 'Xui cả ngày.', 'Tránh ra coi.', 'Đen thôi, đỏ thì quên đi.'],
+    curse: ['Đứng chắn đường hoài vậy!', 'Bán hàng kiểu gì kỳ cục vậy?', 'Nhìn cái gì? Muốn gì?', 'Dẹp ra cho người ta nhờ!', 'Quán gì mà nhìn dơ quá!'],
+    chase: ['Đi chỗ khác bán đi!', 'Dẹp ra khỏi đây!', 'Đừng có lảng vảng chỗ này!', 'Biến ra chỗ khác!'],
+    begSpit: ['Hứ! Sức dài vai rộng mà đi xin.', 'Xin xỏ gì tầm này.', 'Nhục chưa? Đi kiếm việc đi.'],
+  },
 };
+/** Nhóm người dễ nổi nóng. Số càng lớn càng hay gây sự; nhóm không có trong bảng thì hiền, không bao giờ gây chuyện. */
+export const RUDE: Partial<Record<ArchId, number>> = { giangho: 3.4, khotinh: 2.4, hocsinh: 1.7, congnhan: 1.1, taixe: 1, shipper: 0.7, dukhach: 0.4 };
+
 
 /** Người bán & nhân vật cố định. look = hàng trong bảng khuôn mặt. */
 export interface FixedNpcDef { id: string; name: string; face: number; fem: boolean; shirt: number; pants: number; hair: number; hat: number; hairStyle: number; fat: number; h: number; }
@@ -188,5 +269,12 @@ export const FIXED: Record<string, FixedNpcDef> = {
   tro: { id: 'tro', name: 'Bác Năm chủ trọ', face: 3, fem: false, shirt: 0xb9a88a, pants: 0x3a3a42, hair: 0xd9d9d6, hat: 0, hairStyle: 3, fat: 1.1, h: 0.98 },
   hotel: { id: 'hotel', name: 'Lễ tân Vy', face: 1, fem: true, shirt: 0x6a1e2e, pants: 0x1e2430, hair: 0x1e1a18, hat: 0, hairStyle: 2, fat: 0.9, h: 0.98 },
   dock: { id: 'dock', name: 'Anh Sáu Lực', face: 0, fem: false, shirt: 0xb5653c, pants: 0x4a4a42, hair: 0x1e1a18, hat: 2, hairStyle: 0, fat: 1.25, h: 1.06 },
+  // ── Nhân vật phụ ở những chỗ nhỏ ven đường ──
+  tra_da: { id: 'tra_da', name: 'Cô Thắm', face: 1, fem: true, shirt: 0xd9a05a, pants: 0x2a2e3a, hair: 0x2a2420, hat: 0, hairStyle: 2, fat: 1.12, h: 0.94 },
+  rap: { id: 'rap', name: 'Bin', face: 0, fem: false, shirt: 0x2f8fd5, pants: 0x2a2e3a, hair: 0x1e1a18, hat: 4, hairStyle: 0, fat: 0.92, h: 1.0 },
+  sua_xe: { id: 'sua_xe', name: 'Chú Hậu', face: 7, fem: false, shirt: 0x4a5a6a, pants: 0x3a3d42, hair: 0xbfbfbc, hat: 0, hairStyle: 3, fat: 1.18, h: 1.0 },
+  hat_rong: { id: 'hat_rong', name: 'Cô Hồng', face: 4, fem: true, shirt: 0x8a5a9a, pants: 0x1e2430, hair: 0xbfbfbc, hat: 0, hairStyle: 2, fat: 0.98, h: 0.93 },
+  danh_co: { id: 'danh_co', name: 'Ông Tư', face: 3, fem: false, shirt: 0xb9a88a, pants: 0x2a2e3a, hair: 0xd9d9d6, hat: 4, hairStyle: 3, fat: 0.95, h: 0.97 },
+  danh_giay: { id: 'danh_giay', name: 'Bé Bo', face: 2, fem: false, shirt: 0xf5c531, pants: 0x3a5a8a, hair: 0x1e1a18, hat: 2, hairStyle: 0, fat: 0.85, h: 0.72 },
   hobo: { id: 'hobo', name: 'Ông Bảy Lang Thang', face: 3, fem: false, shirt: 0x6a6258, pants: 0x4a4a42, hair: 0xbfbfbc, hat: 4, hairStyle: 1, fat: 0.9, h: 0.96 },
 };

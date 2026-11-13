@@ -4,7 +4,7 @@ import { INGS, ING_LIST } from '../src/data/ingredients';
 import { SHOP_LIST, SHOPS } from '../src/data/shops';
 import { RECIPE_LIST, RECIPES, START_RECIPES, toolsFor, fuelPerPortion, STEP_TOOLS } from '../src/data/recipes';
 import { GEAR, GEAR_LIST, TIERS, HOUSING_LIST, JUNK_LIST } from '../src/data/gear';
-import { ARCH_LIST, REGULARS, ARCH, LINES, FIXED, SEEN, FIXED_ROLE } from '../src/data/people';
+import { ARCH_LIST, REGULARS, ARCH, LINES, FIXED, SEEN, FIXED_ROLE, SIDE, RUDE, ArchId } from '../src/data/people';
 import { WEATHER, EVENT_LIST, hourCurve } from '../src/data/world';
 import { SPOTS, DISTRICT, NAV, findPath, nearestNode, PLACES, districtAt, MAP } from '../src/world/layout';
 
@@ -111,6 +111,31 @@ describe('con người', () => {
       const given = f.name.split(' ').slice(1).join(' ');     // "Bà Tư" → "Tư", "Chú Ba Tài" → "Ba Tài"
       if (given.length > 2) expect(role.includes(given), f.id).toBe(false);
     }
+  });
+  it('tên khách quen không trùng nhau, có cả tên đẹp lẫn tên ở nhóm của tụi nhỏ', () => {
+    expect(new Set(REGULARS.map((r) => r.id)).size).toBe(REGULARS.length);
+    expect(new Set(REGULARS.map((r) => r.name)).size).toBe(REGULARS.length);
+    expect(REGULARS.some((r) => r.arch === 'hocsinh' && !r.name.includes('lớp'))).toBe(true);
+  });
+  it('nhân vật phụ nào cũng có tên, câu mở đầu và câu chuyện riêng', () => {
+    const ids = Object.keys(SIDE);
+    expect(ids.length).toBeGreaterThanOrEqual(6);
+    for (const id of ids) {
+      const s = SIDE[id];
+      expect(FIXED[id], id).toBeDefined();
+      expect(FIXED_ROLE[id], id).toBeTruthy();
+      expect(s.intro.length, id).toBeGreaterThan(30);
+      expect(s.again.length, id).toBeGreaterThan(10);
+      expect(s.topics.length, id).toBeGreaterThanOrEqual(2);
+      for (const t of s.topics) { expect(t.q.length, id).toBeGreaterThan(6); expect(t.a.length, id).toBeGreaterThan(50); }
+    }
+  });
+  it('chỉ một vài nhóm người xấc xược, và có đủ lời cho từng kiểu', () => {
+    const ids = Object.keys(RUDE) as ArchId[];
+    expect(ids.length).toBeGreaterThan(2);
+    expect(ids.length).toBeLessThanOrEqual(8);
+    for (const id of ids) { expect(ARCH[id], id).toBeDefined(); expect(RUDE[id]!, id).toBeGreaterThan(0); }
+    for (const k of ['paper', 'spit', 'curse', 'chase', 'begSpit'] as const) expect(LINES.rude[k].length, k).toBeGreaterThan(0);
   });
   it('các bộ lời thoại không rỗng', () => {
     for (const [k, v] of Object.entries(LINES)) if (Array.isArray(v)) expect(v.length, k).toBeGreaterThan(0);

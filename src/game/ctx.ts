@@ -13,6 +13,8 @@ import type { Sound } from '../audio/audio';
 import type { Interact } from './interact';
 import type { Cook } from '../cook/cook';
 import type { Acts } from './acts';
+import type { Traffic } from './traffic';
+import type { Birds } from '../world/birds';
 
 /** Các nhóm nút người chơi tự xếp được: nút tương tác, nút chạy, hàng nút túi/sổ/bản đồ/cài đặt, các nút khi nấu ăn. */
 export type BtnKey = 'act' | 'run' | 'menu' | 'cook';
@@ -31,10 +33,10 @@ export function cleanLayout(raw: any): UiLayout {
 export interface Settings { quality: number; sfx: number; music: number; sens: number; fps: boolean; auto: boolean; ui: UiLayout; }
 /** pr: tỉ lệ điểm ảnh tối đa (so với điểm ảnh CSS) · blob: bóng tròn dưới chân NPC khi không có bóng đổ thật. */
 export const QUALITY = [
-  { name: 'Rất thấp', pr: 0.7, shadow: 0, shadowSize: 0, npcs: 10, view: 100, lights: 0, blob: true },
-  { name: 'Thấp', pr: 1, shadow: 0, shadowSize: 0, npcs: 14, view: 125, lights: 0, blob: true },
-  { name: 'Vừa', pr: 1.5, shadow: 1024, shadowSize: 30, npcs: 22, view: 165, lights: 2, blob: false },
-  { name: 'Cao', pr: 2, shadow: 2048, shadowSize: 38, npcs: 32, view: 210, lights: 4, blob: false },
+  { name: 'Rất thấp', pr: 0.7, shadow: 0, shadowSize: 0, npcs: 10, view: 100, lights: 0, blob: true, birds: 1, traffic: 1 },
+  { name: 'Thấp', pr: 1, shadow: 0, shadowSize: 0, npcs: 14, view: 125, lights: 0, blob: true, birds: 2, traffic: 2 },
+  { name: 'Vừa', pr: 1.5, shadow: 1024, shadowSize: 30, npcs: 22, view: 165, lights: 2, blob: false, birds: 4, traffic: 3 },
+  { name: 'Cao', pr: 2, shadow: 2048, shadowSize: 38, npcs: 32, view: 210, lights: 4, blob: false, birds: 7, traffic: 5 },
 ];
 /** Mức mặc định: điện thoại "Vừa", máy tính "Cao". */
 export const Q_DEFAULT_MOBILE = 2, Q_DEFAULT_DESKTOP = 3;
@@ -46,6 +48,7 @@ export interface Ctx {
   g: Game; set: Settings; mode: Mode; time: number; mobile: boolean;
   renderer: THREE.WebGLRenderer; scene: THREE.Scene; camera: THREE.PerspectiveCamera;
   city: City; world: World; env: Env; player: Player; input: Input; npcs: Npcs; stall: StallSys; ui: UI; sound: Sound; interact: Interact; cook: Cook; acts: Acts;
+  /** xe cộ chạy trên đường và chim trời — chỉ để thành phố có sự sống */ traffic: Traffic; birds: Birds;
   /** phút game trôi thêm mỗi giây thật (ngủ thì tua nhanh) */
   speed: number;
   save(reason?: string): void; applyQuality(): void; newGame(ac: 'anh' | 'chị'): void; toMenu(): void;

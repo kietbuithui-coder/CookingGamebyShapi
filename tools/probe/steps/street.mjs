@@ -1,0 +1,47 @@
+// Lượt 2: sáu góc phố nhỏ + nhân vật phụ, người xấc xược, xe cộ, chim trời.
+// Chạy: cd tools/probe && node play.mjs steps/street.mjs
+import { boot, fresh } from '../lib.mjs';
+const focus = () => { const f = window.__game.interact.focus; return f ? { label: f.label } : null; };
+const dlg = () => { const d = document.querySelector('#dlg'); return d.classList.contains('hide') ? null : { title: d.querySelector('h3').innerText, text: d.querySelector('p').innerText.slice(0, 80), opts: [...d.querySelectorAll('.btn')].map((b) => b.innerText.split('\n')[0]) }; };
+const go = (x, z, yaw, min) => ({ eval: (x, z, yaw, min) => { const g0 = window.__game; if (min) g0.g.min = min; g0.player.place(x, z, yaw, -0.08); return 1; }, args: [x, z, yaw, min], wait: 1400 });
+const close = { eval: () => { const g0 = window.__game; g0.ui.closeDialog(); g0.mode = 'play'; return 1; }, quiet: true, wait: 400 };
+export default [boot, fresh(9 * 60),
+  { label: 'sáu nhân vật phụ có mặt, đúng nhãn' },
+  { eval: () => { const g0 = window.__game, out = {}; for (const id of ['tra_da', 'rap', 'sua_xe', 'hat_rong', 'danh_co', 'danh_giay']) { const n = g0.npcs.fixed.get(id); out[id] = n ? window.__R.fixedLabel(g0.g, id) : null; } return out; }, max: 1200 },
+  { label: 'trà đá: chuyện rồi phụ bưng trà' },
+  go(-34.3, 53.4, -Math.PI / 2),
+  { eval: focus },
+  { eval: () => { window.__game.interact.trigger(); return 1; }, quiet: true, wait: 800 },
+  { eval: dlg, max: 900 },
+  { eval: () => { const b = [...document.querySelectorAll('#dlg .btn')].find((x) => x.innerText.includes('bao lâu')); b && b.click(); return !!b; }, wait: 600 },
+  { eval: dlg, max: 900 },
+  { eval: () => { const b = [...document.querySelectorAll('#dlg .btn')].find((x) => x.innerText.includes('bưng trà đá')); if (!b) return 'không có'; if (b.disabled) return 'disabled'; b.click(); return 'ok'; }, wait: 700 },
+  { eval: () => { const g0 = window.__game, g = g0.g; return { cash: g.cash, side: g.led.side, flags: Object.keys(g.flags).filter((k) => k.startsWith('side_')).length }; } },
+  close,
+  { label: 'gầm cầu: Bin nhảy trước tường vẽ' },
+  go(-21.9, 94.3, 0, 16 * 60),
+  { eval: () => { const n = window.__game.npcs.fixed.get('rap'); return { hidden: n.hidden, pose: n.rig.pose, dance: !!n.dance }; } },
+  { eval: focus }, { shot: 'street_rap' },
+  { eval: () => { window.__game.interact.trigger(); return 1; }, quiet: true, wait: 800 }, { eval: dlg, max: 900 }, close,
+  { label: 'góc khác: vá xe, hát rong, bàn cờ, đánh giày' },
+  go(-45.4, -25.6, 0), { eval: focus }, close,
+  go(-35.25, 4.0, 0), { eval: focus }, close,
+  go(56.4, -68.8, Math.PI, 0), { eval: focus }, close,
+  go(-24.85, 62.0, 0), { eval: focus }, close,
+  { label: 'người xấc xược' },
+  { eval: () => { const g0 = window.__game; window.__fast(true); return 1; }, quiet: true },
+  { waitFor: () => window.__game.npcs.list.filter((n) => n.kind === 'ped').length > 4, timeout: 60000 },
+  { eval: () => { const g0 = window.__game; window.__fast(false); const p = g0.player, n = g0.npcs.list.filter((x) => x.kind === 'ped')[0]; n.x = p.x + 0.5; n.z = p.z + 3; n.state = 'stand'; n.timer = 60; n.path = []; return window.__rude('paper'); }, wait: 300 },
+  { eval: () => { const g0 = window.__game; g0.player.place(g0.player.x, g0.player.z, 0, 0); return { mood: Math.round(g0.g.st.mood) }; }, wait: 900 },
+  { eval: () => { window.__rude('spit'); return 1; }, wait: 500 },
+  { eval: () => ({ mood: Math.round(window.__game.g.st.mood), toasts: (document.querySelector('#toasts') || { innerText: '' }).innerText.replace(/\n+/g, ' | ').slice(-120) }) },
+  { eval: () => { window.__rude('chase'); return 1; }, wait: 400 },
+  { eval: () => ({ chasing: window.__game.npcs.list.filter((n) => n.state === 'chase').length }) },
+  { eval: () => { window.__fast(true); return 1; }, quiet: true }, { wait: 4000 },
+  { eval: () => { const g0 = window.__game; window.__fast(false); return { chasing: g0.npcs.list.filter((n) => n.state === 'chase').length, mood: Math.round(g0.g.st.mood) }; } },
+  { label: 'xe cộ và chim' },
+  { eval: () => { const g0 = window.__game; g0.set.quality = 3; g0.applyQuality(); g0.player.place(-45.2, -12, 0, 0); return { q: g0.set.quality }; }, wait: 2000 },
+  { eval: () => { const g0 = window.__game; return { traffic: g0.traffic.list.length, birds: g0.birds.list.length, near: g0.traffic.list.filter((r) => Math.hypot(r.grp.position.x - g0.player.x, r.grp.position.z - g0.player.z) < 60).length, flying: g0.birds.list.filter((b) => b.g.visible).length }; } },
+  { eval: () => { const g0 = window.__game; g0.set.quality = 0; g0.applyQuality(); return 1; }, wait: 1500 },
+  { eval: () => ({ traffic: window.__game.traffic.list.length, birds: window.__game.birds.list.length }) },
+];

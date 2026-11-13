@@ -11,7 +11,7 @@ export interface Look {
   skin: number; bag: number; hatCol: number; long: boolean; apron: number; shoe: number;
 }
 export const SKINS = [0xf2c9a4, 0xecbe94, 0xe0aa7c, 0xf6d6b6, 0xd49a6a];
-export type Pose = 'idle' | 'walk' | 'sit' | 'talk' | 'work' | 'carry' | 'wave' | 'lie' | 'angry';
+export type Pose = 'idle' | 'walk' | 'sit' | 'talk' | 'work' | 'carry' | 'wave' | 'lie' | 'angry' | 'dance' | 'ride';
 
 export function lookFromArch(a: ArchDef, R: RNG, fem = R.chance(a.fem)): Look {
   let face = R.pick(a.faces);
@@ -132,7 +132,7 @@ export class Rig {
     const p = this.pose, walking = speed > 0.05 && (p === 'walk' || p === 'carry');
     if (walking) this.phase += dt * (3.2 + speed * 3.4);
     const sw = walking ? Math.sin(this.phase) * clamp(0.3 + speed * 0.3, 0, 0.85) : 0, k = Math.min(1, dt * 12);
-    const sitT = p === 'sit' ? 1 : 0, lieT = p === 'lie' ? 1 : 0;
+    const sitT = p === 'sit' || p === 'ride' ? 1 : 0, lieT = p === 'lie' ? 1 : 0;
     this.sit = damp(this.sit, sitT, 8, dt); this.lie = damp(this.lie, lieT, 6, dt);
     let lL = sw, lR = -sw, aL = -sw * 0.8, aR = sw * 0.8, aLz = 0.06, aRz = -0.06;
     if (this.sit > 0.01) { lL = lR = -1.45 * this.sit; aL = aR = -0.5 * this.sit; }
@@ -141,11 +141,18 @@ export class Rig {
     else if (p === 'carry') { aL = -2.5; aR = -2.5; aLz = -0.25; aRz = 0.25; }
     else if (p === 'wave') { aR = -2.7 + Math.sin(this.t * 10) * 0.3; aRz = -0.35; }
     else if (p === 'angry') { aR = -1.9 + Math.sin(this.t * 14) * 0.25; aL = -0.3; }
+    else if (p === 'ride') { aL = aR = -1.28; aLz = -0.12; aRz = 0.12; }             // hai tay nắm ghi-đông
+    else if (p === 'dance') {
+      const d = this.t * 6.4;
+      aL = -1.75 + Math.sin(d) * 0.75; aR = -1.75 - Math.sin(d) * 0.75; aLz = -0.45; aRz = 0.45;
+      lL = 0.15 + Math.sin(d) * 0.42; lR = 0.15 - Math.sin(d) * 0.42;
+    }
     else if (p === 'idle') { aL += Math.sin(this.t * 1.3) * 0.04; aR -= Math.sin(this.t * 1.3) * 0.04; }
     const L = this.legL.rotation, R = this.legR.rotation, A = this.armL.rotation, B = this.armR.rotation;
     L.x += (lL - L.x) * k; R.x += (lR - R.x) * k; A.x += (aL - A.x) * k; B.x += (aR - B.x) * k; A.z += (aLz - A.z) * k; B.z += (aRz - B.z) * k;
     const h = this.look.h;
-    this.inner.position.y = (walking ? Math.abs(Math.cos(this.phase)) * 0.028 : Math.sin(this.t * 1.6) * 0.004) * h - this.sit * 0.33 * h - this.lie * 0.62 * h;
+    this.inner.position.y = (walking ? Math.abs(Math.cos(this.phase)) * 0.028 : Math.sin(this.t * 1.6) * 0.004) * h - this.sit * 0.33 * h - this.lie * 0.62 * h
+      + (p === 'dance' ? Math.abs(Math.sin(this.t * 6.4)) * 0.05 * h : 0);
     this.inner.rotation.x = -this.lie * 1.5 + (walking ? 0.04 : 0); this.inner.position.z = this.lie * 0.75 * h;
     this.inner.rotation.z = walking ? Math.sin(this.phase) * 0.025 : 0;
     // biểu cảm: giữ tạm thời rồi về nền, thỉnh thoảng chớp mắt, mấp máy khi nói

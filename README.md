@@ -33,17 +33,19 @@ Nên **xoay ngang** điện thoại và bấm **Toàn màn hình** ở màn hìn
 
 ## Đã có trong bản này
 
-- **Thành phố liền mạch** 3×3 ô phố, 10 khu (chợ, công viên, phố văn phòng, khu dân cư, xóm lao động, kho bãi, gầm cầu vượt…), 23 nhân vật cố định, người đi đường theo giờ, ngày–đêm, 8 kiểu thời tiết (nắng, mưa, giông, bão, ngập khu trũng…).
+- **Thành phố liền mạch** 3×3 ô phố, 10 khu (chợ, công viên, phố văn phòng, khu dân cư, xóm lao động, kho bãi, gầm cầu vượt…), 29 nhân vật cố định, người đi đường theo giờ, xe máy – xe đạp chạy trên đường, chim bay trên phố, ngày–đêm, 8 kiểu thời tiết (nắng, mưa, giông, bão, ngập khu trũng…).
 - **Sinh tồn:** đói, khát, năng lượng, sức khoẻ, vệ sinh, tinh thần; ướt mưa, cảm ốm; 5 kiểu chỗ ngủ (gầm cầu, ghế đá, nhà nghỉ, phòng trọ, khách sạn).
 - **Kiếm sống ban đầu:** xin tiền (3 cách mở lời), nhặt ve chai, bới thùng rác, vác hàng, rửa chén (mini-game), giao hàng, cơm chay từ thiện.
 - **Mua sắm:** 12 nơi bán, 73 nguyên liệu có độ tươi và hạn dùng, giá dao động theo ngày, xả hàng cuối buổi, mặc cả, ghi sổ nợ tạp hoá, vựa sỉ mở từ 3h sáng.
 - **Nấu ăn bằng tay:** 5 mini-game (cắt thái, xào/chiên, nướng, nấu/pha, trình bày) + rửa chén; bếp than phải quạt, gió mưa làm tắt lửa; chất lượng món = thao tác × độ tươi × tay nghề.
 - **26 món** (4 món biết sẵn, 22 món học từ người trong phố), từ trà đá 5.000₫ tới hamburger 50.000₫.
-- **Bán hàng:** 4 chỗ bán (phí 0–60.000₫/ngày), thực đơn và giá tự đặt, khách có túi tiền/khẩu vị/độ kiên nhẫn riêng (16 nhóm khách, 8 khách quen), đánh giá sao, tiền boa, uy tín.
+- **Bán hàng:** 4 chỗ bán (phí 0–60.000₫/ngày), thực đơn và giá tự đặt, khách có túi tiền/khẩu vị/độ kiên nhẫn riêng (16 nhóm khách, 11 khách quen), đánh giá sao, tiền boa, uy tín.
 - **2 bậc quầy chơi được:** gánh hàng rong → xe đẩy; 17 món đồ nghề (bếp gas, thùng đá, ô dù, bàn ghế, bảng hiệu…).
 - **Tiền bạc:** sổ sách lời lỗ từng ngày, giá vốn từng món, gửi tiết kiệm, vay ngân hàng, vay nóng Hùng Sẹo, phá sản và làm lại.
 - **22 sự kiện:** lễ hội, ngày lĩnh lương, giá thịt tăng, cúp điện, cấm đường, đối thủ mở quán, thanh tra vệ sinh, nhà phê bình, khách VIP, thu tiền bảo kê, khách quậy, khách quen xin ăn chịu, trộm đêm…
 - **Người lạ và người quen:** người đi đường chỉ hiện theo vẻ ngoài (Người lạ, Học sinh, Người vô gia cư, Người lớn tuổi, Khách du lịch, Công an…), không lộ tên hay nghề. Người đứng quầy phải nói chuyện một lần mới biết tên; khách quen phải bán cho họ một lần.
+- **Góc phố nhỏ:** quán trà đá vỉa hè, chỗ nhảy đường phố dưới gầm cầu (tường vẽ + loa), tiệm vá xe ngoài lề đường, cô hát rong trước cổng chợ, bàn cờ tướng trong công viên, cậu bé đánh giày — mỗi chỗ có một nhân vật phụ kể chuyện riêng, và việc dùng được ngay tại chỗ (mua ly trà đá, phụ bưng trà, chơi cờ, nghe hát, vá quầy…). Một số câu chuyện chỉ mở một lần, hỏi hết thì thôi.
+- **Người xấc xược:** chỉ vài nhóm người (giang hồ, khó tính, học sinh, công nhân, tài xế, shipper, khách du lịch) thỉnh thoảng ném cục giấy về phía người chơi, khạc nhổ, mắng rồi đuổi theo một quãng. Tỉ lệ rất thưa, mỗi lần chỉ mất một hai điểm tinh thần.
 - **Chuỗi 11 mục tiêu hướng dẫn**, tự lưu trên máy (localStorage), 4 mức đồ hoạ + tự hạ khi máy giật, bộ đếm FPS, tự xếp vị trí và độ lớn các nút.
 - Âm thanh và nhạc nền tổng hợp bằng Web Audio (không dùng tệp âm thanh).
 
@@ -57,11 +59,11 @@ Nên **xoay ngang** điện thoại và bấm **Toàn màn hình** ở màn hìn
 
 ## Đã kiểm thử gì
 
-**Tự động:** 128 bài kiểm thử (`npm test`) cho toàn bộ luật chơi — giá cả, giá vốn, khách mua hay bỏ đi, đánh giá, hư hỏng nguyên liệu, nợ, thời tiết, sự kiện, nâng cấp bản lưu, tính nhất quán dữ liệu, và một bài mô phỏng 45 ngày liên tục.
+**Tự động:** 131 bài kiểm thử (`npm test`) cho toàn bộ luật chơi — giá cả, giá vốn, khách mua hay bỏ đi, đánh giá, hư hỏng nguyên liệu, nợ, thời tiết, sự kiện, nâng cấp bản lưu, tính nhất quán dữ liệu, và một bài mô phỏng 45 ngày liên tục.
 
-**Chạy thật trong Chrome không giao diện** (màn 844×390 ngang và 390×844 dọc, giả lập cảm ứng), không có lỗi console: vào game, chơi mới/chơi tiếp, lưu và nạp lại; đi bằng cần ảo và bàn phím, vuốt nhìn, va chạm tường; xin tiền, nhặt ve chai, bới thùng rác, bán ve chai, vác hàng, rửa chén, giao hàng, cơm chay; mua đồ nghề; bốc hàng – mặc cả – trả tiền; gánh/đẩy quầy, đặt quầy; cả 5 mini-game nấu ăn bằng thao tác chạm; mở bán, khách gọi món, làm món, giao món, nhận tiền và tiền boa; cả 6 nhân vật sự kiện (thanh tra, bảo kê, khách quậy, khách quen xin chịu, nhà phê bình, khách VIP); hội thoại với cả 23 nhân vật; ngân hàng, vay nóng, thuê phòng; ngủ và tổng kết ngày; phá sản và làm lại; ban ngày lẫn ban đêm với mưa nhỏ, mưa to, giông, ngập; nhãn người lạ / người quen; màn hình sắp xếp nút (kéo, đổi cỡ, lưu, tải lại, màn dọc).
+**Chạy thật trong Chrome không giao diện** (màn 844×390 ngang và 390×844 dọc, giả lập cảm ứng), không có lỗi console: vào game, chơi mới/chơi tiếp, lưu và nạp lại; đi bằng cần ảo và bàn phím, vuốt nhìn, va chạm tường; xin tiền, nhặt ve chai, bới thùng rác, bán ve chai, vác hàng, rửa chén, giao hàng, cơm chay; mua đồ nghề; bốc hàng – mặc cả – trả tiền; gánh/đẩy quầy, đặt quầy; cả 5 mini-game nấu ăn bằng thao tác chạm; mở bán, khách gọi món, làm món, giao món, nhận tiền và tiền boa; cả 6 nhân vật sự kiện (thanh tra, bảo kê, khách quậy, khách quen xin chịu, nhà phê bình, khách VIP); hội thoại với cả 29 nhân vật và 11 khách quen, chuyện của 6 nhân vật phụ, người xấc xược (ném giấy, khạc nhổ, đuổi theo), xe cộ và chim trời; ngân hàng, vay nóng, thuê phòng; ngủ và tổng kết ngày; phá sản và làm lại; ban ngày lẫn ban đêm với mưa nhỏ, mưa to, giông, ngập; nhãn người lạ / người quen; màn hình sắp xếp nút (kéo, đổi cỡ, lưu, tải lại, màn dọc).
 
-**Soát hình học tự động** (`tools/probe/steps/audit.mjs`): dò mọi cặp mặt trùng phẳng cùng hướng khác màu trên cả thành phố (nguồn gốc tường nhấp nháy) và bắn tia từ từng biển hiệu để tìm biển bị che. Sau khi sửa: mặt trùng phẳng giảm từ 1.289 m² còn 7,5 m² (phần còn lại là các mặt khuất hoặc cách nhau vài mi-li-mét); biển bị chắn ngay phía trước giảm từ 76 còn 23 trên 156 biển, hầu hết chỉ còn là một thân cây hay cột đèn đứng trước.
+**Soát hình học tự động** (`tools/probe/steps/audit.mjs`): dò mọi cặp mặt trùng phẳng cùng hướng khác màu trên cả thành phố (nguồn gốc tường nhấp nháy) và bắn tia từ từng biển hiệu để tìm biển bị che. Sau khi sửa: mặt trùng phẳng giảm từ 1.289 m² còn 6,5 m² (phần còn lại là các mặt khuất hoặc cách nhau vài mi-li-mét); biển bị chắn ngay phía trước giảm từ 76 còn 23 trên 159 biển, hầu hết chỉ còn là một thân cây hay cột đèn đứng trước.
 
 **Chưa kiểm được:**
 
@@ -71,12 +73,12 @@ Nên **xoay ngang** điện thoại và bấm **Toàn màn hình** ở màn hìn
 
 ## Hiệu năng và mức đồ hoạ
 
-| Mức | Độ phân giải | Bóng đổ | Người đi đường | Tầm nhìn |
-|---|---|---|---|---|
-| Rất thấp | 0,7× | không | 10 | 100 m |
-| Thấp | 1× | không | 14 | 125 m |
-| Vừa (mặc định điện thoại) | tối đa 1,5× | 1024 | 22 | 165 m |
-| Cao (mặc định máy tính) | tối đa 2× | 2048 | 32 | 210 m |
+| Mức | Độ phân giải | Bóng đổ | Người đi đường | Xe cộ | Chim | Tầm nhìn |
+|---|---|---|---|---|---|---|
+| Rất thấp | 0,7× | không | 10 | 1 | 1 | 100 m |
+| Thấp | 1× | không | 14 | 2 | 2 | 125 m |
+| Vừa (mặc định điện thoại) | tối đa 1,5× | 1024 | 22 | 3 | 4 | 165 m |
+| Cao (mặc định máy tính) | tối đa 2× | 2048 | 32 | 5 | 7 | 210 m |
 
 Trong tầm nhìn có khoảng 50–280 nghìn tam giác và 25–150 lệnh vẽ (hình học được gộp sẵn theo từng khu: ô phố, chợ, công viên…). Nếu dưới 23 khung hình/giây trong 6 giây, game tự hạ một mức (tắt được trong Cài đặt). Toàn bộ game tải về khoảng 280 kB JavaScript (đã nén) + 110 kB phông chữ.
 
@@ -87,7 +89,7 @@ Cần Node.js 20 trở lên.
 ```bash
 npm install
 npm run dev          # máy chủ phát triển, mở địa chỉ được in ra
-npm test             # 128 bài kiểm thử luật chơi
+npm test             # 131 bài kiểm thử luật chơi
 npm run build        # kiểm tra kiểu + đóng gói ra dist/
 npm run build:pages  # kiểm tra kiểu + kiểm thử + đóng gói ra docs/ (GitHub Pages)
 ```

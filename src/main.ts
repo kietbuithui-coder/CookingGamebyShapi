@@ -13,6 +13,8 @@ import { Interact } from './game/interact';
 import { Acts } from './game/acts';
 import { Cook } from './cook/cook';
 import { Sound } from './audio/audio';
+import { Traffic } from './game/traffic';
+import { Birds } from './world/birds';
 import { UI } from './ui/ui';
 import { newGame, migrate, hourOf, Game } from './sim/state';
 import * as State from './sim/state';
@@ -38,6 +40,7 @@ async function boot() {
   const city = (ctx.city = buildCity()); ctx.world = city.world; scene.add(city.root);
   ctx.env = new Env(scene, city); ctx.env.thunder = () => setTimeout(() => ctx.sound.play('thunder'), 300 + Math.random() * 1200);
   ctx.player = new Player(); ctx.npcs = new Npcs(); ctx.stall = new StallSys(); ctx.cook = new Cook(); ctx.acts = new Acts(); ctx.interact = new Interact();
+  ctx.traffic = new Traffic(); ctx.birds = new Birds();
   ctx.g = newGame(1);
 
   const resize = () => { const w = window.innerWidth, h = window.innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; if (!ctx.player?.camTo) camera.fov = baseFov(w / h); camera.updateProjectionMatrix(); };
@@ -94,6 +97,7 @@ async function boot() {
       const paused = !!ui.modalName;
       if (!paused) advance(g, dt * ctx.speed, ctx.acts.act());
       ctx.player.update(dt); ctx.npcs.update(dt); ctx.stall.update(dt); ctx.cook.update(dt); ctx.acts.update(dt); ctx.interact.update(dt);
+      ctx.traffic.update(dt); ctx.birds.update(dt);
       saveT += dt; if ((dirty && saveT > 2) || saveT > 45) ctx.save();
       if (ctx.mode === 'play' && !ui.modalName) { if (bankrupt) { bankrupt = false; summary = false; ui.panel('bankrupt'); } else if (summary) { summary = false; ui.panel('summary'); } }
       // tự hạ đồ hoạ nếu máy giật
@@ -124,6 +128,7 @@ async function boot() {
   if (/[?&]debug/.test(location.search)) {
     const w = window as any; w.__game = ctx; w.__R = Rules; w.__S = State;
     w.__cam = (px?: number, py = 0, pz = 0, lx = 0, ly = 0, lz = 0) => (px === undefined ? ctx.player.view(null) : ctx.player.view(new THREE.Vector3(px, py, pz), new THREE.Vector3(lx, ly, lz)));
+    w.__rude = (kind?: 'paper' | 'spit' | 'curse' | 'chase') => { const p = ctx.player, n = ctx.npcs.list.filter((x) => x.kind === 'ped').sort((a, b) => (a.x - p.x) ** 2 + (a.z - p.z) ** 2 - ((b.x - p.x) ** 2 + (b.z - p.z) ** 2))[0]; if (!n) return null; if (kind === 'spit') ctx.npcs.spit(n); else if (kind === 'chase') ctx.npcs.chase(n); else ctx.npcs['rude'](n, kind); return n.id; };
     w.__give = (id: string, n: number, where: 'bag' | 'store' | 'home' = 'store') => State.addStack(where === 'bag' ? ctx.g.bag : where === 'home' ? ctx.g.home : ctx.g.stall.store, { id, n, fresh: 100, q: 1, cost: Rules.unitCost(ctx.g, id) });
   }
 }

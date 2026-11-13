@@ -32,6 +32,9 @@ Vòng lặp chính (`src/main.ts`): đọc điều khiển → `advance()` cho t
 - Hình học tĩnh được gộp sẵn theo từng khu thành vài lưới lớn; biển hiệu vẽ chung vào một tấm atlas. Nhân vật là khung khối hộp có khuôn mặt vẽ từ atlas.
 - **Không để hai mặt trùng phẳng.** Hai mặt cùng hướng nằm đúng một mặt phẳng sẽ tranh nhau hiển thị (nhấp nháy). Vỏ nhà (`shell`) bỏ mặt trong của tường bao vì lớp lót nội thất đã phủ đúng chỗ đó (`MB.box(..., skip)` với các hằng `FACE`); thứ gì dán lên tường thì nhô ra ít nhất 1–2 cm; vật liệu biển hiệu dùng `polygonOffset` để thắng tấm nền khi nhìn từ xa. `tools/probe/steps/audit.mjs` dò lại toàn thành phố.
 - **Biển hiệu phải đọc được từ dưới đường.** `Builder.signAt` ghi mọi biển đủ lớn vào `Builder.signs`. Biển cửa hàng treo ở mặt trước ban công tầng 1 (nếu có) hoặc là hộp đèn nhô khỏi mép mái; biển dọc chìa ra ngoài tầm ban công. Cây vỉa hè hỏi `signTopBehind()`: sau cây có biển thì trồng dáng thân cao (tán trên 4,8 m), biển cao quá 4,78 m thì để trống chỗ đó. Cây bị bỏ vẫn tiêu đúng số lần gọi ngẫu nhiên nên phần còn lại của thành phố không đổi.
+- **Sáu góc phố nhỏ** (`world/side.ts`) không phải toà nhà: bàn trà đá + ghế nhựa trước tạp hoá, tường vẽ dưới gầm cầu (mặt có hình hướng ra phố, Bin nhảy trước tường trên tấm các-tông), bạt vá xe căng trên hai cây sào, ghế hát rong + thùng ủng hộ, bàn cờ tướng trong công viên, thùng gỗ đánh giày. Mỗi chỗ ghi neo `v_<id>` cho nhân vật (ngồi trên đúng mặt ghế: neo cao 0,53 m với ghế nhựa/thùng gỗ) và một neo dùng được (`tra_ban`…). Đồ đạc nhỏ đều nằm trong lưới `detail` của khu, có `collide` riêng.
+- **Xe cộ** (`game/traffic.ts`): người đi đường chạy xe máy/xe đạp trên các trục đường trong `CORR`, đúng làn (lệch 1,7 m), có mũ bảo hiểm, bấm còi khi người chơi đứng gần lòng đường. Xe vào cảnh từ 35–85 m phía sau người chơi và được thay khi ra khỏi tầm nhìn, nên luôn có xe để thấy mà không phải vẽ cả thành phố. Không tương tác được.
+- **Chim trời** (`world/birds.ts`): 1–7 con bay vòng ở độ cao 9–18 m quanh một nút đường gần người chơi, vỗ cánh bằng cách xoay hai cánh, quỹ đạo được chọn lại khi bay quá xa. Ban đêm (độ tối > 0,72) và mưa to thì chim đi ngủ. Tiếng hót phát qua `Sound.chirp()` theo khoảng cách (xa thì nhỏ), chỉ khi người chơi không ở trong nhà.
 - Bầu trời là shader riêng (mây lấy từ một tấm nhiễu 256² tạo sẵn), mưa là tối đa 2.400 vệt chạy trên GPU, không rơi dưới mái che. Hễ có mưa, trời chuyển dần sang xám (độ u ám `Env.ov`), nắng dịu đi và mặt đường sẫm lại.
 
 ## 4. Các hệ thống và con số
@@ -107,6 +110,18 @@ Màn hình chỉ cho biết điều người chơi thật sự biết. `who(npc)
 
 Sổ "đã quen" là `Game.met` (id → ngày làm quen), có trong bản lưu.
 
+Tên trong phố có hai giọng: tên đẹp và tên kiểu nhà trường ("Cà Rốt", "Mèo Mun"…), dùng cho khách quen nhóm học sinh — chỉ hiện sau lần bán đầu tiên. Nhân vật phụ đều có tên riêng ngay từ đầu vì họ tự xưng khi mở chuyện.
+
+### 4.8 Người xấc xược
+Bảng `RUDE` (trong `data/people.ts`) chỉ gán trọng số cho vài nhóm: giang hồ 3,4 · khó tính 2,4 · học sinh 1,7 · công nhân 1,1 · tài xế 1 · shipper 0,7 · khách du lịch 0,4. Nhóm không có trong bảng thì không bao giờ thô lỗ.
+
+- Mỗi người đi đường có đồng hồ riêng `rudeT` (30–120 giây, sau mỗi lần lại 80–240 giây). Chỉ tính khi họ đang đi bộ hay đứng gần người chơi (dưới 7,5 m), không phải khách đang chờ mua, và cả phố chỉ có một phen thô lỗ mỗi 50–110 giây (`rudeCd`), thêm 30% may rủi nữa — nên rất thưa.
+- Ba kiểu: **ném giấy** (cục giấy bay theo đường vòng cung 0,5–0,75 giây, trúng thì −2 tinh thần), **khạc nhổ** (−3 tinh thần), **mắng rồi đuổi** (55% trong số đó là đuổi theo 4,5 giây; chạm được thì xô người chơi lùi lại, −4 tinh thần). Tất cả đều hiện lời thoại ngắn và có âm thanh riêng.
+- Khi xin tiền bị từ chối: 8% người có phản ứng xấu (nài nỉ, kể khổ) sẽ khạc nhổ; 22% trong số bị làm phiền sẽ quay ra đuổi và trừ uy tín. Đây là đường duy nhất để "xin tiền" mất bình tĩnh.
+
+### 4.9 Nhân vật phụ
+Sáu người trong bảng `SIDE`: Cô Thắm (trà đá), Bin (nhảy dưới gầm cầu), Chú Hậu (vá xe), Cô Hồng (hát rong), Ông Tư (cờ tướng), Bé Bo (đánh giày). Mỗi người có câu mở đầu, câu chào lại khi đã kể hết, và 3 câu chuyện riêng. Mỗi câu chỉ kể được một lần (cờ `side_<id>_<số>` trong `Game.flags`), hết chuyện thì menu chỉ còn việc dùng được ở chỗ đó: mua ly trà đá 3.000₫, phụ bưng trà 40 phút +12.000₫, nhảy thử một bài, nghe hát 10 phút, chơi cờ 25 phút, đánh giày 5.000₫, vá bơm quầy 8.000₫… Các việc này đi qua đúng hệ thống của game (`R.advance`, `R.spend`, `R.consume`, `R.earn`) nên tốn thời gian, tiền và chỉ số như mọi việc khác.
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
@@ -128,20 +143,15 @@ Sổ "đã quen" là `Game.met` (id → ngày làm quen), có trong bản lưu.
 - `tests/data.test.ts` — tính nhất quán dữ liệu (nguyên liệu nào cũng mua được, dụng cụ nào cũng có bán, lưới đường đi liên thông, nhãn người lạ không lộ nghề hay tên…).
 - `tests/settings.test.ts` — làm sạch dữ liệu bố cục nút.
 
+Ba bài mới ở lượt 2: mỗi nhân vật phụ phải có tên, nhãn việc, câu mở đầu và ít nhất hai câu chuyện đủ dài; bảng `RUDE` chỉ được có tối đa 8 nhóm và phải có đủ lời cho cả năm kiểu (giấy, khạc nhổ, mắng, đuổi, khạc nhổ khi bị xin tiền); khách quen không được trùng id hay tên và phải có cả tên kiểu học sinh.
+
 Phần đồ hoạ và thao tác được chạy thử bằng các kịch bản trong `tools/probe/`: một trình chạy Puppeteer điều khiển Chrome không giao diện (WebGL phần mềm, giả lập cảm ứng), bấm chạm như người chơi, chụp màn hình để xem bằng mắt, và soát hình học cả thành phố (mặt trùng phẳng, biển hiệu bị che). Danh sách cụ thể những gì đã và chưa chạy thử nằm trong README.
 
 ## 8. Việc còn dang dở
 
 Người chơi đã thử bản đầu và gửi danh sách góp ý; việc được chia thành ba lượt. **Lượt 1 đã xong** (tường nhấp nháy, biển hiệu bị che, tên và nghề của người lạ, tự xếp nút). Còn lại, theo thứ tự sẽ làm:
 
-**Lượt 2 — đường phố sống động hơn**
-
-1. Một ít NPC thô lỗ, tỉ lệ thấp: ném giấy vào người chơi, khạc nhổ khi bị xin tiền, chửi đuổi.
-2. Tên người: thêm tên đẹp và tên kiểu "teen", biệt danh trêu đùa — hiện ra khi đã làm quen.
-3. NPC chạy xe trên đường.
-4. Chim bay và tiếng chim, thỉnh thoảng và nho nhỏ.
-5. Nhân vật phụ có tên, tính cách, câu chuyện riêng.
-6. Các điểm nhỏ: góc hip hop, quán trà đá vỉa hè, chỗ làm thêm.
+**Lượt 2 — đường phố sống động hơn: đã xong** (NPC thô lỗ với tỉ lệ thấp, tên đẹp và tên kiểu học sinh, xe chạy trên đường, chim bay và tiếng chim, sáu nhân vật phụ có chuyện riêng, sáu góc phố nhỏ). Chi tiết ở mục 4.7–4.9 và mục 3.
 
 **Lượt 3 — nội dung còn thiếu so với bản mô tả đầy đủ**
 

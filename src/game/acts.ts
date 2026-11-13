@@ -10,7 +10,7 @@ import { SHOPS, ShopDef } from '../data/shops';
 import { INGS } from '../data/ingredients';
 import { GEAR, GEAR_LIST, HOUSING, LENDERS, JUNK, JUNK_LIST, TIERS } from '../data/gear';
 import { RECIPE_LIST, RECIPES, toolsFor } from '../data/recipes';
-import { LINES } from '../data/people';
+import { FIXED, LINES, SIDE } from '../data/people';
 import { Game, addStack, hourOf, absMin, Stack, weightOf } from '../sim/state';
 import * as R from '../sim/rules';
 import { bus, toast, sfx } from '../core/bus';
@@ -93,6 +93,7 @@ export class Acts {
     const id = n.fixedId!, g = this.g, shop = SHOPS[id], bye: Opt = { t: 'Thôi, chào nha.' };
     ctx.npcs.say(n, shop?.say ?? 'Sao đó?', 1.2);
     if (shop) return this.shopTalk(n, shop);
+    if (SIDE[id]) return this.sideMenu(n, id);
     switch (id) {
       case 'equip': {
         const rc = R.repairCost(g), opts: Opt[] = [];
@@ -197,6 +198,58 @@ export class Acts {
     this.D(n ? who(n) : 'Chủ tiệm đồ nghề', n, `${d.name} — ${money(d.price)}. ${d.desc} ${need}${block}`, [{ t: `Mua — ${money(d.price)}`, off: g.cash < d.price || !!block, sub: g.cash < d.price ? `Còn thiếu ${money(d.price - g.cash)}` : undefined, fn: () => { if (R.buyGear(g, id) === 'ok') { sfx('buy'); toast(`Đã mua ${d.name.toLowerCase()}!` + (d.kind === 'stall' ? ' Bạn đang mang quầy theo người.' : ''), 'good', 'tool', true); ctx.stall.refresh(); } } }, { t: 'Để con tính lại.' }]);
   }
 
+  // ───────────────────────── Nhân vật phụ (góc trà đá, sân nhảy, vá xe…) ─────────────────────────
+  /** Menu chuyện trò của một nhân vật phụ: câu nào chưa hỏi thì hiện, cộng thêm việc dùng được ở chỗ đó. */
+  private sideMenu(n: Npc, id: string, text?: string) {
+    const g = this.g, S = SIDE[id], opts: Opt[] = [];
+    S.topics.forEach((t, i) => {
+      const key = `side_${id}_${i}`; if (g.flags[key]) return;
+      opts.push({ t: t.q, fn: () => { g.flags[key] = 1; R.consume(g, { m: 1 }); toast(`Bạn hiểu thêm về ${FIXED[id]?.name ?? 'người này'}.`, 'info', 'heart'); this.sideMenu(n, id, t.a); } });
+    });
+    opts.push(...this.sideOpts(n, id));
+    if (!opts.length) opts.push({ t: 'Không còn gì để hỏi.' });
+    const done = S.topics.every((_, i) => g.flags[`side_${id}_${i}`]);
+    this.D(who(n), n, text ?? (done ? S.again : S.intro), [...opts, { t: 'Thôi, đi nha.' }]);
+  }
+  /** Việc dùng được ngay tại chỗ của từng nhân vật phụ. */
+  private sideOpts(n: Npc, id: string): Opt[] {
+    const g = this.g, h = hourOf(g), say = (t: string) => ctx.npcs.say(n, t, 2.8, 1);
+    switch (id) {
+      case 'tra_da': return [
+        { t: 'Mua một ly trà đá — 3.000₫', sub: `Khát ${Math.round(100 - g.st.thirst)}%`, off: g.cash < 3000,
+          fn: () => { if (!R.spend(g, 3000, 'food')) return; R.consume(g, { t: 18, m: 3 }); sfx('drink'); say('Ly này cô thêm đá cho mát. Ngồi chơi chút đi con.'); } },
+        { t: 'Phụ bưng trà đá một buổi — 40 phút', sub: h >= 6 && h < 21 ? 'Công 12.000₫, hơi mệt' : 'Ngoài giờ cô bán', off: !(h >= 6 && h < 21) || g.st.energy < 18,
+          fn: () => { R.advance(g, 40, this.act()); R.earn(g, 12000, 'side'); R.consume(g, { e: -9, t: -6, m: 2 }); sfx('coin'); ctx.ui.float('+12.000₫', n, 'good'); say('Giỏi quá. Cầm lấy, mai ghé nữa nghen con.'); } },
+      ];
+      case 'rap': return [
+        { t: 'Nhảy thử một bài theo nhịp', sub: g.st.energy < 12 ? 'Đang mệt quá' : 'Vui thì vui, hơi tốn sức', off: g.st.energy < 12,
+          fn: () => { R.advance(g, 12, this.act()); R.consume(g, { e: -6, m: 9 }); sfx('yay'); say('Ờ được đó! Chân trái chưa đều, mà có khiếu. Mai ghé tập chung.'); } },
+        { t: 'Xin một câu để đời', fn: () => this.D(who(n), n, 'Bin gõ gõ ngón tay lên thùng loa: “Nhảy sai thì tập lại. Bán ế thì mai bán tiếp. Bỏ cuộc mới là dở.”', [{ t: 'Câu này được đó.' }]) },
+      ];
+      case 'sua_xe': return [
+        { t: 'Vá bánh, bơm hơi cho quầy — 8.000₫', sub: g.stall.tier ? `Quầy đang ${Math.round(g.stall.cond)}%` : 'Chưa có quầy để sửa', off: !g.stall.tier || g.cash < 8000 || g.stall.cond > 99,
+          fn: () => { if (!R.spend(g, 8000, 'gear')) return; g.stall.cond = Math.min(100, g.stall.cond + 18); sfx('fix'); toast(`Quầy đã được vá lại: ${Math.round(g.stall.cond)}%.`, 'good', 'tool'); ctx.stall.refresh(); say('Xong rồi đó. Bánh căng, chạy êm ru.'); } },
+        { t: 'Bơm bánh xe cho con — 2.000₫', sub: 'Đi bộ lâu cũng mỏi chân', off: g.cash < 2000,
+          fn: () => { R.spend(g, 2000, 'other'); R.consume(g, { e: 3 }); sfx('fix'); say('Bơm căng rồi, đi đỡ mỏi hơn đó.'); } },
+      ];
+      case 'hat_rong': return [
+        { t: 'Ngồi nghe một bài', sub: '10 phút, tinh thần dễ chịu', fn: () => { R.advance(g, 10, this.act()); R.consume(g, { m: 8 }); sfx('good'); say('Cảm ơn con nghe hết bài. Người ta dừng lại nghe là cô vui rồi.'); } },
+        { t: 'Bỏ vào thùng 5.000₫', off: g.cash < 5000, fn: () => { if (!R.spend(g, 5000, 'other')) return; g.rep = clamp(g.rep + 0.3, 0, 100); R.consume(g, { m: 2 }); sfx('coin'); say('Trời, con khéo quá. Cô chúc con buôn may bán đắt.'); } },
+      ];
+      case 'danh_co': return [
+        { t: 'Chơi một ván cờ', sub: g.st.energy < 10 ? 'Đang mệt, chơi không nổi' : '25 phút, đầu óc thư giãn', off: g.st.energy < 10,
+          fn: () => { R.advance(g, 25, this.act()); R.consume(g, { e: -4, t: -4, m: 6 }); sfx('ok'); say('Hay lắm! Con đi xe pháo này là tui chịu rồi. Mai chơi tiếp nghen.'); } },
+        { t: 'Hỏi thăm sức khoẻ ông', fn: () => this.D(who(n), n, 'Ông Tư xoa đầu gối: “Lưng còn đau, mà ngồi đây có người nói chuyện là khoẻ hơn thuốc. Con lo làm ăn đi, đừng lo cho tui.”', [{ t: 'Ông giữ sức nghen.' }]) },
+      ];
+      case 'danh_giay': return [
+        { t: 'Đánh giày — 5.000₫', sub: `Vệ sinh hiện tại ${Math.round(g.st.hygiene)}%`, off: g.cash < 5000,
+          fn: () => { if (!R.spend(g, 5000, 'other')) return; R.consume(g, { hy: 14, m: 3 }); sfx('fix'); say('Bóng chưa? Con đánh hai lớp đó nghen. Cảm ơn anh/chị!'); } },
+        { t: 'Cho Bo 5.000₫ mua xi', off: g.cash < 5000, fn: () => { if (!R.spend(g, 5000, 'other')) return; g.rep = clamp(g.rep + 0.2, 0, 100); sfx('coin'); say('Thiệt hả anh/chị? Con để dành mua hộp xi mới. Con cảm ơn nhiều!'); } },
+      ];
+    }
+    return [];
+  }
+
   // ───────────────────────── Xin tiền ─────────────────────────
   beg(n: Npc) {
     const g = this.g, a = n.arch;
@@ -212,7 +265,10 @@ export class Acts {
         g.st.mood = clamp(g.st.mood - 1, 0, 100);
         if (rnd.chance(0.3)) setTimeout(() => n.state !== 'gone' && ctx.npcs.say(n, R.say(rnd.pick(LINES.beg_chat), a, n.fem, g), 4.5), 3200);
       } else {
+        // hiếm khi người bị xin tiền mất bình tĩnh: khạc nhổ, có khi quay ra đuổi
+        if (rnd.chance(0.08) && a.beg[style] > 0.15) { ctx.npcs.spit(n); return; }
         const annoyed = style === 'naini' && rnd.chance(0.5);
+        if (annoyed && rnd.chance(0.22)) { ctx.npcs.chase(n, 3.6); g.st.mood = clamp(g.st.mood - 5, 0, 100); g.rep = clamp(g.rep - 0.4, 0, 100); return; }
         ctx.npcs.say(n, R.say(rnd.pick(annoyed ? LINES.beg_annoyed : LINES.beg_refuse), a, n.fem, g), 2.6, annoyed ? 4 : 3); g.st.mood = clamp(g.st.mood - (annoyed ? 4 : 1.5), 0, 100);
         if (annoyed) { g.rep = clamp(g.rep - 0.3, 0, 100); sfx('boo'); const cop = ctx.npcs.near(n.x, n.z, 18, (c) => c.arch.id === 'congan'); if (cop) setTimeout(() => { ctx.npcs.say(cop, 'Này! Không được đeo bám làm phiền người đi đường!', 3.5, 4); g.st.mood = clamp(g.st.mood - 5, 0, 100); }, 1500); }
       }

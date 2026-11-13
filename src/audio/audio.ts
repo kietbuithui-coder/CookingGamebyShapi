@@ -107,6 +107,11 @@ export class Sound {
       case 'wake': [262, 330, 392, 523].forEach((f, i) => T(f, 0.3, 'sine', 0.12, i * 0.14)); break;
       case 'thunder': N(2.4, 'lowpass', 220, 0.9, 0.25, 0.5, 0.3); N(0.4, 'lowpass', 900, 0.5, 0.2); break;
       case 'ui': T(700, 0.04, 'triangle', 0.08); break;
+      // ── đường phố ──
+      case 'paper': N(0.09, 'bandpass', 1500, 0.16, 0, 1.8, 0.7); T(300, 0.05, 'triangle', 0.05); break;
+      case 'spit': N(0.14, 'highpass', 2800, 0.15, 0, 0.9, 0.5); N(0.07, 'bandpass', 800, 0.07, 0.04); break;
+      case 'shout': T(185, 0.26, 'sawtooth', 0.09, 0, 1.25); T(240, 0.2, 'sawtooth', 0.06, 0.07, 1.1); break;
+      case 'horn': T(430, 0.1, 'square', 0.07); T(430, 0.09, 'square', 0.05, 0.15); break;
     }
   }
   // ───────── tiếng môi trường ─────────
@@ -116,7 +121,20 @@ export class Sound {
     set('city', (0.05 + 0.05 * (1 - o.night)) * k); set('crowd', clamp(o.crowd) * 0.07 * k * (0.8 + 0.3 * Math.sin(t * 1.7))); set('crowd2', clamp(o.crowd) * 0.03 * k * (0.8 + 0.3 * Math.sin(t * 2.9 + 1)));
     set('rain', o.rain * 0.2 * k); set('rain2', o.rain * 0.14 * (o.indoor ? 1.2 : 1)); set('wind', o.wind * 0.12 * (0.6 + 0.4 * Math.sin(t * 0.7)) * k);
     set('cricket', o.night > 0.6 && o.rain < 0.1 ? 0.012 * (Math.sin(t * 14) > 0 ? 1 : 0.2) : 0);
-    this.birdT -= dt; if (this.birdT <= 0) { this.birdT = 2 + Math.random() * 7; if (o.morning && o.rain < 0.1 && !o.indoor) { const f = 2200 + Math.random() * 1400; for (let i = 0; i < 2 + Math.floor(Math.random() * 3); i++) this.tone(f * (1 + i * 0.06), 0.08, 'sine', 0.03, i * 0.11, 1.25, this.ambG); } }
+    // chim hót: sáng sớm rộn hơn, ban ngày lẻ tẻ, mưa thì im. Luôn nhỏ — chỉ đủ để thấy có chim quanh đây.
+    this.birdT -= dt;
+    if (this.birdT <= 0) {
+      this.birdT = (o.morning ? 4 : 9) + Math.random() * 11;
+      if (o.rain < 0.1 && !o.indoor && (o.morning || Math.random() < 0.55)) this.chirp(Math.random() < 0.15 ? 'dove' : 'sparrow', o.morning ? 1 : 0.7);
+    }
+  }
+  /** Tiếng chim hót (chim sẻ, gáy, quạ). vol 0–1: càng xa càng nhỏ. */
+  chirp(kind: 'sparrow' | 'dove' | 'crow' = 'sparrow', vol = 1) {
+    if (!this.ready) return;
+    const v = 0.05 * (0.35 + 0.65 * vol);
+    if (kind === 'crow') { for (let i = 0; i < 2; i++) this.tone(520, 0.14, 'sawtooth', v * 0.55, i * 0.2, 0.75, this.ambG); }
+    else if (kind === 'dove') { for (let i = 0; i < 3; i++) this.tone(430, 0.2, 'sine', v * 0.9, i * 0.24, 1.12, this.ambG); }
+    else { const f = 2300 + Math.random() * 1300, n = 2 + Math.floor(Math.random() * 4); for (let i = 0; i < n; i++) this.tone(f * (1 + i * 0.07), 0.07, 'sine', v * 0.7, i * 0.1, 1.3, this.ambG); }
   }
   // ───────── nhạc nền ─────────
   music(want: string) { this.want = want; }
