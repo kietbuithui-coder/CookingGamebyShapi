@@ -44,10 +44,13 @@ export const HOUSING_LIST: HousingDef[] = [
   { id: 'nhanghi', name: 'Nhà nghỉ Bình Dân', rent: 80000, per: 'đêm', safety: 0.9, sleep: 0.9, storage: 20, cold: false, shower: true, anchor: 'bed_nhanghi', mood: 4, desc: 'Có giường, có vòi sen. Trả theo đêm.' },
   { id: 'tro', name: 'Phòng trọ', rent: 280000, per: 'tuần', safety: 0.95, sleep: 1, storage: 60, cold: false, shower: true, anchor: 'bed_tro', mood: 8, desc: 'Chỗ ở ổn định, cất được nhiều đồ, đặt được tủ lạnh.' },
   { id: 'khachsan', name: 'Khách sạn Hoa Sen', rent: 350000, per: 'đêm', safety: 1, sleep: 1.25, storage: 20, cold: true, shower: true, anchor: 'bed_khachsan', mood: 20, desc: 'Nệm êm, máy lạnh — ngủ một đêm khoẻ cả ngày.' },
+  { id: 'canho', name: 'Căn hộ An Bình', rent: 900000, per: 'tuần', safety: 0.98, sleep: 1.1, storage: 80, cold: true, shower: true, anchor: 'bed_canho', mood: 12, needRep: 12, desc: 'Căn hộ một phòng ở khu cao tầng: bếp riêng, cửa sổ nhìn phố, có tủ lạnh.' },
+  { id: 'nharieng', name: 'Nhà riêng', rent: 1400000, per: 'tuần', safety: 1, sleep: 1.15, storage: 120, cold: true, shower: true, anchor: 'bed_nharieng', mood: 16, needRep: 30, desc: 'Nhà một trệt có sân, phòng khách, hai buồng ngủ — chỗ ở đàng hoàng.' },
+  { id: 'cuahang', name: 'Cửa hàng kiêm nhà ở', rent: 1800000, per: 'tuần', safety: 1, sleep: 1.05, storage: 140, cold: true, shower: true, anchor: 'bed_cuahang', mood: 14, needRep: 45, desc: 'Mặt tiền bán hàng, buồng ngủ phía sau. Rộng nhất trong các chỗ thuê.' },
 ];
 export const HOUSING: Record<string, HousingDef> = Object.fromEntries(HOUSING_LIST.map((h) => [h.id, h]));
 /** Các loại chỗ ở sẽ thêm sau. */
-export const FUTURE_HOUSING = ['Căn hộ thuê', 'Nhà riêng', 'Cửa hàng kiêm nhà ở'];
+export const FUTURE_HOUSING: string[] = [];
 
 export interface LenderDef { id: string; name: string; who: string; rate: number; term: number; max: (rep: number, day: number) => number; lateFee: number; need?: string; amounts: number[]; }
 /** rate: lãi mỗi ngày · term: số ngày phải trả · lateFee: phạt mỗi ngày trễ (tỉ lệ trên gốc) */

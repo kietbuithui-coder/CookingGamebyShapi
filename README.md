@@ -33,8 +33,8 @@ Nên **xoay ngang** điện thoại và bấm **Toàn màn hình** ở màn hìn
 
 ## Đã có trong bản này
 
-- **Thành phố liền mạch** 3×3 ô phố, 10 khu (chợ, công viên, phố văn phòng, khu dân cư, xóm lao động, kho bãi, gầm cầu vượt…), 29 nhân vật cố định, người đi đường theo giờ, xe máy – xe đạp chạy trên đường, chim bay trên phố, ngày–đêm, 8 kiểu thời tiết (nắng, mưa, giông, bão, ngập khu trũng…).
-- **Sinh tồn:** đói, khát, năng lượng, sức khoẻ, vệ sinh, tinh thần; ướt mưa, cảm ốm; 5 kiểu chỗ ngủ (gầm cầu, ghế đá, nhà nghỉ, phòng trọ, khách sạn).
+- **Thành phố liền mạch** 3×3 ô phố, 10 khu (chợ, công viên, phố văn phòng, khu dân cư, xóm lao động, kho bãi, gầm cầu vượt…), 32 nhân vật cố định, người đi đường theo giờ, xe máy – xe đạp chạy trên đường, chim bay trên phố, ngày–đêm, 8 kiểu thời tiết (nắng, mưa, giông, bão, ngập khu trũng…).
+- **Sinh tồn:** đói, khát, năng lượng, sức khoẻ, vệ sinh, tinh thần; ướt mưa, cảm ốm; 8 kiểu chỗ ngủ (gầm cầu, ghế đá, nhà nghỉ, phòng trọ, khách sạn, căn hộ, nhà riêng, cửa hàng kiêm nhà ở).
 - **Kiếm sống ban đầu:** xin tiền (3 cách mở lời), nhặt ve chai, bới thùng rác, vác hàng, rửa chén (mini-game), giao hàng, cơm chay từ thiện.
 - **Mua sắm:** 12 nơi bán, 75 nguyên liệu có độ tươi và hạn dùng, giá dao động theo ngày, xả hàng cuối buổi, mặc cả, ghi sổ nợ tạp hoá, vựa sỉ mở từ 3h sáng.
 - **Nấu ăn bằng tay:** 5 mini-game (cắt thái, xào/chiên, nướng, nấu/pha, trình bày) + rửa chén; bếp than phải quạt, gió mưa làm tắt lửa; chất lượng món = thao tác × độ tươi × tay nghề.
@@ -57,7 +57,7 @@ Nên **xoay ngang** điện thoại và bấm **Toàn màn hình** ở màn hìn
 
 ## Chưa có (so với bản mô tả đầy đủ)
 
-- **Số lượng nội dung:** 60/60 món; 5/8 kiểu chỗ ở (chưa có căn hộ thuê, nhà riêng, cửa hàng kiêm nhà ở); 3/7 bậc kinh doanh chơi được. Quán ăn nhỏ, quán có chỗ ngồi, nhà hàng, chuỗi cửa hàng chưa làm.
+- **Số lượng nội dung:** 60/60 món; 8/8 kiểu chỗ ở; 3/7 bậc kinh doanh chơi được. Quán ăn nhỏ, quán có chỗ ngồi, nhà hàng, chuỗi cửa hàng chưa làm.
 - **Băng nhóm:** mới chỉ có sự kiện thu tiền bảo kê và chủ nợ Hùng Sẹo; chưa có hệ thống lãnh địa, đánh nhau hay nhiệm vụ băng nhóm.
 - Chưa có nhân viên phụ bán, chưa có nội thất quán cho khách ngồi ăn, chưa có nhân vật tuỳ biến ngoại hình.
 - Mô hình 3D dựng bằng mã (hình khối cách điệu), không phải mô hình dựng tay chi tiết. Nội thất một số cửa hàng còn sơ sài.
@@ -65,9 +65,9 @@ Nên **xoay ngang** điện thoại và bấm **Toàn màn hình** ở màn hìn
 
 ## Đã kiểm thử gì
 
-**Tự động:** 149 bài kiểm thử (`npm test`) cho toàn bộ luật chơi — giá cả, giá vốn, khách mua hay bỏ đi, đánh giá, hư hỏng nguyên liệu, nợ, thời tiết, sự kiện, nâng cấp bản lưu, tính nhất quán dữ liệu, và một bài mô phỏng 45 ngày liên tục.
+**Tự động:** 157 bài kiểm thử (`npm test`) cho toàn bộ luật chơi — giá cả, giá vốn, khách mua hay bỏ đi, đánh giá, hư hỏng nguyên liệu, nợ, thời tiết, sự kiện, nâng cấp bản lưu, tính nhất quán dữ liệu, và một bài mô phỏng 45 ngày liên tục.
 
-**Chạy thật trong Chrome không giao diện** (màn 844×390 ngang và 390×844 dọc, giả lập cảm ứng), không có lỗi console: vào game, chơi mới/chơi tiếp, lưu và nạp lại; đi bằng cần ảo và bàn phím, vuốt nhìn, va chạm tường; xin tiền, nhặt ve chai, bới thùng rác, bán ve chai, vác hàng, rửa chén, giao hàng, cơm chay; mua đồ nghề; bốc hàng – mặc cả – trả tiền; gánh/đẩy quầy, đặt quầy; cả 5 mini-game nấu ăn bằng thao tác chạm; mở bán, khách gọi món, làm món, giao món, nhận tiền và tiền boa; cả 6 nhân vật sự kiện (thanh tra, bảo kê, khách quậy, khách quen xin chịu, nhà phê bình, khách VIP); hội thoại với cả 29 nhân vật và 11 khách quen, chuyện của 6 nhân vật phụ, người xấc xược (ném giấy, khạc nhổ, đuổi theo), xe cộ và chim trời; ngân hàng, vay nóng, thuê phòng; ngủ và tổng kết ngày; phá sản và làm lại; ban ngày lẫn ban đêm với mưa nhỏ, mưa to, giông, ngập; nhãn người lạ / người quen; màn hình sắp xếp nút (kéo, đổi cỡ, lưu, tải lại, màn dọc).
+**Chạy thật trong Chrome không giao diện** (màn 844×390 ngang và 390×844 dọc, giả lập cảm ứng), không có lỗi console: vào game, chơi mới/chơi tiếp, lưu và nạp lại; đi bằng cần ảo và bàn phím, vuốt nhìn, va chạm tường; xin tiền, nhặt ve chai, bới thùng rác, bán ve chai, vác hàng, rửa chén, giao hàng, cơm chay; mua đồ nghề; bốc hàng – mặc cả – trả tiền; gánh/đẩy quầy, đặt quầy; cả 5 mini-game nấu ăn bằng thao tác chạm; mở bán, khách gọi món, làm món, giao món, nhận tiền và tiền boa; cả 6 nhân vật sự kiện (thanh tra, bảo kê, khách quậy, khách quen xin chịu, nhà phê bình, khách VIP); hội thoại với cả 32 nhân vật và 11 khách quen, chuyện của 6 nhân vật phụ, người xấc xược (ném giấy, khạc nhổ, đuổi theo), xe cộ và chim trời; ngân hàng, vay nóng, ba mức chỗ ở mới (căn hộ, nhà riêng, tạp hoá kiêm nhà ở: cửa khoá, đòi uy tín, ngủ, đóng tiền tuần); ngủ và tổng kết ngày; phá sản và làm lại; ban ngày lẫn ban đêm với mưa nhỏ, mưa to, giông, ngập; nhãn người lạ / người quen; màn hình sắp xếp nút (kéo, đổi cỡ, lưu, tải lại, màn dọc).
 
 **Soát hình học tự động** (`tools/probe/steps/audit.mjs`): dò mọi cặp mặt trùng phẳng cùng hướng khác màu trên cả thành phố (nguồn gốc tường nhấp nháy) và bắn tia từ từng biển hiệu để tìm biển bị che. Sau khi sửa: mặt trùng phẳng giảm từ 1.289 m² còn 6,5 m² (phần còn lại là các mặt khuất hoặc cách nhau vài mi-li-mét); biển bị chắn ngay phía trước giảm từ 76 còn 23 trên 159 biển, hầu hết chỉ còn là một thân cây hay cột đèn đứng trước.
 
@@ -95,7 +95,7 @@ Cần Node.js 20 trở lên.
 ```bash
 npm install
 npm run dev          # máy chủ phát triển, mở địa chỉ được in ra
-npm test             # 149 bài kiểm thử luật chơi
+npm test             # 157 bài kiểm thử luật chơi
 npm run build        # kiểm tra kiểu + đóng gói ra dist/
 npm run build:pages  # kiểm tra kiểu + kiểm thử + đóng gói ra docs/ (GitHub Pages)
 ```

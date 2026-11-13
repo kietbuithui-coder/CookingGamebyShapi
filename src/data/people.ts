@@ -97,6 +97,7 @@ export const FIXED_ROLE: Record<string, string> = {
   wholesale: 'Chủ vựa sỉ', pharmacy: 'Dược sĩ', equip: 'Chủ tiệm đồ nghề', eatery: 'Bà chủ quán cơm', scrap: 'Chủ vựa ve chai',
   pawn: 'Chủ tiệm cầm đồ', bank: 'Nhân viên ngân hàng', shark: 'Gã mặt sẹo', motel: 'Chủ nhà nghỉ', tro: 'Ông chủ trọ',
   hotel: 'Lễ tân khách sạn', dock: 'Cai bốc vác', hobo: 'Ông lão lang thang',
+  canho: 'Quản lý căn hộ', nharieng: 'Chủ nhà', cuahang: 'Chủ tạp hoá',
   tra_da: 'Cô bán trà đá', rap: 'Cậu nhóc nhảy đường phố', sua_xe: 'Thợ sửa xe vỉa hè',
   hat_rong: 'Người hát rong', danh_co: 'Ông già đánh cờ', danh_giay: 'Cậu bé đánh giày',
 };
@@ -268,6 +269,9 @@ export const FIXED: Record<string, FixedNpcDef> = {
   motel: { id: 'motel', name: 'Dì Chín', face: 4, fem: true, shirt: 0xd9a05a, pants: 0x2a2e3a, hair: 0x3a2a22, hat: 0, hairStyle: 2, fat: 1.2, h: 0.93 },
   tro: { id: 'tro', name: 'Bác Năm chủ trọ', face: 3, fem: false, shirt: 0xb9a88a, pants: 0x3a3a42, hair: 0xd9d9d6, hat: 0, hairStyle: 3, fat: 1.1, h: 0.98 },
   hotel: { id: 'hotel', name: 'Lễ tân Vy', face: 1, fem: true, shirt: 0x6a1e2e, pants: 0x1e2430, hair: 0x1e1a18, hat: 0, hairStyle: 2, fat: 0.9, h: 0.98 },
+  canho: { id: 'canho', name: 'Cô Hạnh', face: 1, fem: true, shirt: 0x2f4a6a, pants: 0x2a2e3a, hair: 0x1e1a18, hat: 0, hairStyle: 1, fat: 0.94, h: 0.97 },
+  nharieng: { id: 'nharieng', name: 'Chú Vinh', face: 7, fem: false, shirt: 0xb9a88a, pants: 0x3a3a42, hair: 0x9a9a96, hat: 0, hairStyle: 3, fat: 1.06, h: 1.0 },
+  cuahang: { id: 'cuahang', name: 'Cô Lệ', face: 4, fem: true, shirt: 0x3f8a5a, pants: 0x2a2e3a, hair: 0x2a2420, hat: 0, hairStyle: 2, fat: 1.14, h: 0.94 },
   dock: { id: 'dock', name: 'Anh Sáu Lực', face: 0, fem: false, shirt: 0xb5653c, pants: 0x4a4a42, hair: 0x1e1a18, hat: 2, hairStyle: 0, fat: 1.25, h: 1.06 },
   // ── Nhân vật phụ ở những chỗ nhỏ ven đường ──
   tra_da: { id: 'tra_da', name: 'Cô Thắm', face: 1, fem: true, shirt: 0xd9a05a, pants: 0x2a2e3a, hair: 0x2a2420, hat: 0, hairStyle: 2, fat: 1.12, h: 0.94 },

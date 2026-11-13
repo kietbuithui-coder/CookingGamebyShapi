@@ -22,7 +22,9 @@ export const carryCap = (g: Game) => 7 + (has(g, 'gio') ? 6 : 0);
 export const bagWeight = (g: Game) => weightOf(g.bag) + junkWeight(g) + g.meals.reduce((a, m) => a + m.n * 0.3, 0);
 export const stallRoom = (g: Game) => tier(g).cap - weightOf(g.stall.store);
 export const homeRoom = (g: Game) => HOUSING[g.housing].storage - weightOf(g.home);
-export const homeChilled = (g: Game) => HOUSING[g.housing].cold || (g.housing === 'tro' && has(g, 'tulanh') && !blackoutAt(g, 'dancu'));
+/** Nhà thuê theo tuần thì cắm được tủ lạnh của mình. */
+export const PLUGGABLE = ['tro', 'canho', 'nharieng', 'cuahang'];
+export const homeChilled = (g: Game) => HOUSING[g.housing].cold || (PLUGGABLE.includes(g.housing) && has(g, 'tulanh') && !blackoutAt(g, 'dancu'));
 export const stallChilled = (g: Game) => has(g, 'thungda') && countOf([g.stall.store], 'da') > 0;
 export const activeEvents = (g: Game): EventDef[] => g.ev.active.map((a) => EVENTS[a.id]).filter(Boolean);
 export const eventOn = (g: Game, id: string) => g.ev.active.some((a) => a.id === id);
@@ -517,8 +519,12 @@ export function goBankrupt(g: Game) {
 
 // ───────────────────────── Chỗ ở ─────────────────────────
 export function rentDue(g: Game): number { const h = HOUSING[g.housing]; return h.per === 'tuần' && g.day >= g.paidUntil ? h.rent : 0; }
+/** Uy tín cần có để thuê chỗ này (0 nếu không đòi hỏi gì). */
+export function rentNeed(id: string): number { return HOUSING[id]?.needRep ?? 0; }
+export function canRent(g: Game, id: string): boolean { return g.rep >= rentNeed(id); }
 export function payHousing(g: Game, id: string): boolean {
   const h = HOUSING[id];
+  if (!h || !canRent(g, id)) return false;
   if (h.rent > 0 && !spend(g, h.rent, 'rent')) return false;
   if (g.housing !== id) { // chuyển nhà: đồ ở chỗ cũ theo người chơi nếu là gầm cầu thì để lại
     g.flags['lived_' + id] = 1;
@@ -530,12 +536,12 @@ function dailyHousing(g: Game) {
   const h = HOUSING[g.housing];
   if (h.per === 'tuần' && g.day >= g.paidUntil) {
     const late = g.day - g.paidUntil;
-    if (late === 0) toast(`Tới hạn đóng ${money(h.rent)} tiền trọ tuần này. Gặp Bác Năm để đóng.`, 'warn', 'home', true);
+    if (late === 0) toast(`Tới hạn đóng ${money(h.rent)} tiền nhà ${h.name} tuần này. Ghé chỗ thuê để đóng.`, 'warn', 'home', true);
     else if (late >= 2) {
       const lost = g.home.reduce((a, s) => a + s.n * s.cost, 0); g.home = []; g.led.loss += lost; g.housing = 'gamcau'; g.paidUntil = 9999;
       if (has(g, 'tulanh')) delete g.gear.tulanh;
-      toast('Bác Năm đã lấy lại phòng trọ vì nợ tiền nhà. Đồ để trong phòng bị giữ hết.', 'bad', 'home', true); g.st.mood = clamp(g.st.mood - 20, 0, 100);
-    } else toast('Bác Năm nhắc: mai không đóng tiền trọ là bác lấy lại phòng.', 'warn', 'home', true);
+      toast(`Chủ nhà đã lấy lại ${h.name} vì nợ tiền nhà. Đồ để trong phòng bị giữ hết.`, 'bad', 'home', true); g.st.mood = clamp(g.st.mood - 20, 0, 100);
+    } else toast(`Chủ nhà nhắc: mai không đóng tiền nhà là trả lại ${h.name}.`, 'warn', 'home', true);
   }
   if (h.per === 'đêm' && g.day >= g.paidUntil) { g.housing = 'gamcau'; g.paidUntil = 9999; }
 }

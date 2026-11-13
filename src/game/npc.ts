@@ -25,6 +25,7 @@ export interface Npc {
 }
 /** Giờ mở cửa của những nơi không phải cửa hàng nguyên liệu. */
 export const PLACE_HOURS: Record<string, [number, number]> = { equip: [7, 20], bank: [8, 17], eatery: [6, 21.5], pawn: [8, 21], scrap: [6, 19], dock: [4.5, 10], motel: [0, 24], hotel: [0, 24], tro: [6, 22], shark: [9, 24], hobo: [0, 24],
+  canho: [6, 22], nharieng: [6, 22], cuahang: [6, 21],
   // nhân vật phụ: mỗi người chỉ ở chỗ của mình trong một quãng giờ nhất định
   tra_da: [5.5, 22], rap: [14.5, 23], sua_xe: [7, 19], hat_rong: [9, 21], danh_co: [6.5, 18.5], danh_giay: [6, 19.5] };
 export function placeOpen(id: string): boolean {

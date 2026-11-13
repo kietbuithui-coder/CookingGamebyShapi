@@ -7,7 +7,7 @@ import { buildCity } from './world/city';
 import { Env } from './world/env';
 import { Input } from './game/input';
 import { Player } from './game/player';
-import { Npcs } from './game/npc';
+import { Npcs, placeOpen } from './game/npc';
 import { StallSys } from './game/stall';
 import { Interact } from './game/interact';
 import { Acts } from './game/acts';
@@ -131,6 +131,7 @@ async function boot() {
     w.__xp = (n = 40) => { const g = ctx.g, l0 = g.xp; g.xp += Math.max(0, n); const lvl = Math.min(10, Math.floor(Math.sqrt(g.xp / 30))); const got = lvl > Math.min(10, Math.floor(Math.sqrt(l0 / 30))) ? Rules.unlockRecipes(g, lvl <= 1 ? 1 : 2) : []; return { xp: g.xp, lvl, got: got.map((r) => r.id) }; };
     w.__lvl = (n: number) => { const g = ctx.g; g.xp = Math.max(0, 30 * n * n - 3); Rules.addXp(g, 1); return { xp: g.xp, known: Object.values(g.rec).filter((r) => r.known).length }; };
     w.__rude = (kind?: 'paper' | 'spit' | 'curse' | 'chase') => { const p = ctx.player, n = ctx.npcs.list.filter((x) => x.kind === 'ped').sort((a, b) => (a.x - p.x) ** 2 + (a.z - p.z) ** 2 - ((b.x - p.x) ** 2 + (b.z - p.z) ** 2))[0]; if (!n) return null; if (kind === 'spit') ctx.npcs.spit(n); else if (kind === 'chase') ctx.npcs.chase(n); else ctx.npcs['rude'](n, kind); return n.id; };
+    w.__open = (id: string) => placeOpen(id);
     w.__give = (id: string, n: number, where: 'bag' | 'store' | 'home' = 'store') => State.addStack(where === 'bag' ? ctx.g.bag : where === 'home' ? ctx.g.home : ctx.g.stall.store, { id, n, fresh: 100, q: 1, cost: Rules.unitCost(ctx.g, id) });
   }
 }

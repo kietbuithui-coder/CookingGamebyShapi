@@ -13,6 +13,8 @@ node play.mjs steps/customers.mjs   # khách lạ / khách quen: nhãn hiện ra
 node play.mjs steps/names.mjs    # người đứng quầy: chưa quen → đã quen
 node play.mjs steps/layout.mjs   # màn hình sắp xếp nút
 node play.mjs steps/audit.mjs    # mặt trùng phẳng (nhấp nháy) + biển hiệu bị che
+node play.mjs steps/round5.mjs   # ba chỗ ở mới: cửa khoá, đòi uy tín, thuê, ngủ, bị đòi nhà
+node play.mjs steps/shots5.mjs   # ảnh mặt tiền + nội thất căn hộ / nhà riêng / tạp hoá
 N=12 MODE=front node play.mjs steps/signshots.mjs   # chụp các biển bị che nhiều nhất
 ```
 
