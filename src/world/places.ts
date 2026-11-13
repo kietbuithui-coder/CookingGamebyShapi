@@ -91,6 +91,17 @@ function bed(b: Builder, x: number, z: number, alongX: boolean, col: number, nam
   b.collide(x - sx / 2, z - sz / 2, x + sx / 2, z + sz / 2);
   b.anchor(name, x, 0.62, z, phi);
 }
+/** Bộ ghế sofa: nệm ngồi, tựa lưng, hai tay vịn, gối tựa. back = -1 thì tựa ở phía -z (nhìn về +z). */
+function sofa(b: Builder, x: number, z: number, len: number, col: number, back: -1 | 1 = -1, d = 0.86) {
+  const U = b.unlit, h0 = 0.13, seat = 0.36, bz = z + back * (d / 2 - 0.09);
+  U.box(x, h0, z, len, seat, d, col, shade(col, 1.12), 0.12);                                     // nệm ngồi
+  U.box(x, h0 + seat - 0.06, bz, len, 0.52, 0.18, shade(col, 0.88), shade(col, 0.94), 0.14);      // tựa lưng
+  for (const sx of [-1, 1]) U.box(x + sx * (len / 2 - 0.09), h0 + 0.06, z, 0.18, seat + 0.16, d, shade(col, 0.8), shade(col, 0.92), 0.1);
+  const n = len > 1.6 ? 2 : 1;
+  for (let i = 0; i < n; i++) U.box(x + (n === 1 ? 0 : (i - 0.5) * len * 0.42), h0 + seat, z - back * 0.1, 0.4, 0.12, 0.34, 0xe9dcc0, 0xf3e8d2, 0.18);
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) U.box(x + sx * (len / 2 - 0.14), h0 - 0.01, z + sz * (d / 2 - 0.12), 0.07, 0.13, 0.07, 0x4a3a2a);
+  b.collide(x - len / 2, z - d / 2, x + len / 2, z + d / 2);
+}
 function bigSign(b: Builder, w: number, y: number, text: string, st: SignStyle, h = 0.95, frac = 0.82, px = 96) {
   const sw = Math.min(w * frac, w - 0.4);
   b.lit.box(w / 2, y - 0.06, -0.07, sw + 0.16, h + 0.12, 0.1, 0x2a2c30, 0x2a2c30, 0, true);
@@ -196,6 +207,105 @@ export function buildPlace(b: Builder, l: Lot, R: RNG) {
       U.box(6.5, 0.13, 5.5, 1.1, 0.7, 0.6, 0x8a6a4a, 0xa98a62, 0.1); b.collide(5.95, 5.2, 7.05, 5.8);
       ceilLight(b, 6.5, 2.96, 3.2, 1.2); ceilLight(b, 1.6, 2.96, 5, 1);
       for (let i = 0; i < 3; i++) b.plant(0.6 + i * 0.5, 0.12, -0.4, R, 0.8);
+      break;
+    }
+    // ── Căn hộ thuê: một phòng ở tầng trệt của khu cao tầng, có bếp riêng và cửa sổ nhìn phố ──
+    case 'canho': {
+      const di = 10.4, col = 0xefe6d8;
+      shell(b, { w, d, di, h1: 3.4, H: 13.2, col, inner: 0xf6efe4, floor: 'tile', opens: [{ x0: 1.2, x1: 4.2, sill: 0.9, top: 2.6 }, { x0: 6.2, x1: 8.0, top: 2.35 }, { x0: 9.4, x1: 11.2, sill: 0.9, top: 2.6 }] });
+      bigSign(b, w, 3.5, 'CĂN HỘ AN BÌNH', { bg: '#2a4a6a', fg: '#f3f7ff', sub: 'Cho thuê · 900.000₫/tuần', subFg: '#ffe14d' }, 0.95, 0.8, 100);
+      for (let f = 0; f < 3; f++) for (let i = 0; i < 4; i++) { const x1 = w - 1 - i * 2.9, y = 5.4 + f * 2.8; b.glow.quad(x1, y, -0.02, x1 - 1.5, y, -0.02, x1 - 1.5, y + 1.5, -0.02, x1, y + 1.5, -0.02, R.chance(0.45) ? 0xffdf9a : 0x1c2530); }
+      b.door('door_canho', 6.2, 0.14, 1.8, 0, 0x5a4a3a, 'canho');
+      // hộp thư từng căn + bảng số căn + chuông cửa: chi tiết cho ra dáng chung cư
+      for (let i = 0; i < 4; i++) { U.box(8.35 + i * 0.3, 1.15, -0.05, 0.24, 0.34, 0.12, 0xb9c0c8, 0xd4dade, 0.06); U.box(8.35 + i * 0.3, 1.32, -0.12, 0.16, 0.03, 0.02, 0x4a4f56); }
+      b.signAt(8.8, 1.72, -0.06, 1.3, 0.26, 'HỘP THƯ', { bg: '#f3f0e8', fg: '#3a4048', border: '#8a8f96' }, 0, -1, 48);
+      b.signAt(5.5, 2.05, -0.06, 1.0, 0.3, 'CĂN 102', { bg: '#2a4a6a', fg: '#ffffff' }, 0, -1, 48);
+      U.box(5.05, 1.25, -0.05, 0.16, 0.3, 0.08, 0x8a9096, 0xb9c0c8, 0.05);
+      // phòng khách: sofa, bàn, tivi, thảm
+      U.box(2.6, 0.14, 2.4, 2.6, 0.014, 1.9, 0x8a4a4a);
+      sofa(b, 2.6, 2.15, 2.4, 0x5a6a7a, 1);
+      U.box(2.6, 0.55, 3.5, 1.2, 0.34, 0.62, WOODC, 0xb98a5a, 0.08); b.collide(2.0, 3.2, 3.2, 3.8);
+      U.box(2.6, 1.15, 0.36, 1.5, 0.86, 0.06, 0x1b1c1f); b.glow.quad(2.6 + 0.7, 1.2, 0.31, 2.6 - 0.7, 1.2, 0.31, 2.6 - 0.7, 1.9, 0.31, 2.6 + 0.7, 1.9, 0.31, 0x2a3a5a);
+      // bếp nhỏ bên phải
+      counter(b, 9.2, 1.0, 11.7, 1.9, 0x8a6a4a, 0.95);
+      U.box(9.9, 0.96, 1.45, 0.5, 0.03, 0.4, STEEL, STEEL, 0, true); U.box(10.9, 0.96, 1.45, 0.42, 0.1, 0.42, 0x2a2c30);
+      fridgeModel(U, 11.2, 0.13, 3.1); b.collide(10.7, 2.6, 11.7, 3.6);
+      // vách ngăn buồng ngủ + buồng tắm
+      partition(b, 0.2, 6.2, 5.0, 6.2, 3.37, 0xe2d8c8); partition(b, 6.6, 6.2, 9.0, 6.2, 3.37, 0xe2d8c8); lintel(b, 5.0, 6.2, 6.6, 6.2, 2.2, 3.37, 0xe2d8c8);
+      partition(b, 9.0, 6.2, 9.0, 10.2, 3.37, 0xe2d8c8); lintel(b, 9.0, 10.2, 9.0, 10.4, 2.2, 3.37, 0xe2d8c8);
+      bed(b, 2.8, 8.4, true, 0xdfe8f2, 'bed_canho', Math.PI);
+      U.box(7.6, 0.13, 9.4, 0.7, 1.9, 1.5, 0x8a6a4a, 0x9a7a5a, 0.06); for (const y of [0.7, 1.25]) U.box(7.58, y, 9.4, 0.66, 0.03, 1.4, 0xb99a72, 0xb99a72, 0, true); b.collide(7.25, 8.6, 7.95, 10.2);
+      b.anchor('store_canho', 7.2, 1.0, 9.4, -Math.PI / 2);
+      // buồng tắm: khay sen + vách kính
+      U.box(10.7, 0.14, 8.6, 1.5, 0.02, 1.6, 0xbfe6f7); U.box(9.96, 1.9, 8.6, 0.04, 0.06, 0.24, STEEL, STEEL, 0, true);
+      b.anchor('wash_canho', 10.7, 1.2, 8.6, -Math.PI / 2);
+      b.anchor('v_canho', 9.0, 0.13, 4.6, Math.PI);
+      ceilLight(b, 2.8, 3.34, 4.2); ceilLight(b, 10.4, 3.34, 1.5, 1); ceilLight(b, 6.0, 3.34, 8.4);
+      break;
+    }
+    // ── Nhà riêng: sân trước, phòng khách có bàn thờ, hai buồng ngủ, bếp sau ──
+    case 'nharieng': {
+      const di = 10.4, col = 0xf2d9a8;
+      shell(b, { w, d, di, h1: 3.3, H: 6.6, col, roof: 0xb5653c, inner: 0xf7f0dc, floor: 'tile', opens: [{ x0: 1.2, x1: 3.4, sill: 1.0, top: 2.55 }, { x0: 5.2, x1: 7.0, top: 2.4 }, { x0: 9.0, x1: 11.2, sill: 1.0, top: 2.55 }] });
+      L.quad(w + 0.1, 3.42, -0.4, -0.1, 3.42, -0.4, -0.1, 3.95, 5.5, w + 0.1, 3.95, 5.5, 0xb5653c);
+      b.signAt(6.1, 2.62, -0.06, 1.7, 0.4, 'NHÀ SỐ 12', { bg: '#ffffff', fg: '#1e4a6a', border: '#1e4a6a' }, 0, -1, 44);
+      b.door('door_nharieng', 5.2, 0.14, 1.8, 0, 0x8a5a32, 'nharieng');
+      for (let i = 0; i < 3; i++) b.plant(0.9 + i * 0.45, 0.12, -0.45, R, 0.8);
+      // sân gạch + xe máy + kệ giày
+      U.box(7.4, 0.135, 1.1, 2.8, 0.012, 2.0, 0xd9cbb0);
+      U.box(8.2, 0.13, 1.4, 0.55, 0.95, 1.9, 0x8a2a2a, 0x9a3a3a, 0.14); b.collide(7.9, 0.45, 8.5, 2.35); U.box(8.2, 0.55, 1.4, 0.6, 0.2, 1.6, 0x2a2c30);
+      U.box(4.6, 0.13, 0.55, 1.2, 0.3, 0.35, WOODC, 0xb98a5a, 0.06);
+      // phòng khách: bộ ghế + tivi + bàn thờ
+      U.box(2.6, 0.14, 3.0, 2.8, 0.014, 2.2, 0x8a4a4a);
+      for (const [x, z] of [[1.6, 2.6], [3.6, 2.6]] as const) sofa(b, x, z, 0.95, 0x6a4a2a, 1, 0.85);
+      U.box(2.6, 0.5, 4.0, 1.2, 0.3, 0.6, WOODC, 0xb98a5a, 0.08);
+      U.box(11.2, 1.2, 3.0, 0.06, 0.9, 1.4, 0x1b1c1f); b.glow.quad(11.14, 1.25, 3.6, 11.14, 1.25, 2.4, 11.14, 2.0, 2.4, 11.14, 2.0, 3.6, 0x2a3a5a);
+      // bàn thờ nhỏ sát vách sau
+      U.box(2.2, 1.05, 10.1, 1.7, 0.55, 0.45, 0x7a2a22, 0x9a3a2a, 0.06); U.box(2.2, 0.7, 10.1, 1.5, 0.35, 0.35, WOODC, WOODC, 0); U.box(2.2, 1.62, 10.1, 0.22, 0.16, 0.22, 0xd9b84a);
+      // vách: buồng ngủ trái, buồng tắm phải
+      partition(b, 0.2, 6.4, 4.6, 6.4, 3.27, 0xe9dcc0); partition(b, 6.0, 6.4, 8.6, 6.4, 3.27, 0xe9dcc0); lintel(b, 4.6, 6.4, 6.0, 6.4, 2.2, 3.27, 0xe9dcc0);
+      partition(b, 8.6, 4.6, 8.6, 10.2, 3.27, 0xe9dcc0); lintel(b, 8.6, 4.6, 8.6, 6.0, 2.2, 3.27, 0xe9dcc0);
+      bed(b, 2.4, 8.6, true, 0xf2c8a8, 'bed_nharieng', Math.PI);
+      U.box(6.6, 0.13, 9.6, 0.7, 1.9, 1.5, 0x8a6a4a, 0x9a7a5a, 0.06); b.collide(6.25, 8.8, 6.95, 10.4);
+      b.anchor('store_nharieng', 6.6, 1.0, 9.6, -Math.PI / 2);
+      U.box(10.6, 0.14, 8.4, 1.6, 0.02, 1.8, 0xbfe6f7); U.box(9.86, 1.9, 8.4, 0.04, 0.06, 0.24, STEEL, STEEL, 0, true);
+      b.anchor('wash_nharieng', 10.6, 1.2, 8.4, -Math.PI / 2);
+      b.anchor('v_nharieng', 7.9, 0.13, 1.6, Math.PI);
+      ceilLight(b, 2.8, 3.24, 3.4); ceilLight(b, 4.4, 3.24, 8.6); ceilLight(b, 10.2, 3.24, 7.2, 1);
+      break;
+    }
+    // ── Cửa hàng kiêm nhà ở: mặt tiền bán hàng, phía sau là chỗ ở ──
+    case 'cuahang': {
+      const di = 10.4, col = 0xe8dcc8;
+      shell(b, { w, d, di, h1: 3.4, H: 8.4, col, inner: 0xf3ead9, floor: 'tile', opens: [{ x0: 0.6, x1: 5.6, top: 2.85 }, { x0: 7.0, x1: 8.6, top: 2.35 }] });
+      bigSign(b, w, 3.45, 'TẠP HOÁ BÌNH AN', { bg: '#1e7a4a', fg: '#fff7c2', sub: 'Bán buôn bán lẻ · Mở 6h–21h', subFg: '#ffffff' }, 0.95, 0.8, 100);
+      b.awning(0.4, 5.8, 2.9, 1.2, 0x2f8fd5, 0xf7f3e6, -0.04);
+      b.door('door_cuahang', 7.0, 0.14, 1.6, 0, 0x3f8a6a, 'cuahang');
+      // tầng trên: dãy cửa sổ + gờ tầng cho bớt mảng tường trống
+      U.box(w / 2, 3.62, -0.03, w - 0.1, 0.14, 0.1, 0xd8cbb4, 0xe6dcc8, 0.05);
+      for (let i = 0; i < 3; i++) {
+        const wx = 1.6 + i * 3.6;
+        U.box(wx, 4.2, -0.05, 1.5, 1.25, 0.06, 0x2a3a4a); U.box(wx, 4.14, -0.06, 1.65, 0.06, 0.1, 0xe6dcc8);
+        U.box(wx, 4.2, -0.07, 0.06, 1.25, 0.05, 0xe6dcc8); U.box(wx, 4.82, -0.07, 1.5, 0.05, 0.05, 0xe6dcc8);
+      }
+      // quầy bán + kệ hàng hai bên
+      counter(b, 1.8, 2.4, 5.4, 3.2, 0x8a6a4a, 1.05);
+      U.box(3.6, 1.06, 2.8, 3.4, 0.05, 0.7, 0xd9c38a, 0xe9d8a8, 0.05);
+      for (let i = 0; i < 5; i++) U.box(2.2 + i * 0.62, 1.11, 2.8, 0.42, 0.12, 0.5, [0xd9463c, 0xe9c23a, 0x3fae5a, 0x2f8fd5, 0xc98a4a][i], undefined, 0.1);
+      for (const [k, y] of [[0, 0.35], [1, 0.95], [2, 1.55]] as const) { const sx = 0.4, wx = 3.6; U.box(wx, y + 0.13, 1.0, 4.6, 0.04, 0.5, 0xb9a88a, 0xc9b89a, 0, true); for (let i = 0; i < 6; i++) U.box(sx + i * 0.72, y + 0.19, 1.0, 0.34, 0.22, 0.34, [0xe9c23a, 0xd9603a, 0x3fae5a, 0x2f8fd5, 0xf3f0e8, 0xc98a4a][(i + k) % 6], undefined, 0.08); }
+      b.collide(1.0, 0.7, 6.2, 1.3);
+      // phía sau: vách ngăn, buồng ngủ + bếp + buồng tắm
+      partition(b, 0.2, 5.6, 4.4, 5.6, 3.37, 0xe2d8c0); partition(b, 5.8, 5.6, 9.8, 5.6, 3.37, 0xe2d8c0); lintel(b, 4.4, 5.6, 5.8, 5.6, 2.2, 3.37, 0xe2d8c0);
+      partition(b, 6.4, 5.6, 6.4, 10.2, 3.37, 0xe2d8c0);
+      bed(b, 2.0, 8.4, true, 0xf2e0c0, 'bed_cuahang', Math.PI);
+      counter(b, 7.0, 8.2, 9.8, 9.1, 0xb9c0c8, 0.95);
+      U.box(7.6, 0.96, 8.65, 0.5, 0.03, 0.4, STEEL, STEEL, 0, true); U.box(8.9, 0.96, 8.65, 0.42, 0.1, 0.42, 0x2a2c30);
+      U.box(5.0, 0.13, 9.6, 0.7, 1.9, 1.4, 0x8a6a4a, 0x9a7a5a, 0.06); b.collide(4.65, 8.9, 5.35, 10.3);
+      b.anchor('store_cuahang', 5.0, 1.0, 9.6, -Math.PI / 2);
+      U.box(8.8, 0.14, 6.6, 1.4, 0.02, 1.4, 0xbfe6f7); U.box(8.16, 1.9, 6.6, 0.04, 0.06, 0.24, STEEL, STEEL, 0, true);
+      b.anchor('wash_cuahang', 8.8, 1.2, 6.6, -Math.PI / 2);
+      b.anchor('v_cuahang', 8.6, 0.13, 1.4, Math.PI);
+      ceilLight(b, 3.2, 3.34, 1.8, 1.6); ceilLight(b, 3.0, 3.34, 8.0); ceilLight(b, 8.4, 3.34, 8.6, 1.2);
       break;
     }
     case 'eatery': {

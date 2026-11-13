@@ -36,6 +36,22 @@ const QUESTS = [
   'Đạt uy tín 50 và không còn nợ nần.',
   'Bạn đã là tay bán hàng có tiếng của khu phố! Học thêm món mới, mở rộng thực đơn và đón chờ bản cập nhật sau.',
 ];
+/** Mã nhân vật chủ nhà → mã loại chỗ ở (mấy chỗ mới trùng mã nên tự map về chính nó). */
+const HOME_OF: Record<string, string> = { motel: 'nhanghi', hotel: 'khachsan', tro: 'tro', canho: 'canho', nharieng: 'nharieng', cuahang: 'cuahang' };
+const HOME_BLURB: Record<string, string> = {
+  tro: 'Phòng trọ 280.000₫ một tuần, có khoá, có vòi nước, để đồ thoải mái. Tiền nhà đóng trước.',
+  nhanghi: 'Phòng đơn 80.000₫ một đêm, có nước nóng, ngủ qua giấc rồi đi.',
+  khachsan: 'Kính chào quý khách. Phòng tiêu chuẩn 350.000₫ một đêm, có máy lạnh và tủ mát.',
+  canho: 'Căn hộ một phòng 900.000₫ một tuần: bếp riêng, máy lạnh, cửa sổ nhìn phố, để được 80 kg đồ.',
+  nharieng: 'Nhà 1.400.000₫ một tuần: sân trước, phòng khách, hai buồng ngủ. Ở đàng hoàng thì giá đó.',
+  cuahang: 'Cửa hàng kiêm nhà ở 1.800.000₫ một tuần: mặt tiền bán được, trong là chỗ ở, chứa 140 kg.',
+};
+/** Chỗ ở coi là "ổn định": có khoá, có địa chỉ — dùng cho vay vốn và bước hướng dẫn. */
+const STABLE_HOME = ['tro', 'khachsan', 'canho', 'nharieng', 'cuahang'];
+const HOME_TIP: Record<string, string> = {
+  tro: 'Phòng số 1, cửa xanh bên trái.', nhanghi: 'Phòng ngay sau quầy lễ tân.', khachsan: 'Phòng 101, cuối sảnh bên trái.',
+  canho: 'Căn 102, khoá cửa cẩn thận.', nharieng: 'Cửa gỗ bên phải, sân để xe.', cuahang: 'Buồng trong, đi lối cửa hông.',
+};
 export class Acts {
   cart: { shop: string; lines: CartLine[]; disc: number; haggled: boolean } | null = null;
   job: { kind: 'dock'; carrying: boolean } | { kind: 'dishes' } | { kind: 'delivery'; x: number; z: number; name: string; pay: number; until: number } | null = null;
@@ -105,12 +121,13 @@ export class Acts {
       }
       case 'bank': this.bankMenu(n); break;
       case 'shark': this.sharkMenu(n); break;
-      case 'motel': case 'hotel': case 'tro': {
-        const hid = id === 'motel' ? 'nhanghi' : id === 'hotel' ? 'khachsan' : 'tro', h = HOUSING[hid], mine = g.housing === hid, due = mine && g.day >= g.paidUntil, opts: Opt[] = [];
-        if (!mine) opts.push({ t: `Thuê — ${money(h.rent)}/${h.per}`, sub: h.desc, off: g.cash < h.rent, fn: () => { this.moveOut(); if (R.payHousing(g, hid)) { sfx('coin'); toast(`Đã thuê ${h.name}. ${hid === 'tro' ? 'Phòng số 1, cửa xanh bên trái.' : hid === 'nhanghi' ? 'Phòng ngay sau quầy lễ tân.' : 'Phòng 101, cuối sảnh bên trái.'}`, 'good', 'home', true); ctx.stall.refresh(); } } });
+      case 'motel': case 'hotel': case 'tro': case 'canho': case 'nharieng': case 'cuahang': {
+        const hid = HOME_OF[id] ?? id, h = HOUSING[hid], mine = g.housing === hid, due = mine && g.day >= g.paidUntil, need = R.rentNeed(hid), opts: Opt[] = [];
+        if (!mine && need > 0 && !R.canRent(g, hid)) opts.push({ t: `Cần uy tín ${need} mới cho thuê`, sub: `Uy tín của bạn hiện là ${Math.round(g.rep)} — bán hàng đều tay rồi hãy quay lại.`, off: true });
+        else if (!mine) opts.push({ t: `Thuê — ${money(h.rent)}/${h.per}`, sub: h.desc, off: g.cash < h.rent, fn: () => { this.moveOut(); if (R.payHousing(g, hid)) { sfx('coin'); toast(`Đã thuê ${h.name}. ${HOME_TIP[hid] ?? ''}`, 'good', 'home', true); ctx.stall.refresh(); } } });
         else if (due || h.per === 'đêm') opts.push({ t: `Đóng tiền ${h.per} tiếp — ${money(h.rent)}`, off: g.cash < h.rent, fn: () => { if (R.spend(g, h.rent, 'rent')) { g.paidUntil = Math.max(g.paidUntil, g.day) + (h.per === 'tuần' ? 7 : 1); sfx('coin'); toast(`Đã đóng tiền, ở được tới hết ngày ${g.paidUntil}.`, 'good', 'home'); } } });
         if (mine) opts.push({ t: 'Trả phòng', sub: 'Đồ đang cất trong phòng sẽ được dọn theo (phần xách nổi)', fn: () => { this.moveOut(); g.housing = 'gamcau'; g.paidUntil = 9999; toast('Đã trả phòng. Về lại gầm cầu.', 'info', 'home'); ctx.stall.refresh(); } });
-        this.D(who(n), n, mine ? (due ? `Tới hạn đóng ${money(h.rent)} rồi đó nghen.` : `Ở có thoải mái không? Đã đóng tới hết ngày ${g.paidUntil}.`) : id === 'tro' ? `Phòng trọ ${money(h.rent)} một tuần, có khoá, có vòi nước, để đồ thoải mái. Tiền nhà đóng trước.` : id === 'motel' ? `Phòng đơn ${money(h.rent)} một đêm, có nước nóng.` : `Kính chào quý khách. Phòng tiêu chuẩn ${money(h.rent)} một đêm, có máy lạnh và tủ mát.`, [...opts, bye]); break;
+        this.D(who(n), n, mine ? (due ? `Tới hạn đóng ${money(h.rent)} rồi đó nghen.` : `Ở có thoải mái không? Đã đóng tới hết ngày ${g.paidUntil}.`) : !R.canRent(g, hid) ? `${h.name} thì phải quen biết mới cho thuê. Uy tín ${need} trở lên mới nói chuyện được.` : HOME_BLURB[hid] ?? `${h.name} ${money(h.rent)}/${h.per}.`, [...opts, bye]); break;
       }
       case 'eatery': {
         const h = hourOf(g), wash = (h >= 10 && h < 14.5) || (h >= 17.5 && h < 21), opts: Opt[] = [
@@ -201,7 +218,7 @@ export class Acts {
     if (g.bank > 0) opts.push({ t: `Rút hết ${money(g.bank)}`, fn: () => { const a = g.bank; g.cash += a; g.bank = 0; bus.emit('cash', a); sfx('coin'); this.bankMenu(n); } });
     for (const a of L.amounts) if (a <= lim) opts.push({ t: `Vay ${money(a)}`, sub: `Lãi ${(L.rate * 100).toFixed(1)}%/ngày, trả trong ${L.term} ngày ~ ${money(a * (1 + L.rate * L.term))}`, fn: () => { R.borrow(g, 'bank', a); sfx('coin'); toast(`Đã vay ngân hàng ${money(a)}.`, 'info', 'cash'); } });
     for (const d of debt) { opts.push({ t: `Trả nợ ${money(Math.min(d.owed, g.cash))} / ${money(d.owed)}`, off: g.cash < 1000, fn: () => { R.repay(g, d.id, g.cash); sfx('coin'); this.bankMenu(n); } }); if (g.day >= d.due - 1) opts.push({ t: 'Xin gia hạn thêm 7 ngày', fn: () => { const r = R.extend(g, d.id); ctx.npcs.say(n, r.line, 3.5, r.ok ? 0 : 3); } }); }
-    const why = lim > 0 ? `Hạn mức vay hiện tại của anh chị là ${money(lim)}.` : g.housing !== 'tro' && g.housing !== 'khachsan' ? 'Để vay vốn cần có chỗ ở ổn định (phòng trọ) và uy tín từ 15.' : g.rep < 15 ? 'Uy tín kinh doanh của anh chị chưa đủ 15 để vay.' : 'Anh chị đã vay hết hạn mức.';
+    const why = lim > 0 ? `Hạn mức vay hiện tại của anh chị là ${money(lim)}.` : !STABLE_HOME.includes(g.housing) ? 'Để vay vốn cần có chỗ ở ổn định (trọ, khách sạn, căn hộ…) và uy tín từ 15.' : g.rep < 15 ? 'Uy tín kinh doanh của anh chị chưa đủ 15 để vay.' : 'Anh chị đã vay hết hạn mức.';
     this.D(who(n), n, `Ngân hàng Sao Vàng xin chào. Số dư tiết kiệm: ${money(g.bank)} (lãi nhỏ mỗi ngày, không sợ mất trộm). ${why}`, [...opts.slice(0, 7), { t: 'Cảm ơn chị.' }]);
   }
   private sharkMenu(n: Npc) {
@@ -218,7 +235,7 @@ export class Acts {
     if (!placeOpen('equip')) { toast('Tiệm Ba Tài đã đóng cửa (mở 7h–20h).', 'warn'); return; }
     if (R.has(g, id)) { toast(`Bạn đã có ${d.name.toLowerCase()} rồi.`, 'info'); return; }
     const need = d.kind === 'stall' && d.tier! > 1 && !R.has(g, TIERS[d.tier! - 1].id) ? `Nên có ${TIERS[d.tier! - 1].name.toLowerCase()} trước.` : '';
-    const block = id === 'tulanh' && g.housing !== 'tro' ? 'Phải thuê phòng trọ mới có chỗ đặt tủ lạnh.' : '';
+    const block = id === 'tulanh' && !['tro', 'canho', 'nharieng', 'cuahang'].includes(g.housing) ? 'Phải thuê chỗ ở có khoá (trọ, căn hộ, nhà) mới đặt được tủ lạnh.' : '';
     this.D(n ? who(n) : 'Chủ tiệm đồ nghề', n, `${d.name} — ${money(d.price)}. ${d.desc} ${need}${block}` + (id === 'sap' ? ' Mua rồi phải chọn chỗ đặt ngoài phố (chỗ nào cũng được), đặt xuống là cố định, mỗi ngày đóng phí chỗ. Bù lại chứa được 90 kg, bày 10 món, 7 khách xếp hàng, mưa gió không ai dỡ hàng.' : ''), [{ t: `Mua — ${money(d.price)}`, off: g.cash < d.price || !!block, sub: g.cash < d.price ? `Còn thiếu ${money(d.price - g.cash)}` : undefined, fn: () => {
       if (R.buyGear(g, id) === 'ok') {
         sfx('buy'); ctx.stall.refresh();
@@ -528,14 +545,14 @@ export class Acts {
     // mục tiêu hướng dẫn
     this.qT -= dt; if (this.qT <= 0) { this.qT = 1; const q = g.quest, s = g.stall, sellable = RECIPE_LIST.filter((r) => R.canSell(g, r));
       const ok = [R.has(g, 'ganh') || s.tier > 0, sellable.length > 0, sellable.some((r) => (R.hasPrep(r) ? R.prepPossible(g, r) > 0 || s.preps.some((x) => x.rid === r.id) : R.finishPossible(g, r) > 0)) || s.ready.length > 0, s.where === 'placed',
-        R.menuOf(g).some((r) => R.available(g, r)), g.tot.served >= 1, g.led.sold >= 10 || g.hist.some((d) => d.sold >= 10), g.housing === 'tro' || g.housing === 'khachsan', s.tier >= 2, g.rep >= 50 && g.debts.length === 0][q];
+        R.menuOf(g).some((r) => R.available(g, r)), g.tot.served >= 1, g.led.sold >= 10 || g.hist.some((d) => d.sold >= 10), STABLE_HOME.includes(g.housing), s.tier >= 2, g.rep >= 50 && g.debts.length === 0][q];
       if (ok && q < QUESTS.length - 1) { g.quest++; sfx('quest'); toast('Xong mục tiêu! Tiếp theo: ' + QUESTS[g.quest], 'good', 'star', true); bus.emit('ui', 'quest'); } }
   }
   /** Điểm tới gần nhất của một địa danh (dùng cho bản đồ). */
   places(): Way[] {
     const A = ctx.world.anchors, P = (k: string, name: string): Way | null => (A[k] ? { x: A[k].x, z: A[k].z, name } : null);
     return [P('v_equip', 'Đồ Nghề Ba Tài'), P('v_m_rau', 'Chợ Xóm Chiều'), P('v_mart', 'MiniMart 24h'), P('v_kiosk', 'Tạp hoá Cô Ba'), P('v_eatery', 'Quán cơm Bà Tư'), P('v_scrap', 'Vựa ve chai Tư Rác'), P('v_pawn', 'Cầm đồ Chú Lâm'), P('v_bank', 'Ngân hàng Sao Vàng'),
-      P('v_tro', 'Nhà trọ Bác Năm'), P('v_motel', 'Nhà nghỉ Bình Dân'), P('v_hotel', 'Khách sạn Hoa Sen'), P('v_pharmacy', 'Nhà thuốc An Tâm'), P('v_wholesale', 'Vựa đầu mối Tám Lúa'), P('v_temple', 'Chùa Phước An'), P('wash_park', 'Nhà tắm công viên'), P('v_shark', 'Hùng Sẹo (vay nóng)'), P('bed_gamcau', 'Gầm cầu (lều của bạn)'), P('board', 'Bảng việc làm'), P('v_dock', 'Bến bốc hàng')].filter(Boolean) as Way[];
+      P('v_tro', 'Nhà trọ Bác Năm'), P('v_motel', 'Nhà nghỉ Bình Dân'), P('v_hotel', 'Khách sạn Hoa Sen'), P('v_canho', 'Căn hộ An Bình'), P('v_nharieng', 'Nhà số 12'), P('v_cuahang', 'Tạp hoá Bình An'), P('v_pharmacy', 'Nhà thuốc An Tâm'), P('v_wholesale', 'Vựa đầu mối Tám Lúa'), P('v_temple', 'Chùa Phước An'), P('wash_park', 'Nhà tắm công viên'), P('v_shark', 'Hùng Sẹo (vay nóng)'), P('bed_gamcau', 'Gầm cầu (lều của bạn)'), P('board', 'Bảng việc làm'), P('v_dock', 'Bến bốc hàng')].filter(Boolean) as Way[];
   }
 }
 export { districtAt, weightOf };

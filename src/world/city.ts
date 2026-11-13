@@ -172,6 +172,8 @@ function sidewalkProps(b: Builder, bx: number, bz: number, R: RNG, dense: boolea
     const fr = faceFrame(bx, bz, f); b.frame(fr, f === 'E' || f === 'W' ? -DEPTH : 0, 0);
     const lots = LOTS.filter((l) => l.bx === bx && l.bz === bz && l.face === f);
     const clearAt = (x: number) => lots.some((l) => (l.kind === 'spot' || l.kind === 'alley' || l.kind === 'scrap') && x > l.at + (f === 'E' || f === 'W' ? DEPTH : 0) - 1.2 && x < l.at + l.w + (f === 'E' || f === 'W' ? DEPTH : 0) + 1.2);
+    // Mặt tiền của một địa chỉ có tên (căn hộ, nhà riêng, tạp hoá…): không trồng cây trước cửa cho khuất biển.
+    const shopFront = (x: number) => lots.some((l) => !!l.id && x > l.at + (f === 'E' || f === 'W' ? DEPTH : 0) + 0.8 && x < l.at + l.w + (f === 'E' || f === 'W' ? DEPTH : 0) - 0.8);
     let k = 0;
     for (let x = 3.5; x < spans[f] - 2; x += 5.6, k++) {
       if (clearAt(x)) continue;
@@ -180,6 +182,7 @@ function sidewalkProps(b: Builder, bx: number, bz: number, R: RNG, dense: boolea
       else {
         // Tán cây thường nằm đúng tầm biển hiệu. Nếu sau cây có biển: trồng cây thân cao (tán trên 4,8 m);
         // biển quá cao (kho, khách sạn, biển dọc) thì chỗ đó để trống.
+        if (shopFront(x)) continue;
         const tx = x + R.range(-0.4, 0.4), h = R.range(4.6, 6), top = b.signTopBehind(tx, h * 0.36 + 0.25);
         b.tree(tx, -2.55, R, h, false, true, top > 4.78 ? 'none' : top > 0 ? 'tall' : 'std');
       }

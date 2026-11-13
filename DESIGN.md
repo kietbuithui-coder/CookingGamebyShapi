@@ -26,7 +26,7 @@ Vòng lặp chính (`src/main.ts`): đọc điều khiển → `advance()` cho t
 
 ## 3. Thế giới
 
-- 3×3 ô phố, mỗi ô 46 m, đường rộng 7 m, vỉa hè 3 m; thêm dải gầm cầu vượt phía nam. 149 lô đất, 273 nút đường đi.
+- 3×3 ô phố, mỗi ô 46 m, đường rộng 7 m, vỉa hè 3 m; thêm dải gầm cầu vượt phía nam. 146 lô đất, 270 nút đường đi (ba công trình mới rộng hơn nên thay chỗ của ba nhà ống).
 - 10 khu với độ giàu và độ an toàn khác nhau; lượng người theo giờ lấy từ `hourCurve(giờ, khu)`.
 - 4 chỗ bán: Hẻm Công Nhân (miễn phí, ×0,85 người qua lại), Cổng Công Viên (20.000₫, ×1,05), Cổng Chợ (30.000₫, ×1,35), Phố Văn Phòng (60.000₫, ×1,25, cần xe đẩy).
 - Hình học tĩnh được gộp sẵn theo từng khu thành vài lưới lớn; biển hiệu vẽ chung vào một tấm atlas. Nhân vật là khung khối hộp có khuôn mặt vẽ từ atlas.
@@ -49,6 +49,11 @@ Sáu chỉ số 0–100: no, khát, năng lượng, sức khoẻ, vệ sinh, tin
 | Nhà nghỉ Bình Dân | 80.000₫/đêm | 0,9 | 0,9 | 20 kg |
 | Phòng trọ | 280.000₫/tuần | 1,0 | 0,95 | 60 kg |
 | Khách sạn Hoa Sen | 350.000₫/đêm | 1,25 | 1,0 | 20 kg |
+| Căn hộ An Bình | 900.000₫/tuần | 1,10 | 0,98 | 80 kg |
+| Nhà riêng (Nhà số 12) | 1.400.000₫/tuần | 1,15 | 1,0 | 120 kg |
+| Cửa hàng kiêm nhà ở | 1.800.000₫/tuần | 1,05 | 1,0 | 140 kg |
+
+Ba chỗ thuê cao cấp đòi **uy tín** mới cho thuê: căn hộ 12, nhà riêng 30, cửa hàng 45 (`needRep` trong `HOUSING_LIST`, chặn ở `canRent`/`payHousing`; dưới mức đó chủ nhà chỉ nói chuyện, không mở cửa). Chỗ nào chưa thuê thì cửa khoá thật (`door.lock`), và ba chỗ này đều có bếp/buồng tắm/chỗ cất đồ riêng nên cắm được tủ lạnh (`PLUGGABLE`). Nợ tiền nhà hai ngày là mất chỗ, đồ trong nhà bị giữ — câu nhắc giờ đọc theo tên chỗ ở chứ không chỉ "Bác Năm".
 
 ### 4.2 Nguyên liệu
 Mỗi lô hàng có số lượng, độ tươi, chất lượng và giá vốn. Mỗi giờ độ tươi giảm `100 / hạn_dùng`, nhân 0,22 nếu được giữ lạnh, nhân 2,6 × thời tiết nếu là đồ cần lạnh mà để ngoài. Dưới 10 là hỏng và bị bỏ. Khi nấu, lô kém tươi được dùng trước.
@@ -159,6 +164,18 @@ Sạp là bậc cuối của nghề: 9.000.000₫ ở tiệm Đồ Nghề Ba Tà
 - **Đổi lại**: quầy để ngoài đường qua đêm **không bị dỡ trộm** (mọi bậc khác đều bị), và bão/ngập chỉ làm hỏng quầy như bình thường.
 - Nhánh `tier < 3` đã rà hết: `pickUp`, `storeHome`, trộm đêm, ô dù (không cần vì đã có mái), nút "Dọn hàng, mang đi" trong panel và nút cất gánh trên HUD đều ẩn với bậc 3.
 
+### 4.13 Ba chỗ ở mới
+
+Thêm ba địa chỉ có nội thất thật, không phải mô hình trang trí — đi vào bằng cửa, ngủ ở giường, cất đồ ở kệ, tắm ở buồng tắm:
+
+| Nơi | Lô đất | Chủ nhà | Nội thất |
+|---|---|---|---|
+| Căn hộ An Bình (Căn 102) | `10S` đường Khu Căn Hộ | Cô Hạnh, quản lý căn hộ | phòng khách sofa + ti vi, bếp riêng có bồn rửa và tủ lạnh, buồng ngủ có kệ đồ, buồng tắm khay sen; mặt tiền có hộp thư, bảng "CĂN 102", chuông cửa |
+| Nhà số 12 | `21S` đường Khu Dân Cư | Chú Vinh, chủ nhà | sân gạch có xe máy, phòng khách có bàn thờ, hai buồng ngủ, bếp sau, buồng tắm |
+| Tạp hoá Bình An | `11S` Phố Trung Tâm | Cô Lệ, chủ tạp hoá | mặt tiền bán hàng có quầy + ba dãy kệ, mái bạt; phía sau là buồng ngủ, bếp và buồng tắm |
+
+Mỗi nơi có đủ mỏ neo `bed_/store_/wash_/v_` nên mọi hệ thống sẵn có (ngủ, cất đồ, tắm, nói chuyện, giờ mở cửa, bản đồ) chạy mà không cần nhánh riêng. Cửa khoá theo `g.housing`; giờ mở cửa 6–22h (tạp hoá 6–21h).
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
@@ -180,6 +197,7 @@ Sạp là bậc cuối của nghề: 9.000.000₫ ở tiệm Đồ Nghề Ba Tà
 - `tests/data.test.ts` — tính nhất quán dữ liệu (nguyên liệu nào cũng mua được, dụng cụ nào cũng có bán, lưới đường đi liên thông, nhãn người lạ không lộ nghề hay tên…).
 - `tests/settings.test.ts` — làm sạch dữ liệu bố cục nút.
 - `tests/stall.test.ts` — sạp cố định: phí chỗ theo ngày, trừ tiền đầu ngày, thiếu tiền thì đóng quầy và treo nợ, mua sạp thì lên bậc 3 và chưa có chỗ.
+- `tests/housing.test.ts` — chỗ ở: mã không trùng, thuê theo tuần thì giá cao hơn phải chứa nhiều hơn và đòi uy tín cao hơn, ba chỗ mới có đúng lô đất, chưa đủ uy tín thì không cho thuê và không trừ tiền, mã lạ thì trả về `false`, nợ hai ngày thì mất chỗ và mất tủ lạnh, chỉ nhà thuê theo tuần mới cắm được tủ lạnh.
 - `tests/fun.test.ts` — bảng chỗ chơi (mã không trùng, có neo, có giờ hợp lệ, chơi lâu hơn thì lên tinh thần nhiều hơn) và thang mở công thức (cấp 1 mở đúng 1 món, cấp sau mở 2; luôn là món rẻ nhất còn thiếu; không vượt tay nghề; món sau không rẻ hơn món trước; cấp 10 mở đủ 60 món).
 
 Ba bài mới ở lượt 2: mỗi nhân vật phụ phải có tên, nhãn việc, câu mở đầu và ít nhất hai câu chuyện đủ dài; bảng `RUDE` chỉ được có tối đa 8 nhóm và phải có đủ lời cho cả năm kiểu (giấy, khạc nhổ, mắng, đuổi, khạc nhổ khi bị xin tiền); khách quen không được trùng id hay tên và phải có cả tên kiểu học sinh.
@@ -196,8 +214,8 @@ Người chơi đã thử bản đầu và gửi danh sách góp ý; việc đư
 
 Còn lại:
 
-1. Chỗ ở: thêm 3 kiểu (đang 5/8).
-2. **Đã xong sạp cố định (bậc 3)** — xem mục 4.12. Còn lại của nhánh này: quán ăn nhỏ, quán có chỗ ngồi, nhà hàng bình dân, chuỗi cửa hàng (mới có tên trong `FUTURE_TIERS`).
+1. **Đã xong 3 kiểu chỗ ở mới: căn hộ, nhà riêng, cửa hàng kiêm nhà ở** (8/8) — xem mục 4.13.
+2. **Đã xong sạp cố định (bậc 3)** — xem mục 4.12. Việc kế tiếp của nhánh này: quán ăn nhỏ, quán có chỗ ngồi, nhà hàng bình dân, chuỗi cửa hàng (mới có tên trong `FUTURE_TIERS`).
 3. Hệ thống băng nhóm, nhân viên phụ bán.
 
 **Việc nền chưa làm**

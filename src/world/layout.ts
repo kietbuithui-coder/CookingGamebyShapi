@@ -61,7 +61,8 @@ export const faceOutYaw = (fr: Frame) => fr.yaw + Math.PI;
 
 export type Style = 'office' | 'rich' | 'mid' | 'poor' | 'ware';
 export type LotKind = 'house' | 'alley' | 'minimart' | 'equip' | 'eatery' | 'bank' | 'hotel' | 'tro' | 'kiosk' | 'scrap' | 'site' | 'motel'
-  | 'pawn' | 'cafe' | 'temple' | 'depot' | 'school' | 'spot' | 'pharmacy' | 'tower' | 'apartment';
+  | 'pawn' | 'cafe' | 'temple' | 'depot' | 'school' | 'spot' | 'pharmacy' | 'tower' | 'apartment'
+  | 'canho' | 'nharieng' | 'cuahang';
 export interface Lot { bx: number; bz: number; face: Face; at: number; w: number; d: number; kind: LotKind; style: Style; fr: Frame; seed: number; id?: string; district: District; }
 
 interface Special { at: number; w: number; kind: LotKind; id?: string; d?: number; }
@@ -70,15 +71,16 @@ const SPECIALS: Record<string, Special[]> = {
   '00S': [{ at: 8, w: 12, kind: 'bank', id: 'bank' }, { at: 29, w: 6, kind: 'spot', id: 'vp' }],
   '00E': [{ at: 5, w: 14, kind: 'hotel', id: 'hotel' }],
   // Khu căn hộ (B)
-  '10S': [{ at: 16, w: 10, kind: 'cafe', id: 'cafe' }],
+  '10S': [{ at: 16, w: 10, kind: 'cafe', id: 'cafe' }, { at: 26, w: 12, kind: 'canho', id: 'canho' }],
   // Phố trung tâm (giữa)
-  '11S': [{ at: 4, w: 14, kind: 'minimart', id: 'minimart' }, { at: 30, w: 6, kind: 'pharmacy', id: 'pharmacy' }],
+  '11S': [{ at: 4, w: 14, kind: 'minimart', id: 'minimart' }, { at: 18, w: 12, kind: 'cuahang', id: 'cuahang' }, { at: 30, w: 6, kind: 'pharmacy', id: 'pharmacy' }],
   '11W': [{ at: 0, w: 10, kind: 'equip', id: 'equip' }, { at: 10, w: 2.4, kind: 'alley' }],
   '11N': [{ at: 6, w: 12, kind: 'eatery', id: 'eatery' }],
   '11E': [{ at: 11, w: 2.4, kind: 'alley' }],
   // Khu dân cư (Đ)
   '21N': [{ at: 8, w: 30, kind: 'school', id: 'school' }],
   '21W': [{ at: 6, w: 11, kind: 'tro', id: 'tro' }],
+  '21S': [{ at: 12, w: 12, kind: 'nharieng', id: 'nharieng' }],
   // Xóm lao động (TN)
   '02E': [{ at: 2, w: 6, kind: 'kiosk', id: 'kiosk' }, { at: 8, w: 2.4, kind: 'alley' }, { at: 14, w: 6, kind: 'spot', id: 'hem' }],
   '02S': [{ at: 14, w: 16, kind: 'scrap', id: 'scrap' }],
