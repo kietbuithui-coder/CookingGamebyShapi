@@ -58,7 +58,7 @@ button { font: inherit; color: inherit; border: 0; background: none; padding: 0;
 .toast { background: rgba(255, 247, 228, .96); border: 2px solid var(--ink); border-left: .5em solid var(--blue); border-radius: .7em; padding: .25em .7em; font-weight: 600; font-size: .92em; box-shadow: 0 3px 0 var(--shadow); animation: tin .25s; max-width: 100%; display: flex; gap: .4em; align-items: center; }
 .toast.good { border-left-color: var(--green); } .toast.bad { border-left-color: var(--red); } .toast.warn { border-left-color: var(--yellow); } .toast.event { border-left-color: #8a5fd0; }
 .toast.out { opacity: 0; transform: translateY(-.6em); transition: .3s; } @keyframes tin { from { opacity: 0; transform: translateY(-.8em); } }
-#stam { left: 50%; bottom: 4.2em; width: 9em; height: .4em; margin-left: -4.5em; background: rgba(0, 0, 0, .4); border-radius: .3em; overflow: hidden; } #stam b { display: block; height: 100%; background: #ffe38a; }
+#stam { left: 50%; bottom: 4.2em; width: 9em; height: .4em; margin-left: -4.5em; background: linear-gradient(90deg, rgba(0, 0, 0, .4) var(--cap, 100%), rgba(190, 50, 40, .6) var(--cap, 100%)); border-radius: .3em; overflow: hidden; } #stam b { display: block; height: 100%; background: #ffe38a; }
 
 /* ───── bong bóng thoại, gọi món, số bay ───── */
 #world { inset: 0; overflow: hidden; }

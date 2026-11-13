@@ -13,7 +13,7 @@ export type Carry = '' | 'ganh' | 'xeday' | 'sack' | 'box';
 const _o = { x: 0, z: 0 };
 export class Player {
   x = 0; z = 0; yaw = Math.PI; pitch = 0; eye = 1.6; eyeTarget = 1.6; y = 0.12;
-  stamina = 1; tired = false; moving = false; running = false; speed = 0; phase = 0; bob = 0;
+  stamina = 1; /** Trần sức bền hiện tại (tụt khi đói, khát). */ staminaCap = 1; tired = false; moving = false; running = false; speed = 0; phase = 0; bob = 0;
   holder = new THREE.Group(); carry: Carry = ''; private models: Partial<Record<Carry, THREE.Object3D>> = {};
   /** Khi đặt, camera trượt tới tư thế cố định (nấu ăn, ngủ, rửa chén…). */
   camTo: { pos: THREE.Vector3; look: THREE.Vector3; fov?: number } | null = null; private camK = 0; private from = new THREE.Vector3(); private fromQ = new THREE.Quaternion(); private fromFov = 68;
@@ -41,7 +41,7 @@ export class Player {
     // di chuyển
     let mx = inp.mx, mz = inp.mz; if (this.frozen || this.camTo) mx = mz = 0;
     const mag = Math.min(1, Math.hypot(mx, mz)); this.moving = mag > 0.08;
-    const maxSt = staminaMax(g); this.stamina = Math.min(this.stamina, maxSt);
+    const maxSt = this.staminaCap = staminaMax(g); this.stamina = Math.min(this.stamina, maxSt);
     const wantRun = inp.run && this.moving && mz > 0.3 && !this.tired && this.carry === '';
     this.running = wantRun;
     if (wantRun) { this.stamina -= dt * 0.1; if (this.stamina <= 0.02) this.tired = true; } else { this.stamina = Math.min(maxSt, this.stamina + dt * (this.moving ? 0.05 : 0.09)); if (this.stamina > 0.3) this.tired = false; }

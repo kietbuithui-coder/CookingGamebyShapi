@@ -194,7 +194,8 @@ export class UI {
     const evs = activeEvents(g); E.events.innerHTML = evs.map((e) => `<span class="chip${e.danger ? ' danger' : ''}">${ic(e.icon)}${esc(e.name)}</span>`).join('') + (g.flags.sick ? `<span class="chip danger">${ic('heart')}Bị cảm</span>` : '') + (g.weather.wet > 55 ? `<span class="chip">${ic('drop')}Ướt sũng</span>` : '') + (g.weather.flood > 0.35 ? `<span class="chip">${ic('drop')}Ngập khu trũng</span>` : '');
     const c = ctx.acts.cart; E.cart.classList.toggle('hide', !c); if (c) E.cart.innerHTML = `${ic('bag')}Giỏ: ${c.lines.map((l) => `${l.n} ${INGS[l.id].name.toLowerCase()}`).join(', ')} — <b>${money(ctx.acts.cartTotal())}</b> · đưa ${SHOPS[c.shop].vendor} tính tiền`;
     const s = g.stall; E.stallchip.classList.toggle('hide', s.tier === 0); if (s.tier) E.stallchip.innerHTML = `${ic('shop')}${tier(g).name}: ${stallHint(g)}` + (s.open ? ` · ${ctx.stall.customers.length} khách · hôm nay ${money(g.led.revenue + g.led.tips)}` : '');
-    const st = E.stam; st.classList.toggle('hide', p.stamina > 0.98 || ctx.mode !== 'play'); (st.firstElementChild as HTMLElement).style.width = p.stamina * 100 + '%';
+    // Thanh sức bền chỉ hiện khi đang hụt so với trần hiện tại (đang chạy hoặc đang hồi), không hiện suốt chỉ vì đói/khát làm trần tụt xuống.
+    const st = E.stam; st.classList.toggle('hide', p.stamina > p.staminaCap - 0.02 || ctx.mode !== 'play'); (st.firstElementChild as HTMLElement).style.width = p.stamina * 100 + '%'; st.style.setProperty('--cap', p.staminaCap * 100 + '%');
     const n = g.bag.reduce((a, x) => a + (x.fresh < 35 && INGS[x.id].shelf < 9000 ? 1 : 0), 0); E.bagdot.classList.toggle('hide', n === 0); E.bagdot.textContent = String(n);
     void EVENTS; void MIN_PER_SEC;
   }
