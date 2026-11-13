@@ -453,6 +453,62 @@ export function buildPlace(b: Builder, l: Lot, R: RNG) {
       b.tree(3.4, 3.0, R, 6.5, false);
       break;
     }
+    case 'hospital': {
+      // Bệnh viện Phước An: sảnh tiếp nhận, quầy thuốc, phòng hồi sức phía sau vách ngăn.
+      const di = 10.2, col = 0xeef3f4;
+      shell(b, { w, d, di, h1: 3.7, H: 16.5, col, inner: 0xf7f9f7, floor: 'tile', opens: [{ x0: 0.8, x1: 2.8, sill: 0.9, top: 2.8 }, { x0: 3.6, x1: 6.9, top: 3.1 }, { x0: 7.8, x1: 9.8, sill: 0.9, top: 2.8 }] });
+      bigSign(b, w, 3.4, 'BỆNH VIỆN PHƯỚC AN', { bg: '#0b5ea8', fg: '#ffffff', sub: 'Cấp cứu 24/24 · Khám bệnh · Nhà thuốc', subFg: '#d9f0ff' }, 0.95, 0.9, 104);
+      // dấu thập đỏ trên mặt tiền
+      L.box(w / 2, 5.05, -0.07, 0.62, 1.8, 0.12, 0xd81e2a, 0xd81e2a, 0, true);
+      L.box(w / 2, 5.65, -0.07, 1.8, 0.62, 0.12, 0xd81e2a, 0xd81e2a, 0, true);
+      for (let f = 0; f < 4; f++) for (let i = 0; i < 3; i++) { const x1 = w - 1.2 - i * 3.2, y = 5.0 + f * 3.2; L.box(x1 - 0.7, y - 0.12, -0.3, 1.6, 0.1, 0.5, WHITE, WHITE, 0, true); b.glow.quad(x1, y, -0.02, x1 - 1.4, y, -0.02, x1 - 1.4, y + 1.6, -0.02, x1, y + 1.6, -0.02, R.chance(0.45) ? 0xdfefff : 0x1c2530); }
+      // mái che lối vào + bảng cấp cứu cho dễ nhận ra từ ngoài đường
+      L.box(w / 2, 3.12, -0.95, 3.9, 0.14, 1.9, 0x0b5ea8, 0x0b5ea8, 0, true);
+      for (const px of [3.75, 6.75]) L.box(px, 0, -1.72, 0.12, 3.12, 0.12, 0x9aa2a8, 0xb9c0c8, 0, true);
+      U.box(w / 2, 0.0, -0.7, 3.4, 0.02, 1.5, 0xd8dee2);
+      b.signAt(3.0, 2.62, -0.14, 1.5, 0.4, 'CẤP CỨU', { bg: '#d81e2a', fg: '#ffffff', border: '#ffffff' }, 0, -1, 56);
+      // sảnh: ốp tường xanh nhạt, ghế chờ dọc tường trái
+      for (let i = 0; i < 4; i++) { U.box(1.05, 0.13, 1.3 + i * 0.62, 0.52, 0.42, 0.5, 0x2f8fd5, 0x4aa8f0, 0.1); U.box(0.72, 0.55, 1.3 + i * 0.62, 0.1, 0.5, 0.5, 0x2f8fd5, 0x4aa8f0, 0.1); b.collide(0.75, 1.05 + i * 0.62, 1.35, 1.55 + i * 0.62); }
+      // quầy thuốc + tủ thuốc bên phải
+      shelfUnit(b, w - 0.78, 4.6, w - 0.24, 8.4, 2.0, 0xdfeef0, R);
+      for (let i = 0; i < 5; i++) U.box(w - 0.52, 0.9, 5.0 + i * 0.72, 0.34, 0.26, 0.4, [0xffffff, 0xdfe9f2, 0xf3e8d2, 0xe9f3ee, 0xf7e6e6][i], 0xffffff, 0.06);
+      counter(b, w - 1.35, 8.6, w - 0.35, 9.2, 0xdfeef0, 0.95);
+      b.anchor('quay_thuoc', w - 0.95, 0.13, 7.6, Math.PI / 2);
+      b.signAt(w - 0.52, 2.35, 4.58, 1.5, 0.34, 'NHÀ THUỐC', { bg: '#ffffff', fg: '#1e7a3c', border: '#1e7a3c' }, 0, -1, 48);
+      // vách ngăn + cửa vào phòng hồi sức
+      partition(b, 0.2, 4.5, 6.2, 4.5, 3.67, 0xd8e6ea); partition(b, 7.3, 4.5, w - 0.2, 4.5, 3.67, 0xd8e6ea);
+      lintel(b, 6.2, 4.5, 7.3, 4.5, 2.3, 3.67, 0xd8e6ea);
+      b.signAt(3.2, 2.9, 4.44, 2.2, 0.4, 'PHÒNG HỒI SỨC', { bg: '#0b5ea8', fg: '#ffffff', border: '#0b5ea8', sub: 'Nằm nghỉ tính theo giờ', subFg: '#d9f0ff' }, 0, -1, 64);
+      // ốp chân tường màu xanh bệnh viện + bảng chỉ dẫn
+      for (const [x0, x1, z0, z1, dx, dz] of [[0.23, 0.23, 0.3, 4.3, 1, 0], [w - 0.23, w - 0.23, 0.3, 4.3, -1, 0]] as const) {
+        U.box(x0, 0.14, (z0 + z1) / 2, 0.04, 1.05, z1 - z0, 0x2f8fd5, 0x4aa8f0);
+        b.signAt(x0 + dx * 0.03, 1.85, (z0 + z1) / 2 + 0.4, 0.9, 0.62, 'RỬA TAY SẠCH', { bg: '#ffffff', fg: '#0b5ea8', border: '#2f8fd5', sub: 'Trước khi vào khám', subFg: '#7a3a8a' }, dx, dz, 40);
+      }
+      U.box(3.0, 0.14, 4.45, 6.0, 1.05, 0.04, 0x2f8fd5, 0x4aa8f0);
+      // quầy tiếp nhận phía sau
+      counter(b, 6.6, 9.0, w - 0.3, 9.6, 0x8fa3b0, 1.05);
+      U.box(8.3, 1.18, 9.3, 1.1, 0.36, 0.03, 0xcfe6f2);
+      b.signAt(8.3, 2.45, 8.94, 2.2, 0.44, 'TIẾP NHẬN', { bg: '#0b5ea8', fg: '#ffffff', border: '#0b5ea8', sub: 'Khám bệnh · Viện phí · Thất lạc', subFg: '#d9f0ff' }, 0, -1, 64);
+      // bảng gọi số điện tử
+      U.box(8.3, 2.95, 8.98, 1.5, 0.5, 0.08, 0x1b1c1f, 0x2a2c30, 0.05);
+      for (let i = 0; i < 3; i++) b.cur.glow.quad(7.9 + i * 0.4, 3.0, 8.93, 7.65 + i * 0.4, 3.0, 8.93, 7.65 + i * 0.4, 3.35, 8.93, 7.9 + i * 0.4, 3.35, 8.93, 0x6fd08a);
+      b.anchor('v_hospital', 8.3, 0.13, 10.0, Math.PI);
+      // hai giường bệnh, rèm trắng ngăn cách
+      for (const z of [6.6, 9.0]) {
+        U.box(2.0, 0.13, z, 1.0, 0.3, 2.0, WOODC, WOODC, 0.1);
+        U.box(2.0, 0.43, z, 0.94, 0.16, 1.94, 0xe9f4ff, 0xffffff, 0.05);
+        U.box(2.0, 0.59, z - 0.62, 0.7, 0.1, 0.4, 0xffffff, 0xffffff, 0.05);
+        b.collide(1.5, z - 1.0, 2.5, z + 1.0);
+        for (const [sx, sz] of [[-0.55, -1.05], [0.55, -1.05], [-0.55, 1.05], [0.55, 1.05]] as const) U.box(2.0 + sx, 0.13, z + sz, 0.06, 0.9, 0.06, 0x9aa2a8);
+        U.box(2.0, 1.02, z - 1.05, 1.2, 0.05, 0.05, 0x9aa2a8);
+        U.box(2.0, 0.75, z - 1.02, 1.14, 0.6, 0.03, 0xf2f7ff, 0xe6eef8, 0.02);
+      }
+      b.anchor('giuong_benhvien', 3.35, 0.13, 6.6, -Math.PI / 2);
+      U.box(3.1, 0.13, 9.6, 0.5, 0.5, 0.5, 0xdfeef0, 0xffffff, 0.1);
+      for (const [x, z] of [[4.6, 6.4], [4.6, 8.0], [8.4, 2.4]]) ceilLight(b, x, 3.66, z, 1.6);
+      ceilLight(b, 2.0, 3.66, 2.4, 1.4);
+      break;
+    }
     case 'spot': {
       // khoảng trống lùi vào để đặt quầy hàng
       const H = 7.2, col = 0xbfb6a6;

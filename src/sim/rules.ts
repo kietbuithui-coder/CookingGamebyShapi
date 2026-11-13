@@ -352,6 +352,84 @@ export function consume(g: Game, eff: { h?: number; t?: number; m?: number; hp?:
   if (risky > 0 && rnd.chance(risky)) { s.health = clamp(s.health - 18, 0, 100); s.mood = clamp(s.mood - 8, 0, 100); toast('Ăn đồ ôi thiu — đau bụng quá!', 'bad', 'heart'); }
 }
 
+// ───────────────────────── Sức khoẻ: xỉu & bệnh viện ─────────────────────────
+/** Phí khám bác sĩ. Khám xong mới biết bệnh, nhưng vẫn phải trả trước. */
+export const EXAM_FEE = 20000;
+/** Giá một giờ nằm phòng hồi sức. */
+export const RECOVER_FEE = 5000;
+/** Tiền xe cấp cứu cộng viện phí khi ngất — luôn có mức trần để người mới chơi không sạt nghiệp. */
+export const FAINT_FEE = 30000;
+
+export interface MedDef { id: string; name: string; price: number; desc: string; hp: number; e: number; cures?: 'sick'; }
+/** Quầy thuốc trong bệnh viện: bán đúng thứ người bệnh cần, dùng ngay tại chỗ. */
+export const MEDS: Record<string, MedDef> = {
+  cam: { id: 'cam', name: 'Thuốc cảm', price: 15000, desc: 'Một liều là hết sợi cảm, người nhẹ hẳn.', hp: 8, e: 4, cures: 'sick' },
+  bang: { id: 'bang', name: 'Bông băng', price: 8000, desc: 'Băng vết trầy, cầm máu, đỡ rát.', hp: 14, e: 0 },
+  bo: { id: 'bo', name: 'Thuốc bổ', price: 25000, desc: 'Uống cho lại sức, bớt chóng mặt.', hp: 22, e: 14 },
+};
+export const MED_LIST = Object.values(MEDS);
+
+/** Mua thuốc ở quầy bệnh viện: trả tiền rồi dùng luôn. false nếu không đủ tiền. */
+export function buyMed(g: Game, id: string): boolean {
+  const m = MEDS[id];
+  if (!m || !spend(g, m.price, 'other')) return false;
+  consume(g, { hp: m.hp, e: m.e });
+  if (m.cures === 'sick' && g.flags.sick) { delete g.flags.sick; toast('Uống thuốc cảm, trong người nhẹ hẳn ra.', 'good', 'heart'); }
+  return true;
+}
+
+/** Khám bệnh: trả phí rồi bác sĩ nói bệnh gì. null nếu không đủ tiền khám. */
+export function exam(g: Game): string | null {
+  if (!spend(g, EXAM_FEE, 'other')) return null;
+  g.flags.exam = g.day;
+  const s = g.st;
+  if (g.flags.sick) return 'Bác sĩ nói bạn bị cảm nặng, ho cả tuần rồi. Ra quầy thuốc mua thuốc cảm uống liền đi.';
+  if (s.health < 35) return 'Bác sĩ lắc đầu: suy nhược, thiếu ăn thiếu ngủ. Nằm phòng hồi sức vài giờ rồi hẵng đi làm.';
+  if (s.hunger < 25) return 'Không bệnh gì, chỉ là đói quá thôi. Kiếm gì bỏ bụng rồi tính tiếp.';
+  if (s.hygiene < 30) return 'Bác sĩ nhíu mày: người lem luốc quá, dễ nhiễm trùng. Tắm rửa sạch sẽ rồi quay lại.';
+  return 'Bác sĩ nghe tim, đo huyết áp rồi cười: trong người ổn, cứ ăn ngủ đều là được.';
+}
+
+/** Tiền giường phòng hồi sức cho số giờ nằm. */
+export const recoverCost = (hours: number) => RECOVER_FEE * Math.max(1, Math.round(hours));
+/** Nằm phòng hồi sức: trả tiền giường, mỗi giờ hồi một ít sức khoẻ. false nếu không đủ tiền. */
+export function recover(g: Game, hours: number): boolean {
+  const h = Math.max(1, Math.round(hours));
+  if (!spend(g, recoverCost(h), 'other')) return false;
+  consume(g, { hp: 14 * h, e: 10 * h, h: -3 * h, t: -3 * h, m: 3 * h });
+  return true;
+}
+
+/** Nhận lại đồ rơi lúc ngất — chỉ trong ngày hôm đó, ở bệnh viện. Trả về danh sách đã nhận. */
+export function claimLost(g: Game): Stack[] {
+  if (!g.lostBag?.length || g.lostDay !== g.day) return [];
+  const items = g.lostBag;
+  g.lostBag = []; g.lostDay = -1;
+  for (const s of items) addStack(weightOf(g.bag) + weightOf([s]) <= carryCap(g) ? g.bag : g.home, s);
+  return items;
+}
+
+export interface FaintResult { fee: number; lost: Stack[]; }
+/**
+ * Ngất vì sức khoẻ về 0: người đi đường đưa vào bệnh viện.
+ * Mất tiền xe cấp cứu + viện phí (tối đa 30.000₫ + 15% số tiền đang có, không bao giờ âm),
+ * rơi lại một phần đồ trong ba lô, tỉnh dậy thì sức khoẻ chỉ còn 45.
+ */
+export function faint(g: Game): FaintResult {
+  const fee = Math.min(g.cash, round1k(FAINT_FEE + g.cash * 0.15));
+  spend(g, fee, 'other');
+  const n = Math.min(g.bag.length, Math.ceil(g.bag.length * 0.4));
+  const lost = n > 0 ? g.bag.splice(g.bag.length - n, n) : [];
+  if (lost.length) { g.lostBag = lost.map((s) => ({ ...s })); g.lostDay = g.day; }
+  const s = g.st;
+  s.health = 45; s.energy = Math.max(s.energy, 40);
+  s.mood = clamp(s.mood - 18, 0, 100); s.hygiene = clamp(s.hygiene - 22, 0, 100);
+  s.hunger = clamp(s.hunger - 8, 0, 100); s.thirst = clamp(s.thirst - 8, 0, 100);
+  g.rep = clamp(g.rep - 6, 0, 100);
+  g.flags.faint = (g.flags.faint ?? 0) + 1; g.flags.faintDay = g.day;
+  return { fee, lost };
+}
+
 // ───────────────────────── Thời tiết ─────────────────────────
 export function nextWeather(cur: WeatherId, R: RNG = rnd): WeatherId {
   const opts = Object.entries(WEATHER[cur].next) as [WeatherId, number][];

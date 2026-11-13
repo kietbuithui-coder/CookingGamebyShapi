@@ -25,7 +25,7 @@ describe('bố cục nút do người chơi tự xếp', () => {
     expect(u.L.run).toEqual({ x: 0, y: 0, s: 1 });      // từng trường hỏng thì về mặc định của trường đó
     expect(u.P).toEqual({});
   });
-  it('có đủ bốn nhóm nút: tương tác, chạy, hàng nút menu, nút nấu ăn', () => {
-    expect([...BTN_KEYS].sort()).toEqual(['act', 'cook', 'menu', 'run']);
+  it('có đủ sáu nhóm nút: tương tác, chạy, đấm, nhảy, hàng nút menu, nút nấu ăn', () => {
+    expect([...BTN_KEYS].sort()).toEqual(['act', 'cook', 'hit', 'jump', 'menu', 'run']);
   });
 });

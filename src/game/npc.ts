@@ -20,12 +20,14 @@ export interface Npc {
   persona?: Persona; order?: Order; patience: number; waited: number; slot: number; asked: boolean; served: boolean; barkT: number;
   parent?: Npc; onArrive?: (n: Npc) => void; hidden: boolean; talkT: number; actor?: string; data?: any; home?: { x: number; z: number; yaw: number };
   /** hành động lúc rảnh (đọc báo / uống nước / tám chuyện) và người đang nói cùng */ idleT?: number; idleT2?: number; chatWith?: number;
+  /** Bị đấm mấy lần + còn giận tới lúc nào (giây ctx.time). */ hurt?: number; madUntil?: number;
   /** nhảy tại chỗ (nhân vật phụ ở góc hip hop) */ dance?: boolean;
   /** đếm ngược tới lần gây sự kế tiếp; chaseT: còn đuổi bao lâu; hit: đã xô người chơi lần này chưa */ rudeT: number; chaseT?: number; hit?: boolean;
 }
 /** Giờ mở cửa của những nơi không phải cửa hàng nguyên liệu. */
 export const PLACE_HOURS: Record<string, [number, number]> = { equip: [7, 20], bank: [8, 17], eatery: [6, 21.5], pawn: [8, 21], scrap: [6, 19], dock: [4.5, 10], motel: [0, 24], hotel: [0, 24], tro: [6, 22], shark: [9, 24], hobo: [0, 24],
   canho: [6, 22], nharieng: [6, 22], cuahang: [6, 21],
+  hospital: [0, 24],
   // nhân vật phụ: mỗi người chỉ ở chỗ của mình trong một quãng giờ nhất định
   tra_da: [5.5, 22], rap: [14.5, 23], sua_xe: [7, 19], hat_rong: [9, 21], danh_co: [6.5, 18.5], danh_giay: [6, 19.5] };
 export function placeOpen(id: string): boolean {
@@ -149,6 +151,30 @@ export class Npcs {
     ctx.sound.play('spit'); this.say(n, this.R.pick(LINES.rude.spit), 2.2, 4);
     ctx.g.st.mood = clamp(ctx.g.st.mood - 3, 0, 100);
     toast('Ai đó khạc nhổ ngay trước mặt bạn. Chỉ còn biết lắc đầu đi tiếp.', 'warn');
+  }
+  /**
+   * Ăn một cú đấm: la lên, mất uy tín, người xung quanh nhìn thấy.
+   * Người đi đường thì một nửa quay lại đánh, nửa kia bỏ chạy; người đứng bán thì giận, không nói chuyện nữa một lúc.
+   */
+  hit(n: Npc) {
+    if (ctx.mode !== 'play') return;
+    const R = this.R, g = ctx.g, L = LINES.hit;
+    ctx.sound.play('thud');
+    n.hurt = (n.hurt ?? 0) + 1;
+    this.say(n, R.pick(L.cry), 2.4, 4);
+    g.st.mood = clamp(g.st.mood + 1, 0, 100);
+    g.rep = clamp(g.rep - 3, 0, 100);
+    // người đứng gần thấy hết: mỗi hai người chứng kiến thì mất thêm uy tín
+    let seen = 0;
+    for (const o of this.list) { if (o === n || o.hidden) continue; if (dist2(o.x, o.z, n.x, n.z) < 9 && seen < 4) { seen++; if (seen <= 2) this.say(o, R.pick(L.witness), 2, 5); } }
+    if (seen >= 2) g.rep = clamp(g.rep - 1, 0, 100);
+    toast(n.hurt > 1 ? `Bạn đánh ${n.name} lần nữa. Người đi đường bắt đầu né ra xa.` : `Bạn đấm ${n.name}. Cả khúc đường quay lại nhìn.`, 'bad', 'angry');
+    if (n.state === 'fixed') { n.madUntil = ctx.time + 90; this.say(n, R.pick(L.cry), 2.4, 4); return; }
+    // khách đang chờ thì bỏ đi
+    if (n.state === 'queue' || n.state === 'toStall') { n.order = undefined; ctx.ui.unorder(n); }
+    n.path = []; n.pose = 'angry';
+    if (n.hurt >= 3 || R.chance(0.55)) this.chase(n, 3.4);
+    else { this.say(n, R.pick(L.run), 2.6, 4); this.leave(n); }
   }
   /** Đuổi theo người chơi một quãng rồi bỏ đi. */
   chase(n: Npc, secs = 4.5) {

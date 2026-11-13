@@ -6,6 +6,8 @@ interface Item { key: BtnKey; sel: string; name: string; origin: string; }
 const ITEMS: Item[] = [
   { key: 'act', sel: '#act', name: 'Nút tương tác', origin: '100% 100%' },
   { key: 'run', sel: '#runb', name: 'Nút chạy', origin: '50% 50%' },
+  { key: 'hit', sel: '#act2 .hit', name: 'Nút đấm', origin: '50% 50%' },
+  { key: 'jump', sel: '#act2 .jump', name: 'Nút nhảy', origin: '50% 50%' },
   { key: 'menu', sel: '#menub', name: 'Túi · Sổ · Bản đồ · Cài đặt', origin: '100% 0%' },
   { key: 'cook', sel: '#cook .btns', name: 'Nút khi nấu ăn', origin: '100% 100%' },
 ];

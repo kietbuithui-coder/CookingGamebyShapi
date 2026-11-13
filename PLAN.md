@@ -24,10 +24,10 @@ Thứ tự dưới đây xếp theo phụ thuộc kỹ thuật và theo mức "c
 
 ---
 
-## Lượt 6 — Sức khoẻ, xỉu, bệnh viện
+## Lượt 6 — Sức khoẻ, xỉu, bệnh viện ✅ đã xong
 
 **Nút nhảy và nút đánh.** Hai nút mới cạnh nút hành động (bàn phím: `Space` nhảy, `F` đánh). Nhảy có ích
-để vượt vũng nước/ổ gà, đánh có hồi chiêu 1,2 giây và chỉ ăn khi đứng sát.
+để vượt vũng nước/ổ gà, đánh có hồi chiêu 0,9 giây và chỉ ăn khi đứng sát.
 
 **Đánh ai thì có chuyện.** Đánh người đi đường: họ né, la lên, mất thiện cảm, uy tín giảm; đánh liên tiếp
 thì họ bỏ chạy và (lượt 7) có công an. Đánh khi đang gây sự với khách quậy thì dập được vụ, được lòng
@@ -45,6 +45,15 @@ nhanh, tốn tiền). Bác sĩ trực có hội thoại riêng, nhắc uống th
 
 **Kiểm thử:** xỉu không làm tiền âm; viện phí có trần; hồi sức theo giờ hồi đúng số máu; thuốc dùng đúng
 bệnh mới có tác dụng; nhặt lại đồ rơi trong ngày.
+
+**Đã làm (lượt 6):** hai nút mới + `Space`/`F`; đấm mất uy tín, người xung quanh nhìn thấy, người đi đường
+một nửa quay lại đuổi; ngất thì trả `min(tiền, 30.000₫ + 15%)`, rơi 40% đồ, tỉnh dậy 6 giờ sáng hôm sau
+trên giường bệnh viện với 45 máu; bệnh viện có bác sĩ khám (20.000₫), quầy thuốc (cảm 15.000₫, bông băng
+8.000₫, thuốc bổ 25.000₫) và phòng hồi sức 5.000₫/giờ; `SAVE_VERSION` lên 5.
+
+Hai chỗ làm khác kế hoạch cho đỡ khó chịu: đồ rơi được giữ ở **quầy thất lạc của bệnh viện** (không phải
+nằm ngoài đường chờ nhặt), và người không đủ tiền thì bệnh viện **ghi sổ luôn** chứ chưa có sổ nợ xã hội —
+để lượt 7 làm cùng hệ thống công an/phạt.
 
 ## Lượt 7 — Công an, tù, lao động khổ sai
 

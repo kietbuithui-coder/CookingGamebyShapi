@@ -57,6 +57,8 @@ export class Acts {
   job: { kind: 'dock'; carrying: boolean } | { kind: 'dishes' } | { kind: 'delivery'; x: number; z: number; name: string; pay: number; until: number } | null = null;
   way: Way | null = null; beacon: THREE.Mesh; litterMesh: THREE.Mesh | null = null; private glint: THREE.Mesh | null = null; litter: { i: number; x: number; z: number; id: string }[] = []; private litterKey = '';
   private sleepUntil = 0; private sleepQ = 1; private sleepWhere = ''; private qT = 1; sheltered = false; working = 0;
+  /** Hồi chiêu của đấm và nhảy (giây) + cờ chống ngất liên tục. */
+  punchCd = 0; jumpCd = 0; private fainting = false;
   constructor() {
     this.beacon = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 30, 12, 1, true), new THREE.MeshBasicMaterial({ color: 0xffd24d, transparent: true, opacity: 0.28, depthWrite: false, side: THREE.DoubleSide, fog: false }));
     this.beacon.visible = false; ctx.scene.add(this.beacon);
@@ -103,6 +105,7 @@ export class Acts {
   // ───────────────────────── Trò chuyện với người bán & nhân vật cố định ─────────────────────────
   /** Nói chuyện với người đứng quầy. Lần đầu: hộp thoại còn ghi theo việc họ làm; nói xong mới biết tên. */
   talk(n: Npc) {
+    if (n.madUntil && ctx.time < n.madUntil) { ctx.npcs.say(n, 'Đừng lại gần tao!', 2.2, 4); toast(`${n.name} vẫn còn giận, chưa muốn nói chuyện.`, 'warn', 'angry'); return; }
     this.talkTo(n);
     if (n.fixedId && R.meet(this.g, n.fixedId)) { toast(`Bạn vừa làm quen với ${n.name}.`, 'info', 'heart'); bus.emit('save', 'lam quen'); }
   }
@@ -119,6 +122,7 @@ export class Acts {
         opts.push({ t: 'Nên mua gì trước hả chú?', fn: () => this.D(who(n), n, 'Mới vô nghề thì cặp QUANG GÁNH trước đã. Rồi DAO THỚT là làm được bánh tráng trộn. Có BẾP THAN với VỈ thì nướng khoai, nướng bắp. Muốn pha trà đá thì thêm cái NỒI. Cứ đi quanh tiệm, thấy món nào thì chạm vô coi giá.', [bye]) });
         this.D(who(n), n, 'Tiệm Ba Tài, xe đẩy bếp núc gì cũng có! Hàng bày quanh đó, ưng món nào cứ chạm vô.', [...opts, bye]); break;
       }
+      case 'hospital': this.hospitalMenu(n); break;
       case 'bank': this.bankMenu(n); break;
       case 'shark': this.sharkMenu(n); break;
       case 'motel': case 'hotel': case 'tro': case 'canho': case 'nharieng': case 'cuahang': {
@@ -412,6 +416,103 @@ export class Acts {
     const g = this.g, rd = g.stall.ready[i]; if (!rd) return; const r = RECIPES[rd.rid];
     R.consume(g, { h: r.fill, t: r.cat === 'nuoc' || r.cat === 'che' ? 30 : 4, m: 2 + rd.q * 5 }, rd.q < 0.2 ? 0.3 : 0); g.led.food += rd.cost; rd.n--; if (rd.n <= 0) g.stall.ready.splice(i, 1); sfx('eat'); toast(`Ăn một phần ${r.name.toLowerCase()} của chính mình. ${rd.q > 0.75 ? 'Ngon thật!' : rd.q > 0.45 ? 'Cũng được.' : 'Ờm… dở ẹc.'}`, 'info', 'dish'); bus.emit('ui', 'eat');
   }
+  // ───────────────────────── Đấm & nhảy ─────────────────────────
+  /** Bật nhảy tại chỗ. Tốn chút sức, không đổi gì trên bản đồ. */
+  jump() {
+    const g = this.g, p = ctx.player;
+    if (ctx.mode !== 'play' || this.jumpCd > 0) return;
+    if (p.carry === 'ganh' || p.carry === 'xeday' || p.carry === 'sack') { toast('Đang cõng hàng nặng, nhảy không nổi.', 'info'); this.jumpCd = 0.5; return; }
+    if (g.st.energy < 3) { toast('Mệt rũ người, nhảy không nổi nữa.', 'warn', 'bolt'); this.jumpCd = 0.6; return; }
+    if (!p.jump()) return;
+    this.jumpCd = 0.5; g.st.energy = clamp(g.st.energy - 0.7, 0, 100); sfx('jump');
+  }
+  /** Đấm một cái: trúng ai thì người đó la lên, có người quay lại đánh, có người bỏ chạy. */
+  punch() {
+    if (ctx.mode !== 'play' || this.punchCd > 0) return;
+    const g = this.g, p = ctx.player;
+    this.punchCd = 0.9;
+    ctx.sound.play('whoosh');
+    const [fx, fz] = p.fwd;
+    let best: Npc | null = null, bd = 1.7 * 1.7;
+    for (const n of ctx.npcs.list) {
+      if (n.hidden || n.kind === 'kid') continue;
+      const dx = n.x - p.x, dz = n.z - p.z, d2 = dx * dx + dz * dz; if (d2 > bd) continue;
+      const dot = (dx * fx + dz * fz) / (Math.sqrt(d2) || 1); if (dot < 0.45) continue;
+      bd = d2; best = n;
+    }
+    g.st.energy = clamp(g.st.energy - 1.2, 0, 100);
+    if (!best) { this.working = 0.25; return; }
+    this.working = 0.35;
+    ctx.npcs.hit(best);
+  }
+  // ───────────────────────── Bệnh viện Phước An ─────────────────────────
+  /** Ngất vì sức khoẻ về 0: mất tiền, mất đồ, tỉnh dậy ở bệnh viện sáng hôm sau. */
+  checkFaint() {
+    const g = this.g;
+    if (this.fainting || ctx.mode !== 'play' || g.st.health > 0) return;
+    this.fainting = true;
+    const res = R.faint(g);
+    ctx.sound.play('boo'); ctx.player.frozen = true;
+    ctx.ui.fade(true, 1.5);
+    const now = g.day * 1440 + g.min, target = Math.floor(now / 1440) * 1440 + 360;
+    const dm = target > now ? target - now : target + 1440 - now;
+    setTimeout(() => {
+      R.advance(g, dm, { moving: false, running: false, sleeping: true, sheltered: true, working: false, load: 0, sleepQ: 0.4 });
+      // Bệnh viện cho ăn cháo và truyền nước: tỉnh dậy không thể kiệt sức tới mức ngất tiếp.
+      g.st.health = Math.max(g.st.health, 45); g.st.hunger = Math.max(g.st.hunger, 30); g.st.thirst = Math.max(g.st.thirst, 30);
+      // Đồ nhặt được giữ ở quầy thất lạc tới hết ngày hôm bạn tỉnh dậy.
+      if (g.lostBag.length) g.lostDay = g.day;
+      const a = ctx.world.anchors['giuong_benhvien'];
+      if (a) ctx.player.place(a.x, a.z, a.yaw + Math.PI);
+      ctx.player.frozen = false; ctx.ui.fade(false, 1.4);
+      this.fainting = false;
+      toast(`Bạn ngất giữa đường. Người đi đường đưa vào Bệnh viện Phước An, tỉnh dậy đã ${hhmm(g.min)} sáng hôm sau.`, 'bad', 'heart', true);
+      toast(res.fee > 0 ? `Xe cấp cứu với viện phí hết ${money(res.fee)}.` : 'Không còn đồng nào, bệnh viện cho ghi sổ — nhớ trả.', res.fee > 0 ? 'bad' : 'warn', 'cash');
+      if (res.lost.length) toast(`Rơi mất ${res.lost.reduce((a, x) => a + x.n, 0)} phần đồ trong ba lô dọc đường.`, 'warn', 'bag');
+      sfx('wake'); bus.emit('save', 'ngat');
+    }, 1600);
+  }
+  /** Nói chuyện với bác sĩ trực. */
+  hospitalMenu(n: Npc) {
+    const g = this.g, exams = g.flags.exam === g.day;
+    const opts: Opt[] = [
+      { t: `Khám bệnh — ${money(R.EXAM_FEE)}`, sub: exams ? 'Hôm nay khám rồi' : 'Bác sĩ xem rồi nói bệnh gì', off: g.cash < R.EXAM_FEE, fn: () => {
+        const d = R.exam(g);
+        if (!d) { toast('Không đủ tiền khám.', 'bad', 'cash'); return; }
+        sfx('coin'); this.D(who(n), n, d, [{ t: 'Dạ, cảm ơn bác sĩ.', fn: () => this.hospitalMenu(n) }]);
+      } },
+      { t: 'Nằm phòng hồi sức', sub: `Hồi sức tính theo giờ · ${money(R.RECOVER_FEE)}/giờ`, fn: () => this.hospitalRest(n) },
+      { t: 'Quầy thuốc ở đâu bác?', sub: 'Ngay bên phải cửa ra vào', fn: () => this.D(who(n), n, 'Quầy thuốc ngay bên phải cửa ra vào đó con. Thuốc cảm, bông băng, thuốc bổ đều có — mua xong uống liền tại chỗ.', [{ t: 'Dạ, con ra liền.' }]) },
+      ...(g.lostBag.length && g.lostDay === g.day ? [{ t: 'Hỏi đồ thất lạc', sub: 'Hôm nay có người nhặt được đồ của bạn', fn: () => {
+        const items = R.claimLost(g);
+        if (!items.length) { toast('Không có gì ở quầy thất lạc.', 'info'); return; }
+        sfx('coin'); toast(`Nhận lại ${items.reduce((a, x) => a + x.n, 0)} phần đồ: ${items.map((x) => INGS[x.id]?.name ?? x.id).join(', ')}.`, 'good', 'bag', true);
+      } }] : []),
+    ];
+    this.D(who(n), n, g.st.health < 40 ? 'Người gì mà xanh xao vậy con? Ngồi xuống đây, bác sĩ xem cho.' : 'Bệnh viện Phước An, khám bệnh hay mua thuốc gì cứ nói.', [...opts, { t: 'Thôi, con đi nha bác sĩ.' }]);
+  }
+  /** Menu phòng hồi sức: trả tiền giường rồi nằm hồi sức theo giờ. */
+  hospitalRest(n?: Npc) {
+    const g = this.g;
+    const mk = (h: number, t: string): Opt => ({ t: `${t} — ${money(R.recoverCost(h))}`, sub: `${h} giờ · sức khoẻ +${14 * h}`, off: g.cash < R.recoverCost(h), fn: () => {
+      if (!R.recover(g, h)) { toast('Không đủ tiền giường.', 'bad', 'cash'); return; }
+      ctx.ui.fade(true, 0.6);
+      setTimeout(() => { R.advance(g, h * 60, { ...this.act(), sleeping: true }); ctx.ui.fade(false, 0.8); sfx('wake'); toast(`Nằm phòng hồi sức ${h} giờ. Người khoẻ hơn hẳn.`, 'good', 'heart', true); bus.emit('save', 'hoi suc'); }, 700);
+    } });
+    this.D('Phòng hồi sức', n, `Giường trắng, rèm kéo, quạt trần chạy êm. Nằm tính theo giờ — ${money(R.RECOVER_FEE)} một giờ.`, [mk(2, 'Nằm 2 giờ'), mk(4, 'Nằm 4 giờ'), mk(8, 'Nằm qua đêm 8 giờ'), { t: 'Thôi, để bữa khác.' }]);
+  }
+  /** Quầy thuốc trong bệnh viện. */
+  medMenu() {
+    const g = this.g;
+    const opts: Opt[] = R.MED_LIST.map((m) => ({
+      t: `${m.name} — ${money(m.price)}`, sub: `${m.desc} · máu +${m.hp}${m.cures ? ' · hết cảm' : ''}${m.e ? ` · sức +${m.e}` : ''}`,
+      off: g.cash < m.price, fn: () => {
+        if (!R.buyMed(g, m.id)) { toast('Không đủ tiền mua thuốc.', 'bad', 'cash'); return; }
+        sfx('coin'); toast(`Mua ${m.name.toLowerCase()}, uống liền tại chỗ.`, 'good', 'heart'); this.medMenu();
+      },
+    }));
+    this.D('Quầy thuốc', undefined, g.flags.sick ? 'Cô bán thuốc nhìn bạn: “Cảm nặng vậy mà giờ mới tới hả?”' : 'Tủ thuốc kê sau quầy, hộp nào cũng có nhãn rõ ràng.', [...opts, { t: 'Thôi, không mua gì.' }]);
+  }
   wash(kind: 'tap' | 'park' | 'room') {
     const g = this.g;
     if (kind === 'tap') { this.D('Vòi nước công cộng', undefined, 'Nước máy chảy mát lạnh.', [{ t: 'Uống cho đỡ khát', fn: () => { R.consume(g, { t: 35 }, 0.04); sfx('drink'); } }, { t: 'Rửa mặt mũi tay chân', sub: 'Sạch hơn một chút (tối đa 60%)', fn: () => { g.st.hygiene = Math.max(g.st.hygiene, Math.min(60, g.st.hygiene + 14)); R.advance(g, 5, this.act()); sfx('splash'); toast('Mát mẻ, đỡ lem luốc hơn rồi.', 'good'); } }, { t: 'Thôi' }]); return; }
@@ -531,6 +632,9 @@ export class Acts {
     const g = this.g, p = ctx.player;
     this.sheltered = ctx.world.covered(p.x, p.z);
     if (this.working > 0) this.working -= dt;
+    if (this.punchCd > 0) this.punchCd -= dt;
+    if (this.jumpCd > 0) this.jumpCd -= dt;
+    this.checkFaint();
     this.drawLitter(); if (this.glint) { this.glint.position.y = Math.sin(ctx.time * 3) * 0.05; this.glint.visible = ctx.mode === 'play'; }
     if (ctx.mode === 'sleep') {
       const woke = absMin(g) >= this.sleepUntil ? '' : g.st.hunger <= 2 ? 'Đói cồn cào làm bạn tỉnh giấc.' : g.st.thirst <= 2 ? 'Khát khô cổ làm bạn tỉnh giấc.' : this.sleepWhere === 'ghe' && g.weather.wet > 60 ? 'Mưa tạt ướt sũng, không ngủ nổi!' : (g.st.energy >= 99.5 && hourOf(g) > 5.5 && hourOf(g) < 19) ? `Ngủ đẫy giấc rồi. Bây giờ là ${hhmm(g.min)}.` : null;
@@ -552,7 +656,7 @@ export class Acts {
   places(): Way[] {
     const A = ctx.world.anchors, P = (k: string, name: string): Way | null => (A[k] ? { x: A[k].x, z: A[k].z, name } : null);
     return [P('v_equip', 'Đồ Nghề Ba Tài'), P('v_m_rau', 'Chợ Xóm Chiều'), P('v_mart', 'MiniMart 24h'), P('v_kiosk', 'Tạp hoá Cô Ba'), P('v_eatery', 'Quán cơm Bà Tư'), P('v_scrap', 'Vựa ve chai Tư Rác'), P('v_pawn', 'Cầm đồ Chú Lâm'), P('v_bank', 'Ngân hàng Sao Vàng'),
-      P('v_tro', 'Nhà trọ Bác Năm'), P('v_motel', 'Nhà nghỉ Bình Dân'), P('v_hotel', 'Khách sạn Hoa Sen'), P('v_canho', 'Căn hộ An Bình'), P('v_nharieng', 'Nhà số 12'), P('v_cuahang', 'Tạp hoá Bình An'), P('v_pharmacy', 'Nhà thuốc An Tâm'), P('v_wholesale', 'Vựa đầu mối Tám Lúa'), P('v_temple', 'Chùa Phước An'), P('wash_park', 'Nhà tắm công viên'), P('v_shark', 'Hùng Sẹo (vay nóng)'), P('bed_gamcau', 'Gầm cầu (lều của bạn)'), P('board', 'Bảng việc làm'), P('v_dock', 'Bến bốc hàng')].filter(Boolean) as Way[];
+      P('v_tro', 'Nhà trọ Bác Năm'), P('v_motel', 'Nhà nghỉ Bình Dân'), P('v_hotel', 'Khách sạn Hoa Sen'), P('v_canho', 'Căn hộ An Bình'), P('v_nharieng', 'Nhà số 12'), P('v_cuahang', 'Tạp hoá Bình An'), P('v_pharmacy', 'Nhà thuốc An Tâm'), P('v_hospital', 'Bệnh viện Phước An'), P('giuong_benhvien', 'Phòng hồi sức bệnh viện'), P('v_wholesale', 'Vựa đầu mối Tám Lúa'), P('v_temple', 'Chùa Phước An'), P('wash_park', 'Nhà tắm công viên'), P('v_shark', 'Hùng Sẹo (vay nóng)'), P('bed_gamcau', 'Gầm cầu (lều của bạn)'), P('board', 'Bảng việc làm'), P('v_dock', 'Bến bốc hàng')].filter(Boolean) as Way[];
   }
 }
 export { districtAt, weightOf };

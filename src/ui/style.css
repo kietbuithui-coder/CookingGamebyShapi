@@ -46,6 +46,12 @@ button { font: inherit; color: inherit; border: 0; background: none; padding: 0;
 #focus small { display: block; margin-top: .2em; color: #fff; text-shadow: 0 1px 3px #000, 0 0 6px #000; font-size: .84em; }
 #act { right: 1em; bottom: 1.1em; display: flex; flex-direction: column; align-items: flex-end; gap: .5em; }
 #runb { right: 7.2em; bottom: 1.1em; }
+/* hai nút đấm & nhảy, xếp dọc phía trên nút chạy */
+#act2 { right: 11.6em; bottom: 1.4em; display: flex; flex-direction: column; gap: .5em; }
+#act2 button { width: 3.1em; height: 3.1em; border-radius: 50%; background: var(--paper); border: 2px solid var(--ink); border-bottom-width: 4px; display: grid; place-items: center; color: var(--ink); box-shadow: 0 2px 0 var(--shadow); }
+#act2 button svg.ic { width: 1.7em; height: 1.7em; }
+#act2 button:active { transform: translateY(3px); border-bottom-width: 2px; }
+#act2 .hit { background: #ffe0dc; }
 #act .main { width: 5.2em; height: 5.2em; border-radius: 50%; background: var(--yellow); border: 3px solid var(--ink); border-bottom-width: 6px; display: grid; place-items: center; font-weight: 800; box-shadow: 0 3px 0 var(--shadow); }
 #act .main svg.ic { width: 2.4em; height: 2.4em; } #act .main:active { transform: translateY(3px); border-bottom-width: 3px; }
 #act .main.dim { opacity: .4; background: var(--paper2); }
@@ -164,7 +170,7 @@ input[type=range] { width: 100%; accent-color: var(--red); pointer-events: auto;
 #layed .ctl .tab.on { background: var(--yellow); border-color: var(--ink); color: var(--ink); }
 /* cảnh "khi đi lại" không có nút nấu ăn; cảnh "khi nấu ăn" chỉ có nút nấu ăn mẫu */
 #ui.layout-edit #cook > :not(.btns) { display: none !important; }
-#ui.layout-edit.layout-cook #act, #ui.layout-edit.layout-cook #runb, #ui.layout-edit.layout-cook #menub { visibility: hidden; }
+#ui.layout-edit.layout-cook #act, #ui.layout-edit.layout-cook #runb, #ui.layout-edit.layout-cook #act2, #ui.layout-edit.layout-cook #menub { visibility: hidden; }
 
 /* ───── Màn dọc: chơi được, nhưng game khuyên xoay ngang ───── */
 @media (orientation: portrait) {

@@ -112,6 +112,11 @@ export class Sound {
       case 'spit': N(0.14, 'highpass', 2800, 0.15, 0, 0.9, 0.5); N(0.07, 'bandpass', 800, 0.07, 0.04); break;
       case 'shout': T(185, 0.26, 'sawtooth', 0.09, 0, 1.25); T(240, 0.2, 'sawtooth', 0.06, 0.07, 1.1); break;
       case 'horn': T(430, 0.1, 'square', 0.07); T(430, 0.09, 'square', 0.05, 0.15); break;
+      // ── đấm, nhảy, ngất ──
+      case 'thud': N(0.09, 'lowpass', 700, 0.5, 0, 0.7, 0.4); T(95, 0.13, 'triangle', 0.28, 0, 0.6); break;
+      case 'whoosh': N(0.16, 'bandpass', 1200, 0.16, 0, 1.6, 1.4); break;
+      case 'jump': T(300, 0.09, 'sine', 0.1, 0, 1.8); T(430, 0.06, 'sine', 0.07, 0.05, 2); break;
+      case 'siren': for (let i = 0; i < 3; i++) { T(660, 0.16, 'sine', 0.05, i * 0.32, 1.1); T(880, 0.16, 'sine', 0.045, i * 0.32 + 0.16, 1.1); } break;
     }
   }
   // ───────── tiếng môi trường ─────────
