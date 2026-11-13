@@ -1,0 +1,73 @@
+// DỤNG CỤ, CẤP ĐỘ QUẦY HÀNG, CHỖ Ở, KHOẢN VAY — dữ liệu thuần, dễ mở rộng.
+
+export interface GearDef { id: string; name: string; price: number; kind: 'stall' | 'tool' | 'stove' | 'store' | 'comfort' | 'carry' | 'home'; desc: string; tier?: number; wear?: number; }
+export const GEAR_LIST: GearDef[] = [
+  { id: 'ganh', name: 'Quang gánh', price: 120000, kind: 'stall', tier: 1, desc: 'Đôi quang gánh tre — gánh đi khắp phố.' },
+  { id: 'xeday', name: 'Xe đẩy', price: 2400000, kind: 'stall', tier: 2, desc: 'Xe đẩy inox có mái che, chứa nhiều, bán nhanh.' },
+  { id: 'sap', name: 'Sạp cố định', price: 9000000, kind: 'stall', tier: 3, desc: 'Sạp lớn có bàn ghế, đặt lâu dài một chỗ.' },
+  { id: 'daothot', name: 'Dao & thớt', price: 45000, kind: 'tool', desc: 'Để cắt thái mọi thứ.', wear: 0.25 },
+  { id: 'bepthan', name: 'Bếp than', price: 60000, kind: 'stove', desc: 'Rẻ, nướng thơm. Phải quạt, sợ mưa.', wear: 0.5 },
+  { id: 'bepgas', name: 'Bếp gas mini', price: 280000, kind: 'stove', desc: 'Chỉnh lửa chính xác, dùng bình gas.', wear: 0.4 },
+  { id: 'vi', name: 'Vỉ nướng', price: 40000, kind: 'tool', desc: 'Nướng bắp, khoai, thịt, xiên que.', wear: 0.4 },
+  { id: 'chao', name: 'Chảo', price: 75000, kind: 'tool', desc: 'Xào, chiên, ốp la.', wear: 0.3 },
+  { id: 'noi', name: 'Nồi', price: 70000, kind: 'tool', desc: 'Nấu nước dùng, cơm, chè, pha trà.', wear: 0.2 },
+  { id: 'thungda', name: 'Thùng đá', price: 110000, kind: 'store', desc: 'Giữ lạnh đồ tươi ở quầy (cần đá viên).' },
+  { id: 'odu', name: 'Ô dù lớn', price: 150000, kind: 'comfort', desc: 'Che mưa nắng cho quầy và khách.' },
+  { id: 'bien', name: 'Bảng hiệu', price: 90000, kind: 'comfort', desc: 'Khách thấy quầy từ xa hơn.' },
+  { id: 'den', name: 'Đèn sạc', price: 80000, kind: 'comfort', desc: 'Bán được buổi tối.' },
+  { id: 'ghe', name: 'Bàn ghế nhựa', price: 220000, kind: 'comfort', desc: 'Khách ngồi lại ăn, chịu chờ lâu hơn.' },
+  { id: 'gio', name: 'Giỏ xách', price: 35000, kind: 'carry', desc: 'Xách thêm được 6 kg.' },
+  { id: 'aomua', name: 'Áo mưa', price: 20000, kind: 'carry', desc: 'Không ướt, không cảm lạnh.' },
+  { id: 'tulanh', name: 'Tủ lạnh cũ', price: 1500000, kind: 'home', desc: 'Đặt ở phòng trọ, giữ đồ tươi cả tuần.' },
+];
+export const GEAR: Record<string, GearDef> = Object.fromEntries(GEAR_LIST.map((g) => [g.id, g]));
+
+export interface TierDef { tier: number; id: string; name: string; cap: number; coldCap: number; queue: number; speed: number; menu: number; visible: number; trays: number; }
+/** cap: kg chứa ở quầy · queue: số khách chờ tối đa · speed: tốc độ đi khi mang quầy · menu: số món tối đa · visible: độ thu hút gốc */
+export const TIERS: TierDef[] = [
+  { tier: 0, id: '', name: 'Chưa có quầy', cap: 0, coldCap: 0, queue: 0, speed: 1, menu: 0, visible: 0, trays: 0 },
+  { tier: 1, id: 'ganh', name: 'Gánh hàng rong', cap: 14, coldCap: 5, queue: 3, speed: 0.78, menu: 3, visible: 0.8, trays: 6 },
+  { tier: 2, id: 'xeday', name: 'Xe đẩy', cap: 40, coldCap: 14, queue: 5, speed: 0.7, menu: 6, visible: 1.1, trays: 12 },
+  { tier: 3, id: 'sap', name: 'Sạp cố định', cap: 90, coldCap: 30, queue: 7, speed: 0, menu: 10, visible: 1.35, trays: 20 },
+];
+/** Các bậc kinh doanh tiếp theo (đã lên kế hoạch, chưa mở trong bản chơi đầu). */
+export const FUTURE_TIERS = ['Quán ăn nhỏ', 'Quán có chỗ ngồi', 'Nhà hàng bình dân', 'Chuỗi cửa hàng'];
+
+export interface HousingDef {
+  id: string; name: string; rent: number; per: 'đêm' | 'tuần' | ''; safety: number; sleep: number; storage: number; cold: boolean; shower: boolean;
+  anchor: string; desc: string; mood: number; needRep?: number;
+}
+/** sleep: chất lượng giấc ngủ (hệ số hồi năng lượng) · storage: kg cất được · safety: 0–1 (thấp dễ mất trộm) */
+export const HOUSING_LIST: HousingDef[] = [
+  { id: 'gamcau', name: 'Gầm cầu', rent: 0, per: '', safety: 0.35, sleep: 0.6, storage: 12, cold: false, shower: false, anchor: 'bed_gamcau', mood: -6, desc: 'Tấm bìa các-tông, miễn phí, hay mất đồ.' },
+  { id: 'ghe', name: 'Ghế đá công viên', rent: 0, per: '', safety: 0.25, sleep: 0.5, storage: 0, cold: false, shower: false, anchor: 'bed_ghe', mood: -8, desc: 'Thoáng mát nhưng mưa là ướt, có khi bị đuổi.' },
+  { id: 'nhanghi', name: 'Nhà nghỉ Bình Dân', rent: 80000, per: 'đêm', safety: 0.9, sleep: 0.9, storage: 20, cold: false, shower: true, anchor: 'bed_nhanghi', mood: 4, desc: 'Có giường, có vòi sen. Trả theo đêm.' },
+  { id: 'tro', name: 'Phòng trọ', rent: 280000, per: 'tuần', safety: 0.95, sleep: 1, storage: 60, cold: false, shower: true, anchor: 'bed_tro', mood: 8, desc: 'Chỗ ở ổn định, cất được nhiều đồ, đặt được tủ lạnh.' },
+  { id: 'khachsan', name: 'Khách sạn Hoa Sen', rent: 350000, per: 'đêm', safety: 1, sleep: 1.25, storage: 20, cold: true, shower: true, anchor: 'bed_khachsan', mood: 20, desc: 'Nệm êm, máy lạnh — ngủ một đêm khoẻ cả ngày.' },
+];
+export const HOUSING: Record<string, HousingDef> = Object.fromEntries(HOUSING_LIST.map((h) => [h.id, h]));
+/** Các loại chỗ ở sẽ thêm sau. */
+export const FUTURE_HOUSING = ['Căn hộ thuê', 'Nhà riêng', 'Cửa hàng kiêm nhà ở'];
+
+export interface LenderDef { id: string; name: string; who: string; rate: number; term: number; max: (rep: number, day: number) => number; lateFee: number; need?: string; amounts: number[]; }
+/** rate: lãi mỗi ngày · term: số ngày phải trả · lateFee: phạt mỗi ngày trễ (tỉ lệ trên gốc) */
+export const LENDERS: Record<string, LenderDef> = {
+  bank: { id: 'bank', name: 'Ngân hàng Sao Vàng', who: 'Chị Thu', rate: 0.006, term: 14, lateFee: 0.01, need: 'tro', amounts: [500000, 1000000, 2000000, 5000000],
+    max: (rep) => (rep < 15 ? 0 : rep < 35 ? 1000000 : rep < 60 ? 2000000 : 5000000) },
+  shark: { id: 'shark', name: 'Hùng Sẹo', who: 'Hùng Sẹo', rate: 0.03, term: 5, lateFee: 0.05, amounts: [200000, 500000, 1000000, 2000000],
+    max: (_rep, day) => (day < 2 ? 500000 : 2000000) },
+  tab: { id: 'tab', name: 'Sổ nợ Cô Ba', who: 'Cô Ba', rate: 0, term: 3, lateFee: 0, amounts: [], max: () => 100000 },
+};
+
+/** Giá phế liệu (₫/món) tại vựa ve chai, giá đồ nhặt được tại tiệm cầm đồ. */
+export interface JunkDef { id: string; name: string; price: number; kg: number; where: 'scrap' | 'pawn'; c: number; shape: 'bottle' | 'can' | 'box' | 'bag' | 'gem'; }
+export const JUNK_LIST: JunkDef[] = [
+  { id: 'chai', name: 'Chai nhựa', price: 1000, kg: 0.03, where: 'scrap', c: 0x9fd8ec, shape: 'bottle' },
+  { id: 'lon', name: 'Lon nhôm', price: 1800, kg: 0.02, where: 'scrap', c: 0xc9ccd2, shape: 'can' },
+  { id: 'bia', name: 'Bìa các-tông', price: 2500, kg: 0.4, where: 'scrap', c: 0xb99a6a, shape: 'box' },
+  { id: 'sat', name: 'Sắt vụn', price: 5000, kg: 0.6, where: 'scrap', c: 0x7a6a62, shape: 'bag' },
+  { id: 'dongho', name: 'Đồng hồ cũ', price: 60000, kg: 0.1, where: 'pawn', c: 0xd9b84a, shape: 'gem' },
+  { id: 'radio', name: 'Radio hỏng', price: 35000, kg: 0.5, where: 'pawn', c: 0x4a5a6a, shape: 'box' },
+  { id: 'nhan', name: 'Nhẫn bạc', price: 120000, kg: 0.01, where: 'pawn', c: 0xdfe6ea, shape: 'gem' },
+];
+export const JUNK: Record<string, JunkDef> = Object.fromEntries(JUNK_LIST.map((j) => [j.id, j]));
