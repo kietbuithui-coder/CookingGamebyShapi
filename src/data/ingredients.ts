@@ -50,6 +50,8 @@ const RAW: Row[] = [
   ['gia', 'Giá đỗ', 'veg', 'bịch', 4000, 0.2, 24, 0, 'nest', 0xf5f2e2, 0xe6dfc0],
   ['bap', 'Bắp', 'veg', 'trái', 5000, 0.25, 72, 0, 'corn', 0xf5d040, 0x8fc060],
   ['xalach', 'Xà lách', 'veg', 'cây', 6000, 0.2, 30, 0, 'head', 0x8fd06a, 0xc9eca0],
+  ['xoai', 'Xoài xanh', 'veg', 'quả', 9000, 0.3, 40, 0, 'round', 0xc8d96a, 0xa8bf4a, { h: 8, m: 1 }],
+  ['chuoi', 'Chuối', 'veg', 'nải', 8000, 0.4, 60, 0, 'long', 0xf5d94a, 0xd9b83a, { h: 12, t: 3, m: 2 }],
   ['gung', 'Gừng', 'veg', 'củ', 3000, 0.05, 600, 0, 'round', 0xd9b870, 0xc09a52],
   ['sa', 'Sả', 'veg', 'cây', 1500, 0.03, 200, 0, 'long', 0xc9d98a, 0xf0eccf],
   // ── Tinh bột

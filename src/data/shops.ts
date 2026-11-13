@@ -9,7 +9,7 @@ export const SHOP_LIST: ShopDef[] = [
   { id: 'm_rau', name: 'Sạp rau Cô Bảy', vendor: 'Cô Bảy', vendorLook: 4, open: [5, 18], priceMul: 1, fresh: [88, 100], q: 0.92, haggle: 0.6, lateSale: true,
     items: ['cachua', 'bapcai', 'raumuong', 'dualeo', 'ot', 'chanh', 'rauthom', 'hanhla', 'gia', 'xalach'], say: 'Rau mới hái sáng nay đó con!' },
   { id: 'm_cu', name: 'Sạp củ quả Chú Mười', vendor: 'Chú Mười', vendorLook: 7, open: [5, 18], priceMul: 1, fresh: [90, 100], q: 0.9, haggle: 0.5, lateSale: true,
-    items: ['carot', 'khoaitay', 'khoailang', 'hanhtay', 'toi', 'gung', 'sa', 'bap', 'cam'], say: 'Củ quả Đà Lạt, lựa đi con.' },
+    items: ['carot', 'khoaitay', 'khoailang', 'hanhtay', 'toi', 'gung', 'sa', 'bap', 'cam', 'xoai', 'chuoi'], say: 'Củ quả Đà Lạt, lựa đi con.' },
   { id: 'm_thit', name: 'Sạp thịt Anh Tư', vendor: 'Anh Tư', vendorLook: 0, open: [5, 17], priceMul: 1, fresh: [86, 100], q: 0.93, haggle: 0.35, lateSale: true,
     items: ['heo', 'bachi', 'suon', 'bo', 'ga', 'vit'], say: 'Thịt nóng mới mổ, lấy gì em?' },
   { id: 'm_haisan', name: 'Hải sản Chị Năm', vendor: 'Chị Năm', vendorLook: 1, open: [5, 16], priceMul: 1, fresh: [84, 100], q: 0.92, haggle: 0.4, lateSale: true,

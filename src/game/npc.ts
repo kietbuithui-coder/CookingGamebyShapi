@@ -19,6 +19,7 @@ export interface Npc {
   path: [number, number][]; pi: number; enter: boolean; timer: number; ox: number; oz: number; dest?: NavNode;
   persona?: Persona; order?: Order; patience: number; waited: number; slot: number; asked: boolean; served: boolean; barkT: number;
   parent?: Npc; onArrive?: (n: Npc) => void; hidden: boolean; talkT: number; actor?: string; data?: any; home?: { x: number; z: number; yaw: number };
+  /** hành động lúc rảnh (đọc báo / uống nước / tám chuyện) và người đang nói cùng */ idleT?: number; idleT2?: number; chatWith?: number;
   /** nhảy tại chỗ (nhân vật phụ ở góc hip hop) */ dance?: boolean;
   /** đếm ngược tới lần gây sự kế tiếp; chaseT: còn đuổi bao lâu; hit: đã xô người chơi lần này chưa */ rudeT: number; chaseT?: number; hit?: boolean;
 }
@@ -31,6 +32,17 @@ export function placeOpen(id: string): boolean {
   if (SHOPS[id]) return shopOpen(g, SHOPS[id]);
   const p = PLACE_HOURS[id]; return !p || (h >= p[0] && h < p[1]);
 }
+let _newsGeo: THREE.BufferGeometry | null = null, _cupGeo: THREE.BufferGeometry | null = null;
+/** Tờ báo gấp đôi — cầm ở tay phải khi đứng đọc. */
+function paperProp(): THREE.Mesh {
+  if (!_newsGeo) { const m = new MB(); m.box(-0.11, 0, 0, 0.22, 0.3, 0.006, 0xf7f4ea, 0xd9d2c0, 0, true); m.box(0.11, 0, 0, 0.22, 0.3, 0.006, 0xfbf8f0, 0xe6dfcb, 0, true); for (let i = 0; i < 5; i++) { m.box(-0.11, 0.04 + i * 0.05, 0.004, 0.16, 0.012, 0.002, 0x9a927f); m.box(0.11, 0.04 + i * 0.05, 0.004, 0.16, 0.012, 0.002, 0x9a927f); } _newsGeo = m.build(); }
+  return new THREE.Mesh(_newsGeo, MAT.litDouble);
+}
+/** Ly nước nhựa. */
+function cupProp(): THREE.Mesh {
+  if (!_cupGeo) { const m = new MB(); m.cyl(0, 0, 0, 0.035, 0.1, 0xd0ecf7, 8, 0.042); m.cyl(0, 0.05, 0, 0.034, 0.05, 0x8a5a22, 8); m.cyl(0, 0.1, 0, 0.04, 0.012, 0xf7f7f7, 8); _cupGeo = m.build(); }
+  return new THREE.Mesh(_cupGeo, MAT.lit);
+}
 let _paperGeo: THREE.BufferGeometry | null = null;
 /** Cục giấy vo tròn (dùng chung một hình cho mọi lần ném). */
 function paperGeo(): THREE.BufferGeometry {
@@ -41,6 +53,7 @@ const APRON: Record<string, number> = { m_thit: 0xf3f0e8, m_haisan: 0x2f6fa8, ba
 
 export class Npcs {
   list: Npc[] = []; fixed = new Map<string, Npc>(); private seq = 1; private spawnT = 0; private R = new RNG((Math.random() * 1e9) | 0); private barkCd = 4;
+  private browses: { n: Npc; shop: string }[] = []; private browseT = 6;
   private rudeCd = 20; private paper: { m: THREE.Mesh; t: number; dur: number; from: THREE.Vector3; to: THREE.Vector3 }[] = [];
   group = new THREE.Group(); private pool: Rig[] = [];
   constructor() {
@@ -175,6 +188,7 @@ export class Npcs {
     this.spawnT -= dt;
     if (peds < want && this.spawnT <= 0 && ctx.mode !== 'menu') { this.spawnT = peds < want * 0.5 ? 0.15 : 0.9; this.spawnPed(p.x, p.z, peds < 4 ? 22 : 34, 85); }
     this.barkCd -= dt; this.rudeCd -= dt;
+    this.browseT -= dt; if (this.browseT <= 0) { this.browseT = R.range(2.5, 6); this.manageShoppers(); }
     const rainHurry = w.rain > 0.3 ? 1.3 : 1, viewD = Math.min(95, ctx.env.fog.far * 0.62);
     for (let i = this.list.length - 1; i >= 0; i--) {
       const n = this.list[i], pd2 = dist2(n.x, n.z, p.x, p.z);
@@ -267,9 +281,56 @@ export class Npcs {
     if (n.state !== 'sit') n.y = damp(n.y, groundY(n.x, n.z), 12, dt);
     rig.root.position.set(n.x, n.y, n.z); rig.root.rotation.y = n.yaw;
     if (n.talkT > 0) n.talkT -= dt;
+    // hành động lúc rảnh
+    if (n.idleT2 !== undefined) {
+      n.idleT2 -= dt;
+      if (n.idleT2 <= 0) { n.idleT2 = undefined; n.chatWith = undefined; if (n.pose === 'read' || n.pose === 'drink' || n.pose === 'chat') n.pose = 'idle'; rig.hold(null); n.idleT = this.R.range(18, 50); }
+    } else if (n.state === 'stand' && !n.persona && pd2 < 26 * 26) {
+      n.idleT = (n.idleT ?? this.R.range(8, 22)) - dt;
+      if (n.idleT <= 0 && this.R.chance(0.4)) this.idleAct(n);
+    }
     rig.pose = n.talkT > 0 && n.pose !== 'sit' && n.pose !== 'walk' && n.pose !== 'angry' ? 'talk' : n.pose;
     if (pd2 < 45 * 45) rig.update(dt, n.vel, n.base); 
     rig.shadow(QUALITY[ctx.set.quality].blob && pd2 < 26 * 26);
+  }
+  /** Giữ cho mỗi quán đang mở có một hai người đứng mua — phố đỡ vắng, tiệm đỡ như bỏ hoang. */
+  private manageShoppers() {
+    const R = this.R, g = ctx.g, p = ctx.player, q = QUALITY[ctx.set.quality];
+    for (let i = this.browses.length - 1; i >= 0; i--) { const b = this.browses[i]; if (b.n.state !== 'stand' || b.n.hidden || !this.list.includes(b.n)) this.browses.splice(i, 1); }
+    const want = clamp(Math.round((q?.npcs ?? 16) / 12), 1, 3);
+    if (ctx.mode !== 'play' || this.browses.length >= want) return;
+    const cands: string[] = [];
+    for (const id of Object.keys(SHOPS)) {
+      const a = ctx.world.anchors['v_' + id]; if (!a || !FIXED[id] || this.browses.some((b) => b.shop === id)) continue;
+      const d2 = dist2(a.x, a.z, p.x, p.z);
+      if (!placeOpen(id) || d2 < 9 * 9 || d2 > 52 * 52) continue;
+      cands.push(id);
+    }
+    if (!cands.length) return;
+    const id = R.pick(cands), a = ctx.world.anchors['v_' + id];
+    const side = R.chance(0.5) ? -1 : 1, dist = R.range(1.35, 1.95), c = Math.cos(a.yaw), sn = Math.sin(a.yaw);
+    const pos = { x: a.x + sn * dist + c * side * 0.72, z: a.z + c * dist - sn * side * 0.72 };
+    ctx.world.resolve(pos.x, pos.z, 0.34, pos);
+    const arch = this.pickArch(districtAt(pos.x, pos.z), hourOf(g)), fem = R.chance(arch.fem);
+    const n = this.make('ped', arch, fem, lookFromArch(arch, this.R, fem), pos.x, pos.z, a.yaw + Math.PI);
+    n.name = this.name(fem); n.state = 'stand'; n.pose = 'idle'; n.timer = R.range(16, 42); n.base = R.range(-0.04, 0.04);
+    this.list.push(n); this.browses.push({ n, shop: id });
+    if (R.chance(0.55)) this.say(n, R.pick(['Bán cho tôi một phần nghen.', 'Cái này bao nhiêu vậy chú?', 'Cho con thêm ít rau.', 'Tính tiền giúp tôi.', 'Còn tươi không cô?']), 2.6);
+  }
+  /** Việc lúc rảnh: đọc báo, uống nước, tám chuyện với người bên cạnh (thưa, chỉ khi đang đứng chờ). */
+  private idleAct(n: Npc) {
+    const R = this.R;
+    if (n.talkT > 0 || n.persona) return;
+    const k = R.pick(['read', 'drink', 'chat'] as const), dur = R.range(5, 11);
+    if (k === 'chat') {
+      const o = this.list.find((x) => x !== n && x.kind === 'ped' && (x.state === 'stand' || x.state === 'sit') && !x.persona && dist2(x.x, x.z, n.x, n.z) < 3.4 * 3.4);
+      if (!o) { n.pose = 'idle'; return; }
+      o.pose = 'chat'; o.idleT2 = dur; o.chatWith = n.id; n.chatWith = o.id;
+      o.yaw = Math.atan2(n.x - o.x, n.z - o.z); n.yaw = Math.atan2(o.x - n.x, o.z - n.z);
+      if (R.chance(0.5)) this.say(n, 'Chuyện đó thiệt hả?', 2.2);
+    }
+    n.pose = k; n.idleT2 = dur;
+    n.rig.hold(k === 'read' ? paperProp() : k === 'drink' ? cupProp() : null);
   }
   private updFixed(n: Npc, pd2: number, dt: number) {
     const open = placeOpen(n.fixedId!), vis = open && pd2 < 60 * 60;

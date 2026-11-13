@@ -36,14 +36,20 @@ Nên **xoay ngang** điện thoại và bấm **Toàn màn hình** ở màn hìn
 - **Thành phố liền mạch** 3×3 ô phố, 10 khu (chợ, công viên, phố văn phòng, khu dân cư, xóm lao động, kho bãi, gầm cầu vượt…), 29 nhân vật cố định, người đi đường theo giờ, xe máy – xe đạp chạy trên đường, chim bay trên phố, ngày–đêm, 8 kiểu thời tiết (nắng, mưa, giông, bão, ngập khu trũng…).
 - **Sinh tồn:** đói, khát, năng lượng, sức khoẻ, vệ sinh, tinh thần; ướt mưa, cảm ốm; 5 kiểu chỗ ngủ (gầm cầu, ghế đá, nhà nghỉ, phòng trọ, khách sạn).
 - **Kiếm sống ban đầu:** xin tiền (3 cách mở lời), nhặt ve chai, bới thùng rác, vác hàng, rửa chén (mini-game), giao hàng, cơm chay từ thiện.
-- **Mua sắm:** 12 nơi bán, 73 nguyên liệu có độ tươi và hạn dùng, giá dao động theo ngày, xả hàng cuối buổi, mặc cả, ghi sổ nợ tạp hoá, vựa sỉ mở từ 3h sáng.
+- **Mua sắm:** 12 nơi bán, 75 nguyên liệu có độ tươi và hạn dùng, giá dao động theo ngày, xả hàng cuối buổi, mặc cả, ghi sổ nợ tạp hoá, vựa sỉ mở từ 3h sáng.
 - **Nấu ăn bằng tay:** 5 mini-game (cắt thái, xào/chiên, nướng, nấu/pha, trình bày) + rửa chén; bếp than phải quạt, gió mưa làm tắt lửa; chất lượng món = thao tác × độ tươi × tay nghề.
-- **26 món** (4 món biết sẵn, 22 món học từ người trong phố), từ trà đá 5.000₫ tới hamburger 50.000₫.
+- **60 món** (4 món biết sẵn, 56 món học từ người trong phố), từ trà đá 5.000₫ tới lẩu bò 80.000₫ — bánh mì, xôi, bánh xèo, bánh khọt, bún bò Huế, cơm gà, ốc luộc, bánh canh cua…
+- **Thang mở công thức:** mỗi lần lên cấp (1–10) chỉ tự nghĩ ra **một món lúc cấp 1, sau đó hai món**, luôn là món rẻ nhất còn thiếu trong số món tay nghề mình đã đủ — nên món mở sau bao giờ cũng lãi hơn món mở trước. Học tại quán thì mỗi quán chỉ gợi ý **một món rẻ nhất** và chỉ khi đã nói chuyện đủ nhiều với người bán (3 lần, hoặc 25 uy tín).
 - **Bán hàng:** 4 chỗ bán (phí 0–60.000₫/ngày), thực đơn và giá tự đặt, khách có túi tiền/khẩu vị/độ kiên nhẫn riêng (16 nhóm khách, 11 khách quen), đánh giá sao, tiền boa, uy tín.
 - **2 bậc quầy chơi được:** gánh hàng rong → xe đẩy; 17 món đồ nghề (bếp gas, thùng đá, ô dù, bàn ghế, bảng hiệu…).
 - **Tiền bạc:** sổ sách lời lỗ từng ngày, giá vốn từng món, gửi tiết kiệm, vay ngân hàng, vay nóng Hùng Sẹo, phá sản và làm lại.
 - **22 sự kiện:** lễ hội, ngày lĩnh lương, giá thịt tăng, cúp điện, cấm đường, đối thủ mở quán, thanh tra vệ sinh, nhà phê bình, khách VIP, thu tiền bảo kê, khách quậy, khách quen xin ăn chịu, trộm đêm…
 - **Người lạ và người quen:** người đi đường chỉ hiện theo vẻ ngoài (Người lạ, Học sinh, Người vô gia cư, Người lớn tuổi, Khách du lịch, Công an…), không lộ tên hay nghề. Người đứng quầy phải nói chuyện một lần mới biết tên; khách quen phải bán cho họ một lần.
+- **Chỗ chơi, lên tinh thần:** quán cà phê Bóng Đá (cà phê sữa đá 20.000₫, hát karaoke 30.000₫, chen xem trận bóng khi có sự kiện), chùa Phước An (thắp nhang 5.000₫), ghế đá ngoài phố (ngồi nghỉ 20 phút, miễn phí). Ghế nào đã là chỗ ngủ thì vẫn là chỗ ngủ.
+- **Công việc mới:** xin **chạy bàn** một ca 60 phút ở quán cà phê (38.000₫ + boa, theo uy tín và tinh thần), **bốc cá ở cảng** 110 phút buổi sáng 4h30–10h (55.000–68.000₫, mất nhiều sức).
+- **Nút cất gánh:** đang gánh trên vai thì một chạm là gói gánh vào ba lô (tay không, khung hình sạch), cần bán thì lấy ra; đang dựng quầy thì nút này dọn cả quầy vào ba lô.
+- **Khách đứng mua:** mỗi tiệm, sạp đang mở đều có một hai người đứng lựa hàng, trả giá, chờ tính tiền — phố bớt vắng mà vẫn đúng giờ mở cửa của từng tiệm.
+- **NPC có việc lúc rảnh:** đứng chờ thì thỉnh thoảng lấy báo ra đọc, cầm ly nước nhấp một ngụm, hoặc quay sang tám chuyện với người bên cạnh — rất thưa, mỗi lần 5–11 giây.
 - **Góc phố nhỏ:** quán trà đá vỉa hè, chỗ nhảy đường phố dưới gầm cầu (tường vẽ + loa), tiệm vá xe ngoài lề đường, cô hát rong trước cổng chợ, bàn cờ tướng trong công viên, cậu bé đánh giày — mỗi chỗ có một nhân vật phụ kể chuyện riêng, và việc dùng được ngay tại chỗ (mua ly trà đá, phụ bưng trà, chơi cờ, nghe hát, vá quầy…). Một số câu chuyện chỉ mở một lần, hỏi hết thì thôi.
 - **Người xấc xược:** chỉ vài nhóm người (giang hồ, khó tính, học sinh, công nhân, tài xế, shipper, khách du lịch) thỉnh thoảng ném cục giấy về phía người chơi, khạc nhổ, mắng rồi đuổi theo một quãng. Tỉ lệ rất thưa, mỗi lần chỉ mất một hai điểm tinh thần.
 - **Chuỗi 11 mục tiêu hướng dẫn**, tự lưu trên máy (localStorage), 4 mức đồ hoạ + tự hạ khi máy giật, bộ đếm FPS, tự xếp vị trí và độ lớn các nút.
@@ -51,7 +57,7 @@ Nên **xoay ngang** điện thoại và bấm **Toàn màn hình** ở màn hìn
 
 ## Chưa có (so với bản mô tả đầy đủ)
 
-- **Số lượng nội dung:** 26/60 món; 5/8 kiểu chỗ ở (chưa có căn hộ thuê, nhà riêng, cửa hàng kiêm nhà ở); 2/7 bậc kinh doanh chơi được. **Sạp cố định (bậc 3) đã có mô hình và thông số nhưng đang khoá mua** — chủ tiệm báo "bản cập nhật sau". Quán ăn nhỏ, quán có chỗ ngồi, nhà hàng, chuỗi cửa hàng chưa làm.
+- **Số lượng nội dung:** 60/60 món; 5/8 kiểu chỗ ở (chưa có căn hộ thuê, nhà riêng, cửa hàng kiêm nhà ở); 2/7 bậc kinh doanh chơi được. **Sạp cố định (bậc 3) đã có mô hình và thông số nhưng đang khoá mua** — chủ tiệm báo "bản cập nhật sau". Quán ăn nhỏ, quán có chỗ ngồi, nhà hàng, chuỗi cửa hàng chưa làm.
 - **Băng nhóm:** mới chỉ có sự kiện thu tiền bảo kê và chủ nợ Hùng Sẹo; chưa có hệ thống lãnh địa, đánh nhau hay nhiệm vụ băng nhóm.
 - Chưa có nhân viên phụ bán, chưa có nội thất quán cho khách ngồi ăn, chưa có nhân vật tuỳ biến ngoại hình.
 - Mô hình 3D dựng bằng mã (hình khối cách điệu), không phải mô hình dựng tay chi tiết. Nội thất một số cửa hàng còn sơ sài.
@@ -59,7 +65,7 @@ Nên **xoay ngang** điện thoại và bấm **Toàn màn hình** ở màn hìn
 
 ## Đã kiểm thử gì
 
-**Tự động:** 131 bài kiểm thử (`npm test`) cho toàn bộ luật chơi — giá cả, giá vốn, khách mua hay bỏ đi, đánh giá, hư hỏng nguyên liệu, nợ, thời tiết, sự kiện, nâng cấp bản lưu, tính nhất quán dữ liệu, và một bài mô phỏng 45 ngày liên tục.
+**Tự động:** 139 bài kiểm thử (`npm test`) cho toàn bộ luật chơi — giá cả, giá vốn, khách mua hay bỏ đi, đánh giá, hư hỏng nguyên liệu, nợ, thời tiết, sự kiện, nâng cấp bản lưu, tính nhất quán dữ liệu, và một bài mô phỏng 45 ngày liên tục.
 
 **Chạy thật trong Chrome không giao diện** (màn 844×390 ngang và 390×844 dọc, giả lập cảm ứng), không có lỗi console: vào game, chơi mới/chơi tiếp, lưu và nạp lại; đi bằng cần ảo và bàn phím, vuốt nhìn, va chạm tường; xin tiền, nhặt ve chai, bới thùng rác, bán ve chai, vác hàng, rửa chén, giao hàng, cơm chay; mua đồ nghề; bốc hàng – mặc cả – trả tiền; gánh/đẩy quầy, đặt quầy; cả 5 mini-game nấu ăn bằng thao tác chạm; mở bán, khách gọi món, làm món, giao món, nhận tiền và tiền boa; cả 6 nhân vật sự kiện (thanh tra, bảo kê, khách quậy, khách quen xin chịu, nhà phê bình, khách VIP); hội thoại với cả 29 nhân vật và 11 khách quen, chuyện của 6 nhân vật phụ, người xấc xược (ném giấy, khạc nhổ, đuổi theo), xe cộ và chim trời; ngân hàng, vay nóng, thuê phòng; ngủ và tổng kết ngày; phá sản và làm lại; ban ngày lẫn ban đêm với mưa nhỏ, mưa to, giông, ngập; nhãn người lạ / người quen; màn hình sắp xếp nút (kéo, đổi cỡ, lưu, tải lại, màn dọc).
 
@@ -89,7 +95,7 @@ Cần Node.js 20 trở lên.
 ```bash
 npm install
 npm run dev          # máy chủ phát triển, mở địa chỉ được in ra
-npm test             # 131 bài kiểm thử luật chơi
+npm test             # 139 bài kiểm thử luật chơi
 npm run build        # kiểm tra kiểu + đóng gói ra dist/
 npm run build:pages  # kiểm tra kiểu + kiểm thử + đóng gói ra docs/ (GitHub Pages)
 ```
