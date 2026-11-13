@@ -2,6 +2,12 @@
 <html lang="vi">
 <head>
   <meta charset="utf-8">
+  <script>
+    // Tệp này là trang NGUỒN, phải qua Vite mới chạy được. Mỗi lần xử lý (chạy dev hay đóng gói), Vite thay dấu giữ chỗ
+    // bên dưới bằng tên chế độ. Nếu dấu giữ chỗ còn nguyên tức là trang đang bị mở thẳng — ví dụ GitHub Pages trỏ vào
+    // thư mục gốc của kho — thì chuyển sang bản đã đóng gói trong docs/.
+    if ('%MODE%'.charAt(0) === '\x25') location.replace('./docs/' + location.search + location.hash);
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#2a1c12">
   <meta name="mobile-web-app-capable" content="yes">

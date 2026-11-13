@@ -89,7 +89,9 @@ npm run build:pages  # kiểm tra kiểu + kiểm thử + đóng gói ra docs/ (
 
 Thêm `?debug` vào địa chỉ để có các biến `__game`, `__R`, `__S`, `__give(id, n)` trong console.
 
-**Phát hành:** GitHub Pages phục vụ thư mục `docs/` của nhánh `main`. Sau khi sửa mã, chạy `npm run build:pages` rồi commit cả thư mục `docs/`.
+**Phát hành:** bản chạy được nằm trong thư mục `docs/` của nhánh `main`. Sau khi sửa mã, chạy `npm run build:pages` rồi commit cả thư mục `docs/`.
+
+GitHub Pages của kho này đang trỏ vào **thư mục gốc** của `main`, nên `index.html` ở gốc (trang nguồn) có một đoạn mã nhỏ tự chuyển sang `docs/` khi bị mở thẳng; địa chỉ thực của game vì vậy là `…/CookingGamebyShapi/docs/`. Nếu đổi Pages sang thư mục `/docs` (Settings → Pages → Branch `main`, folder `/docs`) thì game nằm ngay ở địa chỉ gốc — cả hai cách đều chạy. Tệp `.nojekyll` ở gốc để Pages phát đúng nguyên trạng tệp, không qua Jekyll.
 
 ## Cấu trúc mã nguồn
 
