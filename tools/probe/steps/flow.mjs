@@ -1,4 +1,5 @@
-// Hồi quy nhanh các luồng chính sau khi đổi HUD / tên / tường / biển.
+// Hồi quy nhanh: vào ván mới bằng chạm, đi bằng cần ảo, bật nút chạy, sắm đồ, đặt quầy, nướng bắp bằng nút nấu ăn.
+// (Mở bán và phục vụ khách: xem customers.mjs.)
 import { boot } from '../lib.mjs';
 const tapSel = (sel) => ({ tapsEval: (sel) => { const e = document.querySelector(sel); if (!e) return []; const r = e.getBoundingClientRect(); return [[r.left + r.width / 2, r.top + r.height / 2]]; }, args: [sel] });
 const SPOT = { id: 'cv', name: 'Cổng Công Viên', x: 41, z: -37.3, yaw: 0, fee: 20000, minTier: 1 };
@@ -21,11 +22,4 @@ export default [boot,
   { eval: () => ({ flame: +window.__game.cook.mini.heat.flame.toFixed(2) }) },
   { eval: () => { const g0 = window.__game; g0.cook.exit ? g0.cook.exit() : document.querySelector('#cook .quit').click(); return g0.mode; }, wait: 800 },
   { eval: () => { const g0 = window.__game; const d = document.querySelector('#dlg'); if (!d.classList.contains('hide')) { const b = d.querySelector('.btn'); b && b.click(); } return { mode: g0.mode, hudAct: getComputedStyle(document.querySelector('#act')).display }; }, wait: 500 },
-  { label: 'D. mở bán, khách tới, giao trà đá' },
-  { eval: () => { const g0 = window.__game, g = g0.g; g0.ui.closeDialog(); g0.mode = 'play'; const now = g.day * 1440 + g.min; g.rec.tra_da.on = true; g.rec.bap_nuong.on = false; g.stall.ready.push({ rid: 'tra_da', n: 6, q: 0.9, at: now, cost: 1700 }); g.min = 11 * 60; const ok = g0.stall.open(); window.__fast(true); return { ok, open: g.stall.open, cash: g.cash }; } },
-  { waitFor: () => window.__game.stall.customers.some((n) => n.state === 'queue' && n.order), timeout: 150000 },
-  { eval: () => { const g0 = window.__game; window.__fast(false); const n = g0.stall.customers.find((n) => n.state === 'queue' && n.order); const [x, z] = g0.stall.standPos(); g0.player.place(x, z, g0.g.stall.yaw, -0.1); const dx = n.x - g0.player.x, dz = n.z - g0.player.z; g0.player.place(x, z, Math.atan2(dx, dz), -0.05); window.__n = n; n.patience = 1e4; return { real: n.name, arch: n.arch.name, regular: !!n.regular }; }, wait: 1800, shot: 'rg_customer' },
-  { eval: () => { const f = window.__game.interact.focus; return f ? { label: f.label, sub: f.sub } : null; } },
-  { eval: () => { const g0 = window.__game, c0 = g0.g.cash; g0.stall.serve(window.__n); return { cash0: c0, cash1: g0.g.cash, sold: g0.g.led.sold, rep: +g0.g.rep.toFixed(2) }; }, wait: 2500 },
-  { eval: () => ({ toasts: (document.querySelector('#toasts') || { innerText: '' }).innerText.replace(/\n+/g, ' | ').slice(0, 200), saved: !!localStorage.getItem('ganhhang.save.v1'), v: JSON.parse(localStorage.getItem('ganhhang.save.v1') || '{}').v }) },
 ];
