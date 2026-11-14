@@ -68,10 +68,10 @@ export interface Lot { bx: number; bz: number; face: Face; at: number; w: number
 interface Special { at: number; w: number; kind: LotKind; id?: string; d?: number; }
 const SPECIALS: Record<string, Special[]> = {
   // Phố văn phòng (TB)
-  '00S': [{ at: 8, w: 12, kind: 'bank', id: 'bank' }, { at: 29, w: 6, kind: 'spot', id: 'vp' }],
+  '00S': [{ at: 8, w: 12, kind: 'bank', id: 'bank' }, { at: 20, w: 9, kind: 'spot', id: 'matbang_tb' }, { at: 29, w: 6, kind: 'spot', id: 'vp' }],
   '00E': [{ at: 5, w: 14, kind: 'hotel', id: 'hotel' }],
   // Khu căn hộ (B)
-  '10S': [{ at: 16, w: 10, kind: 'cafe', id: 'cafe' }, { at: 26, w: 12, kind: 'canho', id: 'canho' }],
+  '10S': [{ at: 16, w: 10, kind: 'cafe', id: 'cafe' }, { at: 26, w: 12, kind: 'canho', id: 'canho' }, { at: 38, w: 8, kind: 'spot', id: 'matbang_dc' }],
   // Phố trung tâm (giữa)
   '11S': [{ at: 4, w: 14, kind: 'minimart', id: 'minimart' }, { at: 18, w: 12, kind: 'cuahang', id: 'cuahang' }, { at: 30, w: 5.5, kind: 'pharmacy', id: 'pharmacy' }, { at: 35.5, w: 10.5, kind: 'hospital', id: 'hospital' }],
   '11W': [{ at: 0, w: 10, kind: 'equip', id: 'equip' }, { at: 10, w: 2.4, kind: 'alley' }],
@@ -145,6 +145,8 @@ export const SPOTS: Spot[] = [
   { id: 'cho', name: 'Cổng Chợ', x: -37.2, z: 9, yaw: Math.PI / 2, fee: 30000, traffic: 1.35, district: 'cho', minTier: 1, note: 'Đông người qua lại, hay bị kiểm tra.' },
   { id: 'cv', name: 'Cổng Công Viên', x: 41, z: -37.3, yaw: 0, fee: 20000, traffic: 1.05, district: 'congvien', minTier: 1, note: 'Gia đình, sinh viên, khách du lịch.' },
   spotFromLot('vp', 'Phố Văn Phòng', 60000, 1.25, 2, 'Khách chịu chi nhưng khó tính. Cần xe đẩy trở lên.'),
+  spotFromLot('matbang_tb', 'Mặt bằng Phố Văn Phòng', 160000, 1.45, 4, 'Có sân kê bàn ghế, khách văn phòng ăn trưa rất đông. Cần quán ăn nhỏ.'),
+  spotFromLot('matbang_dc', 'Mặt bằng Khu Căn Hộ', 120000, 1.3, 4, 'Cạnh quán cà phê và chung cư, khách ăn sáng – ăn trưa cả ngày. Cần quán ăn nhỏ.'),
 ];
 export const spotById = (id: string) => SPOTS.find((s) => s.id === id);
 

@@ -61,7 +61,22 @@ export class StallSys {
   }
   /** Chỗ người chơi đứng bán. */
   standPos(): [number, number] { const s = this.s, d = s.tier <= 1 ? -1.5 : -1.0; return [s.x + Math.sin(s.yaw) * d, s.z + Math.cos(s.yaw) * d]; }
-  slotPos(i: number, n: number): [number, number] { const s = this.s, lx = (i - (n - 1) / 2) * 0.82, lz = s.tier <= 1 ? 1.5 : 1.35; return [s.x + lx * Math.cos(s.yaw) + lz * Math.sin(s.yaw), s.z - lx * Math.sin(s.yaw) + lz * Math.cos(s.yaw)]; }
+  /** Bốn chỗ ngồi ăn tại chỗ của quán ăn nhỏ (bậc 4): hai bàn nhựa, mỗi bàn hai ghế. */
+  static readonly SEATS = 4;
+  seatPos(i: number): [number, number] {
+    const s = this.s, c = Math.cos(s.yaw), sn = Math.sin(s.yaw);
+    const seats: [number, number][] = [[-1.75, 2.85], [-1.75, 1.45], [1.75, 2.85], [1.75, 1.45]];
+    const [lx, lz] = seats[((i % StallSys.SEATS) + StallSys.SEATS) % StallSys.SEATS];
+    return [s.x + lx * c + lz * sn, s.z - lx * sn + lz * c];
+  }
+  /** Chỗ này có ghế ngồi ăn tại chỗ không (bậc 4 trở lên, bốn chỗ đầu hàng). */
+  seated(i: number): boolean { return this.s.tier >= 4 && i >= 0 && i < StallSys.SEATS; }
+  slotPos(i: number, n: number): [number, number] {
+    const s = this.s;
+    if (this.seated(i)) return this.seatPos(i);
+    const lx = (i - (n - 1) / 2) * 0.82, lz = s.tier <= 1 ? 1.5 : s.tier >= 4 ? 3.6 : 1.35;
+    return [s.x + lx * Math.cos(s.yaw) + lz * Math.sin(s.yaw), s.z - lx * Math.sin(s.yaw) + lz * Math.cos(s.yaw)];
+  }
 
   // ───────── mô hình ─────────
   private rebuild() {
@@ -99,7 +114,7 @@ export class StallSys {
       if (has(g, 'daothot')) { boardModel(tm, -0.5, 0.91, -0.1, 0.34, 0.24); knifeModel(tm, -0.42, 0.937, -0.08); }
       if (has(g, 'noi')) potModel(tm, -0.62, 0.91, 0.22, 0.6); if (has(g, 'chao')) panModel(tm, 0.1, 0.915, 0.25, 0.6); if (has(g, 'vi')) grateModel(tm, 0.55, st ? 1.08 : 0.93, -0.05, 0.34, 0.24);
       if (has(g, 'thungda')) iceBox(m, -1.3, 0, -0.4, 0.95); if (has(g, 'den')) lanternModel(m, 0.78, 0.91, 0.3);
-    } else {
+    } else if (s.tier === 3) {
       m.box(0, 0, 0.1, 2.6, 0.9, 0.9, 0x8a6a4a, 0xd9c8a8, 0.12); m.box(0, 0.3, 0.552, 2.5, 0.5, 0.004, 0xd9463c); m.box(0, 0.9, 0.1, 2.7, 0.035, 1.0, 0xe9e2d0, 0xf3efe6, 0, true);
       for (const sx of [-1.28, 1.28]) for (const sz of [-0.36, 0.56]) m.box(sx, 0.9, sz, 0.05, 1.5, 0.05, 0x8a8f96);
       m.box(0, 2.4, 0.1, 3.0, 0.06, 1.5, 0x2f8fd5, 0xf3f0e8, 0, true); m.box(0, 2.16, 0.86, 3.0, 0.24, 0.02, 0xf5c531, 0xf5c531, 0, true);
@@ -107,6 +122,18 @@ export class StallSys {
       if (has(g, 'daothot')) { boardModel(tm, -0.8, 0.935, -0.05, 0.36, 0.24); knifeModel(tm, -0.7, 0.962, -0.03); }
       if (has(g, 'noi')) potModel(tm, -1.0, 0.935, 0.3, 0.7); if (has(g, 'chao')) panModel(tm, 0.3, 0.94, 0.3, 0.7); if (has(g, 'vi')) grateModel(tm, 0.9, st ? 1.12 : 0.95, 0, 0.36, 0.26);
       if (has(g, 'thungda')) iceBox(m, -1.75, 0, -0.3, 1); if (has(g, 'den')) lanternModel(m, 1.2, 0.935, 0.4);
+    } else {
+      // Bậc 4 — quán ăn nhỏ: quầy gỗ dài 4,4 m, mái tôn xanh, sân phía trước kê hai bàn nhựa bốn ghế.
+      m.box(0, 0, 0.1, 4.4, 0.92, 0.9, 0x8a6a4a, 0xd9c8a8, 0.12); m.box(0, 0.3, 0.552, 4.3, 0.5, 0.004, 0xd9463c); m.box(0, 0.92, 0.1, 4.5, 0.04, 1.02, 0xe9e2d0, 0xf3efe6, 0, true);
+      for (const sx of [-2.18, 2.18]) for (const sz of [-0.36, 0.56]) m.box(sx, 0.92, sz, 0.05, 1.7, 0.05, 0x8a8f96);
+      m.box(0, 2.62, 0.1, 5.2, 0.07, 1.8, 0x2f6fb5, 0xf3f0e8, 0, true); m.box(0, 2.34, 0.98, 5.2, 0.26, 0.02, 0xf5c531, 0xf5c531, 0, true);
+      m.box(-2.18, 1.7, 0.6, 0.06, 1.6, 0.06, 0x8a8f96); m.box(2.18, 1.7, 0.6, 0.06, 1.6, 0.06, 0x8a8f96);
+      if (st === 'bepthan') charcoalStove(tm, 1.5, 0.955, 0, 0.9); else if (st === 'bepgas') gasStove(tm, 1.5, 0.955, 0, 0.9);
+      if (has(g, 'daothot')) { boardModel(tm, -1.2, 0.955, -0.05, 0.36, 0.24); knifeModel(tm, -1.1, 0.982, -0.03); }
+      if (has(g, 'noi')) potModel(tm, -1.6, 0.955, 0.3, 0.7); if (has(g, 'chao')) panModel(tm, 0.5, 0.96, 0.3, 0.7); if (has(g, 'vi')) grateModel(tm, 1.5, st ? 1.14 : 0.97, 0, 0.36, 0.26);
+      if (has(g, 'thungda')) iceBox(m, -2.6, 0, -0.3, 1); if (has(g, 'den')) lanternModel(m, 1.9, 0.955, 0.42);
+      // bàn ghế nhựa trong sân — khách ngồi ăn tại chỗ
+      for (const bx of [-1.75, 1.75]) { plasticTable(m, bx, 0, 2.15); plasticStool(m, bx, 0, 2.85, 0x2f8fd5); plasticStool(m, bx, 0, 1.45, 0xd9463c); }
     }
     if (placed) {
       if (has(g, 'odu') && s.tier < 3) umbrellaModel(m, s.tier === 1 ? -1.05 : -1.15, 0, s.tier === 1 ? -0.9 : -0.55, 1.7, 2.5);
@@ -123,11 +150,11 @@ export class StallSys {
     }
     if (placed) {
       const c = Math.cos(s.yaw), sn = Math.sin(s.yaw), W = (lx: number, lz: number): [number, number] => [s.x + lx * c + lz * sn, s.z - lx * sn + lz * c];
-      const pts: [number, number, number][] = s.tier === 1 ? [[-0.62, 0, 0.34], [0.62, 0, 0.34]] : s.tier === 2 ? [[-0.5, 0, 0.5], [0.5, 0, 0.5]] : [[-0.85, 0.1, 0.62], [0.85, 0.1, 0.62], [0, 0.1, 0.62]];
+      const pts: [number, number, number][] = s.tier === 1 ? [[-0.62, 0, 0.34], [0.62, 0, 0.34]] : s.tier === 2 ? [[-0.5, 0, 0.5], [0.5, 0, 0.5]] : s.tier === 4 ? [[-2.1, 0.1, 0.62], [2.1, 0.1, 0.62], [0, 0.1, 0.62]] : [[-0.85, 0.1, 0.62], [0.85, 0.1, 0.62], [0, 0.1, 0.62]];
       pts.forEach(([lx, lz, r], i) => { const b = this.cols[i] as Circ, [x, z] = W(lx, lz); b.x = x; b.z = z; b.r = r; b.on = true; });
-      if (has(g, 'odu') || s.tier === 3) { const [x, z] = W(0, -0.4); this.roof = { x0: x - 1.9, z0: z - 1.9, x1: x + 1.9, z1: z + 1.9 }; if (!ctx.world.roofs.includes(this.roof)) ctx.world.roofs.push(this.roof); }
+      if (has(g, 'odu') || s.tier >= 3) { const [x, z] = W(0, s.tier >= 4 ? 0.8 : -0.4); const r = s.tier >= 4 ? 3.2 : 1.9; this.roof = { x0: x - r, z0: z - r, x1: x + r, z1: z + r }; if (!ctx.world.roofs.includes(this.roof)) ctx.world.roofs.push(this.roof); }
     }
-    if (!placed || !(has(g, 'odu') || s.tier === 3)) { const i = ctx.world.roofs.indexOf(this.roof); if (i >= 0) ctx.world.roofs.splice(i, 1); }
+    if (!placed || !(has(g, 'odu') || s.tier >= 3)) { const i = ctx.world.roofs.indexOf(this.roof); if (i >= 0) ctx.world.roofs.splice(i, 1); }
     this.stockKey = '';
   }
   private roof: Box2 = { x0: 0, z0: 0, x1: 0, z1: 0 }; private toolMesh: THREE.Mesh | null = null; private isCooking = false;
@@ -155,12 +182,17 @@ export class StallSys {
 
   // ───────── đặt / dọn / mang quầy ─────────
   nearSpot(x: number, z: number): Spot | undefined { return SPOTS.find((sp) => dist2(sp.x, sp.z, x, z) < 4.5 * 4.5); }
+  /** Danh sách chỗ bán (bản đồ, công cụ kiểm thử). */
+  spots(): Spot[] { return SPOTS; }
   placeAt(sp: Spot): boolean {
     const g = ctx.g, s = g.stall;
     if (s.tier < sp.minTier) { toast(`Chỗ này cần ${TIERS[sp.minTier].name.toLowerCase()} trở lên.`, 'warn'); return false; }
+    // Bậc 4 trở lên chỉ dựng được ở mặt bằng có sân (điểm vàng ghi “Mặt bằng”), không chen vô vỉa hè hẹp.
+    if (s.tier >= 4 && sp.minTier < 4) { toast(`Quán ăn nhỏ cần MẶT BẰNG có sân kê bàn ghế — ${sp.name} hẹp quá. Tìm điểm vàng có chữ “Mặt bằng”.`, 'warn', 'shop'); return false; }
     if (sp.fee > 0 && s.paidDay !== g.day) { if (!spend(g, sp.fee, 'fees')) { toast(`Không đủ ${money(sp.fee)} phí chỗ ở ${sp.name}.`, 'bad', 'cash'); return false; } toast(`Đã đóng ${money(sp.fee)} phí chỗ hôm nay.`, 'info', 'cash'); }
     s.paidDay = g.day; s.where = 'placed'; s.spot = sp.id; s.x = sp.x; s.z = sp.z; s.yaw = sp.yaw; s.open = false; this.stowed = false;
-    if (s.tier >= 3) { delete g.flags.sapNo; toast(`Sạp đặt cố định ở ${sp.name}. Từ nay mỗi ngày đóng ${money(sp.fee)} phí chỗ, đổi ${money(sp.fee)} lấy chỗ đông khách và không ai dọn được quầy của bạn.`, 'good', 'shop', true); }
+    if (s.tier >= 4) { delete g.flags.sapNo; toast(`Quán ăn nhỏ mở ở ${sp.name}. Mỗi ngày đóng ${money(sp.fee)} phí mặt bằng; bốn chỗ ngồi cho khách ăn tại chỗ nên ai cũng đợi lâu hơn.`, 'good', 'shop', true); }
+    else if (s.tier >= 3) { delete g.flags.sapNo; toast(`Sạp đặt cố định ở ${sp.name}. Từ nay mỗi ngày đóng ${money(sp.fee)} phí chỗ, đổi ${money(sp.fee)} lấy chỗ đông khách và không ai dọn được quầy của bạn.`, 'good', 'shop', true); }
     sfx('place'); this.rebuild(); bus.emit('save', 'dat quay'); return true;
   }
   /** Để quầy ở chỗ ở (cạnh giường). */
@@ -208,16 +240,22 @@ export class StallSys {
     N.goto(n, x, z, (c) => this.arrived(c));
     return n;
   }
-  private freeSlot(): number { const used = new Set(this.customers.map((c) => c.slot)), q = tier(ctx.g).queue, order = Array.from({ length: q }, (_, i) => i).sort((a, b) => Math.abs(a - (q - 1) / 2) - Math.abs(b - (q - 1) / 2)); return order.find((i) => !used.has(i)) ?? 0; }
+  private freeSlot(): number {
+    const used = new Set(this.customers.map((c) => c.slot)), q = tier(ctx.g).queue;
+    const mid = Array.from({ length: q }, (_, i) => i).sort((a, b) => Math.abs(a - (q - 1) / 2) - Math.abs(b - (q - 1) / 2));
+    // Quán ăn nhỏ: khách ngồi vô bàn trước, hết ghế mới đứng xếp hàng.
+    const order = this.s.tier >= 4 ? [...mid.filter((i) => i < StallSys.SEATS), ...mid.filter((i) => i >= StallSys.SEATS)] : mid;
+    return order.find((i) => !used.has(i)) ?? 0;
+  }
   private arrived(n: Npc) {
     const g = ctx.g, s = g.stall, N = ctx.npcs;
-    n.yaw = s.yaw + Math.PI; n.state = 'queue'; n.pose = 'idle';
+    n.yaw = s.yaw + Math.PI; n.state = 'queue'; n.pose = this.seated(n.slot) ? 'sit' : 'idle';
     if (n.actor && n.actor !== 'critic' && n.actor !== 'vip') { this.actorTalk(n); return; }
     if (!s.open) { this.dismiss(n, false); return; }
     const res = decide(g, n.persona!, n.fem);
     if (!res.order) { N.say(n, res.leave!, 3, res.why === 'price' ? 3 : 5); lostCustomer(g, res.why ?? 'none'); if (res.why === 'price') sfx('nope'); setTimeout(() => this.dismiss(n, false), 1400); return; }
     n.order = res.order; if (n.actor === 'vip') n.order.n = Math.min(3, Math.max(n.order.n, 2), readyCount(g, n.order.rid) + finishPossible(g, RECIPES[n.order.rid]));
-    const a = n.arch; n.patience = rnd.range(a.patience[0], a.patience[1]) * (has(g, 'ghe') ? 1.3 : 1) * (wx(g).rain > 0.3 && !has(g, 'odu') ? 0.75 : 1); n.waited = 0;
+    const a = n.arch; n.patience = rnd.range(a.patience[0], a.patience[1]) * (this.seated(n.slot) ? 1.5 : has(g, 'ghe') ? 1.3 : 1) * (wx(g).rain > 0.3 && !has(g, 'odu') && s.tier < 4 ? 0.75 : 1); n.waited = 0;
     N.say(n, res.order.line, 3.2, res.order.mood === 'pricey' ? 3 : 1); ctx.ui.order(n, res.order.rid, res.order.n); sfx('order');
     if (n.regular) changeRel(g, n.regular.id, 0, true);
   }
