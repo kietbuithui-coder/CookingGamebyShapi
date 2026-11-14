@@ -12,7 +12,7 @@ Thứ tự dưới đây xếp theo phụ thuộc kỹ thuật và theo mức "c
 | 7 | Công an, đồn, buồng giam, lao động khổ sai ✅ | Cần nút đánh và luật "gây sự" của lượt 6 |
 | 8 | Điện thoại (3 mẫu máy, giờ, thu chi, tin nhắn, lướt web) ✅ | Là cái khung UI cho quán net |
 | 9 | Quán net, chơi game, lướt web tăng tinh thần ✅ | Dùng lại UI + túi tiền theo giờ của lượt 8 |
-| 10 | Ô tô đời 2005–2010 · xe đạp · event đua xe đạp · xích đu công viên | Chỉ là cảnh vật + một event, không phụ thuộc hệ nào |
+| 10 | Ô tô đời 2005–2010 · xe đạp · event đua xe đạp · xích đu công viên ✅ | Chỉ là cảnh vật + một event, không phụ thuộc hệ nào |
 | 11 | Khuôn mặt & kiểu tóc · lời thoại dễ thương/thô tục · âm thanh cảm xúc · NPC tạp hoá nhỏ | Làm cuối vì phải rà lại toàn bộ nhân vật một lượt |
 
 Đã xong ngay trong lượt này (phần đầu của mục "sửa lỗi vặt"):
@@ -127,15 +127,29 @@ cà phê và tiệm hớt tóc đang chạy; phần "chơi lâu thì mỏi mắt
 mỏi mắt sau 120 phút và tính lại sang ngày, ngồi máy làm đói khát tụt sức, trần tinh thần 100, giờ mở cửa và
 số máy, sạc nhờ/nước ngọt, lô đất và ba nhân vật, bản lưu v7 → v8).
 
-## Lượt 10 — Đường phố 2005–2010
+## Lượt 10 — Đường phố 2005–2010 ✅ đã xong
 
-Ô tô đời cũ (Toyota Corolla, Daewoo Matiz, Kia CD5, xe tải nhỏ) chạy chung với xe máy, có tiếng còi và
-khói; xe đạp của học sinh và của nhóm con gái trong xóm. **Event đua xe đạp**: chiều chủ nhật ở đường
-công viên, đăng ký với nhóm con gái, đua 3 vòng bằng cách bấm nhịp đạp, thắng được tiền và uy tín, thua
-thì bị trêu. **Xích đu công viên**: ngồi lên và đu, đu càng lâu tinh thần càng lên, có tiếng gió.
+**Ô tô đời cũ** chạy chung dòng xe: Toyota Corolla, Daewoo Matiz, Kia CD5 và xe tải nhỏ — thân hộp vuông, kính
+tối, bánh nhỏ, đèn trước vàng / đèn hậu đỏ. Chiếm 26% dòng xe nhưng luôn có ít nhất một chiếc, chạy làn ngoài,
+chậm hơn xe máy (xe tải 4,2–5,6 m/s), nhả khói sau pô và bấm còi khi người chơi đứng gần lòng đường.
 
-**Kiểm thử:** xe không đè người chơi (đẩy ra như xe máy hiện có), đua có kết quả xác định theo hạt giống,
-xích đu có trần tinh thần.
+**Đua xe đạp chủ nhật** ở đường trước cổng công viên: vạch xuất phát kẻ ô caro + dãy cọc, bảng *ĐUA XE ĐẠP —
+chủ nhật 15h · đăng ký tại đây*, con Lan đứng chờ. Đăng ký mất 5 phút và 12% sức (mỗi ngày một lượt, chỉ chủ
+nhật 15h–17h30). Vào đua: ba vòng, chín nhịp, mỗi nhịp con chạy quét qua vùng xanh trong 1,55 giây — bấm **ĐẠP**
+đúng giữa vùng ăn 1,0 điểm, lệch ra mép 0,45, trượt 0. Camera chạy dọc đường theo tiến độ, con Lan đạp bên
+cạnh (sức cố định theo hạt giống). Thắng: 40.000₫, +2,5 uy tín, +14 tinh thần; thua: +0,5 uy tín, +5 tinh thần
+và bị trêu. Bấm **Bỏ dở** thì chỉ mất năm phút đăng ký.
+
+**Xích đu công viên**: ba mức 10/20/40 phút, miễn phí, +8/+14/+21 tinh thần, có trần nên không cày được bằng
+xích đu.
+
+**Khác kế hoạch:** xe đạp của học sinh đã có sẵn trong dòng xe từ lượt 2 nên không làm lại; phần "đua 3 vòng"
+dùng đường thẳng trước cổng công viên (một chiều 38 m) thay vì vòng quanh hồ, cho camera chạy liền mạch không
+phải cắt cảnh.
+
+**Kiểm thử:** `tests/street.test.ts` — 12 bài: bốn mẫu ô tô và tốc độ chậm hơn xe máy, chín nhịp đua tất định
+theo hạt giống, chấm điểm giữa vùng / mép / trượt, sức đối thủ, thắng–thua–hoà và tiền thưởng, chỉ chủ nhật
+và đúng khung giờ, mỗi ngày một lượt, bản lưu v8 → v9, xích đu ba mức và giờ mở cửa.
 
 ## Lượt 11 — NPC sống động hơn
 

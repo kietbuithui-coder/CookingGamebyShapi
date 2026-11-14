@@ -286,6 +286,34 @@ nước ngọt bên phải. Dãy ổ điện trên tường có bảng **SẠC N
   Cả hai ngồi ghế nhựa, nói chuyện được, mỗi người hai câu chuyện.
 - **Vào quán:** chạm vào chị Hạnh ở quầy, hoặc chạm **máy 04** (ghế trống) — cả hai mở cùng một bảng dịch vụ.
 
+### 4.19 Đường phố 2005–2010: ô tô, đua xe đạp, xích đu
+
+**Ô tô đời cũ** chạy chung dòng xe với xe máy và xe đạp (`src/data/cars.ts`, `src/game/traffic.ts`): Toyota
+Corolla, Daewoo Matiz, Kia CD5 và xe tải nhỏ. Thân hộp vuông, kính phẳng tối, bánh nhỏ, hai đèn trước vàng và
+hai đèn hậu đỏ. Ô tô chiếm 26% dòng xe nhưng **luôn có ít nhất một chiếc**; chạy làn ngoài (±2,1 m), tốc độ
+4,2–7,2 m/s (xe tải chậm nhất, xe máy 7–11 m/s vẫn vượt), nhả khói xám sau pô mỗi 0,22 giây và bấm còi khi
+người chơi đứng gần lòng đường. Xe tải có ca-bin có kính và thùng hàng phủ bạt.
+
+**Đua xe đạp chủ nhật** (`src/sim/race.ts` luật thuần, `src/game/race.ts` phần chạy):
+
+| Mục | Con số |
+|---|---|
+| Ngày, giờ | chủ nhật (`g.day % 7 === 0`), đăng ký 15h–17h30 |
+| Vào cuộc | 5 phút đăng ký · cần 12% sức · mỗi ngày một lượt |
+| Đường đua | vạch xuất phát ở x = 41 trên đường trước cổng công viên, chạy 38 m tới x = 79 |
+| Nhịp đạp | 3 vòng × 3 nhịp, mỗi nhịp con chạy quét 0→1 trong 1,55 giây |
+| Ăn điểm | trúng giữa vùng xanh 1,0 · lệch ra mép 0,45 · trượt 0 |
+| Đối thủ | con Lan, sức cố định theo hạt giống (0,42–0,72 mỗi nhịp) |
+| Thưởng | thắng 40.000₫ + 2,5 uy tín + 14 tinh thần (hoà tính như thắng); thua +0,5 uy tín, +5 tinh thần |
+
+Người chơi đứng ở vạch rồi camera chạy dọc đường theo tiến độ; con Lan đạp bên cạnh, mạnh yếu thấy được bằng
+mắt. Chín nhịp xong thì cộng thời gian (25 phút), trả thưởng, ghi `flags.raceDay`/`flags.raceWin`. Bấm **Bỏ dở**
+thì mất năm phút đăng ký, không mất gì thêm, và vẫn đua lại được trong ngày.
+
+**Xích đu công viên** (`xich_du` ở sân chơi, ba mức trong `src/data/fun.ts`): 10 phút +8 tinh thần, 20 phút +14,
+40 phút +21, đều miễn phí, mở 6h–21h, mất chút sức và nước. Đu là chỗ chơi **có trần** — 40 phút là mức cao
+nhất, không cày tinh thần bằng xích đu được.
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
@@ -296,7 +324,7 @@ nước ngọt bên phải. Dãy ổ điện trên tường có bảng **SẠC N
 
 ## 6. Lưu game
 
-`localStorage`, khoá `ganhhang.save.v1` (trạng thái) và `ganhhang.settings.v1` (cài đặt). Tự lưu sau việc quan trọng, mỗi 45 giây và khi rời trang. `SAVE_VERSION = 8`; `migrate()` nạp được bản lưu cũ thiếu trường và loại bỏ nguyên liệu không còn tồn tại. Bản lưu trước v4 chưa có sổ `met` nên được coi như đã quen hết người đứng quầy. Bản lưu trước v5 (chưa có bệnh viện) được nâng sức khoẻ lên 45 nếu đang ở 0 — nếu không, mở lên là ngất liền — và thêm sổ đồ thất lạc rỗng. Bản lưu trước v6 được cấp `wanted = 0` và `jailUntil = 0` (chưa ai biết mặt). Bản lưu trước v7 chưa có điện thoại (`phone = null`). Bản lưu trước v8 chưa có sổ phút ngồi quán net (`netDay = -1`, `netMin = 0`). Cài đặt có thêm `ui` (cỡ giao diện và cách xếp nút); `cleanLayout()` làm sạch dữ liệu đọc lên.
+`localStorage`, khoá `ganhhang.save.v1` (trạng thái) và `ganhhang.settings.v1` (cài đặt). Tự lưu sau việc quan trọng, mỗi 45 giây và khi rời trang. `SAVE_VERSION = 9`; `migrate()` nạp được bản lưu cũ thiếu trường và loại bỏ nguyên liệu không còn tồn tại. Bản lưu trước v4 chưa có sổ `met` nên được coi như đã quen hết người đứng quầy. Bản lưu trước v5 (chưa có bệnh viện) được nâng sức khoẻ lên 45 nếu đang ở 0 — nếu không, mở lên là ngất liền — và thêm sổ đồ thất lạc rỗng. Bản lưu trước v6 được cấp `wanted = 0` và `jailUntil = 0` (chưa ai biết mặt). Bản lưu trước v7 chưa có điện thoại (`phone = null`). Bản lưu trước v8 chưa có sổ phút ngồi quán net (`netDay = -1`, `netMin = 0`). Bản lưu trước v9 chưa có sổ ngày đua xe đạp (`raceDay = -1`, `raceWin = 0`). Cài đặt có thêm `ui` (cỡ giao diện và cách xếp nút); `cleanLayout()` làm sạch dữ liệu đọc lên.
 
 ## 7. Kiểm thử
 
@@ -309,6 +337,7 @@ nước ngọt bên phải. Dãy ổ điện trên tường có bảng **SẠC N
 - `tests/stall.test.ts` — sạp cố định: phí chỗ theo ngày, trừ tiền đầu ngày, thiếu tiền thì đóng quầy và treo nợ, mua sạp thì lên bậc 3 và chưa có chỗ.
 - `tests/housing.test.ts` — chỗ ở: mã không trùng, thuê theo tuần thì giá cao hơn phải chứa nhiều hơn và đòi uy tín cao hơn, ba chỗ mới có đúng lô đất, chưa đủ uy tín thì không cho thuê và không trừ tiền, mã lạ thì trả về `false`, nợ hai ngày thì mất chỗ và mất tủ lạnh, chỉ nhà thuê theo tuần mới cắm được tủ lạnh.
 - `tests/health.test.ts` — bệnh viện (lô đất riêng, ba món thuốc, chỉ thuốc cảm chữa cảm), mua thuốc/khám bệnh/nằm hồi sức kể cả khi không đủ tiền, ngất thì viện phí có trần và tiền không âm, rơi đúng 40% đồ và nhận lại được trong ngày, đồ nhặt lại không vượt sức chứa, bản lưu v4 đang ở máu 0.
+- `tests/street.test.ts` — 12 bài về đường phố 2005–2010: bốn mẫu ô tô (tên, màu, cỡ, chậm hơn xe máy, xe tải chậm nhất), chín nhịp đua và vùng ăn điểm tất định theo hạt giống, chấm điểm giữa vùng/mép/trượt, sức đối thủ cố định, thắng–thua–hoà và tiền thưởng, chỉ chủ nhật và đúng khung giờ, mỗi ngày một lượt, bản lưu v8 lên v9, xích đu ba mức (lâu hơn thì nhiều tinh thần hơn, có trần, miễn phí, đêm đóng cửa).
 - `tests/net.test.ts` — quán net: giá theo phút và phụ thu phim, bốn gói giờ, hiệu ứng từng kiểu chơi, mỏi mắt sau 120 phút (tinh thần còn 45%, mất 2 sức khoẻ) và tính lại khi sang ngày, ngồi máy làm đói khát tụt sức, tinh thần không vượt 100, giờ mở cửa và số máy, sạc nhờ/nước ngọt, lô đất và ba nhân vật của quán, bản lưu v7 lên v8.
 - `tests/fun.test.ts` — bảng chỗ chơi (mã không trùng, có neo, có giờ hợp lệ, chơi lâu hơn thì lên tinh thần nhiều hơn) và thang mở công thức (cấp 1 mở đúng 1 món, cấp sau mở 2; luôn là món rẻ nhất còn thiếu; không vượt tay nghề; món sau không rẻ hơn món trước; cấp 10 mở đủ 60 món).
 
@@ -324,7 +353,7 @@ Người chơi đã thử bản đầu và gửi danh sách góp ý; việc đư
 
 **Lượt 3 — nội dung còn thiếu so với bản mô tả đầy đủ: đã xong phần chính** (60 món và thang mở công thức, chỗ chơi lên tinh thần, khách đứng mua, việc lúc rảnh của người đi đường, nút cất gánh, chạy bàn và bốc cảng). Chi tiết ở mục 4.3, 4.10, 4.11.
 
-**Lượt 6 — sức khoẻ và bệnh viện: đã xong** (ngất vì máu 0, viện phí có trần, rơi đồ nhặt lại được trong ngày, Bệnh viện Phước An với khám bệnh – quầy thuốc – phòng hồi sức, nút đấm và nút nhảy). Chi tiết ở mục 4.14–4.15. **Lượt 7 — công an phường, tạm giữ, lao động: đã xong** (mức bị để ý, công an đi tuần gọi lại, đồn Công an phường có buồng tạm giữ, nộp phạt / cãi / bỏ chạy / theo về phường, đập đá bớt giờ, ra tù mất uy tín). Chi tiết ở mục 4.16. **Lượt 8 — điện thoại: đã xong** (ba mẫu máy, pin, sổ thu chi, danh bạ, tin nhắn, radio – nhạc – WAP, sạc). Chi tiết ở mục 4.17. **Lượt 9 — quán net: đã xong** (quán 10 máy ở Khu Dân Cư, thuê máy theo phút, chơi game – lướt web – xem phim, mỏi mắt sau 2 tiếng, sạc nhờ, nước ngọt, chủ quán và hai đứa nhỏ ngồi máy). Chi tiết ở mục 4.18. Các lượt còn lại (xe cộ 2005–2010, NPC sống động hơn) nằm ở `PLAN.md`.
+**Lượt 6 — sức khoẻ và bệnh viện: đã xong** (ngất vì máu 0, viện phí có trần, rơi đồ nhặt lại được trong ngày, Bệnh viện Phước An với khám bệnh – quầy thuốc – phòng hồi sức, nút đấm và nút nhảy). Chi tiết ở mục 4.14–4.15. **Lượt 7 — công an phường, tạm giữ, lao động: đã xong** (mức bị để ý, công an đi tuần gọi lại, đồn Công an phường có buồng tạm giữ, nộp phạt / cãi / bỏ chạy / theo về phường, đập đá bớt giờ, ra tù mất uy tín). Chi tiết ở mục 4.16. **Lượt 8 — điện thoại: đã xong** (ba mẫu máy, pin, sổ thu chi, danh bạ, tin nhắn, radio – nhạc – WAP, sạc). Chi tiết ở mục 4.17. **Lượt 9 — quán net: đã xong** (quán 10 máy ở Khu Dân Cư, thuê máy theo phút, chơi game – lướt web – xem phim, mỏi mắt sau 2 tiếng, sạc nhờ, nước ngọt, chủ quán và hai đứa nhỏ ngồi máy). Chi tiết ở mục 4.18. **Lượt 10 — đường phố 2005–2010: đã xong** (ô tô đời cũ nhả khói và bấm còi, đua xe đạp chủ nhật ba vòng bằng cách bấm nhịp, xích đu công viên). Chi tiết ở mục 4.19. Lượt còn lại (NPC sống động hơn) nằm ở `PLAN.md`.
 
 Còn lại:
 

@@ -337,6 +337,22 @@ function park(b: Builder, R: RNG) {
   L.box(72, 0.12, -44, 0.12, 2.2, 0.12, 0xe2402f); L.box(75, 0.12, -44, 0.12, 2.2, 0.12, 0xe2402f); L.box(73.5, 2.3, -44, 3.2, 0.1, 0.12, 0xe2402f, undefined, 0, true);
   for (const x of [72.9, 74.1]) { D.box(x - 0.2, 0.7, -44, 0.02, 1.6, 0.02, 0x55585e); D.box(x + 0.2, 0.7, -44, 0.02, 1.6, 0.02, 0x55585e); D.box(x, 0.66, -44, 0.5, 0.04, 0.2, 0xf5c531, undefined, 0, true); }
   L.quad(66, 0.14, -41.5, 67.2, 0.14, -41.5, 67.2, 1.7, -44.5, 66, 1.7, -44.5, 0x2f8fd5); L.box(66.6, 0.12, -45.2, 1.3, 1.6, 1.3, 0xf5c531, 0xe2402f, 0.1); b.collide(65.9, -45.9, 67.3, -41.4);
+  // ── vạch xuất phát đua xe đạp, chủ nhật, trên đường phía trước cổng công viên ──
+  for (let i = 0; i < 8; i++) for (let k = 0; k < 2; k++) {
+    const zx = -33.1 + k * 0.55;
+    L.box(41 + (i % 2) * 0.55, 0.135, zx + (Math.floor(i / 2) % 2) * 0.55, 0.52, 0.02, 0.52, (i + k) % 2 ? 0xf7f3e6 : 0xd9463c, undefined, 0, true);
+  }
+  for (const cz2 of [-32.9, -31.6, -30.3]) { L.cyl(41, 0.12, cz2, 0.16, 0.5, 0xf08a2f, 8, 0.12); L.box(41, 0.34, cz2, 0.3, 0.08, 0.3, 0xf7f3e6, 0xe2402f, 0.02); }
+  // bảng đăng ký + hai chiếc xe đạp dựng bên vỉa hè
+  L.box(41, 0.12, -34.9, 0.1, 1.7, 0.1, 0x55585e); L.box(43.2, 0.12, -34.9, 0.1, 1.7, 0.1, 0x55585e);
+  L.box(42.1, 1.55, -34.9, 2.4, 0.62, 0.08, 0x1e7a3c, 0xf7f3e6, 0.03);
+  b.signAt(42.1, 1.55, -34.84, 2.3, 0.58, 'ĐUA XE ĐẠP', { bg: '#1e7a3c', fg: '#fff7c2', sub: 'Chủ nhật 15h · đăng ký tại đây', subFg: '#d9ffe6' }, 0, 1, 64);
+  b.signAt(42.1, 1.55, -34.96, 2.3, 0.58, 'ĐUA XE ĐẠP', { bg: '#1e7a3c', fg: '#fff7c2', sub: 'Chủ nhật 15h · ba vòng quanh công viên', subFg: '#d9ffe6' }, 0, -1, 60);
+  b.anchor('dua_xe', 41, 0.13, -34.1, 0);
+  b.anchor('v_dua', 42.6, 0.13, -34.2, -0.4);
+  // ── xích đu ở sân chơi ──
+  b.signAt(73.5, 1.28, -44.9, 1.5, 0.42, 'XÍCH ĐU', { bg: '#f5c531', fg: '#8a3410', border: '#e2402f' }, 0, 1, 48);
+  b.anchor('xich_du', 73.5, 0.13, -43.2, Math.PI);
   for (const p of [[44, -44], [52, -76], [74, -62], [64, -52], [50, -62], [68, -74], [56, -42]] as const) b.world.litter.push([p[0], p[1]]);
   b.bin(57, -38.5); b.bin(38.6, -57); b.bin(63, -66.5);
   for (const [x, z] of [[cx - 3, z1 - 3], [cx + 3, z0 + 12], [x0 + 12, cz + 3], [x1 - 12, cz - 3], [cx + 8.5, cz + 8.5], [cx - 8.5, cz - 8.5]] as const) b.lamp(x, z, 0.4, 0.4);

@@ -6,7 +6,7 @@ import { FIXED, REGULARS } from '../data/people';
 import type { WeatherId } from '../data/world';
 import { PLACES } from '../world/layout';
 
-export const SAVE_VERSION = 8;
+export const SAVE_VERSION = 9;
 /** Một lô nguyên liệu. fresh 0–100, q chất lượng 0–1, cost giá vốn mỗi đơn vị. */
 export interface Stack { id: string; n: number; fresh: number; q: number; cost: number; }
 /** Mẻ sơ chế sẵn ("cốt" món). */
@@ -117,6 +117,8 @@ export function migrate(raw: any): Game | null {
   if (g.phone && (typeof g.phone.id !== 'string' || typeof g.phone.battery !== 'number')) g.phone = null;
   // v8: quán net. Bản lưu cũ chưa có số phút ngồi máy trong ngày.
   if ((raw.v ?? 0) < 8) { g.flags.netDay = -1; g.flags.netMin = 0; }
+  // v9: đua xe đạp chủ nhật. Bản lưu cũ chưa có sổ ngày đua và số lần thắng.
+  if ((raw.v ?? 0) < 9) { g.flags.raceDay = -1; g.flags.raceWin = 0; }
   g.v = SAVE_VERSION;
   return g;
 }

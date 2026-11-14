@@ -12,6 +12,7 @@ import { StallSys } from './game/stall';
 import { Interact } from './game/interact';
 import { Acts } from './game/acts';
 import { Cook } from './cook/cook';
+import { RaceSystem } from './game/race';
 import { Sound } from './audio/audio';
 import { Traffic } from './game/traffic';
 import { Birds } from './world/birds';
@@ -39,7 +40,7 @@ async function boot() {
   await fontsReady(); await new Promise((r) => setTimeout(r, 30));
   const city = (ctx.city = buildCity()); ctx.world = city.world; scene.add(city.root);
   ctx.env = new Env(scene, city); ctx.env.thunder = () => setTimeout(() => ctx.sound.play('thunder'), 300 + Math.random() * 1200);
-  ctx.player = new Player(); ctx.npcs = new Npcs(); ctx.stall = new StallSys(); ctx.cook = new Cook(); ctx.acts = new Acts(); ctx.interact = new Interact();
+  ctx.player = new Player(); ctx.npcs = new Npcs(); ctx.stall = new StallSys(); ctx.cook = new Cook(); ctx.acts = new Acts(); ctx.interact = new Interact(); ctx.race = new RaceSystem();
   ctx.traffic = new Traffic(); ctx.birds = new Birds();
   ctx.g = newGame(1);
 
@@ -96,7 +97,7 @@ async function boot() {
     if (ctx.mode !== 'menu') {
       const paused = !!ui.modalName;
       if (!paused) advance(g, dt * ctx.speed, ctx.acts.act());
-      ctx.player.update(dt); ctx.npcs.update(dt); ctx.stall.update(dt); ctx.cook.update(dt); ctx.acts.update(dt); ctx.interact.update(dt);
+      ctx.player.update(dt); ctx.npcs.update(dt); ctx.stall.update(dt); ctx.cook.update(dt); ctx.race.update(dt); ctx.acts.update(dt); ctx.interact.update(dt);
       ctx.traffic.update(dt); ctx.birds.update(dt);
       saveT += dt; if ((dirty && saveT > 2) || saveT > 45) ctx.save();
       if (ctx.mode === 'play' && !ui.modalName) { if (bankrupt) { bankrupt = false; summary = false; ui.panel('bankrupt'); } else if (summary) { summary = false; ui.panel('summary'); } }
