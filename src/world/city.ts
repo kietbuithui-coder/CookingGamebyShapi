@@ -466,6 +466,8 @@ export interface City {
   world: World; root: THREE.Group; chunks: { id: string; cx: number; cz: number; detail?: THREE.Mesh; group: THREE.Group }[];
   glowMat: THREE.MeshLambertMaterial; unlitMat: THREE.MeshBasicMaterial; signMat: THREE.MeshLambertMaterial; water: THREE.Texture;
   festive: THREE.Mesh; roadblock: THREE.Mesh; night: { value: number };
+  /** biển hiệu đã dựng (dùng cho công cụ thử nghiệm rà biển bị lọt vào tường) */
+  signs: { x: number; z: number; y0: number; y1: number; w: number; nx: number; nz: number }[];
 }
 
 export function buildCity(): City {
@@ -530,7 +532,7 @@ export function buildCity(): City {
   const festive = mk(b.festive, MAT.litDouble, 'festive', root)!; festive.visible = false;
   const roadblock = mk(b.roadblock, MAT.lit, 'roadblock', root)!; roadblock.visible = false;
   atlas.texture.needsUpdate = true;
-  return { world, root, chunks, glowMat, unlitMat, signMat, water, festive, roadblock, night };
+  return { world, root, chunks, glowMat, unlitMat, signMat, water, festive, roadblock, night, signs: b.signs };
 }
 const BLOCK_DENSE = [[false, false, false], [true, true, true], [true, true, true]];
 export { CURB };

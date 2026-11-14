@@ -55,6 +55,8 @@ export class RaceSystem {
     ctx.ui.onCookBtn = (id, down) => { if (!down) return; if (id === 'quit') this.abort(); else if (id === 'dap') this.tap(); };
     ctx.ui.cookShow('ĐUA XE ĐẠP', ['vòng 1', 'vòng 2', 'vòng 3'], 0);
     ctx.ui.cookButtons([{ id: 'dap', t: 'ĐẠP!', hot: true }]);
+    // hàng xóm kéo ra đứng xem cho có không khí chợ
+    ctx.npcs.spectate(X0 + 6, Z_ME + 4, 4);
     this.paint();
     sfx('order');
   }
@@ -119,6 +121,7 @@ export class RaceSystem {
     g.flags.raceDay = g.day;
     if (res.win) g.flags.raceWin = (g.flags.raceWin || 0) + 1;
     this.stop();
+    ctx.npcs.cheer(res.win);
     const diem = `${mine.toFixed(1)}/${RC.BEATS}`;
     if (res.win) { sfx('yay'); toast(`Thắng rồi! Ba vòng, ${diem} điểm — nhận ${money(res.prize)}, cả xóm biết mặt.`, 'good', 'star', true); }
     else { sfx('boo'); toast(`Con Lan về trước. Điểm của bạn ${diem}. Nó cười: “Tập thêm đi nghen.”`, 'warn', 'heart', true); }
