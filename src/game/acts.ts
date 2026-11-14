@@ -17,6 +17,7 @@ import * as R from '../sim/rules';
 import * as P from '../sim/police';
 import * as PH from '../sim/phone';
 import * as N from '../sim/net';
+import * as RC from '../sim/race';
 import { bus, toast, sfx } from '../core/bus';
 import { rnd, RNG, clamp, money, dist2, round1k, round500, qty, hhmm } from '../core/util';
 import { NAV, groundY, districtAt, DISTRICT } from '../world/layout';
@@ -131,6 +132,7 @@ export class Acts {
         this.D(who(n), n, 'Tiệm Ba Tài, xe đẩy bếp núc gì cũng có! Hàng bày quanh đó, ưng món nào cứ chạm vô.', [...opts, bye]); break;
       }
       case 'net': this.netMenu(n); break;
+      case 'dua': this.raceMenu(n); break;
       case 'hospital': this.hospitalMenu(n); break;
       case 'police': this.policeMenu(n); break;
       case 'bank': this.bankMenu(n); break;
@@ -626,6 +628,31 @@ export class Acts {
     R.advance(g, 20, this.act()); PH.fullCharge(g); sfx('ok');
     toast(`Cắm sạc nhờ, ngồi chờ 20 phút. Pin đầy 100%.`, 'good', 'bolt', true);
   }
+  // ───────────────────────── Đua xe đạp chủ nhật & xích đu ─────────────────────────
+  /** Đăng ký đua ba vòng với nhóm con gái: chỉ chủ nhật, 15h–17h30, mỗi ngày một lượt. */
+  raceMenu(n?: Npc) {
+    const g = this.g, h = hourOf(g), opts: Opt[] = [], bye: Opt = { t: 'Thôi, đi nha.' };
+    if (!RC.isRaceDay(g)) opts.push({ t: 'Hôm nay không phải chủ nhật', sub: 'Tụi tao đua chủ nhật hằng tuần, 15 giờ', off: true });
+    else if (!RC.raceOpen(g, h)) opts.push({ t: 'Chưa tới giờ đăng ký', sub: 'Chủ nhật 15h–17h30, đua xong thì nghỉ', off: true });
+    else if (RC.racedToday(g)) opts.push({ t: 'Hôm nay đua rồi', sub: 'Tuần sau ghé lại nghen', off: true });
+    else opts.push({ t: 'Đăng ký đua ba vòng', sub: `5 phút · cần ${RC.ENTRY_ENERGY}% sức · thắng ${money(RC.PRIZE)}`, off: g.st.energy < RC.ENTRY_ENERGY, fn: () => this.startRace() });
+    const talk = (q: string, a: string) => () => this.D(n ? who(n) : 'Nhóm đua xe đạp', n, a, [bye]);
+    opts.push({ t: 'Đua ở đâu, mấy giờ?', fn: talk('o', '“Đua trên đường trước cổng công viên, ba vòng, chừng mười lăm phút. Chủ nhật ba giờ chiều tụi tao có mặt. Xe thì tao cho mượn, khỏi lo — mà đạp yếu là thua đó nghen.”') });
+    opts.push({ t: 'Thắng được gì?', fn: talk('w', '“Tụi tao góp tiền, đứa thắng lấy bốn chục. Mà vui là chính, chớ tiền đó bữa sau cũng vô quán nước hết. Mày mà thắng là cả xóm biết mặt.”') });
+    opts.push({ t: 'Sao tụi mày ham đua dữ vậy?', fn: talk('s', '“Rảnh thì đua chớ sao. Hồi nhỏ tụi tao đua vòng quanh hồ, giờ lớn rồi mà còn ham. Má tao nói con gái con lứa gì mà chạy xe như giặc. Mà kệ, vui.”') });
+    const said = (g.flags.raceWin ? `Con Lan nhớ mặt: “Đứa thắng ${g.flags.raceWin} lần rồi đó nghen.” ` : '')
+      + 'Con Lan dựng xe đạp bên vỉa hè, tay còn cầm miếng xoài. “Ủa, ghé hả? Chủ nhật này tụi tao đua ở đây, chơi không?”';
+    this.D(n ? who(n) : 'Nhóm đua xe đạp', n, said, [...opts, bye]);
+  }
+  /** Vào cuộc đua: mất năm phút đăng ký và một ít sức, phần còn lại do bộ điều khiển đua lo. */
+  startRace() {
+    const g = this.g;
+    if (g.st.energy < RC.ENTRY_ENERGY) { toast(`Cần ít nhất ${RC.ENTRY_ENERGY}% sức mới đua nổi.`, 'warn', 'bolt'); return; }
+    if (!RC.raceOpen(g, hourOf(g)) || RC.racedToday(g)) { toast('Giờ này không đua được.', 'info', 'clock'); return; }
+    R.advance(g, RC.ENTRY_MINS, this.act());
+    R.consume(g, { e: -RC.ENTRY_ENERGY });
+    ctx.race.start();
+  }
   // ───────────────────────── Quán net ─────────────────────────
   /** Bảng dịch vụ quán net: chơi máy tính giờ, sạc nhờ, nước ngọt. */
   netMenu(n?: Npc) {
@@ -721,6 +748,13 @@ export class Acts {
       this.D('Quán cà phê Bóng Đá', undefined, (g.st.mood < 35 ? 'Quán đông nghẹt, tiếng cười nói rôm rả. Ngồi đây một chút cũng thấy nhẹ người.' : 'Quán cà phê có tivi, ghế nhựa đỏ, nhạc mở nhỏ. Muốn ngồi chơi hay kiếm chút việc?') + cafeClosed, [...opts, { t: 'Thôi, đi nha.' }]);
       return;
     }
+    if (at === 'xich_du') {
+      this.D('Xích đu công viên', undefined,
+        (g.st.mood > 70 ? 'Xích đu kẽo kẹt, gió lùa qua tóc. Đang vui sẵn, đu một chút cho đã.' : 'Cái xích đu sơn đã bong, dây xích kêu kẽo kẹt. Ngồi lên đu vài chục cái là thấy nhẹ người.')
+        + (funOpenAt('xich_du', h).length ? '' : ` Sân chơi đóng cửa rồi (mở ${funHoursText('xich_du')}).`),
+        [...opts, { t: 'Thôi, đi nha.' }]);
+      return;
+    }
     if (at === 'v_temple') {
       opts.unshift({ t: 'Nhận cơm chay từ thiện', sub: h >= 11 && h < 13 ? 'Cơm chay nóng' : 'Mỗi ngày 11h–13h', off: !(h >= 11 && h < 13) || g.flags.temple === g.day, fn: () => this.temple() });
       this.D('Chùa Phước An', undefined, 'Sân chùa mát rượi, khói nhang thơm. Mấy bà cụ ngồi niệm Phật dưới gốc bồ đề.' + (funOpenAt('v_temple', h).length ? '' : ` Cổng chùa đóng rồi (mở ${funHoursText('v_temple')}).`), [...opts, { t: 'Thôi, đi nha.' }]);
@@ -738,6 +772,9 @@ export class Acts {
       cafe_sua: 'Cà phê sữa đá đậm đặc, đá tan chậm. Ngồi nhìn xe qua lại một hồi, lòng dịu hẳn.',
       cafe_karaoke: 'Hát một bài tủ. Cả quán vỗ tay, có người còn xin hát chung. Tinh thần lên hẳn!',
       temple_huong: 'Thắp ba nén nhang, khấn một câu cho buôn may bán đắt. Khói tan, lòng nhẹ.',
+      xich_du_10: 'Đu mười phút, gió tạt vô mặt. Đầu óc nhẹ đi một chút.',
+      xich_du_20: 'Đu cao, chân đạp lấy đà, cười một mình như thằng khùng.',
+      xich_du_40: 'Đu tới lúc chóng mặt mới chịu xuống. Tinh thần lên hẳn.',
     }[f.id] ?? 'Nghỉ một chút, thấy dễ chịu hơn.', 'good', 'star');
   }
   /** Nghỉ trên ghế đá (công viên, vỉa hè): miễn phí, chậm mà chắc. */

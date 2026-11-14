@@ -31,6 +31,7 @@ export const PLACE_HOURS: Record<string, [number, number]> = { equip: [7, 20], b
   hospital: [0, 24],
   // nhân vật phụ: mỗi người chỉ ở chỗ của mình trong một quãng giờ nhất định
   net: [6, 23], net_bi: [16, 22], net_nhung: [18, 22.5],
+  dua: [14.5, 18],
   tra_da: [5.5, 22], rap: [14.5, 23], sua_xe: [7, 19], hat_rong: [9, 21], danh_co: [6.5, 18.5], danh_giay: [6, 19.5] };
 export function placeOpen(id: string): boolean {
   const g = ctx.g, h = hourOf(g);

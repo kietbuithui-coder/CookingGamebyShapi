@@ -101,6 +101,7 @@ export const FIXED_ROLE: Record<string, string> = {
   hospital: 'Bác sĩ trực',
   police: 'Công an khu vực',
   net: 'Chủ quán net', net_bi: 'Khách chơi game', net_nhung: 'Khách lướt web',
+  dua: 'Nhóm đua xe đạp',
   tra_da: 'Cô bán trà đá', rap: 'Cậu nhóc nhảy đường phố', sua_xe: 'Thợ sửa xe vỉa hè',
   hat_rong: 'Người hát rong', danh_co: 'Ông già đánh cờ', danh_giay: 'Cậu bé đánh giày',
 };
@@ -128,6 +129,7 @@ export const REGULARS: RegularDef[] = [
 export interface SideTopic { q: string; a: string; }
 export interface SideDef { intro: string; again: string; topics: SideTopic[]; }
 export const SIDE: Record<string, SideDef> = {
+
   net_bi: {
     intro: 'Thằng Bi dán mắt vô màn hình, một tay bấm phím một tay cầm ly nước ngọt. “Khoan khoan, để tao qua màn này cái.”',
     again: '“Ủa mày cũng chơi hả? Ngồi kế bên đi, tao chỉ cho chỗ farm.”',
@@ -310,5 +312,6 @@ export const FIXED: Record<string, FixedNpcDef> = {
   net: { id: 'net', name: 'Chị Hạnh', face: 2, fem: true, shirt: 0x2f6fd5, pants: 0x2a2e3a, hair: 0x1e1a18, hat: 0, hairStyle: 2, fat: 1.08, h: 0.95 },
   net_bi: { id: 'net_bi', name: 'Thằng Bi', face: 0, fem: false, shirt: 0xdfe6ea, pants: 0x3a5a8a, hair: 0x1e1a18, hat: 2, hairStyle: 0, fat: 0.92, h: 0.86 },
   net_nhung: { id: 'net_nhung', name: 'Con Nhung', face: 4, fem: true, shirt: 0xe86f9a, pants: 0x2a2e3a, hair: 0x1e1a18, hat: 0, hairStyle: 2, fat: 0.92, h: 0.88 },
+  dua: { id: 'dua', name: 'Con Lan', face: 2, fem: true, shirt: 0xe86f9a, pants: 0x2a3a6a, hair: 0x1e1a18, hat: 0, hairStyle: 2, fat: 0.9, h: 0.9 },
   hobo: { id: 'hobo', name: 'Ông Bảy Lang Thang', face: 3, fem: false, shirt: 0x6a6258, pants: 0x4a4a42, hair: 0xbfbfbc, hat: 4, hairStyle: 1, fat: 0.9, h: 0.96 },
 };

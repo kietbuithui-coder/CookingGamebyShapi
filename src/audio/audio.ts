@@ -116,6 +116,9 @@ export class Sound {
       case 'thud': N(0.09, 'lowpass', 700, 0.5, 0, 0.7, 0.4); T(95, 0.13, 'triangle', 0.28, 0, 0.6); break;
       case 'whoosh': N(0.16, 'bandpass', 1200, 0.16, 0, 1.6, 1.4); break;
       case 'jump': T(300, 0.09, 'sine', 0.1, 0, 1.8); T(430, 0.06, 'sine', 0.07, 0.05, 2); break;
+      // ── xe đạp, xích đu ──
+      case 'pedal': N(0.06, 'bandpass', 2600, 0.09, 0, 1.3, 1.2); T(290, 0.04, 'square', 0.05, 0, 0.5); break;
+      case 'wind': N(0.8, 'bandpass', 420, 0.11, 0, 0.55, 1.5); N(0.5, 'highpass', 2200, 0.03, 0.1); break;
       case 'siren': for (let i = 0; i < 3; i++) { T(660, 0.16, 'sine', 0.05, i * 0.32, 1.1); T(880, 0.16, 'sine', 0.045, i * 0.32 + 0.16, 1.1); } break;
     }
   }
