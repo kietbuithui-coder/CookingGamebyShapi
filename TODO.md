@@ -26,7 +26,7 @@ Hiện `FUTURE_TIERS` trong `src/data/gear.ts` mới có tên; chưa có dữ li
 
 ## 3. Con người & nhân vật
 
-- **Tuỳ biến ngoại hình người chơi**: vẫn chỉ chọn nam/nữ lúc mở ván. Game đang ở góc nhìn thứ nhất nên muốn thấy mình phải làm **gương ở nhà** (hoặc góc nhìn thứ ba) rồi mới cho đổi mặt/tóc/áo/dáng — để lượt sau.
+- ✅ **Ngoại hình người chơi** (lượt 15): góc nhìn thứ ba (phím V) để thấy chính mình; tiệm cắt tóc Chú Bảy Kéo đổi 8 kiểu tóc + 4 màu nhuộm; tiệm thời trang Cô Ngọc đổi áo (6 màu), quần (5 màu), giày (3 đôi), kính (cận / đen). Ngoại hình nằm trong bản lưu v11. Còn thiếu: **gương ở nhà**, đổi dáng người – chiều cao, mũ/nón, và bộ đồ riêng theo nghề (tạp dề, áo bảo hộ).
 - ✅ **Khuôn mặt & kiểu tóc** (lượt 14): atlas **16 × 8** với 16 biểu cảm, **8 kiểu tóc** (thêm xoăn, đuôi ngựa, húi cua, tém ngang vai) chia theo giới tính và nhóm người. Còn thiếu: râu, kính, mũ đa dạng hơn.
 - **Lời thoại**: đã có câu chào, câu thô lỗ, câu mặc cả, câu vu vơ theo nhóm người; còn thiếu bộ thoại riêng cho từng nhân vật cố định và phản ứng khi người chơi giàu/nghèo/bị công an để ý.
 - **Nhân vật phụ ở tiệm nhỏ**: tạp hoá, MiniMart, tiệm cầm đồ mới có người bán cố định; chưa có khách lựa hàng nói chuyện, chưa có việc vặt riêng.

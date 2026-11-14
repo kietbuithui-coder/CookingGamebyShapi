@@ -19,7 +19,7 @@ Một vòng chơi trọn vẹn và thật sự chạy được: **tay trắng �
 
 Hai nguyên tắc giữ cho mã kiểm thử được:
 
-1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 172 bài kiểm thử chạy trong Node trong chưa tới 2 giây.
+1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 260 bài kiểm thử chạy trong Node trong chưa tới 2 giây.
 2. **Mọi ngẫu nhiên trong luật chơi nhận một `RNG` có hạt giống** làm tham số cuối, nên kết quả kiểm thử lặp lại được.
 
 Vòng lặp chính (`src/main.ts`): đọc điều khiển → `advance()` cho thời gian game trôi (0,75 phút game mỗi giây thật, một ngày = 32 phút thật; khi ngủ 48 phút game mỗi giây) → cập nhật người chơi, NPC, quầy, nấu ăn, môi trường → vẽ. `dt` bị chặn ở 50 ms nên máy rất chậm thì game chạy chậm lại chứ không nhảy cóc.
@@ -435,6 +435,37 @@ người chơi mệt → phồng má hờn. Sáng hôm sau `newDay` trừ lươn
 người phụ để mở hộp thoại: hỏi chuyện bán buôn (doanh thu + số khách hôm nay), dặn dò khách chờ (tinh thần +2),
 hoặc cho nghỉ việc. Đóng quầy thì họ về.
 
+### 4.24 Góc nhìn thứ ba, tiệm cắt tóc và tiệm thời trang
+
+**Dữ liệu ngoại hình.** `src/data/looks.ts` là dữ liệu thuần (không kéo three.js vào phần kiểm thử):
+`PlayerLookData` gồm `face, fem, hairStyle, hair, shirt, pants, skin, shoe, hat, hatCol, fat, h`. Ba bảng bán:
+`HAIR_STYLES` (8 kiểu, 12.000–45.000₫), `HAIR_COLORS` (4 màu, 10.000–30.000₫), `SHIRT_COLORS` (6 × 25.000–30.000₫),
+`PANTS_COLORS` (5 × 18.000–24.000₫), `SHOE_COLORS` (3 × 12.000–45.000₫), `GLASSES` (bỏ kính / gọng cận / kính đen,
+0–60.000₫). `defaultLook(fem)` là bộ đồ mở ván (nam nữ khác nhau), `cleanLook(raw, fem)` kẹp mọi trường đọc từ bản
+lưu — kiểu tóc 0–7, mũ 0–4, dáng 0,8–1,3, cao 0,85–1,12, màu cắt về 24 bit — nên bản lưu hỏng không làm vỡ hình.
+
+**Góc nhìn thứ ba** (`src/game/player.ts`, `Settings.cam3`, phím **V**, nút trong Cài đặt). `Player` giữ sẵn một
+`Rig` riêng (`rig`, `rigCarry`) — đúng mô hình dùng cho người đi đường — và `applyLook()` bơm `Game.look` vào đó;
+`syncCarry()` gắn bản sao gánh / xe đạp / bao / thùng lên lưng khi đang mang. Bật cam3 thì camera lùi **3,0 m** sau
+lưng (thêm 1,2 m khi đẩy xe đạp, 0,35 m khi gánh), dò lùi từng 0,2 m để không xuyên tường và nép tới 1,6 m; dưới
+2,0 m thì giấu nhân vật đi để camera không chui vào trong đầu. Vị trí và độ lùi làm mượt bằng `camP` / `camDist`;
+lần đầu bật (hoặc sau khi dịch chuyển) thì đặt thẳng chứ không trượt. Góc nhìn thứ nhất vẫn là mặc định, mọi thứ
+khác (bán hàng, nấu, chạm, cần ảo) không đổi.
+
+**Tiệm cắt tóc "Chú Bảy Kéo"** — trong chợ Xóm Chiều, lối đi giữa hai dãy sạp (x ≈ −45,5, z ≈ 8,2, mở 7–19h):
+ghế sắt có tựa lưng, tay vịn, gối đầu, tấm lót chân; gương khung gỗ treo biển **CẮT TÓC 15.000₫** và bóng đèn tròn;
+bàn đồ nghề (kéo, lược, tông đơ, chai nước hoa), thùng nước, khăn, áo choàng. Neo `v_hot_toc` cho thợ và
+`hot_toc_ghe` cho khách ngồi. Menu hai bảng: **8 kiểu tóc** (`barberStyles`) và **4 màu nhuộm** (`barberColors`).
+Ngồi vào ghế (`barberChair`) mở lại hai bảng đó, hoặc nghỉ 20 phút +6 tinh thần.
+
+**Tiệm thời trang "Cô Ngọc"** — cùng dãy chợ, phía nam (z ≈ −8,2, mở 7h30–20h): giá sắt treo 7 áo (móc, vai, tay,
+lai, cổ áo), bàn gấp đồ có chồng áo, khay kính, khay ba đôi giày, biển **QUẦN ÁO 25.000₫**. Menu bốn mục — áo,
+quần, giày, kính — dùng chung `shopColors()`; kính là `face` 5 (gọng cận) và 6 (kính đen), "bỏ kính" miễn phí.
+
+**Một đường mua chung** (`Acts.buyLook`): trừ tiền qua `spend(..., 'other')`, ghi thẳng vào `g.look`, gọi
+`ctx.player.applyLook()` để thấy ngay, cộng 4 tinh thần, mất 15 phút, tiếng xu và câu cảm ơn kèm biểu cảm vui của
+người bán. Bấm V khi chưa bật góc nhìn thứ ba thì toast nhắc — đó là cách duy nhất thấy bộ đồ mình vừa mua.
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
@@ -445,7 +476,7 @@ hoặc cho nghỉ việc. Đóng quầy thì họ về.
 
 ## 6. Lưu game
 
-`localStorage`, khoá `ganhhang.save.v1` (trạng thái) và `ganhhang.settings.v1` (cài đặt). Tự lưu sau việc quan trọng, mỗi 45 giây và khi rời trang. `SAVE_VERSION = 10`; `migrate()` nạp được bản lưu cũ thiếu trường và loại bỏ nguyên liệu không còn tồn tại. Bản lưu trước v4 chưa có sổ `met` nên được coi như đã quen hết người đứng quầy. Bản lưu trước v5 (chưa có bệnh viện) được nâng sức khoẻ lên 45 nếu đang ở 0 — nếu không, mở lên là ngất liền — và thêm sổ đồ thất lạc rỗng. Bản lưu trước v6 được cấp `wanted = 0` và `jailUntil = 0` (chưa ai biết mặt). Bản lưu trước v7 chưa có điện thoại (`phone = null`). Bản lưu trước v8 chưa có sổ phút ngồi quán net (`netDay = -1`, `netMin = 0`). Bản lưu trước v9 chưa có sổ ngày đua xe đạp (`raceDay = -1`, `raceWin = 0`). Bản lưu trước v10 chưa có người phụ việc (`help = null`); dữ liệu `help` hỏng cũng bị bỏ, và bản lưu cũ đã từng bán được hàng thì được ghi mốc `firstSale = 0`. Cài đặt có thêm `ui` (cỡ giao diện và cách xếp nút); `cleanLayout()` làm sạch dữ liệu đọc lên.
+`localStorage`, khoá `ganhhang.save.v1` (trạng thái) và `ganhhang.settings.v1` (cài đặt). Tự lưu sau việc quan trọng, mỗi 45 giây và khi rời trang. `SAVE_VERSION = 11`; `migrate()` nạp được bản lưu cũ thiếu trường và loại bỏ nguyên liệu không còn tồn tại. Bản lưu trước v4 chưa có sổ `met` nên được coi như đã quen hết người đứng quầy. Bản lưu trước v5 (chưa có bệnh viện) được nâng sức khoẻ lên 45 nếu đang ở 0 — nếu không, mở lên là ngất liền — và thêm sổ đồ thất lạc rỗng. Bản lưu trước v6 được cấp `wanted = 0` và `jailUntil = 0` (chưa ai biết mặt). Bản lưu trước v7 chưa có điện thoại (`phone = null`). Bản lưu trước v8 chưa có sổ phút ngồi quán net (`netDay = -1`, `netMin = 0`). Bản lưu trước v9 chưa có sổ ngày đua xe đạp (`raceDay = -1`, `raceWin = 0`). Bản lưu trước v10 chưa có người phụ việc (`help = null`); dữ liệu `help` hỏng cũng bị bỏ, và bản lưu cũ đã từng bán được hàng thì được ghi mốc `firstSale = 0`. Bản lưu trước v11 chưa có ngoại hình người chơi (`Game.look`): `migrate()` cấp `defaultLook()` theo giới tính của ván, còn `look` hỏng thì `cleanLook()` kẹp lại từng trường. Cài đặt có thêm `ui` (cỡ giao diện và cách xếp nút) và `cam3` (góc nhìn thứ ba); `cleanLayout()` làm sạch dữ liệu đọc lên.
 
 ## 7. Kiểm thử
 
@@ -461,6 +492,7 @@ hoặc cho nghỉ việc. Đóng quầy thì họ về.
 - `tests/life.test.ts` — 6 bài về sinh hoạt của phố: giờ cao điểm nhanh/chậm, chợ–quán–công viên đông đúng giờ, lịch của từng nhóm người (không nhóm nào trả về danh sách rỗng hay trùng chỗ), kiểu câu chào theo quen mặt – mưa – nóng lạnh – giờ, bộ câu chào/cổ vũ dùng được cho mọi nhóm người, và cao độ giọng nói theo giới – tầm vóc.
 - `tests/street.test.ts` — 12 bài về đường phố 2005–2010: bốn mẫu ô tô (tên, màu, cỡ, chậm hơn xe máy, xe tải chậm nhất), chín nhịp đua và vùng ăn điểm tất định theo hạt giống, chấm điểm giữa vùng/mép/trượt, sức đối thủ cố định, thắng–thua–hoà và tiền thưởng, chỉ chủ nhật và đúng khung giờ, mỗi ngày một lượt, bản lưu v8 lên v9, xích đu ba mức (lâu hơn thì nhiều tinh thần hơn, có trần, miễn phí, đêm đóng cửa).
 - `tests/net.test.ts` — quán net: giá theo phút và phụ thu phim, bốn gói giờ, hiệu ứng từng kiểu chơi, mỏi mắt sau 120 phút (tinh thần còn 45%, mất 2 sức khoẻ) và tính lại khi sang ngày, ngồi máy làm đói khát tụt sức, tinh thần không vượt 100, giờ mở cửa và số máy, sạc nhờ/nước ngọt, lô đất và ba nhân vật của quán, bản lưu v7 lên v8.
+- `tests/look.test.ts` — ngoại hình: 8 kiểu tóc liền id và giá tăng theo độ cầu kỳ, mọi bảng màu có giá dương và không trùng màu, giá trong tầm một buổi bán, `defaultLook` khác nhau nam/nữ, `cleanLook` chặn dữ liệu rác (kiểu tóc ngoài phạm vi, màu lẫn alpha, dáng người vô lý), bản lưu v10 lên v11, và hai người bán mới có đủ tên – nghề – lời thoại.
 - `tests/fun.test.ts` — bảng chỗ chơi (mã không trùng, có neo, có giờ hợp lệ, chơi lâu hơn thì lên tinh thần nhiều hơn) và thang mở công thức (cấp 1 mở đúng 1 món, cấp sau mở 2; luôn là món rẻ nhất còn thiếu; không vượt tay nghề; món sau không rẻ hơn món trước; cấp 10 mở đủ 60 món).
 
 Ba bài mới ở lượt 2: mỗi nhân vật phụ phải có tên, nhãn việc, câu mở đầu và ít nhất hai câu chuyện đủ dài; bảng `RUDE` chỉ được có tối đa 8 nhóm và phải có đủ lời cho cả năm kiểu (giấy, khạc nhổ, mắng, đuổi, khạc nhổ khi bị xin tiền); khách quen không được trùng id hay tên và phải có cả tên kiểu học sinh.

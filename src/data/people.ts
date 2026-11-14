@@ -97,6 +97,7 @@ export const FIXED_ROLE: Record<string, string> = {
   wholesale: 'Chủ vựa sỉ', pharmacy: 'Dược sĩ', equip: 'Chủ tiệm đồ nghề', eatery: 'Bà chủ quán cơm', scrap: 'Chủ vựa ve chai',
   pawn: 'Chủ tiệm cầm đồ', bank: 'Nhân viên ngân hàng', shark: 'Gã mặt sẹo', motel: 'Chủ nhà nghỉ', tro: 'Ông chủ trọ',
   hotel: 'Lễ tân khách sạn', dock: 'Cai bốc vác', hobo: 'Ông lão lang thang',
+  hot_toc: 'Thợ cắt tóc', thoi_trang: 'Cô bán quần áo',
   canho: 'Quản lý căn hộ', nharieng: 'Chủ nhà', cuahang: 'Chủ tạp hoá',
   hospital: 'Bác sĩ trực',
   police: 'Công an khu vực',
@@ -144,6 +145,22 @@ export const SIDE: Record<string, SideDef> = {
     topics: [
       { q: 'Chat với ai mà cười hoài vậy?', a: 'Bạn tao, học trên Sài Gòn. Hồi trước học chung, giờ ảnh lên đó ở với dì. Ngày nào cũng hẹn nhau tám giờ tối, trễ năm phút là ảnh giận. Mà chat có nhiêu đâu, ba ngàn một giờ, còn rẻ hơn cái điện thoại.' },
       { q: 'Sao không xài điện thoại?', a: 'Điện thoại gì con ơi, tao xài chung với má. Mà má giữ suốt ngày. Ra đây ngồi một tiếng, vừa chat vừa nghe nhạc, sướng hơn ở nhà.' },
+    ],
+  },
+  hot_toc: {
+    intro: 'Chú Bảy Kéo ngồi sau cái ghế sắt, tay lau cây kéo trong khi tấm gương nghiêng nghiêng trước mặt. “Ngồi đi con. Cắt gọn cho, mười lăm ngàn, ba chục phút là xong — mà muốn uốn xoăn với tém thì lâu hơn chút.”',
+    again: '“Lại đổi kiểu nữa hả? Ngồi xuống coi, tóc con mọc nhanh ghê.”',
+    topics: [
+      { q: 'Chú cắt tóc ở chợ lâu chưa?', a: 'Ba chục năm rồi con. Hồi đó chú cắt cho mấy chú bộ đội trong xóm, một đồng một cái đầu. Giờ thì mười lăm ngàn, mà khách quen vẫn đông. Cắt ở chợ vui hơn mở tiệm — người ta đi chợ, gánh hàng ngang, ghé vô cắt luôn.' },
+      { q: 'Sao chú không mở tiệm cho sang?', a: 'Sang để làm gì. Mở tiệm là phải đóng thuế, mua máy lạnh, rồi ngồi chờ khách. Ở đây chú có cái ghế, tấm gương, cây kéo là đủ. Cái nghề này, khách nhớ mặt mình chứ nhớ gì cái biển hiệu.' },
+    ],
+  },
+  thoi_trang: {
+    intro: 'Cô Ngọc đang phủi bụi mấy cái áo treo trên giá. “Lựa đi con, áo quần cô mới về, giá mềm thôi. Mặc đẹp mà bán hàng, khách nhìn cũng thấy tin.”',
+    again: '“Ghé nữa hả? Cô mới treo thêm mấy cái áo đỏ đó, coi thử đi.”',
+    topics: [
+      { q: 'Cô lấy hàng ở đâu vậy?', a: 'Cô đi mối ở An Đông, sáng sớm lên lấy một bao, về treo bán lẻ. Lời mỗi cái vài ngàn, mà bán được nhiều thì cũng đủ sống. Mấy đứa bán hàng rong trong xóm toàn lấy đồ của cô đó.' },
+      { q: 'Mặc đẹp có giúp bán được hàng không?', a: 'Chớ sao không. Người ta đi ngang, thấy mình lem luốc là họ ngại ghé. Mặc đồ sạch, tóc tai gọn gàng, họ tin mình hơn — đồ ăn cũng thấy ngon hơn. Cô nói thiệt đó, không phải khoe hàng đâu.' },
     ],
   },
   tra_da: {
@@ -303,6 +320,8 @@ export const HELPER_POOL: HelperDef[] = [
 
 export interface FixedNpcDef { id: string; name: string; face: number; fem: boolean; shirt: number; pants: number; hair: number; hat: number; hairStyle: number; fat: number; h: number; }
 export const FIXED: Record<string, FixedNpcDef> = {
+  hot_toc: { id: 'hot_toc', name: 'Chú Bảy Kéo', face: 7, fem: false, shirt: 0xf3f0e8, pants: 0x2a2e3a, hair: 0x3a2a22, hat: 0, hairStyle: 6, fat: 1.05, h: 1 },
+  thoi_trang: { id: 'thoi_trang', name: 'Cô Ngọc', face: 1, fem: true, shirt: 0xe86f9a, pants: 0x2a2e3a, hair: 0x2a2420, hat: 0, hairStyle: 5, fat: 0.98, h: 0.97 },
   m_rau: { id: 'm_rau', name: 'Cô Bảy', face: 4, fem: true, shirt: 0x8a5a9a, pants: 0x2a2e3a, hair: 0x3a2a22, hat: 1, hairStyle: 2, fat: 1.1, h: 0.95 },
   m_cu: { id: 'm_cu', name: 'Chú Mười', face: 7, fem: false, shirt: 0x5a7a4a, pants: 0x4a4a42, hair: 0x1e1a18, hat: 4, hairStyle: 0, fat: 1.15, h: 1 },
   m_thit: { id: 'm_thit', name: 'Anh Tư', face: 0, fem: false, shirt: 0xf3f0e8, pants: 0x2a2e3a, hair: 0x1e1a18, hat: 0, hairStyle: 0, fat: 1.2, h: 1.03 },

@@ -31,7 +31,7 @@ export function cleanLayout(raw: any): UiLayout {
   const side = (o: any) => { const out: Partial<Record<BtnKey, BtnPlace>> = {}; if (o && typeof o === 'object') for (const k of BTN_KEYS) { const p = o[k]; if (p && typeof p === 'object') out[k] = { x: num(p.x, -1, 1, 0), y: num(p.y, -1, 1, 0), s: num(p.s, BTN_SCALE[0], BTN_SCALE[1], 1) }; } return out; };
   return { scale: num(raw?.scale, UI_SCALE[0], UI_SCALE[1], 1), L: side(raw?.L), P: side(raw?.P) };
 }
-export interface Settings { quality: number; sfx: number; music: number; sens: number; fps: boolean; auto: boolean; ui: UiLayout; }
+export interface Settings { quality: number; sfx: number; music: number; sens: number; fps: boolean; auto: boolean; ui: UiLayout; /** Góc nhìn thứ ba (nhìn thấy chính mình). */ cam3: boolean; }
 /** pr: tỉ lệ điểm ảnh tối đa (so với điểm ảnh CSS) · blob: bóng tròn dưới chân NPC khi không có bóng đổ thật. */
 export const QUALITY = [
   { name: 'Rất thấp', pr: 0.7, shadow: 0, shadowSize: 0, npcs: 10, view: 100, lights: 0, blob: true, birds: 1, traffic: 1 },
@@ -57,7 +57,7 @@ export interface Ctx {
 export const ctx = { mode: 'menu', time: 0, speed: MIN_PER_SEC } as Ctx;
 export const SAVE_KEY = 'ganhhang.save.v1', SET_KEY = 'ganhhang.settings.v1';
 export function loadSettings(mobile: boolean): Settings {
-  const def: Settings = { quality: mobile ? Q_DEFAULT_MOBILE : Q_DEFAULT_DESKTOP, sfx: 0.8, music: 0.5, sens: 1, fps: true, auto: true, ui: cleanLayout(null) };
+  const def: Settings = { quality: mobile ? Q_DEFAULT_MOBILE : Q_DEFAULT_DESKTOP, sfx: 0.8, music: 0.5, sens: 1, fps: true, auto: true, ui: cleanLayout(null), cam3: false };
   try { const s = { ...def, ...JSON.parse(localStorage.getItem(SET_KEY) || '{}') }; s.quality = Math.max(0, Math.min(QUALITY.length - 1, s.quality | 0)); s.ui = cleanLayout(s.ui); return s; } catch { return def; }
 }
 export function saveSettings() { try { localStorage.setItem(SET_KEY, JSON.stringify(ctx.set)); } catch { /* bộ nhớ đầy hoặc bị chặn */ } }
