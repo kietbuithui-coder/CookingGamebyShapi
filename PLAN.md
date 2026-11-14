@@ -1,4 +1,6 @@
-# Kế hoạch 6 lượt tiếp theo
+# Kế hoạch các lượt
+
+> Những gì **chưa** làm thì gom ở `TODO.md`.
 
 Danh sách góp ý của người chơi khá dài (15 mục), trong đó nhiều mục đụng vào cùng một chỗ: sức khoẻ, vòng
 đời một ngày của nhân vật, giao diện, rồi mới tới cảnh vật. Làm gộp một lượt sẽ vừa rối vừa khó kiểm, nên

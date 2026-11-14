@@ -443,8 +443,9 @@ Người chơi đã thử bản đầu và gửi danh sách góp ý; việc đư
 Còn lại:
 
 1. **Đã xong 3 kiểu chỗ ở mới: căn hộ, nhà riêng, cửa hàng kiêm nhà ở** (8/8) — xem mục 4.13.
-2. **Đã xong sạp cố định (bậc 3)** — xem mục 4.12. Việc kế tiếp của nhánh này: quán ăn nhỏ, quán có chỗ ngồi, nhà hàng bình dân, chuỗi cửa hàng (mới có tên trong `FUTURE_TIERS`).
+2. **Đã xong sạp cố định (bậc 3)** — xem mục 4.12 — và **quán ăn nhỏ (bậc 4)** — xem mục 4.22. Việc kế tiếp của nhánh này: quán có chỗ ngồi, nhà hàng bình dân, chuỗi cửa hàng (mới có tên trong `FUTURE_TIERS`).
 3. Hệ thống băng nhóm, nhân viên phụ bán.
+4. Danh sách đầy đủ những gì còn lại nằm ở `TODO.md`.
 
 **Việc nền chưa làm**
 
