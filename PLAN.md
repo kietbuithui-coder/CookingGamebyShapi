@@ -178,3 +178,53 @@ tường/cột; người chơi tự bò ra khỏi vật cản nếu lỡ kẹt (
 **Kiểm thử:** `tests/life.test.ts` 5 bài + cập nhật `tests/net.test.ts` (thêm bài cân bằng mới) — tổng 226 bài /
 15 tệp.
 
+## Lượt 12 — Giao diện dễ đọc, giao hàng có người nhận ✅ đã xong
+
+Mười góp ý của người chơi, gần hết là chuyện nhìn – chạm – đọc trên điện thoại; chỉ hai mục đụng vào
+luật chơi (tiền) và cảnh vật.
+
+**Sửa xe không có xe vẫn trừ tiền.** Chỗ chú Hậu trước đây bán "bơm bánh xe" 2.000₫ cho cả người đi bộ,
+và "vá bánh, bơm hơi cho quầy" 8.000₫ cho cái quang gánh tre. Nay chỉ sửa cái đang có: có gánh tre thì
+*chằng lại đòn gánh, vá thúng* 4.000₫ (+15% độ bền); có xe đẩy (bậc 2) mới có *vá bánh, bơm hơi* 8.000₫
+và *bơm bánh* 2.000₫. Chưa có gì thì cả hai mục khoá, ví không hao một đồng.
+
+**Gợi ý cho biểu tượng.** Rê chuột (máy tính) hay chạm (điện thoại) vào sáu thanh trạng thái, đồng hồ,
+thời tiết, khu phố, tiền, uy tín, mức bị để ý, nợ và bốn nút góc phải đều hiện một câu giải thích ngay
+dưới biểu tượng — ví dụ *"Vui vẻ: tinh thần — thấp thì nấu kém, khách bỏ đi"*. Chạm thì hiện 2,6 giây
+rồi tự tắt, không che màn hình.
+
+**Chữ to hơn một chút.** Số tiền bay cạnh nhân vật (nhận tiền, bị trừ tiền) từ 1,15 lên 1,5 em; bong
+bóng thoại của người đi đường từ 1,05 lên 1,14 em; thông báo (kể cả câu từ chối) từ 0,92 lên 1,02 em.
+Vẫn nhỏ đủ để HUD không choán màn hình.
+
+**Cỡ giao diện.** Thanh trượt trong Cài đặt giờ chạy 70–160% (trước 80–140%), có nhãn phần trăm, có ô
+xem trước ngay dưới (một chip, một thanh trạng thái, một nút) nên kéo là thấy đổi liền dù bảng cài đặt
+đang che HUD. Mọi thứ trong `#ui` đều dùng đơn vị `em` nên chữ, nút, thanh trạng thái to nhỏ cùng nhau.
+
+**Sổ tay công thức gọn.** Từ bốn dòng chữ mỗi món xuống một dòng: tên + loại + nguyên liệu + giá bán.
+Chạm vào dòng mới mở chi tiết (số lượng từng thứ, dụng cụ, các bước sơ chế / nấu, số phần đã bán). Cả
+danh sách 60 món đọc lướt được trong một màn hình.
+
+**Chỗ giao hàng có người nhận.** Nhận đơn ở bảng tin xong là có người đứng chờ sẵn trước cửa nhà nhận,
+hai chồng kiện hàng các-tông bên chân, nói một câu ("Hàng tới rồi hả?", "Chờ nãy giờ đó!"). Người này
+không bị dọn theo khoảng cách như người đi đường. Cột sáng vàng có thêm vòng sáng dưới chân, còn chip
+chỉ đường đổi sang màu đỏ có biểu tượng thùng hàng và số mét — nhìn từ xa là biết đang đi giao.
+
+**Cô Hồng dời qua bên kia bức tường đỏ.** Từ vỉa hè ngay trước cổng chợ (chắn lối vào) sang bên trái
+tường, trong cổng chợ một quãng: vẫn thấy từ ngoài đường, không còn che cổng.
+
+**Gánh thay cho "Quang gánh".** Tên món trong túi đồ, câu hướng dẫn mở đầu và lời chỉ dẫn của chủ tiệm
+đều gọi ngắn là **GÁNH**.
+
+**Ô mục tiêu thu gọn được.** Thêm nút tròn `–` / `+` ở góc phải ô "MỤC TIÊU" (chạm cả ô vẫn thu gọn
+như trước). Thu gọn xong chỉ còn một viên nhỏ, không che tầm nhìn khi đang dựng quầy.
+
+**Bước tiếp theo của kế hoạch — âm thanh cảm xúc (phần đầu).** Người đi đường mở miệng là có tiếng nói
+thật: ba tiếng ngắn, cao độ tính theo giới và tầm vóc (`voicePitch` trong `src/sim/life.ts`: nữ ~236 Hz,
+nam ~152 Hz, trẻ con cao hơn, người lớn tuổi trầm hơn), ngữ điệu đổi theo biểu cảm — vui thì vút lên,
+đang gắt thì giọng sắc hơn. Chỉ phát khi người chơi ở trong 22 m, mỗi 0,4 giây một lần để không rối.
+
+**Kiểm thử:** thêm một bài cho `voicePitch` (nữ > nam, nhỏ con > tầm vóc lớn, luôn nằm trong 100–320 Hz)
+— tổng **227 bài / 15 tệp**. Probe `tools/probe/steps/ui.mjs` kiểm từng mục: mục sửa xe khoá đúng ba
+trường hợp (không có gì / có gánh / có xe đẩy), gợi ý hiện đúng câu, cỡ giao diện 80–150%, sổ tay còn
+một dòng mỗi món, nút thu gọn mục tiêu, người nhận hàng xuất hiện và biến mất sau khi giao.

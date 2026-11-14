@@ -105,10 +105,12 @@ export function buildSide(b: Builder) {
     b.anchor('v_sua_xe', x - 0.5, 0.13, z + 0.75, Math.PI);
   }
 
-  // ───────── 4. Cô Hồng hát rong — vỉa hè trước cổng chợ ─────────
+  // ───────── 4. Cô Hồng hát rong — trong cổng chợ, bên trái bức tường đỏ ─────────
+  // (Trước đây cô đứng ngay trên vỉa hè trước cổng, chắn tầm nhìn lối vào chợ.
+  //  Dời qua bên kia tường, vô trong cổng một quãng — vẫn thấy từ ngoài đường mà không chắn cửa.)
   b.chunk('b01', -59, 0).frame({ tx: 0, tz: 0, yaw: 0 });
   {
-    const x = -35.25, z = 6.6, d = D();
+    const x = -40.6, z = -5.6, d = D();
     plasticStool(d, x, 0.13, z, 0x2f8fd5, 0.42);
     d.box(x + 0.55, 0.13, z + 0.42, 0.34, 0.28, 0.26, 0x2a2c30, 0x3a3c42, 0.05, true);          // loa nhỏ
     d.cyl(x + 0.55, 0.41, z + 0.42, 0.09, 0.02, 0x55585e, 8);

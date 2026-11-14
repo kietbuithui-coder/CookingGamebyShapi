@@ -24,7 +24,7 @@ export const BTN_KEYS: BtnKey[] = ['act', 'run', 'menu', 'cook', 'hit', 'jump'];
 export interface BtnPlace { x: number; y: number; s: number; }
 /** scale: cỡ chữ và nút của cả giao diện · L / P: cách xếp riêng cho màn ngang và màn dọc. */
 export interface UiLayout { scale: number; L: Partial<Record<BtnKey, BtnPlace>>; P: Partial<Record<BtnKey, BtnPlace>>; }
-export const UI_SCALE: [number, number] = [0.8, 1.4], BTN_SCALE: [number, number] = [0.6, 1.8];
+export const UI_SCALE: [number, number] = [0.7, 1.6], BTN_SCALE: [number, number] = [0.6, 1.8];
 const num = (v: unknown, lo: number, hi: number, def: number) => (typeof v === 'number' && isFinite(v) ? Math.max(lo, Math.min(hi, v)) : def);
 /** Làm sạch phần giao diện đọc từ bộ nhớ (có thể thiếu, hỏng hoặc do bản cũ ghi). */
 export function cleanLayout(raw: any): UiLayout {

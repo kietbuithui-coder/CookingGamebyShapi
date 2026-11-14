@@ -1,6 +1,7 @@
 // SINH HOẠT CỦA PHỐ: mỗi nhóm người có lịch đi đứng riêng theo giờ, giờ cao điểm thì bước nhanh hơn,
 // và có câu chào khác nhau tuỳ quen mặt – thời tiết – giờ giấc. Toàn bộ là hàm thuần để kiểm thử được.
 import type { ArchId } from '../data/people';
+import { clamp } from '../core/util';
 
 /** Giờ cao điểm: đi làm buổi sáng, tan tầm buổi chiều. */
 export const RUSH: [number, number][] = [[6.4, 8.2], [16.3, 18.3]];
@@ -71,3 +72,12 @@ export function greetKind(c: GreetCtx): GreetKind {
 export const GREET_GAP = 55;
 /** Đứng cách bao xa thì chào (mét). */
 export const GREET_NEAR = 5.2;
+
+/**
+ * Cao độ giọng nói của một người (Hz) — dùng cho tiếng "nói" ngắn khi họ mở miệng.
+ * Nữ cao hơn nam; người nhỏ con / trẻ thì giọng cao hơn người tầm vóc lớn.
+ */
+export function voicePitch(fem: boolean, size = 1): number {
+  const base = fem ? 236 : 152;
+  return Math.round(base * clamp(1.07 - (size - 0.85) * 1.5, 0.84, 1.12));
+}

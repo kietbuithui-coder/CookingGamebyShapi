@@ -354,6 +354,31 @@ quay mặt vào đường đua, nói một câu kiểu *“Ủa đua hả? Coi c
 - Lỡ bị kẹt trong vật cản (khe hẹp, góc tường) thì người chơi tự bò ra chỗ trống gần nhất, không còn cảnh
   camera nằm gọn trong tường và màn hình chỉ còn một màu nâu.
 
+### 4.21 Giao diện dễ đọc trên điện thoại
+
+**Gợi ý cho biểu tượng.** Mọi thứ có thể chạm trên HUD đều mang thuộc tính `data-tip` — sáu thanh trạng
+thái, đồng hồ, thời tiết, khu phố, tiền, uy tín, mức bị để ý, nợ, và bốn nút túi đồ / sổ tay / bản đồ / cài
+đặt. Rê chuột thì hiện ngay, chạm (điện thoại) thì hiện 2,6 giây rồi tắt. Một ô `#ui .tip` duy nhất, định
+vị dưới biểu tượng, tự lật lên trên nếu sát mép dưới màn hình.
+
+**Cỡ giao diện.** `--ui-scale` đặt trên `#ui` (`applyLayout` trong `src/ui/layout.ts`), giới hạn 0,7–1,6
+(`UI_SCALE` trong `src/game/ctx.ts`). Vì mọi kích thước trong `#ui` là `em`, đổi một biến là chữ, nút,
+thanh trạng thái, chip, bong bóng thoại to nhỏ cùng lúc. Bảng cài đặt có ô xem trước ngay dưới thanh trượt
+để thấy kết quả trước khi đóng bảng.
+
+**Sổ tay công thức.** Mỗi món là một `<details>`: dòng đầu tên + loại + nguyên liệu + giá bán (~40 px),
+mở ra mới thấy số lượng, dụng cụ, các bước và số phần đã bán. 60 món vẫn đọc lướt được.
+
+**Chỗ giao hàng.** Điểm giao là cửa nhà người đặt; khi nhận đơn, một người nhận hàng được dựng ngay đó
+(`NpcSys.deliverHere`, kèm hai chồng kiện các-tông) và được miễn luật dọn theo khoảng cách 105 m. Giao
+xong (hoặc trả lại gói hàng) thì người này đi mất. Cột sáng chỉ đường thêm vòng sáng nhấp nháy dưới chân,
+chip chỉ đường đổi màu đỏ và thêm biểu tượng thùng hàng khi đang giao.
+
+**Âm thanh cảm xúc.** `Sound.voice(base, mood)` phát hai–ba tiếng ngắn mỗi khi một người đi đường mở miệng
+(qua `NpcSys.say`), cao độ lấy từ `voicePitch(fem, size)` — nữ ~236 Hz, nam ~152 Hz, trẻ con cao hơn, người
+tầm vóc lớn trầm hơn. Biểu cảm khó chịu (khi mắng, khi bị từ chối) thì dùng sóng răng cưa và ngữ điệu
+vút lên. Chỉ phát trong 22 m, tối đa 2,5 lần/giây.
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
@@ -377,7 +402,7 @@ quay mặt vào đường đua, nói một câu kiểu *“Ủa đua hả? Coi c
 - `tests/stall.test.ts` — sạp cố định: phí chỗ theo ngày, trừ tiền đầu ngày, thiếu tiền thì đóng quầy và treo nợ, mua sạp thì lên bậc 3 và chưa có chỗ.
 - `tests/housing.test.ts` — chỗ ở: mã không trùng, thuê theo tuần thì giá cao hơn phải chứa nhiều hơn và đòi uy tín cao hơn, ba chỗ mới có đúng lô đất, chưa đủ uy tín thì không cho thuê và không trừ tiền, mã lạ thì trả về `false`, nợ hai ngày thì mất chỗ và mất tủ lạnh, chỉ nhà thuê theo tuần mới cắm được tủ lạnh.
 - `tests/health.test.ts` — bệnh viện (lô đất riêng, ba món thuốc, chỉ thuốc cảm chữa cảm), mua thuốc/khám bệnh/nằm hồi sức kể cả khi không đủ tiền, ngất thì viện phí có trần và tiền không âm, rơi đúng 40% đồ và nhận lại được trong ngày, đồ nhặt lại không vượt sức chứa, bản lưu v4 đang ở máu 0.
-- `tests/life.test.ts` — 5 bài về sinh hoạt của phố: giờ cao điểm nhanh/chậm, chợ–quán–công viên đông đúng giờ, lịch của từng nhóm người (không nhóm nào trả về danh sách rỗng hay trùng chỗ), kiểu câu chào theo quen mặt – mưa – nóng lạnh – giờ, và bộ câu chào/cổ vũ dùng được cho mọi nhóm người.
+- `tests/life.test.ts` — 6 bài về sinh hoạt của phố: giờ cao điểm nhanh/chậm, chợ–quán–công viên đông đúng giờ, lịch của từng nhóm người (không nhóm nào trả về danh sách rỗng hay trùng chỗ), kiểu câu chào theo quen mặt – mưa – nóng lạnh – giờ, bộ câu chào/cổ vũ dùng được cho mọi nhóm người, và cao độ giọng nói theo giới – tầm vóc.
 - `tests/street.test.ts` — 12 bài về đường phố 2005–2010: bốn mẫu ô tô (tên, màu, cỡ, chậm hơn xe máy, xe tải chậm nhất), chín nhịp đua và vùng ăn điểm tất định theo hạt giống, chấm điểm giữa vùng/mép/trượt, sức đối thủ cố định, thắng–thua–hoà và tiền thưởng, chỉ chủ nhật và đúng khung giờ, mỗi ngày một lượt, bản lưu v8 lên v9, xích đu ba mức (lâu hơn thì nhiều tinh thần hơn, có trần, miễn phí, đêm đóng cửa).
 - `tests/net.test.ts` — quán net: giá theo phút và phụ thu phim, bốn gói giờ, hiệu ứng từng kiểu chơi, mỏi mắt sau 120 phút (tinh thần còn 45%, mất 2 sức khoẻ) và tính lại khi sang ngày, ngồi máy làm đói khát tụt sức, tinh thần không vượt 100, giờ mở cửa và số máy, sạc nhờ/nước ngọt, lô đất và ba nhân vật của quán, bản lưu v7 lên v8.
 - `tests/fun.test.ts` — bảng chỗ chơi (mã không trùng, có neo, có giờ hợp lệ, chơi lâu hơn thì lên tinh thần nhiều hơn) và thang mở công thức (cấp 1 mở đúng 1 món, cấp sau mở 2; luôn là món rẻ nhất còn thiếu; không vượt tay nghề; món sau không rẻ hơn món trước; cấp 10 mở đủ 60 món).
@@ -394,7 +419,7 @@ Người chơi đã thử bản đầu và gửi danh sách góp ý; việc đư
 
 **Lượt 3 — nội dung còn thiếu so với bản mô tả đầy đủ: đã xong phần chính** (60 món và thang mở công thức, chỗ chơi lên tinh thần, khách đứng mua, việc lúc rảnh của người đi đường, nút cất gánh, chạy bàn và bốc cảng). Chi tiết ở mục 4.3, 4.10, 4.11.
 
-**Lượt 6 — sức khoẻ và bệnh viện: đã xong** (ngất vì máu 0, viện phí có trần, rơi đồ nhặt lại được trong ngày, Bệnh viện Phước An với khám bệnh – quầy thuốc – phòng hồi sức, nút đấm và nút nhảy). Chi tiết ở mục 4.14–4.15. **Lượt 7 — công an phường, tạm giữ, lao động: đã xong** (mức bị để ý, công an đi tuần gọi lại, đồn Công an phường có buồng tạm giữ, nộp phạt / cãi / bỏ chạy / theo về phường, đập đá bớt giờ, ra tù mất uy tín). Chi tiết ở mục 4.16. **Lượt 8 — điện thoại: đã xong** (ba mẫu máy, pin, sổ thu chi, danh bạ, tin nhắn, radio – nhạc – WAP, sạc). Chi tiết ở mục 4.17. **Lượt 9 — quán net: đã xong** (quán 10 máy ở Khu Dân Cư, thuê máy theo phút, chơi game – lướt web – xem phim, mỏi mắt sau 2 tiếng, sạc nhờ, nước ngọt, chủ quán và hai đứa nhỏ ngồi máy). Chi tiết ở mục 4.18. **Lượt 10 — đường phố 2005–2010: đã xong** (ô tô đời cũ nhả khói và bấm còi, đua xe đạp chủ nhật ba vòng bằng cách bấm nhịp, xích đu công viên). Chi tiết ở mục 4.19. **Lượt 11 — phố sống động: đã xong** (lịch sinh hoạt theo giờ, giờ cao điểm, chào hỏi theo quen mặt – mưa nắng, dù khi mưa, đi cặp, ngồi ghế đá, hàng xóm xem đua; sửa bàn cờ Ông Tư, biển lọt tường, kẹt trong tường; quán net nhẹ bụng hơn). Chi tiết ở mục 4.20. Kế hoạch các lượt nằm ở `PLAN.md`.
+**Lượt 6 — sức khoẻ và bệnh viện: đã xong** (ngất vì máu 0, viện phí có trần, rơi đồ nhặt lại được trong ngày, Bệnh viện Phước An với khám bệnh – quầy thuốc – phòng hồi sức, nút đấm và nút nhảy). Chi tiết ở mục 4.14–4.15. **Lượt 7 — công an phường, tạm giữ, lao động: đã xong** (mức bị để ý, công an đi tuần gọi lại, đồn Công an phường có buồng tạm giữ, nộp phạt / cãi / bỏ chạy / theo về phường, đập đá bớt giờ, ra tù mất uy tín). Chi tiết ở mục 4.16. **Lượt 8 — điện thoại: đã xong** (ba mẫu máy, pin, sổ thu chi, danh bạ, tin nhắn, radio – nhạc – WAP, sạc). Chi tiết ở mục 4.17. **Lượt 9 — quán net: đã xong** (quán 10 máy ở Khu Dân Cư, thuê máy theo phút, chơi game – lướt web – xem phim, mỏi mắt sau 2 tiếng, sạc nhờ, nước ngọt, chủ quán và hai đứa nhỏ ngồi máy). Chi tiết ở mục 4.18. **Lượt 10 — đường phố 2005–2010: đã xong** (ô tô đời cũ nhả khói và bấm còi, đua xe đạp chủ nhật ba vòng bằng cách bấm nhịp, xích đu công viên). Chi tiết ở mục 4.19. **Lượt 11 — phố sống động: đã xong** (lịch sinh hoạt theo giờ, giờ cao điểm, chào hỏi theo quen mặt – mưa nắng, dù khi mưa, đi cặp, ngồi ghế đá, hàng xóm xem đua; sửa bàn cờ Ông Tư, biển lọt tường, kẹt trong tường; quán net nhẹ bụng hơn). Chi tiết ở mục 4.20. **Lượt 12 — giao diện dễ đọc: đã xong** (gợi ý cho biểu tượng HUD, chữ tiền/thoại to hơn một chút, cỡ giao diện 70–160% có ô xem trước, sổ tay công thức gọn một dòng mỗi món, chỗ giao hàng có người nhận đứng chờ với kiện hàng, cô Hồng dời qua bên kia tường cổng chợ, "Quang gánh" gọi ngắn là "Gánh", ô mục tiêu có nút thu gọn, tiếng nói cảm xúc cho người đi đường; sửa lỗi sửa xe không có xe vẫn trừ tiền). Chi tiết ở mục 4.21. Kế hoạch các lượt nằm ở `PLAN.md`.
 
 Còn lại:
 

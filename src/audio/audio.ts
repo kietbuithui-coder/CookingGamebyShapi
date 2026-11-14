@@ -39,7 +39,7 @@ const deg = (t: Track, ch: string, oct = 0) => { const d = parseInt(ch, 16), n =
 export class Sound {
   ac: AudioContext | null = null; private master!: GainNode; private sfxG!: GainNode; private musG!: GainNode; private ambG!: GainNode; private noise!: AudioBuffer; private comp!: DynamicsCompressorNode;
   private loops: Record<string, { g: GainNode; f?: BiquadFilterNode }> = {}; private track = ''; private want = 'sang'; private stepI = 0; private nextT = 0; private trackG: GainNode | null = null; private bar = 0;
-  sfxVol = 0.8; musVol = 0.5; ready = false; private lastStep = 0; private birdT = 3; private amb = { crowd: 0, rain: 0, wind: 0, night: 0, city: 0.5, indoor: 0 };
+  sfxVol = 0.8; musVol = 0.5; ready = false; private lastStep = 0; private lastVoice = 0; private birdT = 3; private amb = { crowd: 0, rain: 0, wind: 0, night: 0, city: 0.5, indoor: 0 };
   /** Gọi trong một thao tác chạm đầu tiên của người dùng (trình duyệt di động yêu cầu). */
   unlock() {
     if (this.ac) { if (this.ac.state !== 'running') void this.ac.resume(); return; }
@@ -70,6 +70,18 @@ export class Sound {
     const ac = this.ac!; const t = ac.currentTime + when, s = ac.createBufferSource(); s.buffer = this.noise; s.playbackRate.value = 0.7 + Math.random() * 0.6;
     const f = ac.createBiquadFilter(); f.type = type; f.frequency.setValueAtTime(freq, t); if (sweep) f.frequency.exponentialRampToValueAtTime(Math.max(40, freq * sweep), t + dur); f.Q.value = q;
     const g = ac.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0008, t + dur); s.connect(f); f.connect(g); g.connect(dest ?? this.sfxG); s.start(t, Math.random()); s.stop(t + dur + 0.02);
+  }
+  /**
+   * Tiếng "nói" ngắn (2–3 tiếng) thay cho giọng thật: cao độ theo người nói, ngữ điệu theo cảm xúc.
+   * Không phải lời thoại — chỉ để câu nói trên đầu nhân vật có hồn thay vì im ru.
+   */
+  voice(base: number, mood: 'talk' | 'happy' | 'angry' = 'talk') {
+    if (!this.ready || !this.ac) return;
+    const now = this.ac.currentTime; if (now - this.lastVoice < 0.4) return; this.lastVoice = now;
+    const up = mood === 'happy' ? 1.3 : mood === 'angry' ? 1.14 : 1.06, v = mood === 'angry' ? 0.1 : 0.072;
+    const type: Wave = mood === 'angry' ? 'sawtooth' : 'triangle';
+    for (let i = 0; i < 3; i++) this.tone(base * (i === 1 ? up : 1.02), 0.055 + (i % 2) * 0.02, type, v, i * 0.085, 0.9);
+    this.burst(0.03, 'bandpass', base * 4, 0.028);
   }
   step(kind: 'dry' | 'wet', vol = 1) { if (!this.ready) return; this.burst(0.07, 'bandpass', kind === 'wet' ? 1700 : 820 + Math.random() * 200, 0.13 * vol, 0, 1.2, 0.5); if (kind === 'wet') this.burst(0.12, 'highpass', 3000, 0.05 * vol, 0.02); }
   play(name: string) {

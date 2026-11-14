@@ -31,7 +31,7 @@ export interface Way { x: number; z: number; name: string; }
 const hhmmMin = (m: number) => (m % 60 === 0 ? `${m / 60} tiếng` : `${m} phút`);
 
 const QUESTS = [
-  'Kiếm tiền (xin người qua đường, nhặt ve chai bán cho vựa Tư Rác, vác hàng ở chợ, rửa chén quán Bà Tư) rồi mua QUANG GÁNH ở tiệm Đồ Nghề Ba Tài.',
+  'Kiếm tiền (xin người qua đường, nhặt ve chai bán cho vựa Tư Rác, vác hàng ở chợ, rửa chén quán Bà Tư) rồi mua GÁNH ở tiệm Đồ Nghề Ba Tài.',
   'Sắm dụng cụ cho món đầu tiên: DAO THỚT để làm bánh tráng trộn, hoặc BẾP THAN + VỈ để nướng khoai (thêm dao thớt là nướng được bắp mỡ hành).',
   'Ra Chợ Xóm Chiều mua nguyên liệu cho món bạn định bán (xem công thức trong Sổ tay).',
   'Gánh hàng tới một CHỖ BÁN HÀNG (vòng sáng màu vàng) rồi đặt xuống.',
@@ -62,15 +62,18 @@ const HOME_TIP: Record<string, string> = {
 export class Acts {
   cart: { shop: string; lines: CartLine[]; disc: number; haggled: boolean } | null = null;
   job: { kind: 'dock'; carrying: boolean } | { kind: 'dishes' } | { kind: 'delivery'; x: number; z: number; name: string; pay: number; until: number } | null = null;
-  way: Way | null = null; beacon: THREE.Mesh; litterMesh: THREE.Mesh | null = null; private glint: THREE.Mesh | null = null; litter: { i: number; x: number; z: number; id: string }[] = []; private litterKey = '';
+  way: Way | null = null; beacon: THREE.Mesh; ring: THREE.Mesh; /** người đứng chờ nhận hàng ở điểm giao */ private receiver: Npc | null = null; litterMesh: THREE.Mesh | null = null; private glint: THREE.Mesh | null = null; litter: { i: number; x: number; z: number; id: string }[] = []; private litterKey = '';
   private sleepUntil = 0; private sleepQ = 1; private sleepWhere = ''; private qT = 1; sheltered = false; working = 0;
   /** Hồi chiêu của đấm và nhảy (giây) + cờ chống ngất liên tục. */
   punchCd = 0; jumpCd = 0; private fainting = false;
   /** Nhịp kiểm tra công an + thời gian game đã trôi để nguôi mức bị để ý. */
   private copT = 2; private coolT = 0;
   constructor() {
-    this.beacon = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 30, 12, 1, true), new THREE.MeshBasicMaterial({ color: 0xffd24d, transparent: true, opacity: 0.28, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+    this.beacon = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 30, 12, 1, true), new THREE.MeshBasicMaterial({ color: 0xffd24d, transparent: true, opacity: 0.3, depthWrite: false, side: THREE.DoubleSide, fog: false }));
     this.beacon.visible = false; ctx.scene.add(this.beacon);
+    // vòng sáng dưới chân cột: đứng xa vẫn thấy chỗ cần tới
+    this.ring = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.35, 20).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffd24d, transparent: true, opacity: 0.5, depthWrite: false, fog: false }));
+    this.ring.visible = false; ctx.scene.add(this.ring);
     bus.on('day', () => { this.spawnLitter(); });
   }
   get g(): Game { return ctx.g; }
@@ -129,7 +132,7 @@ export class Acts {
         const rc = R.repairCost(g), opts: Opt[] = [];
         if (g.stall.tier > 0 && g.stall.cond < 96) opts.push({ t: `Sửa quầy — ${money(rc)}`, sub: `Tình trạng hiện tại ${Math.round(g.stall.cond)}%`, off: g.cash < rc, fn: () => { R.spend(g, rc, 'gear'); g.stall.cond = 100; sfx('fix'); toast('Quầy đã được sửa như mới.', 'good', 'tool'); } });
         opts.push({ t: 'Bán lại đồ nghề cũ', off: !Object.keys(g.gear).length, fn: () => this.sellGearMenu(n) });
-        opts.push({ t: 'Nên mua gì trước hả chú?', fn: () => this.D(who(n), n, 'Mới vô nghề thì cặp QUANG GÁNH trước đã. Rồi DAO THỚT là làm được bánh tráng trộn. Có BẾP THAN với VỈ thì nướng khoai, nướng bắp. Muốn pha trà đá thì thêm cái NỒI. Cứ đi quanh tiệm, thấy món nào thì chạm vô coi giá.', [bye]) });
+        opts.push({ t: 'Nên mua gì trước hả chú?', fn: () => this.D(who(n), n, 'Mới vô nghề thì cặp GÁNH trước đã. Rồi DAO THỚT là làm được bánh tráng trộn. Có BẾP THAN với VỈ thì nướng khoai, nướng bắp. Muốn pha trà đá thì thêm cái NỒI. Cứ đi quanh tiệm, thấy món nào thì chạm vô coi giá.', [bye]) });
         this.D(who(n), n, 'Tiệm Ba Tài, xe đẩy bếp núc gì cũng có! Hàng bày quanh đó, ưng món nào cứ chạm vô.', [...opts, bye]); break;
       }
       case 'net': this.netMenu(n); break;
@@ -292,12 +295,20 @@ export class Acts {
           fn: () => { R.advance(g, 12, this.act()); R.consume(g, { e: -6, m: 9 }); sfx('yay'); say('Ờ được đó! Chân trái chưa đều, mà có khiếu. Mai ghé tập chung.'); } },
         { t: 'Xin một câu để đời', fn: () => this.D(who(n), n, 'Bin gõ gõ ngón tay lên thùng loa: “Nhảy sai thì tập lại. Bán ế thì mai bán tiếp. Bỏ cuộc mới là dở.”', [{ t: 'Câu này được đó.' }]) },
       ];
-      case 'sua_xe': return [
-        { t: 'Vá bánh, bơm hơi cho quầy — 8.000₫', sub: g.stall.tier ? `Quầy đang ${Math.round(g.stall.cond)}%` : 'Chưa có quầy để sửa', off: !g.stall.tier || g.cash < 8000 || g.stall.cond > 99,
-          fn: () => { if (!R.spend(g, 8000, 'gear')) return; g.stall.cond = Math.min(100, g.stall.cond + 18); sfx('fix'); toast(`Quầy đã được vá lại: ${Math.round(g.stall.cond)}%.`, 'good', 'tool'); ctx.stall.refresh(); say('Xong rồi đó. Bánh căng, chạy êm ru.'); } },
-        { t: 'Bơm bánh xe cho con — 2.000₫', sub: 'Đi bộ lâu cũng mỏi chân', off: g.cash < 2000,
-          fn: () => { R.spend(g, 2000, 'other'); R.consume(g, { e: 3 }); sfx('fix'); say('Bơm căng rồi, đi đỡ mỏi hơn đó.'); } },
-      ];
+      case 'sua_xe': {
+        // Chỉ sửa cái mình đang có: gánh tre thì chằng lại đòn gánh, xe đẩy mới có bánh để vá, bơm.
+        // (Trước đây bán "bơm bánh xe cho con" cho cả người chưa có xe — bấm vô là mất 2.000₫ mà chẳng được gì.)
+        const coXe = g.stall.tier >= 2 && g.stall.where !== 'carried', cond = Math.round(g.stall.cond);
+        return [
+          coXe
+            ? { t: 'Vá bánh, bơm hơi cho xe đẩy — 8.000₫', sub: `Xe đang ${cond}%`, off: g.cash < 8000 || g.stall.cond > 99,
+              fn: () => { if (!R.spend(g, 8000, 'gear')) return; g.stall.cond = Math.min(100, g.stall.cond + 18); sfx('fix'); toast(`Xe đã được vá lại: ${Math.round(g.stall.cond)}%.`, 'good', 'tool'); ctx.stall.refresh(); say('Xong rồi đó. Bánh căng, chạy êm ru.'); } }
+            : { t: 'Chằng lại đòn gánh, vá thúng — 4.000₫', sub: g.stall.tier ? `Quang gánh đang ${cond}%` : 'Chưa có quang gánh để sửa', off: !g.stall.tier || g.cash < 4000 || g.stall.cond > 99,
+              fn: () => { if (!R.spend(g, 4000, 'gear')) return; g.stall.cond = Math.min(100, g.stall.cond + 15); sfx('fix'); toast(`Quang gánh đã chắc lại: ${Math.round(g.stall.cond)}%.`, 'good', 'tool'); ctx.stall.refresh(); say('Chằng dây lại rồi, gánh đỡ lỏng rồi đó.'); } },
+          { t: 'Bơm bánh xe đẩy cho căng — 2.000₫', sub: coXe ? `Xe đang ${cond}% · đẩy nhẹ hơn` : 'Chưa có xe đẩy nên không có bánh mà bơm', off: !coXe || g.cash < 2000 || g.stall.cond > 99,
+            fn: () => { if (!R.spend(g, 2000, 'gear')) return; g.stall.cond = Math.min(100, g.stall.cond + 5); sfx('fix'); ctx.stall.refresh(); say('Bơm căng rồi, đẩy nhẹ hơn hẳn.'); } },
+        ];
+      }
       case 'hat_rong': return [
         { t: 'Ngồi nghe một bài', sub: '10 phút, tinh thần dễ chịu', fn: () => { R.advance(g, 10, this.act()); R.consume(g, { m: 8 }); sfx('good'); say('Cảm ơn con nghe hết bài. Người ta dừng lại nghe là cô vui rồi.'); } },
         { t: 'Bỏ vào thùng 5.000₫', off: g.cash < 5000, fn: () => { if (!R.spend(g, 5000, 'other')) return; g.rep = clamp(g.rep + 0.3, 0, 100); R.consume(g, { m: 2 }); sfx('coin'); say('Trời, con khéo quá. Cô chúc con buôn may bán đắt.'); } },
@@ -405,13 +416,18 @@ export class Acts {
   }
   board() {
     const g = this.g, j = this.job, opts: Opt[] = [];
-    if (j?.kind === 'delivery') { this.D('Bảng việc làm', undefined, `Bạn đang nhận giao gói hàng tới ${j.name}. Hạn chót ${hhmm(j.until % 1440)}.`, [{ t: 'Trả lại gói hàng (bỏ việc)', fn: () => { this.job = null; ctx.player.setCarry(''); this.way = null; } }, { t: 'Đi giao tiếp.' }]); return; }
+    if (j?.kind === 'delivery') { this.D('Bảng việc làm', undefined, `Bạn đang nhận giao gói hàng tới ${j.name}. Hạn chót ${hhmm(j.until % 1440)}.`, [{ t: 'Trả lại gói hàng (bỏ việc)', fn: () => { this.dropReceiver(); this.job = null; ctx.player.setCarry(''); this.way = null; } }, { t: 'Đi giao tiếp.' }]); return; }
     if (g.wd.deliveries < 4 && !j) {
       const p = ctx.player, cands = NAV.filter((n) => n.tag === 'home' && n.door && dist2(n.x, n.z, p.x, p.z) > 50 * 50);
       for (let k = 0; k < 2 && cands.length; k++) {
         const n = cands[Math.floor(new RNG(g.seed + g.day * 31 + g.wd.deliveries * 7 + k).next() * cands.length)], d = Math.sqrt(dist2(n.x, n.z, p.x, p.z)), pay = round1k(9000 + d * 130), mins = Math.round(d / 3.0 / 60 * MIN_PER_SEC * 60 * 1.9 + 12);
         const name = `nhà số ${10 + (n.id * 7) % 180}, ${DISTRICT[n.district].name}`;
-        opts.push({ t: `Giao hàng tới ${name}`, sub: `${Math.round(d)} m · công ${money(pay)} · trong ${mins} phút`, fn: () => { this.job = { kind: 'delivery', x: n.door![0], z: n.door![1], name, pay, until: absMin(g) + mins }; ctx.player.setCarry('box'); this.way = { x: n.x, z: n.z, name: 'Giao hàng: ' + name }; g.wd.deliveries++; sfx('pick'); toast('Đã nhận gói hàng. Đi theo cột sáng vàng!', 'info', 'box'); } });
+        opts.push({ t: `Giao hàng tới ${name}`, sub: `${Math.round(d)} m · công ${money(pay)} · trong ${mins} phút`, fn: () => {
+          this.job = { kind: 'delivery', x: n.door![0], z: n.door![1], name, pay, until: absMin(g) + mins };
+          ctx.player.setCarry('box'); this.way = { x: n.door![0], z: n.door![1], name: 'Giao hàng: ' + name }; g.wd.deliveries++; sfx('pick');
+          this.receiver = ctx.npcs.deliverHere(n.door![0], n.door![1], 'Người nhận hàng');
+          toast(`Đã nhận gói hàng. Tới ${name} — người nhận đứng chờ sẵn ở cửa, theo cột sáng vàng!`, 'info', 'box', true);
+        } });
       }
     }
     const h = hourOf(g);
@@ -419,7 +435,14 @@ export class Acts {
   }
   private deliveryCheck() {
     const j = this.job, g = this.g; if (j?.kind !== 'delivery') return;
-    if (dist2(ctx.player.x, ctx.player.z, j.x, j.z) < 2.6 * 2.6) { const late = absMin(g) > j.until, pay = late ? round1k(j.pay * 0.5) : j.pay; R.earn(g, pay, 'side'); sfx('coin'); ctx.player.setCarry(''); this.job = null; this.way = null; toast(late ? `Giao trễ, chủ nhà chỉ trả ${money(pay)}.` : `Giao hàng đúng hẹn: nhận ${money(pay)}.`, late ? 'warn' : 'good', 'box'); g.rep = clamp(g.rep + (late ? 0 : 0.2), 0, 100); }
+    if (dist2(ctx.player.x, ctx.player.z, j.x, j.z) < 2.6 * 2.6) {
+      const late = absMin(g) > j.until, pay = late ? round1k(j.pay * 0.5) : j.pay;
+      const who = this.receiver;
+      R.earn(g, pay, 'side'); sfx('coin'); ctx.player.setCarry(''); this.job = null; this.way = null;
+      if (who) { ctx.npcs.say(who, late ? 'Trễ vậy hả chú em… thôi để đó tui trả nửa.' : 'Đủ rồi, cảm ơn chú em nha!', 3.2, 1); ctx.npcs.remove(who); this.receiver = null; }
+      toast(late ? `Giao trễ, chủ nhà chỉ trả ${money(pay)}.` : `Giao hàng đúng hẹn: nhận ${money(pay)}.`, late ? 'warn' : 'good', 'box', true);
+      g.rep = clamp(g.rep + (late ? 0 : 0.2), 0, 100);
+    }
   }
 
   // ───────────────────────── Ăn uống, tắm rửa, ngủ nghỉ ─────────────────────────
@@ -845,6 +868,8 @@ export class Acts {
     const p = ctx.player, g = this.g, sleeping = ctx.mode === 'sleep';
     return { moving: p.moving, running: p.running, sleeping, sheltered: this.sheltered, working: ctx.mode === 'cook' || p.carry === 'sack' || this.working > 0, load: clamp(R.bagWeight(g) / R.carryCap(g)) + (p.carry === 'ganh' ? 0.5 : p.carry === 'sack' ? 0.9 : 0), sleepQ: this.sleepQ };
   }
+  /** Dọn người đứng chờ nhận hàng (bỏ việc hoặc đổi đơn khác). */
+  dropReceiver() { if (this.receiver) { ctx.npcs.remove(this.receiver); this.receiver = null; } }
   setWay(anchor: string, name: string) { const a = ctx.world.anchors[anchor]; if (a) this.way = { x: a.x, z: a.z, name }; }
 
   update(dt: number) {
@@ -874,8 +899,14 @@ export class Acts {
     const j = this.job;
     if (j?.kind === 'dock') { const h = hourOf(g); if (h > 10.2 && !j.carrying) { this.job = null; this.way = null; toast('Hết giờ bốc hàng buổi sáng.', 'info'); } }
     this.deliveryCheck();
-    const w = this.way; this.beacon.visible = !!w && ctx.mode === 'play';
-    if (w) { this.beacon.position.set(w.x, 15, w.z); (this.beacon.material as THREE.MeshBasicMaterial).opacity = 0.2 + Math.sin(ctx.time * 3) * 0.08; if (!j && dist2(w.x, w.z, p.x, p.z) < 9) this.way = null; }
+    const w = this.way, on = !!w && ctx.mode === 'play';
+    this.beacon.visible = on; this.ring.visible = on;
+    if (w) {
+      this.beacon.position.set(w.x, 15, w.z); (this.beacon.material as THREE.MeshBasicMaterial).opacity = 0.22 + Math.sin(ctx.time * 3) * 0.08;
+      this.ring.position.set(w.x, 0.16, w.z); const k = 1 + Math.sin(ctx.time * 2.2) * 0.08; this.ring.scale.set(k, 1, k);
+      (this.ring.material as THREE.MeshBasicMaterial).opacity = 0.4 + Math.sin(ctx.time * 2.2) * 0.15;
+      if (!j && dist2(w.x, w.z, p.x, p.z) < 9) this.way = null;
+    }
     // mục tiêu hướng dẫn
     this.qT -= dt; if (this.qT <= 0) { this.qT = 1; const q = g.quest, s = g.stall, sellable = RECIPE_LIST.filter((r) => R.canSell(g, r));
       const ok = [R.has(g, 'ganh') || s.tier > 0, sellable.length > 0, sellable.some((r) => (R.hasPrep(r) ? R.prepPossible(g, r) > 0 || s.preps.some((x) => x.rid === r.id) : R.finishPossible(g, r) > 0)) || s.ready.length > 0, s.where === 'placed',

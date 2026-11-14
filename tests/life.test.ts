@@ -1,6 +1,6 @@
 // Lượt 11 — sinh hoạt của phố: giờ cao điểm, chỗ đông theo giờ, lịch của từng nhóm người, câu chào.
 import { describe, it, expect } from 'vitest';
-import { RUSH, rushMul, crowdWeight, routineFor, greetKind, GREET_GAP, GREET_NEAR } from '../src/sim/life';
+import { GREET_GAP, GREET_NEAR, RUSH, crowdWeight, greetKind, routineFor, rushMul, voicePitch } from '../src/sim/life';
 import { ARCH } from '../src/data/people';
 import { LINES } from '../src/data/people';
 
@@ -64,5 +64,17 @@ describe('sinh hoạt của phố', () => {
     expect(GREET_GAP).toBeGreaterThanOrEqual(30);
     expect(LINES.cheer.win.length).toBeGreaterThan(1);
     expect(LINES.cheer.lose.length).toBeGreaterThan(1);
+  });
+
+  it('cao độ giọng nói: nữ cao hơn nam, người nhỏ con cao hơn người tầm vóc lớn', () => {
+    expect(voicePitch(true, 1)).toBeGreaterThan(voicePitch(false, 1));
+    expect(voicePitch(false, 0.85)).toBeGreaterThan(voicePitch(false, 1.05));
+    for (const fem of [true, false]) for (const size of [0.8, 1, 1.1]) {
+      const p = voicePitch(fem, size);
+      expect(Number.isFinite(p)).toBe(true);
+      expect(p).toBeGreaterThan(100); expect(p).toBeLessThan(320);
+    }
+    // giọng không đổi theo thời gian: cùng người, cùng cao độ
+    expect(voicePitch(true, 0.9)).toBe(voicePitch(true, 0.9));
   });
 });

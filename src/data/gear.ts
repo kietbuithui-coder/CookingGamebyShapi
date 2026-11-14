@@ -2,7 +2,7 @@
 
 export interface GearDef { id: string; name: string; price: number; kind: 'stall' | 'tool' | 'stove' | 'store' | 'comfort' | 'carry' | 'home' | 'phone'; desc: string; tier?: number; wear?: number; }
 export const GEAR_LIST: GearDef[] = [
-  { id: 'ganh', name: 'Quang gánh', price: 120000, kind: 'stall', tier: 1, desc: 'Đôi quang gánh tre — gánh đi khắp phố.' },
+  { id: 'ganh', name: 'Gánh', price: 120000, kind: 'stall', tier: 1, desc: 'Đôi quang gánh tre — gánh đi khắp phố.' },
   { id: 'xeday', name: 'Xe đẩy', price: 2400000, kind: 'stall', tier: 2, desc: 'Xe đẩy inox có mái che, chứa nhiều, bán nhanh.' },
   { id: 'sap', name: 'Sạp cố định', price: 9000000, kind: 'stall', tier: 3, desc: 'Sạp lớn có bàn ghế, đặt lâu dài một chỗ.' },
   { id: 'daothot', name: 'Dao & thớt', price: 45000, kind: 'tool', desc: 'Để cắt thái mọi thứ.', wear: 0.25 },
