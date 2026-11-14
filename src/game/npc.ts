@@ -11,7 +11,7 @@ import { wx, mods, Persona, Order, say, shopOpen } from '../sim/rules';
 import { SHOPS } from '../data/shops';
 import { MB, MAT } from '../gfx/mb';
 import { toast } from '../core/bus';
-import { crowdWeight, routineFor, rushMul, greetKind, GREET_GAP, GREET_NEAR } from '../sim/life';
+import { GREET_GAP, GREET_NEAR, crowdWeight, greetKind, routineFor, rushMul, voicePitch } from '../sim/life';
 
 export type NState = 'walk' | 'stand' | 'sit' | 'toStall' | 'queue' | 'fixed' | 'follow' | 'actor' | 'chase' | 'cop' | 'gone';
 export interface Npc {
@@ -94,6 +94,26 @@ export class Npcs {
   remove(n: Npc) {
     const i = this.list.indexOf(n); if (i >= 0) this.list.splice(i, 1);
     n.state = 'gone'; this.group.remove(n.rig.root); n.rig.hold(null); this.pool.push(n.rig); ctx.ui.unsay(n);
+    if (n.data?.parcels) for (const m of n.data.parcels as THREE.Object3D[]) this.group.remove(m);
+  }
+  /** Người nhận hàng đứng chờ ở cửa với mấy kiện hàng — để chỗ giao hàng nhìn thấy từ xa. */
+  deliverHere(x: number, z: number, name: string): Npc | null {
+    const a = ARCH[this.R.pick(['vanphong', 'congnhan', 'phuhuynh', 'nguoigia'] as ArchId[])], fem = this.R.chance(a.fem), o = { x, z };
+    ctx.world.resolve(x + 0.9, z + 0.5, 0.34, o);
+    const n = this.make('ped', a, fem, lookFromArch(a, this.R, fem), o.x, o.z, this.R.range(-0.8, 0.8));
+    n.name = name; n.state = 'stand'; n.pose = 'idle'; n.timer = 3600; n.plan = []; n.greetT = this.R.range(60, 120);
+    // hai chồng kiện hàng cạnh chân
+    const m = new MB();
+    m.box(0, 0, 0, 0.52, 0.34, 0.42, 0xc9a56a, 0xd9b87a, 0.03, true); m.box(0.02, 0.34, 0, 0.44, 0.3, 0.36, 0xd9b87a, 0xe6c88a, 0.03, true);
+    m.box(0, 0.02, 0.12, 0.53, 0.03, 0.06, 0xa88a52); m.box(0.02, 0.36, 0.11, 0.45, 0.03, 0.06, 0xb99a62);
+    const geo = m.build(), parcels: THREE.Object3D[] = [];
+    for (const [dx, dz, ry] of [[0.75, 0.5, 0.3], [0.65, -0.35, -0.5]] as const) {
+      const mesh = new THREE.Mesh(geo, MAT.lit); mesh.position.set(n.x + dx, n.y, n.z + dz); mesh.rotation.y = ry; mesh.castShadow = false;
+      this.group.add(mesh); parcels.push(mesh);
+    }
+    n.data = { ...(n.data || {}), parcels };
+    this.say(n, this.R.pick(['Hàng tới rồi hả? Cảm ơn chú em.', 'Để đó giùm tôi nghen.', 'Chờ nãy giờ đó!', 'Của tôi đủ chưa ta?']), 3);
+    return n;
   }
   name(fem: boolean) { const R = this.R; return (fem ? R.pick(['Chị', 'Cô', 'Bé', 'Dì']) : R.pick(['Anh', 'Chú', 'Bác', 'Cậu'])) + ' ' + R.pick(fem ? NAMES.nu : NAMES.nam); }
   /** Chọn nhóm người phù hợp với khu phố và giờ giấc. */
@@ -169,7 +189,14 @@ export class Npcs {
     n.kind = 'actor'; n.actor = actor; n.name = name; if (fem !== undefined && fem !== n.fem) { n.fem = fem; n.rig.setLook(lookFromArch(a, this.R, fem)); }
     return n;
   }
-  say(n: Npc, text: string, secs = 3.2, expr = -1) { ctx.ui.say(n, text, secs); n.talkT = Math.min(secs, 2.2); if (expr >= 0) n.rig.setExpr(expr, secs); else n.rig.exprT = Math.min(secs, 2.2); }
+  say(n: Npc, text: string, secs = 3.2, expr = -1) {
+    ctx.ui.say(n, text, secs); n.talkT = Math.min(secs, 2.2); if (expr >= 0) n.rig.setExpr(expr, secs); else n.rig.exprT = Math.min(secs, 2.2);
+    // Nghe được tiếng nói khi ở gần: cao độ theo người nói, gắt hay vui theo biểu cảm.
+    if (ctx.mode === 'play' && dist2(n.x, n.z, ctx.player.x, ctx.player.z) < 22 * 22) {
+      const size = n.kind === 'kid' ? 0.84 : n.arch.id === 'hocsinh' ? 0.9 : n.arch.id === 'nguoigia' ? 1.03 : 1;
+      ctx.sound.voice(voicePitch(n.fem, size), expr >= 3 ? 'angry' : expr >= 1 ? 'happy' : 'talk');
+    }
+  }
   /** Khạc nhổ (khi xin tiền bị từ chối, hoặc gặp người khó ở). */
   spit(n: Npc) {
     if (ctx.mode !== 'play') return;
@@ -262,6 +289,8 @@ export class Npcs {
     for (let i = this.list.length - 1; i >= 0; i--) {
       const n = this.list[i], pd2 = dist2(n.x, n.z, p.x, p.z);
       if (n.state === 'fixed') { this.updFixed(n, pd2, dt); continue; }
+      // người đứng chờ nhận hàng thì giữ lại, dù người chơi đang ở tận đâu
+      if (n.data?.parcels) { if (!n.rig.root.visible) n.rig.root.visible = true; continue; }
       if (pd2 > 105 * 105 && n.state !== 'toStall' && n.state !== 'queue' && n.state !== 'actor') { if (n.kind !== 'kid') this.remove(n); else if (!n.parent || n.parent.state === 'gone') this.remove(n); continue; }
       n.vel = 0;
       if (n.state === 'follow') {

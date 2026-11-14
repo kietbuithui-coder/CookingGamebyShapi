@@ -61,10 +61,12 @@ Nên **xoay ngang** điện thoại và bấm **Toàn màn hình** ở màn hìn
 - **Nút cất gánh:** đang gánh trên vai thì một chạm là gói gánh vào ba lô (tay không, khung hình sạch), cần bán thì lấy ra; đang dựng quầy thì nút này dọn cả quầy vào ba lô.
 - **Khách đứng mua:** mỗi tiệm, sạp đang mở đều có một hai người đứng lựa hàng, trả giá, chờ tính tiền — phố bớt vắng mà vẫn đúng giờ mở cửa của từng tiệm.
 - **NPC có việc lúc rảnh:** đứng chờ thì thỉnh thoảng lấy báo ra đọc, cầm ly nước nhấp một ngụm, hoặc quay sang tám chuyện với người bên cạnh — rất thưa, mỗi lần 5–11 giây.
-- **Góc phố nhỏ:** quán trà đá vỉa hè, chỗ nhảy đường phố dưới gầm cầu (tường vẽ + loa), tiệm vá xe ngoài lề đường, cô hát rong trước cổng chợ, bàn cờ tướng trong công viên, cậu bé đánh giày — mỗi chỗ có một nhân vật phụ kể chuyện riêng, và việc dùng được ngay tại chỗ (mua ly trà đá, phụ bưng trà, chơi cờ, nghe hát, vá quầy…). Một số câu chuyện chỉ mở một lần, hỏi hết thì thôi.
+- **Góc phố nhỏ:** quán trà đá vỉa hè, chỗ nhảy đường phố dưới gầm cầu (tường vẽ + loa), tiệm vá xe ngoài lề đường, cô hát rong trong cổng chợ, bàn cờ tướng trong công viên, cậu bé đánh giày — mỗi chỗ có một nhân vật phụ kể chuyện riêng, và việc dùng được ngay tại chỗ (mua ly trà đá, phụ bưng trà, chơi cờ, nghe hát, vá quầy…). Một số câu chuyện chỉ mở một lần, hỏi hết thì thôi.
 - **Người xấc xược:** chỉ vài nhóm người (giang hồ, khó tính, học sinh, công nhân, tài xế, shipper, khách du lịch) thỉnh thoảng ném cục giấy về phía người chơi, khạc nhổ, mắng rồi đuổi theo một quãng. Tỉ lệ rất thưa, mỗi lần chỉ mất một hai điểm tinh thần.
+- **Giao diện đọc được trên điện thoại:** rê chuột hoặc chạm vào biểu tượng nào trên HUD cũng hiện một câu giải thích (độ no, nước, sức, máu, sạch sẽ, vui vẻ, tiền, uy tín, giờ, thời tiết, khu phố, từng nút); thanh trượt **cỡ giao diện 70–160%** trong Cài đặt phóng to cả chữ, nút và thanh trạng thái, có ô xem trước; số tiền nhận / bị trừ hiện to hơn; ô **mục tiêu** có nút thu gọn; sổ tay công thức mỗi món một dòng, chạm mới mở chi tiết.
+- **Đơn giao hàng có người nhận:** nhận đơn ở bảng tin là có người đứng chờ trước cửa nhà nhận, hai chồng kiện hàng bên chân, cột sáng vàng có thêm vòng sáng dưới đất và chip chỉ đường đổi sang màu đỏ.
 - **Chuỗi 11 mục tiêu hướng dẫn**, tự lưu trên máy (localStorage), 4 mức đồ hoạ + tự hạ khi máy giật, bộ đếm FPS, tự xếp vị trí và độ lớn các nút.
-- Âm thanh và nhạc nền tổng hợp bằng Web Audio (không dùng tệp âm thanh).
+- Âm thanh và nhạc nền tổng hợp bằng Web Audio (không dùng tệp âm thanh); người đi đường mở miệng là có tiếng nói ngắn, cao độ theo giới và tầm vóc, ngữ điệu đổi theo cảm xúc.
 
 ## Chưa có (so với bản mô tả đầy đủ)
 
@@ -76,7 +78,7 @@ Nên **xoay ngang** điện thoại và bấm **Toàn màn hình** ở màn hìn
 
 ## Đã kiểm thử gì
 
-**Tự động:** 226 bài kiểm thử (`npm test`) cho toàn bộ luật chơi — giá cả, giá vốn, khách mua hay bỏ đi, đánh giá, hư hỏng nguyên liệu, nợ, thời tiết, sự kiện, nâng cấp bản lưu, tính nhất quán dữ liệu, và một bài mô phỏng 45 ngày liên tục.
+**Tự động:** 227 bài kiểm thử (`npm test`) cho toàn bộ luật chơi — giá cả, giá vốn, khách mua hay bỏ đi, đánh giá, hư hỏng nguyên liệu, nợ, thời tiết, sự kiện, nâng cấp bản lưu, tính nhất quán dữ liệu, và một bài mô phỏng 45 ngày liên tục.
 
 **Chạy thật trong Chrome không giao diện** (màn 844×390 ngang và 390×844 dọc, giả lập cảm ứng), không có lỗi console: vào game, chơi mới/chơi tiếp, lưu và nạp lại; đi bằng cần ảo và bàn phím, vuốt nhìn, va chạm tường; xin tiền, nhặt ve chai, bới thùng rác, bán ve chai, vác hàng, rửa chén, giao hàng, cơm chay; mua đồ nghề; bốc hàng – mặc cả – trả tiền; gánh/đẩy quầy, đặt quầy; cả 5 mini-game nấu ăn bằng thao tác chạm; mở bán, khách gọi món, làm món, giao món, nhận tiền và tiền boa; cả 6 nhân vật sự kiện (thanh tra, bảo kê, khách quậy, khách quen xin chịu, nhà phê bình, khách VIP); hội thoại với cả 38 nhân vật và 11 khách quen, chuyện của 6 nhân vật phụ, người xấc xược (ném giấy, khạc nhổ, đuổi theo), xe cộ và chim trời; ngân hàng, vay nóng, ba mức chỗ ở mới (căn hộ, nhà riêng, tạp hoá kiêm nhà ở: cửa khoá, đòi uy tín, ngủ, đóng tiền tuần); ngất vì kiệt sức và tỉnh dậy ở Bệnh viện Phước An (khám bệnh, quầy thuốc, phòng hồi sức, nhận lại đồ thất lạc), đấm người đi đường (la lên, có người đuổi đánh, uy tín tụt) và nhảy tại chỗ; mua điện thoại ở tiệm Đồ Nghề, mở máy xem sổ thu chi – danh bạ – tin nhắn, gọi khách quen, nghe radio, sạc pin; thuê máy ở quán net (chơi game – lướt web – xem phim, sạc nhờ, nước ngọt, mỏi mắt sau 2 tiếng); xem ô tô đời cũ chạy trên đường, đua xe đạp chủ nhật với nhóm con gái (bấm ĐẠP đúng nhịp, thắng 40.000₫) và đu xích đu ở sân chơi; ngắm phố lúc tan tầm, người che dù khi mưa, hàng xóm đứng xem đua; bị công an gọi lại vì gây sự — nộp phạt, cãi, bỏ chạy hay theo về phường, vào buồng tạm giữ đập đá cho bớt giờ rồi được thả trước cửa đồn; ngủ và tổng kết ngày; phá sản và làm lại; ban ngày lẫn ban đêm với mưa nhỏ, mưa to, giông, ngập; nhãn người lạ / người quen; màn hình sắp xếp nút (kéo, đổi cỡ, lưu, tải lại, màn dọc).
 
@@ -106,7 +108,7 @@ Cần Node.js 20 trở lên.
 ```bash
 npm install
 npm run dev          # máy chủ phát triển, mở địa chỉ được in ra
-npm test             # 226 bài kiểm thử luật chơi
+npm test             # 227 bài kiểm thử luật chơi
 npm run build        # kiểm tra kiểu + đóng gói ra dist/
 npm run build:pages  # kiểm tra kiểu + kiểm thử + đóng gói ra docs/ (GitHub Pages)
 ```
