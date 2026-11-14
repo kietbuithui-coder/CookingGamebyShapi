@@ -257,10 +257,12 @@ export class Acts {
     if (R.has(g, id)) { toast(`Bạn đã có ${d.name.toLowerCase()} rồi.`, 'info'); return; }
     const need = d.kind === 'stall' && d.tier! > 1 && !R.has(g, TIERS[d.tier! - 1].id) ? `Nên có ${TIERS[d.tier! - 1].name.toLowerCase()} trước.` : '';
     const block = id === 'tulanh' && !['tro', 'canho', 'nharieng', 'cuahang'].includes(g.housing) ? 'Phải thuê chỗ ở có khoá (trọ, căn hộ, nhà) mới đặt được tủ lạnh.' : '';
-    this.D(n ? who(n) : 'Chủ tiệm đồ nghề', n, `${d.name} — ${money(d.price)}. ${d.desc} ${need}${block}` + (id === 'sap' ? ' Mua rồi phải chọn chỗ đặt ngoài phố (chỗ nào cũng được), đặt xuống là cố định, mỗi ngày đóng phí chỗ. Bù lại chứa được 90 kg, bày 10 món, 7 khách xếp hàng, mưa gió không ai dỡ hàng.' : ''), [{ t: `Mua — ${money(d.price)}`, off: g.cash < d.price || !!block, sub: g.cash < d.price ? `Còn thiếu ${money(d.price - g.cash)}` : undefined, fn: () => {
+    this.D(n ? who(n) : 'Chủ tiệm đồ nghề', n, `${d.name} — ${money(d.price)}. ${d.desc} ${need}${block}` + (id === 'sap' ? ' Mua rồi phải chọn chỗ đặt ngoài phố (chỗ nào cũng được), đặt xuống là cố định, mỗi ngày đóng phí chỗ. Bù lại chứa được 90 kg, bày 10 món, 7 khách xếp hàng, mưa gió không ai dỡ hàng.'
+        : id === 'quanan' ? ' Quán phải dựng ở MẶT BẰNG có sân (điểm vàng ghi “Mặt bằng”, hai chỗ: Phố Văn Phòng và Khu Căn Hộ), mỗi ngày đóng phí mặt bằng. Đổi lại chứa 150 kg, bày 16 món, 9 khách một lúc và bốn chỗ ngồi ăn tại chỗ.' : ''), [{ t: `Mua — ${money(d.price)}`, off: g.cash < d.price || !!block, sub: g.cash < d.price ? `Còn thiếu ${money(d.price - g.cash)}` : undefined, fn: () => {
       if (R.buyGear(g, id) === 'ok') {
         sfx('buy'); ctx.stall.refresh();
         if (id === 'sap') { toast('Sạp đã mua! Giờ tìm một CHỖ BÁN (vòng sáng vàng) ngoài phố, chạm vào để dựng sạp — đặt rồi thì không dời được nữa.', 'good', 'shop', true); if (g.stall.tier >= 3) this.way = null; }
+        else if (id === 'quanan') { toast('Quán ăn nhỏ đã mua! Tìm MẶT BẰNG (điểm vàng có chữ “Mặt bằng”: Phố Văn Phòng hoặc Khu Căn Hộ), chạm vào để dựng quán — mỗi ngày đóng phí mặt bằng.', 'good', 'shop', true); }
         else if (d.kind === 'phone') { toast(`Đã mua ${d.name.toLowerCase()}, cắm sim vô liền. Bấm nút điện thoại trên màn hình (hoặc phím P) để mở.`, 'good', 'tool', true); toast('Máy có sổ thu chi, danh bạ, tin nhắn. Pin tụt dần — ngủ ở nhà có điện thì đầy pin, hoặc sạc nhờ ở tạp hoá 5.000₫.', 'info', 'bolt'); }
         else toast(`Đã mua ${d.name.toLowerCase()}!` + (d.kind === 'stall' ? ' Bạn đang mang quầy theo người.' : ''), 'good', 'tool', true);
       }

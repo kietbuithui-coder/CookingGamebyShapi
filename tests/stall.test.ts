@@ -68,4 +68,46 @@ describe('sạp cố định', () => {
     expect(t3.queue).toBeGreaterThan(t2.queue);
     expect(t3.trays).toBeGreaterThan(t2.trays);
   });
+
+  it('bậc 4 (quán ăn nhỏ) rộng hơn sạp, giá đắt hơn và đòi mặt bằng có sân', () => {
+    const t1 = TIERS[3], t4 = TIERS[4];
+    expect(t4.id).toBe('quanan');
+    for (const k of ['cap', 'coldCap', 'queue', 'menu', 'trays', 'visible'] as const) expect(t4[k]).toBeGreaterThan(t1[k]);
+    expect(t4.queue).toBeGreaterThanOrEqual(9);
+    // hai mặt bằng cho quán ăn nhỏ, phí cao hơn hẳn chỗ bán thường, và không chỗ nào đòi quá bậc 4
+    const big = SPOTS.filter((s) => s.minTier >= 4);
+    expect(big.length).toBe(2);
+    for (const s of big) expect(s.fee).toBeGreaterThanOrEqual(100000);
+    for (const s of SPOTS) expect(s.minTier).toBeLessThanOrEqual(4);
+  });
+  it('đặt quán ăn nhỏ ở mặt bằng thì tiền thuê ngày đúng bằng phí mặt bằng', () => {
+    const g = placedT3();
+    g.gear.quanan = 100; g.stall = { ...g.stall, tier: 4, spot: 'matbang_dc', where: 'placed' };
+    const sp = SPOTS.find((s) => s.id === 'matbang_dc')!;
+    expect(stallRent(g)).toBe(sp.fee);
+    // đóng tiền thì trừ ví, hết tiền thì treo cờ nợ và quầy không mở được
+    g.cash = sp.fee + 5000;
+    expect(payStallRent(g)).toBe(true);
+    expect(g.cash).toBe(5000);
+    g.cash = 0; g.stall = { ...g.stall, paidDay: g.day - 1 };
+    expect(payStallRent(g)).toBe(false);
+    expect(g.flags.sapNo).toBe(1);
+  });
+  it('mua quán ăn nhỏ thì quầy về trạng thái xách tay, phải chọn mặt bằng mới dựng lại', () => {
+    const g = fresh(); g.cash = 30000000; g.gear.sap = 100;
+    g.stall = { ...g.stall, tier: 3, where: 'placed', spot: 'cho', x: 0, z: 0, yaw: 0, open: true };
+    expect(buyGear(g, 'quanan')).toBe('ok');
+    expect(has(g, 'quanan')).toBe(true);
+    expect(g.stall.tier).toBe(4);
+    expect(g.stall.where).toBe('carried');
+    expect(g.stall.spot).toBe(null);
+    expect(g.stall.open).toBe(false);
+  });
+  it('mua quán ăn nhỏ khi không đủ tiền thì không đổi bậc quầy', () => {
+    const g = fresh(); g.cash = 100000; g.gear.sap = 100;
+    g.stall = { ...g.stall, tier: 3, where: 'placed', spot: 'cho' };
+    expect(buyGear(g, 'quanan')).toBe('cash');
+    expect(g.stall.tier).toBe(3);
+    expect(g.cash).toBe(100000);
+  });
 });

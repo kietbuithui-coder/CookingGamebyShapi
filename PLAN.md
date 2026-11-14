@@ -228,3 +228,40 @@ nam ~152 Hz, trẻ con cao hơn, người lớn tuổi trầm hơn), ngữ đi�
 — tổng **227 bài / 15 tệp**. Probe `tools/probe/steps/ui.mjs` kiểm từng mục: mục sửa xe khoá đúng ba
 trường hợp (không có gì / có gánh / có xe đẩy), gợi ý hiện đúng câu, cỡ giao diện 80–150%, sổ tay còn
 một dòng mỗi món, nút thu gọn mục tiêu, người nhận hàng xuất hiện và biến mất sau khi giao.
+## Lượt 13 — Bậc 4: quán ăn nhỏ có chỗ ngồi ✅ đã xong
+
+Bốn bậc kinh doanh còn lại trong kế hoạch (quán ăn nhỏ · quán có chỗ ngồi · nhà hàng bình dân · chuỗi cửa
+hàng) làm mỗi lượt một bậc. Lượt này xong **quán ăn nhỏ**.
+
+**Mua và dựng.** Tiệm Đồ Nghề Ba Tài bán thêm **Quán ăn nhỏ — 24.000.000₫** (phải có sạp cố định trước,
+như luật cũ của các bậc). Mua xong quầy về trạng thái xách tay: phải tìm **mặt bằng có sân** mới dựng được.
+Hai mặt bằng mới nằm trong dãy nhà (lô trống 9 m và 8 m, chen giữa ngân hàng – chỗ bán Phố Văn Phòng và
+quán cà phê – chung cư Khu Căn Hộ):
+
+| Mặt bằng | Phí/ngày | Khách |
+|---|---|---|
+| Mặt bằng Phố Văn Phòng | 160.000₫ | dân văn phòng, hệ số khách 1,45 |
+| Mặt bằng Khu Căn Hộ | 120.000₫ | khách ăn sáng – trưa, hệ số 1,3 |
+
+Đứng ở vỉa hè hẹp (Cổng Chợ, Hẻm Công Nhân…) mà dựng quán thì bị chặn kèm lời nhắc tìm mặt bằng — bậc 4
+không chen vô chỗ 1,5 m.
+
+**Quán trông thế nào.** Quầy gỗ dài 4,4 m, mặt bàn đá, mái tôn xanh 5,2 m có băng-rôn vàng, hai cột chống,
+bảng hiệu chạy ngang ghi món. Phía trước là **hai bàn nhựa, bốn ghế** (xanh–đỏ) đặt trong sân.
+
+**Khách ngồi ăn tại chỗ.** Hàng đợi của bậc 4 có 9 chỗ nhưng **bốn chỗ đầu là ghế**: khách được xếp vô bàn
+trước (`freeSlot` ưu tiên ghế), đi tới là **ngồi xuống** (tư thế `sit`), kiên nhẫn ×1,5 (so với ×1,3 khi có
+bàn ghế nhựa thường), và không bị trừ kiên nhẫn vì mưa khi đã có mái. Hết ghế mới đứng xếp hàng phía trước,
+lùi ra sau bàn ghế 3,6 m.
+
+**Sức chứa.** 150 kg (sạp 90), giữ lạnh 55 kg, bày **16 món**, 9 khách một lúc, 32 khay. Mái che luôn có
+sẵn nên mưa không ai dỡ hàng; phí mặt bằng tự trừ đầu ngày như sạp.
+
+**Kiểm thử:** `tests/stall.test.ts` thêm 4 bài — bậc 4 rộng hơn sạp ở cả 6 chỉ số và đòi đúng hai mặt bằng
+(phí ≥ 100.000₫, không chỗ nào đòi quá bậc 4); tiền thuê ngày đúng bằng phí mặt bằng, thiếu tiền thì treo
+cờ nợ; mua quán thì quầy về xách tay, phải dựng lại; thiếu tiền thì không đổi bậc. Tổng **231 bài / 15 tệp**.
+Probe `tools/probe/steps/quan.mjs`: mua sạp → mua quán → bị chặn ở Cổng Chợ → dựng ở Khu Căn Hộ → 4 khách
+vô ngồi (3 chỗ `sit`) → giao món có tiền → `stallRent` khớp phí mặt bằng; 144 lô, không sinh lô hẹp mới.
+
+**Còn lại của nhánh kinh doanh:** quán có chỗ ngồi (bậc 5), nhà hàng bình dân (bậc 6), chuỗi cửa hàng (bậc 7).
+Hướng làm: bậc 5 thêm người phụ bán và thực đơn theo buổi, bậc 6 có nhân viên + đặt bàn, bậc 7 mở điểm thứ hai.

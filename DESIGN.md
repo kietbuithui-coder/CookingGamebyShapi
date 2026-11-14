@@ -379,6 +379,25 @@ chip chỉ đường đổi màu đỏ và thêm biểu tượng thùng hàng kh
 tầm vóc lớn trầm hơn. Biểu cảm khó chịu (khi mắng, khi bị từ chối) thì dùng sóng răng cưa và ngữ điệu
 vút lên. Chỉ phát trong 22 m, tối đa 2,5 lần/giây.
 
+### 4.22 Bậc 4 — quán ăn nhỏ
+
+`TIERS[4]` (`src/data/gear.ts`): chứa 150 kg, giữ lạnh 55 kg, hàng đợi 9, bày 16 món, 32 khay, độ hiện 1,5.
+Đồ nghề `quanan` giá 24.000.000₫, bán ở tiệm Đồ Nghề Ba Tài, đòi có sạp cố định trước (luật `TIERS[tier-1]`
+sẵn có). `buyGear` đưa quầy về `where: 'carried'` nên phải chọn chỗ dựng lại.
+
+**Mặt bằng.** Hai lô trống mới trong `SPECIALS` của `src/world/layout.ts` (`matbang_tb` 9 m ở Phố Văn Phòng,
+`matbang_dc` 8 m ở Khu Căn Hộ) tương ứng hai `SPOTS` cùng tên với `minTier: 4`, phí 160.000₫ và 120.000₫.
+`StallSys.placeAt` chặn bậc ≥ 4 ở chỗ có `minTier < 4`. Tiền thuê ngày dùng chung đường `stallRent` của sạp.
+
+**Mô hình** (`StallSys.rebuild`): quầy gỗ 4,4 × 0,9 m, mặt bàn đá, mái tôn xanh 5,2 m có băng-rôn vàng và
+hai cột, bảng hiệu chạy ngang; sân trước có hai bàn nhựa ở ±1,75 m và bốn ghế đẩu (z 1,45 và 2,85). Dụng cụ
+bếp (bếp, vỉ, nồi, chảo, thớt) bày trên mặt quầy rộng, thùng đá và đèn lệch ra hai đầu.
+
+**Chỗ ngồi.** `StallSys.SEATS = 4`, `seatPos(i)` là toạ độ thế giới của bốn ghế; `slotPos` trả về chỗ ngồi
+cho `i < 4` và chỗ đứng (lz 3,6) cho phần còn lại; `freeSlot` xếp khách vô ghế trước rồi mới tới chỗ đứng.
+`arrived` đặt `pose = 'sit'` cho khách có ghế, và kiên nhẫn ×1,5 (mưa không trừ vì đã có mái). Khách vẫn
+được phục vụ như cũ: chạm vào khách, giao món, tính tiền, rồi đứng dậy đi.
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
@@ -419,7 +438,7 @@ Người chơi đã thử bản đầu và gửi danh sách góp ý; việc đư
 
 **Lượt 3 — nội dung còn thiếu so với bản mô tả đầy đủ: đã xong phần chính** (60 món và thang mở công thức, chỗ chơi lên tinh thần, khách đứng mua, việc lúc rảnh của người đi đường, nút cất gánh, chạy bàn và bốc cảng). Chi tiết ở mục 4.3, 4.10, 4.11.
 
-**Lượt 6 — sức khoẻ và bệnh viện: đã xong** (ngất vì máu 0, viện phí có trần, rơi đồ nhặt lại được trong ngày, Bệnh viện Phước An với khám bệnh – quầy thuốc – phòng hồi sức, nút đấm và nút nhảy). Chi tiết ở mục 4.14–4.15. **Lượt 7 — công an phường, tạm giữ, lao động: đã xong** (mức bị để ý, công an đi tuần gọi lại, đồn Công an phường có buồng tạm giữ, nộp phạt / cãi / bỏ chạy / theo về phường, đập đá bớt giờ, ra tù mất uy tín). Chi tiết ở mục 4.16. **Lượt 8 — điện thoại: đã xong** (ba mẫu máy, pin, sổ thu chi, danh bạ, tin nhắn, radio – nhạc – WAP, sạc). Chi tiết ở mục 4.17. **Lượt 9 — quán net: đã xong** (quán 10 máy ở Khu Dân Cư, thuê máy theo phút, chơi game – lướt web – xem phim, mỏi mắt sau 2 tiếng, sạc nhờ, nước ngọt, chủ quán và hai đứa nhỏ ngồi máy). Chi tiết ở mục 4.18. **Lượt 10 — đường phố 2005–2010: đã xong** (ô tô đời cũ nhả khói và bấm còi, đua xe đạp chủ nhật ba vòng bằng cách bấm nhịp, xích đu công viên). Chi tiết ở mục 4.19. **Lượt 11 — phố sống động: đã xong** (lịch sinh hoạt theo giờ, giờ cao điểm, chào hỏi theo quen mặt – mưa nắng, dù khi mưa, đi cặp, ngồi ghế đá, hàng xóm xem đua; sửa bàn cờ Ông Tư, biển lọt tường, kẹt trong tường; quán net nhẹ bụng hơn). Chi tiết ở mục 4.20. **Lượt 12 — giao diện dễ đọc: đã xong** (gợi ý cho biểu tượng HUD, chữ tiền/thoại to hơn một chút, cỡ giao diện 70–160% có ô xem trước, sổ tay công thức gọn một dòng mỗi món, chỗ giao hàng có người nhận đứng chờ với kiện hàng, cô Hồng dời qua bên kia tường cổng chợ, "Quang gánh" gọi ngắn là "Gánh", ô mục tiêu có nút thu gọn, tiếng nói cảm xúc cho người đi đường; sửa lỗi sửa xe không có xe vẫn trừ tiền). Chi tiết ở mục 4.21. Kế hoạch các lượt nằm ở `PLAN.md`.
+**Lượt 6 — sức khoẻ và bệnh viện: đã xong** (ngất vì máu 0, viện phí có trần, rơi đồ nhặt lại được trong ngày, Bệnh viện Phước An với khám bệnh – quầy thuốc – phòng hồi sức, nút đấm và nút nhảy). Chi tiết ở mục 4.14–4.15. **Lượt 7 — công an phường, tạm giữ, lao động: đã xong** (mức bị để ý, công an đi tuần gọi lại, đồn Công an phường có buồng tạm giữ, nộp phạt / cãi / bỏ chạy / theo về phường, đập đá bớt giờ, ra tù mất uy tín). Chi tiết ở mục 4.16. **Lượt 8 — điện thoại: đã xong** (ba mẫu máy, pin, sổ thu chi, danh bạ, tin nhắn, radio – nhạc – WAP, sạc). Chi tiết ở mục 4.17. **Lượt 9 — quán net: đã xong** (quán 10 máy ở Khu Dân Cư, thuê máy theo phút, chơi game – lướt web – xem phim, mỏi mắt sau 2 tiếng, sạc nhờ, nước ngọt, chủ quán và hai đứa nhỏ ngồi máy). Chi tiết ở mục 4.18. **Lượt 10 — đường phố 2005–2010: đã xong** (ô tô đời cũ nhả khói và bấm còi, đua xe đạp chủ nhật ba vòng bằng cách bấm nhịp, xích đu công viên). Chi tiết ở mục 4.19. **Lượt 11 — phố sống động: đã xong** (lịch sinh hoạt theo giờ, giờ cao điểm, chào hỏi theo quen mặt – mưa nắng, dù khi mưa, đi cặp, ngồi ghế đá, hàng xóm xem đua; sửa bàn cờ Ông Tư, biển lọt tường, kẹt trong tường; quán net nhẹ bụng hơn). Chi tiết ở mục 4.20. **Lượt 12 — giao diện dễ đọc: đã xong** (gợi ý cho biểu tượng HUD, chữ tiền/thoại to hơn một chút, cỡ giao diện 70–160% có ô xem trước, sổ tay công thức gọn một dòng mỗi món, chỗ giao hàng có người nhận đứng chờ với kiện hàng, cô Hồng dời qua bên kia tường cổng chợ, "Quang gánh" gọi ngắn là "Gánh", ô mục tiêu có nút thu gọn, tiếng nói cảm xúc cho người đi đường; sửa lỗi sửa xe không có xe vẫn trừ tiền). Chi tiết ở mục 4.21. **Lượt 13 — bậc 4 quán ăn nhỏ: đã xong** (bán ở tiệm Ba Tài 24.000.000₫, dựng ở hai mặt bằng có sân 160.000₫/120.000₫ mỗi ngày, quầy gỗ 4,4 m có mái tôn, bốn chỗ ngồi cho khách ăn tại chỗ, 150 kg – 16 món – 9 khách). Chi tiết ở mục 4.22, kế hoạch ba bậc còn lại ở `PLAN.md`.
 
 Còn lại:
 
