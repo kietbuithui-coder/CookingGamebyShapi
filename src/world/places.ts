@@ -141,8 +141,14 @@ export function buildPlace(b: Builder, l: Lot, R: RNG) {
         ganh: [7.6, 0.13, 1.6], xeday: [7.7, 0.13, 4.6], sap: [7.7, 0.13, 7.9], daothot: [0.75, 0.82, 1.6], bepthan: [0.75, 0.82, 2.4], bepgas: [0.75, 0.82, 3.25], vi: [0.75, 0.82, 4.05],
         chao: [0.75, 0.82, 4.8], noi: [0.75, 0.82, 5.55], den: [0.75, 0.82, 6.2], aomua: [0.75, 0.82, 6.65], thungda: [4.05, 0.82, 3.5], gio: [5.2, 0.82, 3.5], bien: [4.6, 0.82, 4.55],
         odu: [5.3, 0.13, 6.6], ghe: [4.9, 0.13, 9.4], tulanh: [9.3, 0.13, 9.9],
+        cucgach: [2.0, 0.88, 4.6], napgap: [2.6, 0.88, 4.6], camung: [3.2, 0.88, 4.6],
       };
       GEAR_LIST.forEach((g, i) => { const p = pos[g.id]; if (!p) return; gearModel(U, g.id, p[0], p[1], p[2]); b.slot('equip', i, p[0], p[1] + (p[1] > 0.5 ? 0.15 : 0.7), p[2]); });
+      // tủ kính nhỏ bày ba mẫu điện thoại, kê giữa tiệm cho khách đứng xem
+      U.box(2.6, 0.13, 4.6, 1.6, 0.75, 0.95, 0x8a6a4a, 0xb99a72, 0.08);
+      U.box(2.6, 0.88, 4.6, 1.64, 0.05, 0.99, 0xdfeef7, 0xf2fbff, 0.03);
+      b.collide(1.8, 4.1, 3.4, 5.1);
+      b.signAt(2.6, 0.92, 5.02, 0.95, 0.24, 'ĐIỆN THOẠI', { bg: '#0b5ea8', fg: '#ffffff', border: '#ffd24d' }, 0, -1, 42);
       b.collide(6.6, 4.1, 8.8, 5.1); b.collide(6.9, 7.5, 8.5, 8.3);
       for (const z of [3, 7]) ceilLight(b, 5, 3.37, z, 2.4);
       b.shutter('equip', 1, 9, 0.1, 2.9);

@@ -10,7 +10,7 @@ Thứ tự dưới đây xếp theo phụ thuộc kỹ thuật và theo mức "c
 |---|---|---|
 | 6 | Sửa lỗi vặt · nút nhảy & đánh · xỉu (mất tiền, mất đồ) · bệnh viện | Đụng vào máu, tiền, đồ — nền của mọi thứ phía sau |
 | 7 | Công an, đồn, buồng giam, lao động khổ sai ✅ | Cần nút đánh và luật "gây sự" của lượt 6 |
-| 8 | Điện thoại (3 mẫu máy, giờ, thu chi, tin nhắn, lướt web) | Gỡ tab thu chi ở góc phải; là cái khung UI cho quán net |
+| 8 | Điện thoại (3 mẫu máy, giờ, thu chi, tin nhắn, lướt web) ✅ | Là cái khung UI cho quán net |
 | 9 | Quán net, chơi game, lướt web tăng tinh thần | Dùng lại UI + túi tiền theo giờ của lượt 8 |
 | 10 | Ô tô đời 2005–2010 · xe đạp · event đua xe đạp · xích đu công viên | Chỉ là cảnh vật + một event, không phụ thuộc hệ nào |
 | 11 | Khuôn mặt & kiểu tóc · lời thoại dễ thương/thô tục · âm thanh cảm xúc · NPC tạp hoá nhỏ | Làm cuối vì phải rà lại toàn bộ nhân vật một lượt |
@@ -79,19 +79,30 @@ phố, bốc hàng ở bến) — để dành cho lượt sau khi có xe cộ.
 và tái phạm, nộp phạt không âm tiền, cãi được thì chỉ bị nhắc, án theo mức và tái phạm, đếm ngược trong
 buồng, đập đá bớt giờ nhưng không dưới 30 phút, ra tù mất uy tín, bản lưu v5 nâng lên v6.
 
-## Lượt 8 — Điện thoại
+## Lượt 8 — Điện thoại ✅ đã xong
 
-Ba mẫu máy đời 2005–2010 bán ở tiệm Đồ Nghề: cục gạch (nghe gọi, nhắn tin), nắp gập (thêm nghe nhạc,
-radio), cảm ứng (thêm lướt web). Mở bằng nút riêng hoặc phím `P`. Trong máy có:
+**Ba mẫu máy** bày trên tủ kính giữa tiệm Đồ Nghề: **cục gạch** 180.000₫ (sổ thu chi, danh bạ, tin nhắn),
+**nắp gập** 520.000₫ (thêm radio, nghe nhạc), **cảm ứng** 1.450.000₫ (thêm lướt web WAP). Mua máy mới thì máy
+cũ tự bán lại; bán máy thì mất sim.
 
-- **Giờ & pin** — pin tụt theo giờ, sạc ở nhà hoặc quán net;
-- **Sổ thu chi** — thay hẳn tab thu chi ở góc phải màn hình (tab đó bị bỏ);
-- **Danh bạ** — người đã quen, gọi để hẹn (khách quen tới sớm hơn);
-- **Tin nhắn** — nhắc nợ, nhắc đóng tiền nhà, tin của khách quen;
-- **Giải trí** — nghe nhạc/radio (tinh thần +), lướt web WAP (tinh thần + ít, tốn pin).
+**Mở máy** bằng nút trên HUD (chỉ hiện khi đã có máy) hoặc phím `P`. Sáu thẻ: Máy · Sổ thu chi · Danh bạ ·
+Tin nhắn · Giải trí · Pin & sạc.
 
-**Kiểm thử:** pin không âm, mở máy khi hết pin thì báo, sổ thu chi khớp với sổ trong game, bản lưu cũ tự
-được cấp một máy cục gạch.
+- **Giờ & pin:** pin tụt 2,2%/giờ trong game khi để trong túi, tốn thêm khi nghe nhạc/radio/web. Sạc đầy khi
+  ngủ ở chỗ trọ trở lên (có ổ điện), hoặc sạc nhờ 5.000₫ ở tạp hoá Cô Ba / MiniMart. Hết pin thì khoá máy.
+- **Sổ thu chi:** đúng bảng của sổ tay. Sổ giấy vẫn giữ trong sổ tay — người chưa có máy không bị mất bảng.
+- **Danh bạ:** người đã quen + khách quen; gọi khách quen 1.000₫ một lần mỗi người mỗi ngày, thân thêm.
+- **Tin nhắn:** nhắc nợ (kèm số ngày trễ), nhắc tiền phòng, tin khách quen, tin lừa “trúng thưởng xe Wave”,
+  dự báo thời tiết 1080. Chưa đọc thì có chấm đỏ trên nút điện thoại.
+- **Giải trí:** radio (15 phút, +6 tinh thần), nhạc (15 phút, +8), WAP (10 phút, +5).
+
+**Khác kế hoạch:** không gỡ tab thu chi khỏi sổ tay giấy (bỏ đi thì người chưa có máy mất luôn bảng thu chi);
+tab *Giờ & pin* gộp thành thẻ **Pin & sạc**; quán net để lượt sau.
+
+**Kiểm thử:** `tests/phone.test.ts` — 13 bài: ba mẫu máy và chức năng, mua/bán máy đổi sim, pin tụt và khoá
+máy khi hết pin, máy thiếu chức năng thì không dùng, chỉ nhà có điện mới sạc qua đêm, tin nhắn dựng đúng
+(nợ, tiền phòng, tin lừa, thời tiết), đếm tin chưa đọc, danh bạ lọc người quen, gọi khách quen (cước, giới
+hạn ngày, hết pin, thiếu tiền), bản lưu v6 lên v7.
 
 ## Lượt 9 — Quán net
 

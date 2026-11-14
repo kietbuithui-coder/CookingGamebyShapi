@@ -10,6 +10,8 @@ import { REGULARS, FIXED } from '../data/people';
 import { WEATHER } from '../data/world';
 import { Game, Stack, LedgerDay, weightOf, moveStack, junkWeight, hourOf, purge, isSpoiled } from '../sim/state';
 import * as R from '../sim/rules';
+import * as PH from '../sim/phone';
+import { FEAT_LABEL } from '../data/phone';
 import { money, qty, clamp, round1k, dist2, hhmm } from '../core/util';
 import { toast, sfx, bus } from '../core/bus';
 import { BX, CORR, SPOTS, LOTS, lotPoint, DISTRICT, MAP } from '../world/layout';
@@ -18,6 +20,15 @@ let tab = '';
 const fresh = (s: Stack) => { const d = INGS[s.id]; if (d.shelf > 9000) return ''; const f = Math.round(s.fresh); return `<span class="tag ${f < 35 ? 'bad' : f < 60 ? 'warn' : 'good'}">${f < 10 ? 'hỏng' : 'tươi ' + f + '%'}</span>`; };
 export const profitOf = (l: LedgerDay) => l.revenue + l.tips + l.side - l.cogs - l.fees - l.rent - l.gear - l.loss - l.interest - l.food - l.other;
 const stallNear = (g: Game) => g.stall.tier > 0 && (g.stall.where === 'carried' || ((g.stall.where === 'placed' || g.stall.where === 'home') && dist2(g.stall.x, g.stall.z, ctx.player.x, ctx.player.z) < 8 * 8));
+
+/** Bảng sổ thu chi trong ngày — dùng chung cho sổ tay giấy và sổ trong điện thoại. */
+export function ledgerBody(g: Game): string {
+  const L = g.led, kv = (k: string, v: number, neg = false) => (v ? `<div class="kv"><span>${k}</span><b class="${neg ? 'neg' : 'pos'}">${neg ? '−' : '+'}${money(v)}</b></div>` : ''), pf = profitOf(L);
+  return `<div class="grid2"><div><h4>Hôm nay (ngày ${g.day + 1})</h4>${kv('Doanh thu bán hàng', L.revenue)}${kv('Tiền boa', L.tips)}${kv('Việc ngoài, xin, ve chai', L.side)}${kv('Giá vốn hàng đã bán', L.cogs, true)}${kv('Phí chỗ, tiền phạt, bảo kê', L.fees, true)}${kv('Tiền nhà', L.rent, true)}${kv('Mua sắm dụng cụ', L.gear, true)}${kv('Hao hụt, đồ hỏng, mất trộm', L.loss, true)}${kv('Lãi vay và phí', L.interest, true)}${kv('Ăn uống', L.food, true)}${kv('Chi khác', L.other, true)}
+          <div class="kv sum"><span>Lãi / lỗ trong ngày</span><b class="${pf < 0 ? 'neg' : 'pos'}">${money(pf)}</b></div><p class="muted">Phục vụ ${L.customers} khách (${L.sold} phần) · mất ${L.lost} khách · điểm trung bình ${L.rated ? (L.stars / L.rated).toFixed(1).replace('.', ',') : '—'} ${ic('starf')}</p></div>
+          <div><h4>Những ngày qua</h4>${g.hist.length ? g.hist.slice(-8).reverse().map((d) => `<div class="kv"><span>Ngày ${d.day + 1} · ${d.sold} phần</span><b class="${profitOf(d) < 0 ? 'neg' : 'pos'}">${money(profitOf(d))}</b></div>`).join('') : '<p class="muted">Chưa có dữ liệu.</p>'}
+          <h4>Tổng kết</h4><div class="kv"><span>Tổng số phần đã bán</span><b>${g.tot.served}</b></div><div class="kv"><span>Ngày bán chạy nhất</span><b>${money(g.tot.best)}</b></div><div class="kv"><span>Tiền xin được</span><b>${money(g.tot.begged)}</b></div><div class="kv"><span>Tiền bán ve chai</span><b>${money(g.tot.scrap)}</b></div></div></div>`;
+}
 
 export function openPanel(ui: UI, name: string) {
   const M = ui.$('modal'), g = ctx.g;
@@ -107,17 +118,59 @@ export function openPanel(ui: UI, name: string) {
             <small>Đã bán ${rs.made} phần · ngon nhất ${Math.round(rs.best * 100)} điểm · giá thị trường ~${money(r.ref)}</small></div></div>`; };
         body = `<p class="muted">Tay nghề cấp ${R.level(g)}. Nguyên liệu mua ở Chợ Xóm Chiều (rẻ, tươi nhất buổi sáng), MiniMart (đắt hơn, mở khuya) hay tạp hoá Cô Ba (than, gas, đá).</p><div class="list">${RECIPE_LIST.filter((r) => g.rec[r.id].known).map(row).join('')}</div><h4>Chưa học</h4><div class="list">${RECIPE_LIST.filter((r) => !g.rec[r.id].known).map(row).join('')}</div>`;
       } else if (tab === 'led') {
-        const L = g.led, kv = (k: string, v: number, neg = false) => (v ? `<div class="kv"><span>${k}</span><b class="${neg ? 'neg' : 'pos'}">${neg ? '−' : '+'}${money(v)}</b></div>` : ''), pf = profitOf(L);
-        body = `<div class="grid2"><div><h4>Hôm nay (ngày ${g.day + 1})</h4>${kv('Doanh thu bán hàng', L.revenue)}${kv('Tiền boa', L.tips)}${kv('Việc ngoài, xin, ve chai', L.side)}${kv('Giá vốn hàng đã bán', L.cogs, true)}${kv('Phí chỗ, tiền phạt, bảo kê', L.fees, true)}${kv('Tiền nhà', L.rent, true)}${kv('Mua sắm dụng cụ', L.gear, true)}${kv('Hao hụt, đồ hỏng, mất trộm', L.loss, true)}${kv('Lãi vay và phí', L.interest, true)}${kv('Ăn uống', L.food, true)}${kv('Chi khác', L.other, true)}
-          <div class="kv sum"><span>Lãi / lỗ trong ngày</span><b class="${pf < 0 ? 'neg' : 'pos'}">${money(pf)}</b></div><p class="muted">Phục vụ ${L.customers} khách (${L.sold} phần) · mất ${L.lost} khách · điểm trung bình ${L.rated ? (L.stars / L.rated).toFixed(1).replace('.', ',') : '—'} ${ic('starf')}</p></div>
-          <div><h4>Những ngày qua</h4>${g.hist.length ? g.hist.slice(-8).reverse().map((d) => `<div class="kv"><span>Ngày ${d.day + 1} · ${d.sold} phần</span><b class="${profitOf(d) < 0 ? 'neg' : 'pos'}">${money(profitOf(d))}</b></div>`).join('') : '<p class="muted">Chưa có dữ liệu.</p>'}
-          <h4>Tổng kết</h4><div class="kv"><span>Tổng số phần đã bán</span><b>${g.tot.served}</b></div><div class="kv"><span>Ngày bán chạy nhất</span><b>${money(g.tot.best)}</b></div><div class="kv"><span>Tiền xin được</span><b>${money(g.tot.begged)}</b></div><div class="kv"><span>Tiền bán ve chai</span><b>${money(g.tot.scrap)}</b></div></div></div>`;
+        body = ledgerBody(g);
       } else {
         body = `<h4>Nợ nần</h4>` + (g.debts.length ? `<div class="list">${g.debts.map((d) => `<div class="item"><div class="grow"><b>${LENDERS[d.lender].name}: ${money(d.owed)}</b><small>Vay ${money(d.principal)} ngày ${d.taken + 1} · lãi ${(LENDERS[d.lender].rate * 100).toFixed(1)}%/ngày</small></div><span class="tag ${g.day > d.due ? 'bad' : g.day === d.due ? 'warn' : ''}">${g.day > d.due ? 'QUÁ HẠN ' + (g.day - d.due) + ' ngày' : 'hạn: ngày ' + (d.due + 1)}</span></div>`).join('')}</div>` : '<p class="muted">Không nợ ai đồng nào.</p>') +
           `<p class="muted">Tiết kiệm ngân hàng: ${money(g.bank)}. ${g.credit > g.day ? 'Bạn đang bị ngân hàng từ chối cho vay tới ngày ' + (g.credit + 1) + '.' : ''} Trả nợ tại chỗ người cho vay: Ngân hàng Sao Vàng (Phố Văn Phòng), Hùng Sẹo (sân trong Xóm Lao Động), Cô Ba (tạp hoá).</p>
           <h4>Khách quen</h4><div class="list">${REGULARS.map((r) => { const rel = R.hasMet(g, r.id) ? g.rel[r.id] : undefined; return `<div class="item${rel?.n ? '' : ' off'}"><div class="grow"><b>${rel?.n ? r.name : '???'}</b><small>${rel?.n ? r.note + ' Thường ghé lúc ' + hhmm(r.hour * 60) + '. Thích: ' + r.likes.map((c) => CAT_LABEL[c].toLowerCase()).join(', ') + '.' : 'Chưa quen ai ở giờ này.'}</small></div><span class="tag ${(rel?.v ?? 0) > 20 ? 'good' : ''}">${rel?.n ? 'thân ' + Math.round(rel.v) : '—'}</span></div>`; }).join('')}</div>`;
       }
       draw(`${ic('book')} Sổ tay`, [['rec', 'Công thức'], ['led', 'Sổ sách'], ['debt', 'Nợ & khách quen']], body);
+    } else if (name === 'phone') {
+      const m = PH.phone(g);
+      if (!m) {
+        draw(`${ic('info')} Chưa có điện thoại`, [], `<p class="muted">Trong túi chưa có máy nào. Tiệm Đồ Nghề Ba Tài ở Phố Trung Tâm bán ba mẫu: cục gạch (180.000₫), nắp gập (520.000₫) và cảm ứng (1.450.000₫).</p>`);
+        return;
+      }
+      const pin = Math.round(PH.battery(g)), on = PH.isOn(g);
+      const tabs: [string, string][] = [['home', 'Máy']];
+      if (m.feats.includes('ledger')) tabs.push(['led', 'Sổ thu chi']);
+      if (m.feats.includes('contacts')) tabs.push(['book', 'Danh bạ']);
+      if (m.feats.includes('sms')) tabs.push(['sms', 'Tin nhắn']);
+      if (m.feats.includes('radio') || m.feats.includes('music')) tabs.push(['fun', 'Giải trí']);
+      tabs.push(['pin', 'Pin & sạc']);
+      if (!tabs.some(([id]) => id === tab)) tab = 'home';
+      const dead = on ? '' : `<p class="neg">Máy hết pin. Ngủ ở chỗ trọ trở lên cho đầy pin, hoặc trả 5.000₫ sạc nhờ ở tạp hoá Cô Ba / MiniMart.</p>`;
+      let body = '';
+      if (tab === 'home') {
+        const un = PH.unread(g);
+        body = `<div class="grid2"><div><p style="font-family:'Patrick Hand';font-size:1.35em;margin:.2em 0">${m.name} <span class="muted">${m.brand}</span></p>
+          <div class="kv"><span>Giờ trên máy</span><b>${hhmm(g.min)} · ngày ${g.day + 1}</b></div>
+          <div class="kv"><span>Pin</span><b class="${pin < 20 ? 'neg' : 'pos'}">${pin}%</b></div>
+          <div class="kv"><span>Tiền mặt đang có</span><b>${money(g.cash)}</b></div>
+          <div class="kv"><span>Tin chưa đọc</span><b class="${un ? 'pos' : ''}">${un}</b></div>
+          <p class="muted">${m.desc}</p></div>
+          <div><h4>Chức năng</h4><div class="list">${m.feats.map((f) => `<div class="item"><div class="grow"><b>${FEAT_LABEL[f]}</b></div><button class="btn small" data-tab="${f === 'ledger' ? 'led' : f === 'contacts' ? 'book' : f === 'sms' ? 'sms' : 'fun'}">Mở</button></div>`).join('')}</div></div></div>`;
+      } else if (tab === 'led') {
+        body = ledgerBody(g);
+      } else if (tab === 'book') {
+        const list = PH.contacts(g);
+        acts.call = (i) => { const c = list[i]; if (c) ctx.acts.phoneCall(c.id); };
+        body = dead + (list.length ? `<div class="list">${list.map((c, i) => `<div class="item"><div class="grow"><b>${esc(c.name)}</b><small>${esc(c.where)}${c.regular && g.flags['call_' + c.id] === g.day ? ' · hôm nay gọi rồi' : ''}</small></div>${c.regular ? `<button class="btn small${g.cash < PH.CALL_FEE || !on ? ' off' : ''}" data-a="call" data-i="${i}">Gọi 1.000₫</button>` : ''}</div>`).join('')}</div>` : '<p class="muted">Danh bạ trống. Đi chào hỏi trong xóm rồi mở lại.</p>');
+      } else if (tab === 'sms') {
+        const seen = g.flags.smsSeen ?? 0, list = PH.smsList(g);
+        if (on) PH.markSeen(g);
+        body = dead + (list.length ? `<div class="list">${list.map((sm) => `<div class="item"><div class="grow"><b>${esc(sm.from)}${sm.at > seen ? ' <span class="tag bad">mới</span>' : ''}</b><small>${esc(sm.text)}</small><small class="muted">${hhmm(sm.at % 1440)} · ngày ${Math.floor(sm.at / 1440) + 1}</small></div></div>`).join('')}</div>` : '<p class="muted">Hộp thư trống trơn.</p>');
+      } else if (tab === 'fun') {
+        acts.fun = (i) => { ctx.acts.phoneFun((['radio', 'music', 'wap'] as const)[i]); };
+        body = dead + `<div class="list">${(['radio', 'music', 'wap'] as const).map((f, i) => { const ok = m.feats.includes(f), c = PH.FUN[f]; return `<div class="item${ok ? '' : ' off'}"><div class="grow"><b>${FEAT_LABEL[f]}</b><small>${ok ? `${c.min} phút · tinh thần +${c.mood} · pin −${c.pin}%` : 'Máy này không có chức năng này'}</small></div>${ok ? `<button class="btn small${on ? '' : ' off'}" data-a="fun" data-i="${i}">Mở</button>` : ''}</div>`; }).join('')}</div>`;
+      } else {
+        const hours = PH.battery(g) / PH.DRAIN_PER_HOUR;
+        body = `<p>Pin còn <b>${pin}%</b> · để trong túi thì dùng được khoảng <b>${hours.toFixed(1).replace('.', ',')} giờ</b> nữa. Mở radio, nhạc hay web thì tốn nhanh hơn.</p>
+          <div class="bar"><b style="width:${pin}%;background:${pin < 20 ? 'var(--red)' : pin < 50 ? '#d9a441' : 'var(--green)'}"></b></div>
+          <p class="muted">Sạc: ngủ ở phòng trọ, nhà nghỉ, căn hộ, nhà riêng, cửa hàng (có ổ điện) là đầy pin sáng hôm sau. Ở gầm cầu hay ghế đá công viên thì không có điện. Hoặc trả 5.000₫ sạc nhờ ở tạp hoá Cô Ba / MiniMart 24h.</p>
+          <p class="muted">Máy này nghe được ${m.feats.map((f) => FEAT_LABEL[f].toLowerCase()).join(', ')}.</p>`;
+      }
+      draw(`${ic('phone')} ${m.name} <span class="muted">· pin ${pin}%</span>`, tabs, body);
     } else if (name === 'map') {
       const places = ctx.acts.places(); acts.go = (i) => { ctx.acts.way = places[i]; ui.closePanel(); toast(`Đã ghim: ${places[i].name}. Đi theo mũi tên và cột sáng vàng.`, 'info', 'pin'); }; acts.clear = () => { ctx.acts.way = null; };
       draw(`${ic('map')} Bản đồ khu phố`, [], `<div class="grid2"><canvas id="map" width="640" height="610"></canvas><div><p class="muted">Chạm một địa điểm để ghim đường đi.</p><div class="list">${places.map((p, i) => `<button class="btn small" style="justify-content:flex-start" data-a="go" data-i="${i}">${ic('pin')} ${p.name} <span class="muted">· ${Math.round(Math.hypot(p.x - ctx.player.x, p.z - ctx.player.z))} m</span></button>`).join('')}</div></div></div>`, ctx.acts.way ? `<button class="btn" data-a="clear">Bỏ ghim “${esc(ctx.acts.way.name)}”</button>` : '');

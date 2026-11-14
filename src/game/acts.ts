@@ -15,6 +15,7 @@ import { FunDef, funHoursText, funOpenAt } from '../data/fun';
 import { Game, addStack, hourOf, absMin, Stack, weightOf } from '../sim/state';
 import * as R from '../sim/rules';
 import * as P from '../sim/police';
+import * as PH from '../sim/phone';
 import { bus, toast, sfx } from '../core/bus';
 import { rnd, RNG, clamp, money, dist2, round1k, round500, qty, hhmm } from '../core/util';
 import { NAV, groundY, districtAt, DISTRICT } from '../world/layout';
@@ -208,6 +209,7 @@ export class Acts {
       this.D(who(n), n, `${list}. ${c.disc ? `Bớt rồi còn ${money(total)}.` : `Hết thảy ${money(total)}.`}`, [...opts, bye]); return;
     }
     if (shop.id === 'kiosk') { const d = g.debts.find((x) => x.lender === 'tab'); if (d) opts.push({ t: `Trả sổ nợ — ${money(d.owed)}`, off: g.cash < d.owed, fn: () => { R.repay(g, d.id, d.owed); sfx('coin'); ctx.npcs.say(n, 'Sòng phẳng vậy cô quý!', 2.5, 1); } }); }
+    if (PH.canChargeAt(shop.id) && PH.hasPhone(g) && PH.battery(g) < 99) opts.push({ t: `Sạc nhờ điện thoại — ${money(PH.CHARGE_FEE)}`, sub: `Pin đang ${Math.round(PH.battery(g))}% · ngồi chờ 20 phút`, off: g.cash < PH.CHARGE_FEE, fn: () => this.phoneCharge(shop.id) });
     opts.push(...this.learnOpts(shop.id, n));
     if (shop.id === 'pharmacy') opts.push({ t: 'Cho em hỏi về sức khoẻ', fn: () => this.D(who(n), n, g.flags.sick ? 'Em bị cảm rồi đó. Lấy vỉ thuốc cảm trên quầy, uống xong nghỉ ngơi, đừng dầm mưa nữa.' : g.st.health < 50 ? 'Trông em xanh xao lắm. Ăn uống đủ bữa, ngủ đủ giấc là khoẻ lại thôi.' : 'Em khoẻ mạnh bình thường. Nhớ uống đủ nước nha.', [bye]) });
     opts.push({ t: 'Dạo này buôn bán sao?', fn: () => {
@@ -248,6 +250,7 @@ export class Acts {
       if (R.buyGear(g, id) === 'ok') {
         sfx('buy'); ctx.stall.refresh();
         if (id === 'sap') { toast('Sạp đã mua! Giờ tìm một CHỖ BÁN (vòng sáng vàng) ngoài phố, chạm vào để dựng sạp — đặt rồi thì không dời được nữa.', 'good', 'shop', true); if (g.stall.tier >= 3) this.way = null; }
+        else if (d.kind === 'phone') { toast(`Đã mua ${d.name.toLowerCase()}, cắm sim vô liền. Bấm nút điện thoại trên màn hình (hoặc phím P) để mở.`, 'good', 'tool', true); toast('Máy có sổ thu chi, danh bạ, tin nhắn. Pin tụt dần — ngủ ở nhà có điện thì đầy pin, hoặc sạc nhờ ở tạp hoá 5.000₫.', 'info', 'bolt'); }
         else toast(`Đã mua ${d.name.toLowerCase()}!` + (d.kind === 'stall' ? ' Bạn đang mang quầy theo người.' : ''), 'good', 'tool', true);
       }
     } }, { t: 'Để con tính lại.' }]);
@@ -588,6 +591,36 @@ export class Acts {
     R.advance(g, wait, { ...this.act(), sleeping: true }); R.consume(g, { e: 14, hp: 2, m: -2 });
     toast(`Nằm trên giường sắt ${wait} phút.`, 'info');
   }
+  // ───────────────────────── Điện thoại ─────────────────────────
+  /** Nghe radio, nghe nhạc hay lướt WAP: tốn thời gian, lên tinh thần, tụt pin. */
+  phoneFun(f: 'radio' | 'music' | 'wap'): boolean {
+    const g = this.g, c = PH.fun(g, f);
+    if (!c) {
+      if (!PH.hasPhone(g)) toast('Bạn chưa có điện thoại. Tiệm Đồ Nghề Ba Tài có bán.', 'info', 'tool');
+      else if (PH.battery(g) <= 0.5) toast('Máy hết pin rồi. Sạc nhờ ở tạp hoá, hoặc ngủ ở nhà có điện.', 'warn', 'bolt');
+      else toast('Máy này không có chức năng đó.', 'info');
+      return false;
+    }
+    R.advance(g, c.min, this.act()); R.consume(g, { m: c.mood });
+    sfx('good'); toast(c.line, 'info', 'smile', true); bus.emit('save', 'dien thoai');
+    return true;
+  }
+  /** Gọi cho khách quen: tốn cước, thân hơn một chút, mỗi ngày một lần. */
+  phoneCall(id: string): boolean {
+    const g = this.g, r = PH.call(g, id);
+    toast(r.line, r.ok ? 'good' : 'info', 'chat');
+    if (r.ok) { R.advance(g, 5, this.act()); sfx('ok'); }
+    return r.ok;
+  }
+  /** Trả tiền sạc nhờ ở tạp hoá / siêu thị. */
+  phoneCharge(shopId: string) {
+    const g = this.g;
+    if (!PH.hasPhone(g)) { toast('Bạn chưa có điện thoại.', 'info'); return; }
+    if (!PH.canChargeAt(shopId)) { toast('Chỗ này không có ổ cắm cho khách.', 'info'); return; }
+    if (!R.spend(g, PH.CHARGE_FEE, 'other')) { toast('Không đủ tiền sạc.', 'bad', 'cash'); return; }
+    R.advance(g, 20, this.act()); PH.fullCharge(g); sfx('ok');
+    toast(`Cắm sạc nhờ, ngồi chờ 20 phút. Pin đầy 100%.`, 'good', 'bolt', true);
+  }
   /** Nói chuyện với chú công an trực ban. */
   policeMenu(n: Npc) {
     const g = this.g, f = P.fine(g), opts: Opt[] = [];
@@ -694,7 +727,8 @@ export class Acts {
     const a = ctx.world.anchors[h.anchor]; if (a) { ctx.player.place(a.x - Math.sin(a.yaw) * 0.2, a.z - Math.cos(a.yaw) * 0.2, a.yaw, 0.2); ctx.player.eyeTarget = Math.max(0.45, a.y - 0.12 + 0.35); }
   }
   private wake(reason = '') {
-    const g = this.g, where = this.sleepWhere, h = HOUSING[where]; ctx.mode = 'play'; ctx.speed = MIN_PER_SEC; ctx.player.eyeTarget = 1.6; ctx.ui.fade(false, 1.2); ctx.ui.sleeping(false); sfx('wake');
+    const g = this.g, where = this.sleepWhere, h = HOUSING[where];
+    if (PH.hasPhone(g) && PH.hasPower(g) && PH.battery(g) < 99) { PH.fullCharge(g); toast('Cắm sạc qua đêm, điện thoại đầy pin.', 'info', 'bolt'); } ctx.mode = 'play'; ctx.speed = MIN_PER_SEC; ctx.player.eyeTarget = 1.6; ctx.ui.fade(false, 1.2); ctx.ui.sleeping(false); sfx('wake');
     toast(reason || `Tỉnh giấc lúc ${hhmm(g.min)}. Năng lượng ${Math.round(g.st.energy)}%.`, 'info', 'moon');
     // trộm đêm
     const risk = (1 - h.safety) * 0.4 + (R.eventOn(g, 'trom') && h.safety < 0.6 ? 0.35 : 0);

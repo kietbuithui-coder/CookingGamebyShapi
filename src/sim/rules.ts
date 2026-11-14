@@ -10,6 +10,7 @@ import { ARCH, ArchDef, LINES, FIXED, FIXED_ROLE } from '../data/people';
 import { EVENTS, EVENT_LIST, EventDef, WEATHER, WeatherDef, WeatherId, floodZone, hourCurve } from '../data/world';
 import { District, DISTRICT, SPOTS, districtAt, spotById } from '../world/layout';
 import { Game, Stack, absMin, addStack, countOf, hourOf, newLedger, purge, spoil, takeFrom, weightOf, junkWeight, emptyStall, Debt, coldWeightOf } from './state';
+import * as PH from './phone';
 
 // ───────────────────────── Tiện ích chung ─────────────────────────
 export const wx = (g: Game): WeatherDef => WEATHER[g.weather.now];
@@ -536,6 +537,7 @@ export function sellGear(g: Game, id: string): number {
 export function removeGear(g: Game, id: string) {
   delete g.gear[id];
   const d = GEAR[id];
+  if (d.kind === 'phone') PH.deactivate(g, id);
   if (d.kind === 'stall' && d.tier === g.stall.tier) {
     // mất quầy: nguyên liệu trong quầy rơi lại túi (phần xách nổi), còn lại mất
     const lower = TIERS.filter((t) => t.tier > 0 && t.tier < d.tier! && has(g, t.id)).pop();
@@ -677,6 +679,7 @@ export function advance(g: Game, dm: number, act: Activity, R: RNG = rnd) {
   if (dm <= 0) return;
   const h0 = Math.floor(absMin(g) / 60);
   g.min += dm;
+  PH.tick(g, dm);
   tickStats(g, dm, act);
   if (g.min >= 1440) newDay(g, R);
   const h1 = Math.floor(absMin(g) / 60);
@@ -695,6 +698,7 @@ export function buyGear(g: Game, id: string): 'ok' | 'cash' | 'have' {
   if (has(g, id)) return 'have';
   const d = GEAR[id];
   if (!spend(g, d.price, 'gear')) return 'cash';
+  if (d.kind === 'phone') { PH.activate(g, id); bus.emit('save', 'mua dien thoai'); return 'ok'; }
   g.gear[id] = 100;
   if (d.kind === 'stall' && d.tier! > g.stall.tier) {
     const old = g.stall;

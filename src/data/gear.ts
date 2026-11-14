@@ -1,6 +1,6 @@
 // DỤNG CỤ, CẤP ĐỘ QUẦY HÀNG, CHỖ Ở, KHOẢN VAY — dữ liệu thuần, dễ mở rộng.
 
-export interface GearDef { id: string; name: string; price: number; kind: 'stall' | 'tool' | 'stove' | 'store' | 'comfort' | 'carry' | 'home'; desc: string; tier?: number; wear?: number; }
+export interface GearDef { id: string; name: string; price: number; kind: 'stall' | 'tool' | 'stove' | 'store' | 'comfort' | 'carry' | 'home' | 'phone'; desc: string; tier?: number; wear?: number; }
 export const GEAR_LIST: GearDef[] = [
   { id: 'ganh', name: 'Quang gánh', price: 120000, kind: 'stall', tier: 1, desc: 'Đôi quang gánh tre — gánh đi khắp phố.' },
   { id: 'xeday', name: 'Xe đẩy', price: 2400000, kind: 'stall', tier: 2, desc: 'Xe đẩy inox có mái che, chứa nhiều, bán nhanh.' },
@@ -19,6 +19,9 @@ export const GEAR_LIST: GearDef[] = [
   { id: 'gio', name: 'Giỏ xách', price: 35000, kind: 'carry', desc: 'Xách thêm được 6 kg.' },
   { id: 'aomua', name: 'Áo mưa', price: 20000, kind: 'carry', desc: 'Không ướt, không cảm lạnh.' },
   { id: 'tulanh', name: 'Tủ lạnh cũ', price: 1500000, kind: 'home', desc: 'Đặt ở phòng trọ, giữ đồ tươi cả tuần.' },
+  { id: 'cucgach', name: 'Điện thoại cục gạch', price: 180000, kind: 'phone', desc: 'Nokia 1110i: sổ thu chi, danh bạ, tin nhắn. Pin ba ngày.' },
+  { id: 'napgap', name: 'Điện thoại nắp gập', price: 520000, kind: 'phone', desc: 'Samsung E250: thêm nghe nhạc, radio FM, màn hình màu.' },
+  { id: 'camung', name: 'Điện thoại cảm ứng', price: 1450000, kind: 'phone', desc: 'O2 Xphone: thêm lướt web WAP. Chậm nhưng oai.' },
 ];
 export const GEAR: Record<string, GearDef> = Object.fromEntries(GEAR_LIST.map((g) => [g.id, g]));
 

@@ -172,6 +172,23 @@ export function gearModel(mb: MB, id: string, x: number, y: number, z: number) {
     case 'gio': basketModel(mb, x, y, z, 0.2, 0.22, 0xd9a05a); mb.geo(ringGeo(10), 0.16, 0.012, 0.16, x, y + 0.36, z, 0xb5803a, 0, Math.PI / 2); break;
     case 'aomua': mb.box(x, y, z, 0.3, 0.06, 0.22, 0x2f8fd5, 0x4fa8e8, 0.05); break;
     case 'tulanh': fridgeModel(mb, x, y, z); break;
+    // ba mẫu điện thoại bày trên quầy tiệm Đồ Nghề (dựng nghiêng trên giá bìa)
+    case 'cucgach':
+      mb.box(x, y, z, 0.16, 0.03, 0.12, 0xa89a7a, 0xc9bb98, 0.02);
+      mb.box(x, y + 0.03, z, 0.075, 0.17, 0.045, 0x26282c, 0x4a4c52, 0.02);
+      mb.box(x, y + 0.12, z - 0.024, 0.05, 0.055, 0.006, 0x9fd6a8, 0xcfe6d2);
+      break;
+    case 'napgap':
+      mb.box(x, y, z, 0.16, 0.03, 0.12, 0xa89a7a, 0xc9bb98, 0.02);
+      mb.box(x, y + 0.03, z, 0.085, 0.11, 0.04, 0x2a3a5a, 0x3f5480, 0.02);
+      mb.box(x, y + 0.03, z + 0.055, 0.085, 0.16, 0.03, 0x2a3a5a, 0x3f5480, 0.02);
+      mb.box(x, y + 0.09, z - 0.021, 0.06, 0.04, 0.006, 0xbfe6ff, 0xe0f2ff);
+      break;
+    case 'camung':
+      mb.box(x, y, z, 0.18, 0.03, 0.13, 0xa89a7a, 0xc9bb98, 0.02);
+      mb.box(x, y + 0.03, z, 0.1, 0.2, 0.035, 0x1e2024, 0x3a3c42, 0.02);
+      mb.box(x, y + 0.07, z - 0.019, 0.082, 0.12, 0.006, 0x5a8fc9, 0x9fc6e8);
+      break;
   }
 }
 export { MAT, mix };
