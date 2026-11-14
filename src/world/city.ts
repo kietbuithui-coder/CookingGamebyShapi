@@ -489,6 +489,10 @@ export function buildCity(): City {
   }
   market(b, new RNG(41)); park(b, new RNG(42)); underpass(b, new RNG(43)); yards(b, new RNG(44));
   buildSide(b);                                          // góc trà đá, sân nhảy, vá xe, hát rong, bàn cờ, đánh giày
+  for (const sid of ['viahe_truong', 'viahe_trungtam', 'viahe_benxe']) {
+    const sp = SPOTS.find((s) => s.id === sid);
+    if (sp) { b.frame({ tx: sp.x, tz: sp.z, yaw: sp.yaw + Math.PI }); spotMark(b, 0, 0); }
+  }
   backdrop(b, new RNG(45));
   // rào chắn "cấm đường" trước chợ (chỉ hiện khi có sự kiện)
   b.frame({ tx: 0, tz: 0, yaw: 0 }); const keepLit = b.lit; (b as any).lit = b.roadblock;
@@ -531,6 +535,12 @@ export function buildCity(): City {
   }
   const festive = mk(b.festive, MAT.litDouble, 'festive', root)!; festive.visible = false;
   const roadblock = mk(b.roadblock, MAT.lit, 'roadblock', root)!; roadblock.visible = false;
+  for (const [shop, sg] of b.shopGoods.entries()) {
+    const grp = new THREE.Group(); grp.name = 'goods_' + shop; root.add(grp);
+    mk(sg.detail, MAT.lit, 'detail', grp, 2);
+    mk(sg.sign, signMat, 'sign', grp);
+    world.shopGoods.set(shop, grp);
+  }
   atlas.texture.needsUpdate = true;
   return { world, root, chunks, glowMat, unlitMat, signMat, water, festive, roadblock, night, signs: b.signs };
 }

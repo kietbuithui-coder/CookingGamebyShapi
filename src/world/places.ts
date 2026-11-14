@@ -718,18 +718,22 @@ export function marketStall(b: Builder, shop: string, R: RNG, tarp: number) {
   D.box(0, 0, -0.33, 4.5, 0.72, 0.62, 0x8a6a4a, 0xa98a62, 0.15); D.box(0, 0, 0.3, 4.5, 0.92, 0.62, 0x7a5c40, 0xa98a62, 0.15);
   b.collide(-2.25, -0.64, 2.25, 0.62);
   const wet = shop === 'm_thit' || shop === 'm_haisan';
-  if (wet) { D.box(0, 0.72, -0.33, 4.4, 0.04, 0.58, 0xdfe9ee, 0xeef6fa); D.box(0, 0.92, 0.3, 4.4, 0.04, 0.58, 0xdfe9ee, 0xeef6fa); }
-  for (let i = 0; i < def.items.length && i < 10; i++) {
-    const row = i < 5 ? 0 : 1, k = i % 5, n = row === 0 ? Math.min(5, def.items.length) : def.items.length - 5;
-    const x = (k - (n - 1) / 2) * 0.88;
-    display(b, D, shop, i, x, row ? 0.96 : 0.76, row ? 0.3 : -0.33, R);
-  }
+  b.withShopGoods(shop, (G) => {
+    if (wet) { G.box(0, 0.72, -0.33, 4.4, 0.04, 0.58, 0xdfe9ee, 0xeef6fa); G.box(0, 0.92, 0.3, 4.4, 0.04, 0.58, 0xdfe9ee, 0xeef6fa); }
+    for (let i = 0; i < def.items.length && i < 10; i++) {
+      const row = i < 5 ? 0 : 1, k = i % 5, n = row === 0 ? Math.min(5, def.items.length) : def.items.length - 5;
+      const x = (k - (n - 1) / 2) * 0.88;
+      display(b, G, shop, i, x, row ? 0.96 : 0.76, row ? 0.3 : -0.33, R);
+    }
+  });
   for (const sx of [-2.3, 2.3]) for (const sz of [-1.0, 1.9]) L.cyl(sx, 0, sz, 0.035, 2.9, 0x8a8f96, 5);
   L.quad(2.5, 2.55, -1.3, -2.5, 2.55, -1.3, -2.5, 2.95, 2.1, 2.5, 2.95, 2.1, tarp); L.quad(-2.5, 2.54, -1.3, 2.5, 2.54, -1.3, 2.5, 2.94, 2.1, -2.5, 2.94, 2.1, shade(tarp, 0.7));
   b.signAt(0, 2.1, -1.28, 3.4, 0.46, def.name, { bg: '#fff7d6', fg: '#7a0f1e', border: '#c8102e', font: 'hand' }, 0, -1, 56, true);
   b.anchor('v_' + shop, 0, 0.12, 1.35, Math.PI); plasticStool(D, 0.9, 0.12, 1.6, 0xd9463c, 0.36);
-  for (let i = 0; i < 3; i++) D.box(-1.7 + i * 0.7, 0.12, 1.75, 0.55, R.range(0.25, 0.5), 0.4, R.pick([0x8fbf6a, 0xd9a05a, 0x6a8ab5, 0xc9b28a]), undefined, 0.15);
-  D.box(1.9, 0.92, 0.3, 0.28, 0.06, 0.24, 0x55585e); D.cyl(1.9, 0.98, 0.3, 0.13, 0.02, 0xd9dde2, 8);
+  b.withShopGoods(shop, (G) => {
+    for (let i = 0; i < 3; i++) G.box(-1.7 + i * 0.7, 0.12, 1.75, 0.55, R.range(0.25, 0.5), 0.4, R.pick([0x8fbf6a, 0xd9a05a, 0x6a8ab5, 0xc9b28a]), undefined, 0.15);
+    G.box(1.9, 0.92, 0.3, 0.28, 0.06, 0.24, 0x55585e); G.cyl(1.9, 0.98, 0.3, 0.13, 0.02, 0xd9dde2, 8);
+  });
   b.collide(-2.2, 1.55, -0.2, 2.0);
 }
 export { fridgeModel, basketModel, plasticTable };

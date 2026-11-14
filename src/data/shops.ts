@@ -22,7 +22,7 @@ export const SHOP_LIST: ShopDef[] = [
     items: ['trung', 'dauhu', 'gio', 'chaca', 'nam'], say: 'Trứng gà ta, giò chả nhà làm.' },
   { id: 'mart', name: 'MiniMart 24h', vendor: 'Bé Na', vendorLook: 1, open: [6, 22.5], priceMul: 1.18, fresh: [90, 96], q: 0.96, haggle: 0, card: true, coldFrom: 14,
     items: ['nuocloc', 'nuocngot', 'tra', 'caphe', 'suadac', 'nuocdua', 'tranchau', 'duong', 'muoi', 'dauan', 'tuongot', 'nuoctuong', 'mi', 'botmi',
-      'suatuoi', 'xucxich', 'cavien', 'pate', 'phomai', 'bolat', 'trungca', 'da'], say: 'Dạ, em chào anh chị ạ.' },
+      'suatuoi', 'xucxich', 'cavien', 'pate', 'phomai', 'bolat', 'trungca', 'da'], say: 'Dạ, em chào {ac} ạ.' },
   { id: 'kiosk', name: 'Tạp hoá Cô Ba', vendor: 'Cô Ba', vendorLook: 4, open: [5.5, 23], priceMul: 1.12, fresh: [72, 90], q: 0.8, haggle: 0.2,
     items: ['trung', 'mi', 'nuocmam', 'duong', 'muoi', 'dauan', 'tuongot', 'da', 'nuocloc', 'nuocngot', 'than', 'gas'], say: 'Mua gì đó con? Thiếu thì cô ghi sổ.' },
   { id: 'bakery', name: 'Lò bánh mì Anh Bảo', vendor: 'Anh Bảo', vendorLook: 0, open: [5, 20], priceMul: 1, fresh: [90, 100], q: 0.95, haggle: 0,

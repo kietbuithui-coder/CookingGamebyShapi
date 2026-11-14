@@ -13,7 +13,7 @@ import { INGS } from '../data/ingredients';
 import { SHOPS } from '../data/shops';
 import { DISTRICT, districtAt } from '../world/layout';
 import { hourOf } from '../sim/state';
-import { activeEvents, totalDebt, level, tier, hasMet, fixedLabel } from '../sim/rules';
+import { activeEvents, totalDebt, level, tier, hasMet, fixedLabel, hasStartedSelling } from '../sim/rules';
 import { stallHint } from '../game/stall';
 import { openPanel } from './panels';
 import * as PH from '../sim/phone';
@@ -244,7 +244,8 @@ export class UI {
     E.wx.innerHTML = `${ic(hourOf(g) > 18.6 || hourOf(g) < 5.4 ? (w.rain > 0 ? w.icon : 'moon') : w.icon)}${w.name}`;
     E.place.innerHTML = `${ic('pin')}${DISTRICT[districtAt(p.x, p.z)].name}`;
     if (g.cash !== this.lastCash) { this.lastCash = g.cash; E.money.innerHTML = `${ic('cash')}${money(g.cash)}`; }
-    E.rep.innerHTML = `${ic('star')}${Math.round(g.rep)} · cấp ${level(g)}`;
+    E.rep.classList.toggle('hide', !hasStartedSelling(g));
+    if (hasStartedSelling(g)) E.rep.innerHTML = `${ic('star')}${Math.round(g.rep)} · cấp ${level(g)}`;
     E.phoneb.classList.toggle('hide', !PH.hasPhone(g));
     if (PH.hasPhone(g)) E.phonedot.classList.toggle('hide', PH.unread(g) === 0);
     E.wanted.classList.toggle('hide', (g.wanted ?? 0) < 1);

@@ -11,7 +11,7 @@ import { clamp } from '../core/util';
 import { softDot } from '../gfx/tex';
 import type { PtrHandler } from '../game/input';
 import type { Station } from '../game/stall';
-import { CutGame, FryGame, GrillGame, BoilGame, AssembleGame, WashGame } from './games';
+import { CutGame, FryGame, GrillGame, BoilGame, AssembleGame, WashGame, SackGame, FishGame, ChessGame } from './games';
 
 export interface Mini {
   /** local y của mặt phẳng nhận thao tác tay */
@@ -97,6 +97,21 @@ export class Cook implements PtrHandler {
   wash(st: Station, plates: number, done: (score: number) => void) {
     this.r = RECIPES.tra_da; this.phase = 'job'; this.steps = []; this.idx = 0; this.scores = []; this.jobDone = done; this.enter(st);
     ctx.ui.cookShow('Rửa chén thuê — Quán cơm Bà Tư', ['Rửa chén'], 0); this.setMini(new WashGame(this, plates));
+  }
+  /** Việc bốc hàng: xếp bao gạo lên kiện gỗ ở sạp Bà Hai. */
+  sack(st: Station, done: (score: number) => void) {
+    this.r = RECIPES.tra_da; this.phase = 'job'; this.steps = []; this.idx = 0; this.scores = []; this.jobDone = done; this.enter(st);
+    ctx.ui.cookShow('Bốc hàng — Xếp bao gạo vào kho Bà Hai', ['Xếp bao'], 0); this.setMini(new SackGame(this));
+  }
+  /** Ca bốc cá ở cảng: phân loại cá tươi vào khay đá và cá ươn vào thùng loại. */
+  fish(st: Station, done: (score: number) => void) {
+    this.r = RECIPES.tra_da; this.phase = 'job'; this.steps = []; this.idx = 0; this.scores = []; this.jobDone = done; this.enter(st);
+    ctx.ui.cookShow('Ca bốc cá — Phân loại & ướp đá tại cảng', ['Phân loại cá'], 0); this.setMini(new FishGame(this));
+  }
+  /** Đánh cờ tướng với Ông Tư ở công viên: giải thế cờ tàn 3 nước. */
+  chess(st: Station, done: (score: number) => void) {
+    this.r = RECIPES.tra_da; this.phase = 'job'; this.steps = []; this.idx = 0; this.scores = []; this.jobDone = done; this.enter(st);
+    ctx.ui.cookShow('Cờ tướng Công Viên — Đối cuộc với Ông Tư', ['Thế cờ tàn'], 0); this.setMini(new ChessGame(this));
   }
   /** Điều kiện chung: quầy đã đặt, đủ dụng cụ. Không tiêu hao gì. */
   private check(r: RecipeDef): boolean {

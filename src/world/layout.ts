@@ -135,13 +135,26 @@ export const lotById = (id: string) => LOTS.find((l) => l.id === id)!;
 export function lotPoint(l: Lot, lx: number, lz: number): [number, number] { return toWorld(l.fr, l.at + lx, lz); }
 
 // ───────── Chỗ bán hàng ─────────
-export interface Spot { id: string; name: string; x: number; z: number; yaw: number; fee: number; traffic: number; district: District; minTier: number; note: string; }
+export interface Spot {
+  id: string; name: string; x: number; z: number; yaw: number; fee: number; traffic: number; district: District; minTier: number;
+  /** Hạng quầy tối đa được đặt ở đây (chỗ vỉa hè chỉ cho gánh hàng rong / xe đẩy). */
+  maxTier?: number;
+  /** Xác suất bị đội trật tự đô thị kiểm tra & phạt lấn chiếm vỉa hè mỗi đợt tuần tra (0 = chỗ hợp thức). */
+  curbRisk?: number;
+  note: string;
+}
 function spotFromLot(id: string, name: string, fee: number, traffic: number, minTier: number, note: string): Spot {
   const l = lotById(id), [x, z] = lotPoint(l, l.w / 2, 0.95);
   return { id, name, x, z, yaw: faceOutYaw(l.fr), fee, traffic, district: l.district, minTier, note };
 }
 export const SPOTS: Spot[] = [
   spotFromLot('hem', 'Hẻm Công Nhân', 0, 0.85, 1, 'Miễn phí, khách bình dân. Đất của băng Hùng Sẹo.'),
+  { id: 'viahe_truong', name: 'Vỉa hè Cổng Trường', x: 50, z: -23.95, yaw: 0, fee: 0, traffic: 1.15, district: 'dancu', minTier: 1, maxTier: 2, curbRisk: 0.24,
+    note: 'Miễn phí cho gánh hàng rong/xe đẩy, học sinh và phụ huynh đông nhưng dễ bị phạt lấn chiếm vỉa hè.' },
+  { id: 'viahe_trungtam', name: 'Vỉa hè Phố Trung Tâm', x: 8, z: -23.95, yaw: 0, fee: 0, traffic: 1.22, district: 'trungtam', minTier: 1, maxTier: 2, curbRisk: 0.3,
+    note: 'Góc vỉa hè miễn phí ngay trung tâm, khách qua lại đông nhưng đội trật tự đô thị tuần tra gắt.' },
+  { id: 'viahe_benxe', name: 'Vỉa hè Phố Bến Xe', x: 2, z: 35.05, yaw: 0, fee: 0, traffic: 1.1, district: 'nhanghi', minTier: 1, maxTier: 2, curbRisk: 0.22,
+    note: 'Vỉa hè miễn phí cho hàng rong, tài xế và khách bình dân tấp nập nhưng coi chừng bị phạt lấn chiếm.' },
   { id: 'cho', name: 'Cổng Chợ', x: -37.2, z: 9, yaw: Math.PI / 2, fee: 30000, traffic: 1.35, district: 'cho', minTier: 1, note: 'Đông người qua lại, hay bị kiểm tra.' },
   { id: 'cv', name: 'Cổng Công Viên', x: 41, z: -37.3, yaw: 0, fee: 20000, traffic: 1.05, district: 'congvien', minTier: 1, note: 'Gia đình, sinh viên, khách du lịch.' },
   spotFromLot('vp', 'Phố Văn Phòng', 60000, 1.25, 2, 'Khách chịu chi nhưng khó tính. Cần xe đẩy trở lên.'),

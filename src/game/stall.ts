@@ -6,7 +6,7 @@ import { ganhModel, cartModel, charcoalStove, gasStove, boardModel, knifeModel, 
 import { takeawayBag, Look } from '../gfx/people';
 import { SPOTS, Spot, spotById, groundY, NAV_BLOCK, CORNER, edgeKey } from '../world/layout';
 import { Game, Helper, absMin, hourOf, addStack } from '../sim/state';
-import { arrivalRate, has, tier, menuOf, available, decide, review, settleSale, lostCustomer, readyCount, finishPossible, spend, earn, stove, changeRel, meet, wx, eventOn, Persona, addXp, canSell, missingFor, hasPrep, stallRoom, isNight, level, stallRent, payStallRent, helperGate, hireHelper, fireHelper, helperCandidate, helperPatience, seatCount, dineIn, secondOrder, periodName } from '../sim/rules';
+import { arrivalRate, has, tier, menuOf, available, decide, review, settleSale, lostCustomer, readyCount, finishPossible, spend, earn, stove, changeRel, meet, wx, eventOn, Persona, addXp, canSell, missingFor, hasPrep, stallRoom, isNight, level, stallRent, payStallRent, helperGate, hireHelper, fireHelper, helperCandidate, helperPatience, seatCount, dineIn, secondOrder, periodName, fmtAc, curbFineRisk, curbFineAmount } from '../sim/rules';
 import { RECIPES, RecipeDef } from '../data/recipes';
 import { INGS } from '../data/ingredients';
 import { ARCH, HelperDef, LINES, REGULARS, RegularDef } from '../data/people';
@@ -25,7 +25,7 @@ export class StallSys {
   group = new THREE.Group(); body: THREE.Mesh | null = null; stock: THREE.Mesh | null = null; tools = new THREE.Group(); sign: THREE.Mesh | null = null;
   customers: Npc[] = []; private acc = 0; private builtKey = ''; private stockKey = ''; private stockT = 0; private cols: (Box2 | Circ)[] = [];
   private actorT = 0; private actorId = ''; private actorTries = 0; busy: Npc | null = null; rowdy = 0; private signAtlas = new SignAtlas(512); private signMat: THREE.Material;
-  private marks: THREE.Mesh[] = []; private regT = 30;
+  private marks: THREE.Mesh[] = []; private regT = 30; private curbT = 32;
   /** Người phụ việc đang đứng quầy + nhân vật tới xin việc + nhịp nói chuyện/lau quầy. */
   helper: Npc | null = null; private offerNpc: Npc | null = null; private offerT = 45; private helperChat = 40; private helperWipe = 50; private helperRetry = 0;
   constructor() {
@@ -228,6 +228,7 @@ export class StallSys {
   placeAt(sp: Spot): boolean {
     const g = ctx.g, s = g.stall;
     if (s.tier < sp.minTier) { toast(`Chỗ này cần ${TIERS[sp.minTier].name.toLowerCase()} trở lên.`, 'warn'); return false; }
+    if (sp.maxTier && s.tier > sp.maxTier) { toast(`${sp.name} là vỉa hè chỉ cho gánh hàng rong hoặc xe đẩy, không dựng được ${tier(g).name.toLowerCase()}.`, 'warn', 'shop'); return false; }
     // Bậc 4 trở lên chỉ dựng được ở mặt bằng có sân (điểm vàng ghi “Mặt bằng”), không chen vô vỉa hè hẹp.
     if (s.tier >= 4 && sp.minTier < 4) { toast(`Quán ăn nhỏ cần MẶT BẰNG có sân kê bàn ghế — ${sp.name} hẹp quá. Tìm điểm vàng có chữ “Mặt bằng”.`, 'warn', 'shop'); return false; }
     if (sp.fee > 0 && s.paidDay !== g.day) { if (!spend(g, sp.fee, 'fees')) { toast(`Không đủ ${money(sp.fee)} phí chỗ ở ${sp.name}.`, 'bad', 'cash'); return false; } toast(`Đã đóng ${money(sp.fee)} phí chỗ hôm nay.`, 'info', 'cash'); }
@@ -235,6 +236,7 @@ export class StallSys {
     if (s.tier >= 5) { delete g.flags.sapNo; toast(`Quán có chỗ ngồi mở ở ${sp.name}. Sáu ghế bàn gỗ trong nhà, khách ăn tại chỗ lâu hơn và hay gọi thêm tráng miệng — nhớ ${periodName(g).toLowerCase()} mà bày món hợp buổi.`, 'good', 'shop', true); }
     else if (s.tier >= 4) { delete g.flags.sapNo; toast(`Quán ăn nhỏ mở ở ${sp.name}. Mỗi ngày đóng ${money(sp.fee)} phí mặt bằng; bốn chỗ ngồi cho khách ăn tại chỗ nên ai cũng đợi lâu hơn.`, 'good', 'shop', true); }
     else if (s.tier >= 3) { delete g.flags.sapNo; toast(`Sạp đặt cố định ở ${sp.name}. Từ nay mỗi ngày đóng ${money(sp.fee)} phí chỗ, đổi ${money(sp.fee)} lấy chỗ đông khách và không ai dọn được quầy của bạn.`, 'good', 'shop', true); }
+    else if (sp.curbRisk) { toast(`Đã đặt tại ${sp.name} (miễn phí — coi chừng đội trật tự đô thị đi tuần phạt lấn chiếm vỉa hè!).`, 'info', 'shop'); }
     sfx('place'); this.rebuild(); bus.emit('save', 'dat quay'); return true;
   }
   /** Để quầy ở chỗ ở (cạnh giường). */
@@ -431,7 +433,7 @@ export class StallSys {
     ctx.npcs.say(n, rnd.pick([`Chào ${g.ac}, con ghé xin việc một chút được hông?`, `Dạ ${g.ac} rảnh năm phút hông ạ?`]), 3.4, EXPR.smile);
     const off = g.cash < d.wage;
     ctx.ui.dialog({
-      who: d.name, npc: n, text: d.ask.replace('{ac}', g.ac),
+      who: d.name, npc: n, text: fmtAc(d.ask, g),
       opts: [
         { t: `Nhận làm phụ quầy — ${money(d.wage)}/ngày`, sub: off ? 'Không đủ tiền trả ngày đầu' : 'Trả trước một ngày lương', off, fn: () => {
           if (!hireHelper(g, d)) { toast('Không đủ tiền trả ngày lương đầu tiên.', 'bad', 'cash'); return; }
@@ -492,7 +494,7 @@ export class StallSys {
   private spawnActor() {
     const s = this.s, id = this.actorId, N = ctx.npcs; this.actorId = '';
     if (s.where !== 'placed') return;
-    const defs: Record<string, [keyof typeof ARCH, string]> = { inspector: ['congan', 'Thanh tra Vệ sinh'], critic: ['phebinh', 'Nhà phê bình ẩm thực'], gang: ['giangho', 'Đàn em Hùng Sẹo'], rowdy: ['taixe', 'Ông khách say xỉn'], vip: ['nhagiau', 'Vị khách sang trọng'], credit: ['congnhan', 'Khách quen'] };
+    const defs: Record<string, [keyof typeof ARCH, string]> = { inspector: ['congan', 'Thanh tra Vệ sinh'], curb: ['congan', 'Trật tự đô thị'], critic: ['phebinh', 'Nhà phê bình ẩm thực'], gang: ['giangho', 'Đàn em Hùng Sẹo'], rowdy: ['taixe', 'Ông khách say xỉn'], vip: ['nhagiau', 'Vị khách sang trọng'], credit: ['congnhan', 'Khách quen'] };
     const d = defs[id]; if (!d) return;
     let n: Npc | null;
     if (id === 'credit') { const cand = REGULARS.filter((r) => (ctx.g.rel[r.id]?.n ?? 0) > 0); const reg = rnd.pick(cand.length ? cand : REGULARS); n = N.spawnActor(reg.arch, reg.name, id, s.x, s.z, reg.fem); if (n) n.regular = reg; }
@@ -507,6 +509,47 @@ export class StallSys {
     const g = ctx.g, s = g.stall, ui = ctx.ui, N = ctx.npcs, done = (happy = false) => this.dismiss(n, happy), R = rnd;
     const bad = s.store.some((x) => x.fresh < 35 && INGS[x.id].shelf < 9000);
     switch (n.actor) {
+      case 'curb': {
+        const fine = curbFineAmount(g), spName = spotById(s.spot ?? '')?.name ?? 'vỉa hè này';
+        n.base = 3;
+        ui.dialog({
+          who: who(n), npc: n,
+          text: `Đội trật tự đô thị đi tuần! ${spName} không được bày bán tự do. Lập biên bản phạt lấn chiếm vỉa hè ${money(fine)} và yêu cầu dọn ngay!`,
+          opts: [
+            { t: `Nộp phạt ${money(fine)} và dọn quầy`, off: g.cash < fine, fn: () => { spend(g, fine, 'fees'); this.close(true); toast(`Nộp phạt lấn chiếm vỉa hè ${money(fine)}.`, 'bad', 'badge'); done(); } },
+            { t: s.tier <= 1 ? 'Quẩy gánh chạy lẹ!' : 'Đẩy xe chạy lẹ!', sub: s.tier <= 1 ? 'Gánh nhẹ dễ thoát, nhưng có thể rơi đồ' : 'Xe đẩy nặng, khó chạy kịp', fn: () => {
+              const ok = R.chance(s.tier <= 1 ? 0.65 : 0.35);
+              if (ok) {
+                if (s.ready.length && R.chance(0.45)) { s.ready[0].n = Math.max(0, s.ready[0].n - 1); s.ready = s.ready.filter((x) => x.n > 0); }
+                N.say(n, 'Đứng lại! Chạy lẹ thiệt…', 2.8, 4);
+                done(); this.pickUp();
+                toast('Quẩy gánh chạy thoát kịp lúc! Không mất tiền phạt lấn chiếm.', 'good', 'badge');
+              } else {
+                const f2 = Math.min(g.cash, round1k(fine * 1.4));
+                spend(g, f2, 'fees'); g.rep = clamp(g.rep - 2, 0, 100); this.close(true);
+                N.say(n, 'Chạy đi đâu! Chống đối kiểm tra hả, phạt nặng hơn!', 3.2, 4);
+                toast(`Không chạy kịp — bị phạt lấn chiếm vỉa hè ${money(f2)}, uy tín −2.`, 'bad', 'badge', true);
+                setTimeout(done, 1500);
+              }
+            } },
+            { t: 'Năn nỉ xin nhắc nhở lần đầu', fn: () => {
+              if (R.chance(clamp(0.28 + (g.st.mood - 50) / 220, 0.12, 0.55))) {
+                this.close(true);
+                N.say(n, 'Thôi bà con nghèo buôn gánh bán bưng, tôi nhắc lần này thôi. Dọn gọn đi nghen!', 3.2, 1);
+                toast('Được châm chước nhắc nhở, chỉ phải đóng quầy tạm nghỉ.', 'info', 'badge');
+              } else {
+                const f = Math.min(g.cash, fine);
+                if (f > 0) spend(g, f, 'fees'); else s.cond = clamp(s.cond - 15, 10, 100);
+                this.close(true);
+                N.say(n, 'Nhắc mấy lần rồi, khu này đang ra quân lập lại trật tự vỉa hè!', 3, 4);
+                toast(f > 0 ? `Vẫn bị lập biên bản nộp ${money(f)}.` : 'Không có tiền nộp phạt: bị thu giữ đồ lặt vặt, quầy hư hại.', 'bad', 'badge');
+              }
+              setTimeout(done, 1500);
+            } },
+          ],
+        });
+        break;
+      }
       case 'inspector': {
         const clean = g.st.hygiene >= 45 && s.dirt < 40 && !bad;
         if (clean) { ui.dialog({ who: who(n), npc: n, text: 'Đoàn kiểm tra vệ sinh an toàn thực phẩm đây. …Ừm, quầy sạch sẽ, nguyên liệu tươi, người bán gọn gàng. Tốt lắm, cứ thế phát huy!', opts: [{ t: 'Dạ, cảm ơn anh.', fn: () => { g.rep = clamp(g.rep + 2, 0, 100); toast('Qua kiểm tra vệ sinh: uy tín +2.', 'good', 'badge'); done(true); } }] }); break; }
@@ -576,6 +619,13 @@ export class StallSys {
     if (this.rowdy > 0) this.rowdy -= dt;
     this.updateHelper(dt);
     if (this.actorId) { this.actorT -= dt; if (this.actorT <= 0) this.spawnActor(); }
+    if (s.open && !this.actorId && curbFineRisk(g) > 0) {
+      this.curbT -= dt;
+      if (this.curbT <= 0) {
+        this.curbT = rnd.range(35, 55);
+        if (rnd.chance(curbFineRisk(g))) { this.actorId = 'curb'; this.actorT = 1.5; this.actorTries = 0; }
+      }
+    }
     // khách quen trả nợ
     this.regT -= dt; if (this.regT <= 0) { this.regT = 20; for (const r of REGULARS) { const due = g.flags['owe_' + r.id], rel = g.rel[r.id]; if (due !== undefined && g.day >= due && rel?.owe && s.open) { delete g.flags['owe_' + r.id]; if (rnd.chance(0.75)) { const pay = round1k(rel.owe * rnd.range(1, 1.6)); earn(g, pay, 'revenue'); toast(`${r.name} ghé trả ${money(pay)} tiền ăn chịu hôm trước. "Cảm ơn ${g.ac} đã thương!"`, 'good', 'heart', true); changeRel(g, r.id, 5); } else toast(`Nghe nói ${r.name} đã chuyển đi nơi khác… khoản ăn chịu coi như mất.`, 'bad', 'heart'); rel.owe = 0; } } }
     // sự kiên nhẫn của khách đang chờ
