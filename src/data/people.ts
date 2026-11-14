@@ -100,6 +100,7 @@ export const FIXED_ROLE: Record<string, string> = {
   canho: 'Quản lý căn hộ', nharieng: 'Chủ nhà', cuahang: 'Chủ tạp hoá',
   hospital: 'Bác sĩ trực',
   police: 'Công an khu vực',
+  net: 'Chủ quán net', net_bi: 'Khách chơi game', net_nhung: 'Khách lướt web',
   tra_da: 'Cô bán trà đá', rap: 'Cậu nhóc nhảy đường phố', sua_xe: 'Thợ sửa xe vỉa hè',
   hat_rong: 'Người hát rong', danh_co: 'Ông già đánh cờ', danh_giay: 'Cậu bé đánh giày',
 };
@@ -127,6 +128,22 @@ export const REGULARS: RegularDef[] = [
 export interface SideTopic { q: string; a: string; }
 export interface SideDef { intro: string; again: string; topics: SideTopic[]; }
 export const SIDE: Record<string, SideDef> = {
+  net_bi: {
+    intro: 'Thằng Bi dán mắt vô màn hình, một tay bấm phím một tay cầm ly nước ngọt. “Khoan khoan, để tao qua màn này cái.”',
+    again: '“Ủa mày cũng chơi hả? Ngồi kế bên đi, tao chỉ cho chỗ farm.”',
+    topics: [
+      { q: 'Mày chơi game gì đó?', a: 'Game kiếm hiệp đó. Tối nào tao cũng ra đây, hai ngàn một giờ, chơi tới mười giờ rưỡi thì dzìa. Mẹ tao mà biết là ăn đòn, nên mày đừng có nói nghen.' },
+      { q: 'Học hành sao rồi?', a: 'Học thì... cũng được. Mà tao tính rồi, lớn lên tao đi làm game. Ngồi đây chơi hoài cũng thành nghề chớ gì. Chị Hạnh nói tao mơ mộng, mà tao thấy cũng đúng mà.' },
+    ],
+  },
+  net_nhung: {
+    intro: 'Con Nhung ngồi ngay ngắn, màn hình sáng rực một khung chat. “Suỵt, tao đang chat với ảnh, đừng có đứng kế bên.”',
+    again: '“Lại ghé hả? Ngồi đỡ đi, chị Hạnh tính ba ngàn một giờ đó.”',
+    topics: [
+      { q: 'Chat với ai mà cười hoài vậy?', a: 'Bạn tao, học trên Sài Gòn. Hồi trước học chung, giờ ảnh lên đó ở với dì. Ngày nào cũng hẹn nhau tám giờ tối, trễ năm phút là ảnh giận. Mà chat có nhiêu đâu, ba ngàn một giờ, còn rẻ hơn cái điện thoại.' },
+      { q: 'Sao không xài điện thoại?', a: 'Điện thoại gì con ơi, tao xài chung với má. Mà má giữ suốt ngày. Ra đây ngồi một tiếng, vừa chat vừa nghe nhạc, sướng hơn ở nhà.' },
+    ],
+  },
   tra_da: {
     intro: 'Cô Thắm ngồi bên chiếc bàn nhựa, tay phe phẩy quạt giấy. “Ngồi đi con, nắng lắm.”',
     again: '“Lại ghé hả? Ngồi đi, cô rót cho ly trà đá.”',
@@ -290,5 +307,8 @@ export const FIXED: Record<string, FixedNpcDef> = {
   hat_rong: { id: 'hat_rong', name: 'Cô Hồng', face: 4, fem: true, shirt: 0x8a5a9a, pants: 0x1e2430, hair: 0xbfbfbc, hat: 0, hairStyle: 2, fat: 0.98, h: 0.93 },
   danh_co: { id: 'danh_co', name: 'Ông Tư', face: 3, fem: false, shirt: 0xb9a88a, pants: 0x2a2e3a, hair: 0xd9d9d6, hat: 4, hairStyle: 3, fat: 0.95, h: 0.97 },
   danh_giay: { id: 'danh_giay', name: 'Bé Bo', face: 2, fem: false, shirt: 0xf5c531, pants: 0x3a5a8a, hair: 0x1e1a18, hat: 2, hairStyle: 0, fat: 0.85, h: 0.72 },
+  net: { id: 'net', name: 'Chị Hạnh', face: 2, fem: true, shirt: 0x2f6fd5, pants: 0x2a2e3a, hair: 0x1e1a18, hat: 0, hairStyle: 2, fat: 1.08, h: 0.95 },
+  net_bi: { id: 'net_bi', name: 'Thằng Bi', face: 0, fem: false, shirt: 0xdfe6ea, pants: 0x3a5a8a, hair: 0x1e1a18, hat: 2, hairStyle: 0, fat: 0.92, h: 0.86 },
+  net_nhung: { id: 'net_nhung', name: 'Con Nhung', face: 4, fem: true, shirt: 0xe86f9a, pants: 0x2a2e3a, hair: 0x1e1a18, hat: 0, hairStyle: 2, fat: 0.92, h: 0.88 },
   hobo: { id: 'hobo', name: 'Ông Bảy Lang Thang', face: 3, fem: false, shirt: 0x6a6258, pants: 0x4a4a42, hair: 0xbfbfbc, hat: 4, hairStyle: 1, fat: 0.9, h: 0.96 },
 };

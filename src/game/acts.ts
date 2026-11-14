@@ -16,6 +16,7 @@ import { Game, addStack, hourOf, absMin, Stack, weightOf } from '../sim/state';
 import * as R from '../sim/rules';
 import * as P from '../sim/police';
 import * as PH from '../sim/phone';
+import * as N from '../sim/net';
 import { bus, toast, sfx } from '../core/bus';
 import { rnd, RNG, clamp, money, dist2, round1k, round500, qty, hhmm } from '../core/util';
 import { NAV, groundY, districtAt, DISTRICT } from '../world/layout';
@@ -25,6 +26,9 @@ import { ingModel } from '../gfx/props';
 export interface CartLine { id: string; n: number; price: number; fresh: number; q: number; }
 export interface Opt { t: string; sub?: string; off?: boolean; fn?: () => void; }
 export interface Way { x: number; z: number; name: string; }
+/** 30 → “30 phút”, 120 → “2 tiếng”. */
+const hhmmMin = (m: number) => (m % 60 === 0 ? `${m / 60} tiếng` : `${m} phút`);
+
 const QUESTS = [
   'Kiếm tiền (xin người qua đường, nhặt ve chai bán cho vựa Tư Rác, vác hàng ở chợ, rửa chén quán Bà Tư) rồi mua QUANG GÁNH ở tiệm Đồ Nghề Ba Tài.',
   'Sắm dụng cụ cho món đầu tiên: DAO THỚT để làm bánh tráng trộn, hoặc BẾP THAN + VỈ để nướng khoai (thêm dao thớt là nướng được bắp mỡ hành).',
@@ -126,6 +130,7 @@ export class Acts {
         opts.push({ t: 'Nên mua gì trước hả chú?', fn: () => this.D(who(n), n, 'Mới vô nghề thì cặp QUANG GÁNH trước đã. Rồi DAO THỚT là làm được bánh tráng trộn. Có BẾP THAN với VỈ thì nướng khoai, nướng bắp. Muốn pha trà đá thì thêm cái NỒI. Cứ đi quanh tiệm, thấy món nào thì chạm vô coi giá.', [bye]) });
         this.D(who(n), n, 'Tiệm Ba Tài, xe đẩy bếp núc gì cũng có! Hàng bày quanh đó, ưng món nào cứ chạm vô.', [...opts, bye]); break;
       }
+      case 'net': this.netMenu(n); break;
       case 'hospital': this.hospitalMenu(n); break;
       case 'police': this.policeMenu(n); break;
       case 'bank': this.bankMenu(n); break;
@@ -621,6 +626,62 @@ export class Acts {
     R.advance(g, 20, this.act()); PH.fullCharge(g); sfx('ok');
     toast(`Cắm sạc nhờ, ngồi chờ 20 phút. Pin đầy 100%.`, 'good', 'bolt', true);
   }
+  // ───────────────────────── Quán net ─────────────────────────
+  /** Bảng dịch vụ quán net: chơi máy tính giờ, sạc nhờ, nước ngọt. */
+  netMenu(n?: Npc) {
+    const g = this.g, opts: Opt[] = [];
+    if (!placeOpen('net')) { toast('Quán net chưa mở. Người ta mở 6 giờ sáng tới 11 giờ đêm.', 'info', 'clock'); return; }
+    const said = n
+      ? 'Chị Hạnh ngồi sau quầy, tay quạt phành phạch, mắt vẫn liếc cái màn hình của mình. “Chơi hả em? Ba ngàn một giờ, trả trước nghen.”'
+      : 'Máy 04 còn trống. Ghế nhựa còn ấm, màn hình đang chờ ai bấm nút.';
+    if (PH.hasPhone(g) && PH.battery(g) < 99) opts.push({ t: `Sạc nhờ điện thoại — ${money(N.CHARGE_FEE)}`, sub: `Pin đang ${Math.round(PH.battery(g))}% · cắm 20 phút`, off: g.cash < N.CHARGE_FEE, fn: () => this.netCharge() });
+    for (const k of ['game', 'web', 'film'] as N.NetKind[]) opts.push({ t: `Lấy máy — ${N.NET_ACTS[k].name.toLowerCase()}`, sub: k === 'film' ? 'Tính thêm nửa giá vì tốn đĩa' : `${money(N.NET_RATE)} một giờ`, off: g.cash < N.cost(k, 30), fn: () => this.netPacks(k) });
+    opts.push({ t: `Mua nước ngọt — ${money(N.DRINK_PRICE)}`, sub: 'Ngồi máy lâu là khát', off: g.cash < N.DRINK_PRICE, fn: () => this.netDrink() });
+    if (n) { const owner = n; opts.push({ t: 'Chị mở quán này lâu chưa?', fn: () => this.D(who(owner), owner, '“Hồi trước chỗ này là cái kho gạo. Hai vợ chồng tui dọn ra, kê mười cái máy, tới nay cũng bảy năm rồi. Tụi nhỏ trong xóm lớn lên ở đây hết — thằng Bi hồi đó mới lớp ba, giờ lên cấp ba rồi mà vẫn ngồi đúng cái ghế đó.”', [{ t: 'Mở quán net có mệt không?', fn: () => this.D(who(owner), owner, '“Mệt chớ. Mười giờ đêm đuổi tụi nó về, dọn lon, lau bàn, sáng sáu giờ mở cửa. Mà vui. Có đứa thi rớt cũng ra đây ngồi khóc, khóc xong chơi tiếp. Chị coi tụi nó như con.”', [{ t: 'Thôi, chào chị.' }]) }, { t: 'Thôi, chào chị.' }]) }); }
+    this.D(n ? who(n) : 'Quán net', n, said, opts);
+  }
+  /** Chọn chơi bao nhiêu phút, tính tiền trước. */
+  netPacks(kind: N.NetKind) {
+    const g = this.g, opts: Opt[] = [];
+    for (const m of N.NET_PACKS) {
+      const s = N.plan(g, kind, m);
+      const sub = `Tinh thần +${s.mood} · đói thêm ${-s.hunger}% · khát thêm ${-s.thirst}%${s.tired ? ' · mắt đã mỏi, chơi chẳng còn đã' : ''}`;
+      opts.push({ t: `${hhmmMin(m)} — ${money(s.cost)}`, sub, off: g.cash < s.cost, fn: () => this.netPlay(kind, m) });
+    }
+    const said = kind === 'game' ? 'Cả dãy máy đang chơi kiếm hiệp. Tiếng phím lách cách, tiếng quạt trần quay đều.'
+      : kind === 'web' ? 'Mở trình duyệt lên, quảng cáo nhảy tùm lum. Cũng gọi là có cái để coi.'
+      : 'Chị Hạnh mở tủ đĩa ra: “Phim lẻ ba chục ngàn một đĩa, coi ở đây tính thêm nửa giá giờ.”';
+    this.D('Quán net', undefined, said, opts);
+  }
+  /** Ngồi vô máy: trừ tiền, trôi thời gian, cộng tinh thần, trừ sức. */
+  netPlay(kind: N.NetKind, minutes: number) {
+    const g = this.g, s = N.plan(g, kind, minutes);
+    if (!placeOpen('net')) { toast('Quán đóng cửa rồi.', 'info', 'clock'); return; }
+    if (!R.spend(g, s.cost, 'other')) { toast('Không đủ tiền chơi.', 'bad', 'cash'); return; }
+    R.advance(g, minutes, this.act());
+    R.consume(g, { m: s.mood, e: s.energy, h: s.hunger, t: s.thirst, hp: s.health });
+    N.commit(g, s);
+    sfx('ok');
+    const what = N.NET_ACTS[kind].name.toLowerCase();
+    if (s.tired) toast(`${hhmmMin(minutes)} ${what} — ra khỏi quán mắt nhức, đầu ong ong. Tinh thần +${s.mood}.`, 'warn', 'bolt', true);
+    else toast(`${hhmmMin(minutes)} ${what}. Đã đời. Tinh thần +${s.mood}.`, 'good', 'heart', true);
+  }
+  /** Cắm sạc nhờ ở quán net. */
+  netCharge() {
+    const g = this.g;
+    if (!PH.hasPhone(g)) { toast('Bạn chưa có điện thoại.', 'info'); return; }
+    if (!R.spend(g, N.CHARGE_FEE, 'other')) { toast('Không đủ tiền sạc.', 'bad', 'cash'); return; }
+    R.advance(g, 20, this.act()); PH.fullCharge(g); sfx('ok');
+    toast('Cắm sạc ở dãy ổ điện, ngồi chờ 20 phút. Pin đầy 100%.', 'good', 'bolt', true);
+  }
+  /** Mua lon nước ngọt ở tủ lạnh. */
+  netDrink() {
+    const g = this.g;
+    if (!R.spend(g, N.DRINK_PRICE, 'food')) { toast('Không đủ tiền.', 'bad', 'cash'); return; }
+    R.advance(g, 8, this.act()); R.consume(g, { t: 24, m: 3 }); sfx('coin');
+    toast('Lon nước ngọt lạnh, uống một hơi hết nửa lon.', 'good', 'drop');
+  }
+
   /** Nói chuyện với chú công an trực ban. */
   policeMenu(n: Npc) {
     const g = this.g, f = P.fine(g), opts: Opt[] = [];
