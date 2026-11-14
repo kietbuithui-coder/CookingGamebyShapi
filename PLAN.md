@@ -11,7 +11,7 @@ Thứ tự dưới đây xếp theo phụ thuộc kỹ thuật và theo mức "c
 | 6 | Sửa lỗi vặt · nút nhảy & đánh · xỉu (mất tiền, mất đồ) · bệnh viện | Đụng vào máu, tiền, đồ — nền của mọi thứ phía sau |
 | 7 | Công an, đồn, buồng giam, lao động khổ sai ✅ | Cần nút đánh và luật "gây sự" của lượt 6 |
 | 8 | Điện thoại (3 mẫu máy, giờ, thu chi, tin nhắn, lướt web) ✅ | Là cái khung UI cho quán net |
-| 9 | Quán net, chơi game, lướt web tăng tinh thần | Dùng lại UI + túi tiền theo giờ của lượt 8 |
+| 9 | Quán net, chơi game, lướt web tăng tinh thần ✅ | Dùng lại UI + túi tiền theo giờ của lượt 8 |
 | 10 | Ô tô đời 2005–2010 · xe đạp · event đua xe đạp · xích đu công viên | Chỉ là cảnh vật + một event, không phụ thuộc hệ nào |
 | 11 | Khuôn mặt & kiểu tóc · lời thoại dễ thương/thô tục · âm thanh cảm xúc · NPC tạp hoá nhỏ | Làm cuối vì phải rà lại toàn bộ nhân vật một lượt |
 
@@ -104,12 +104,28 @@ máy khi hết pin, máy thiếu chức năng thì không dùng, chỉ nhà có 
 (nợ, tiền phòng, tin lừa, thời tiết), đếm tin chưa đọc, danh bạ lọc người quen, gọi khách quen (cước, giới
 hạn ngày, hết pin, thiếu tiền), bản lưu v6 lên v7.
 
-## Lượt 9 — Quán net
+## Lượt 9 — Quán net ✅ đã xong
 
-Một quán net 10 máy ở khu dân cư: thuê máy theo giờ, chơi game (tinh thần +, có mini "bắn" đơn giản),
-lướt web, xem phim. Có ổ điện sạc nhờ, có quạt, có cô chủ nhắc giờ. Chơi lâu thì mỏi mắt, đói bụng.
+Quán **NET HẢI ANH** dựng ở Khu Dân Cư, mặt tiền 9,5 m, mở 6h–23h: hai dãy bàn sát tường, 10 máy CRT (một
+máy dán giấy *MÁY HỎNG*), ghế nhựa, quạt trần, poster game, bảng nội quy, quạt cây, bình nước nóng lạnh, thùng
+lon. Quầy thu tiền có két, xấp thẻ máy, bảng **3K/1H**; tủ nước ngọt bên phải cửa; dãy ổ điện **SẠC NHỜ 2K**.
+Ngoài đường có bảng giá 3.000₫/giờ và giờ mở cửa, ô cửa sổ song sắt nhìn vô thấy máy sáng đèn.
 
-**Kiểm thử:** trừ tiền theo phút, tinh thần tăng theo giờ chơi nhưng có trần, máy hỏng thì đóng.
+- **Thuê máy:** 3.000₫/giờ tính theo phút (làm tròn 500₫), xem phim thêm nửa giá. Bốn gói 30 phút · 1 tiếng ·
+  2 tiếng · 4 tiếng, trả trước, hộp thoại ghi rõ được gì mất gì.
+- **Hiệu ứng:** chơi game +9 tinh thần/giờ (mau đói khát), lướt web +5 (nhẹ người), xem phim +13. Ngồi quá
+  120 phút một ngày là **mỏi mắt**: chỉ còn 45% tinh thần và mất 2 sức khoẻ, sang ngày mới tính lại.
+- **Dịch vụ phụ:** sạc nhờ điện thoại 2.000₫ (chờ 20 phút, đầy pin — dùng lại hàm sạc của lượt 8), nước ngọt
+  8.000₫/lon.
+- **Người:** chị Hạnh giữ quầy (hai câu chuyện về quán), thằng Bi 16h–22h và con Nhung 18h–22h30 ngồi máy,
+  nói chuyện được. Chạm máy 04 (ghế trống) cũng mở bảng dịch vụ.
+
+**Khác kế hoạch:** không làm mini-game "bắn" riêng — chơi máy là một lượt ngồi có tính giờ, giống cách quán
+cà phê và tiệm hớt tóc đang chạy; phần "chơi lâu thì mỏi mắt" thay cho mini-game để giữ đúng nhịp của game.
+
+**Kiểm thử:** `tests/net.test.ts` — 11 bài (giá theo phút và phụ thu phim, bốn gói giờ, hiệu ứng từng kiểu chơi,
+mỏi mắt sau 120 phút và tính lại sang ngày, ngồi máy làm đói khát tụt sức, trần tinh thần 100, giờ mở cửa và
+số máy, sạc nhờ/nước ngọt, lô đất và ba nhân vật, bản lưu v7 → v8).
 
 ## Lượt 10 — Đường phố 2005–2010
 

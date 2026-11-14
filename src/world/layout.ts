@@ -62,7 +62,7 @@ export const faceOutYaw = (fr: Frame) => fr.yaw + Math.PI;
 export type Style = 'office' | 'rich' | 'mid' | 'poor' | 'ware';
 export type LotKind = 'house' | 'alley' | 'minimart' | 'equip' | 'eatery' | 'bank' | 'hotel' | 'tro' | 'kiosk' | 'scrap' | 'site' | 'motel'
   | 'pawn' | 'cafe' | 'temple' | 'depot' | 'school' | 'spot' | 'pharmacy' | 'tower' | 'apartment'
-  | 'canho' | 'nharieng' | 'cuahang' | 'hospital' | 'police';
+  | 'canho' | 'nharieng' | 'cuahang' | 'hospital' | 'police' | 'net';
 export interface Lot { bx: number; bz: number; face: Face; at: number; w: number; d: number; kind: LotKind; style: Style; fr: Frame; seed: number; id?: string; district: District; }
 
 interface Special { at: number; w: number; kind: LotKind; id?: string; d?: number; }
@@ -81,6 +81,7 @@ const SPECIALS: Record<string, Special[]> = {
   '21N': [{ at: 8, w: 30, kind: 'school', id: 'school' }],
   '21W': [{ at: 6, w: 11, kind: 'tro', id: 'tro' }],
   '21S': [{ at: 12, w: 12, kind: 'nharieng', id: 'nharieng' }],
+  '21E': [{ at: 11, w: 9.5, kind: 'net', id: 'net' }],
   // Xóm lao động (TN)
   '02E': [{ at: 2, w: 6, kind: 'kiosk', id: 'kiosk' }, { at: 8, w: 2.4, kind: 'alley' }, { at: 14, w: 6, kind: 'spot', id: 'hem' }],
   '02S': [{ at: 14, w: 16, kind: 'scrap', id: 'scrap' }],

@@ -361,6 +361,109 @@ export function buildPlace(b: Builder, l: Lot, R: RNG) {
       b.shutter(cfg.shop, 0.4, w - 0.4, 0.1, 2.6);
       break;
     }
+    case 'net': {
+      // Quán net kiểu xóm lao động: trong tối, máy CRT sáng rực, quạt trần quay, bảng giá dán ngay cửa.
+      const di = 9.4, U = b.unlit, dark = 0x2e333a;
+      shell(b, { w, d, di, h1: 3.5, H: 7.0, col: 0xd8d1c0, inner: 0x3c424a, floor: 0x7d776a, ceil: 0x353b42, opens: [{ x0: 3.5, x1: 5.6, top: 2.5 }, { x0: 0.7, x1: 3.0, sill: 1.0, top: 2.3 }] });
+      bigSign(b, w, 3.2, 'QUÁN NET HẢI ANH', { bg: '#16283f', fg: '#ffd24d', sub: 'Chơi game · Lướt web · 3.000₫ một giờ', subFg: '#8fe6ff', border: '#ffd24d' }, 0.95, 0.95, 104);
+      b.awning(0.3, w - 0.3, 2.62, 1.1, 0x1d3a55, 0xe9e4d6, -0.05);
+      // Bảng giờ mở cửa + tờ poster giải đấu dán bên hông cửa
+      // Hai bảng nhỏ dán hai bên cửa: giờ mở cửa và giá giờ
+      b.signAt(6.6, 1.2, -0.03, 1.7, 0.42, 'MỞ 6H — 23H', { bg: '#f7f3e6', fg: '#1d3a55', border: '#1d3a55' }, 0, -1, 50);
+      b.signAt(8.3, 1.22, -0.03, 1.5, 0.78, '3.000₫/GIỜ', { bg: '#ffd400', fg: '#c8102e', sub: 'Trả trước · sạc nhờ 2.000₫', subFg: '#7a0f1e', border: '#c8102e' }, 0, -1, 54);
+      // Khung cửa ra vào
+      U.box(3.44, 1.32, 0.16, 0.14, 2.5, 0.16, 0xb9b2a4, 0x8f887c, 0.03);
+      U.box(5.66, 1.32, 0.16, 0.14, 2.5, 0.16, 0xb9b2a4, 0x8f887c, 0.03);
+      U.box(4.55, 2.52, 0.16, 2.36, 0.12, 0.16, 0xb9b2a4, 0x8f887c, 0.03);
+      U.box(4.55, 0.12, 0.16, 2.36, 0.03, 0.3, 0x8f887c, 0x6f6a60);
+      // Ô cửa sổ có song sắt, nhìn vô thấy dãy máy sáng đèn
+      for (let i = 0; i < 5; i++) U.box(0.86 + i * 0.54, 1.62, 0.13, 0.05, 1.2, 0.05, 0x9aa0a6, 0xc2c8ce);
+      U.box(1.85, 1.02, 0.13, 2.34, 0.06, 0.08, 0xc2c8ce, 0xd8dde2);
+      U.box(1.85, 2.24, 0.13, 2.34, 0.06, 0.08, 0xc2c8ce, 0xd8dde2);
+      // Quầy thu tiền bên trái cửa
+      U.box(1.75, 0.13, 0.95, 2.5, 0.9, 0.62, 0x6a5140, 0x8a6a4a, 0.1);
+      U.box(1.75, 1.06, 0.95, 2.62, 0.06, 0.74, 0xc7ac86, 0xe0cbaa, 0.08);
+      U.box(0.95, 1.12, 0.95, 0.34, 0.1, 0.26, 0x3a3f46, 0x5a6068);            // két tiền
+      U.box(2.45, 1.13, 0.82, 0.3, 0.08, 0.2, 0xe8e2d2, 0xc9c2b2);              // xấp thẻ máy
+      for (let i = 0; i < 4; i++) U.box(2.45, 1.18 + i * 0.02, 0.82, 0.28, 0.012, 0.18, [0xffd24d, 0x8fe6ff, 0xe86f9a, 0xf5f2ea][i]);
+      U.box(3.02, 1.32, 0.95, 0.3, 0.3, 0.06, 0xe9e4d6, 0xc9c2b2, 0.03);        // bảng giá dựng quầy
+      b.signAt(3.02, 1.47, 0.99, 0.28, 0.26, '3K/1H', { bg: '#ffd400', fg: '#c8102e', border: '#c8102e' }, 0, 1, 40);
+      b.collide(0.5, 0.62, 3.05, 1.3);
+      // Tủ kem nước ngọt sát cửa bên phải
+      fridgeModel(U, 8.55, 0.13, 1.15);
+      b.collide(8.2, 0.82, 8.9, 1.48);
+      U.box(8.55, 0.5, 0.845, 0.5, 1.0, 0.01, 0x9fe0f2, undefined, 0, true);
+      // Hai dãy bàn máy: kê sát tường, người ngồi quay lưng ra giữa
+      const seats = [2.9, 4.3, 5.7, 7.1, 8.5];
+      const screenCols = [0xff9a1f, 0x2f8fe0, 0xd83b6a, 0x35b06a, 0xe8c22a];
+      for (const side of [0, 1]) {
+        const bx0 = side ? 8.15 : 0.35, bx1 = side ? 9.15 : 1.35;
+        U.box((bx0 + bx1) / 2, 0.13, 6.0, bx1 - bx0, 0.72, 6.9, 0x6a5140, 0x8a6a4a, 0.1);
+        U.box((bx0 + bx1) / 2, 0.87, 6.0, bx1 - bx0 + 0.08, 0.06, 6.98, 0xc7ac86, 0xe0cbaa, 0.06);
+        b.collide(bx0 - 0.06, 2.5, bx1 + 0.06, 9.4);
+        seats.forEach((sz, i) => {
+          const mx = side ? 8.62 : 0.88, facing = side ? -1 : 1, broken = side === 1 && i === 2;
+          U.box(mx, 1.2, sz, 0.5, 0.4, 0.46, 0xc6c3b4, 0x9a978c, 0.06);                        // thùng máy CRT
+          U.box(mx + facing * 0.09, 1.2, sz, 0.32, 0.36, 0.4, 0xbdbab0, 0x8f8c81, 0.03);        // đuôi thùng
+          U.box(mx, 0.96, sz - 0.06, 0.46, 0.05, 0.34, 0x8a877c, 0x6f6c62);                     // đế máy
+          // Màn hình là quad phát sáng: thứ tự đỉnh quyết định mặt nào nhìn thấy được (một mặt), nên phải lật theo hướng bàn.
+          const zA = sz - 0.17, zB = sz + 0.17, X = mx + facing * 0.265, scol = screenCols[(i + side * 2) % screenCols.length];
+          if (!broken) {
+            U.box(mx + facing * 0.252, 1.2, sz, 0.03, 0.34, 0.42, 0x2b2d31, 0x1c1e21, 0.02);          // viền đen quanh màn hình
+            U.box(X, 1.2, sz, 0.012, 0.28, 0.36, scol, shade(scol, 0.85), 0.01);                          // mặt kính sáng
+            const zc = sz - 0.155, zd = sz + 0.155, Xg = X + facing * 0.012;
+            if (facing > 0) b.glow.quad(Xg, 1.08, zd, Xg, 1.08, zc, Xg, 1.32, zc, Xg, 1.32, zd, scol);
+            else b.glow.quad(Xg, 1.08, zc, Xg, 1.08, zd, Xg, 1.32, zd, Xg, 1.32, zc, scol);
+          } else {
+            U.box(mx + facing * 0.262, 1.06, sz, 0.02, 0.32, 0.34, 0x24262a);
+            b.signAt(mx + facing * 0.285, 1.2, sz, 0.34, 0.2, 'MÁY HỎNG', { bg: '#f5f2ea', fg: '#c8102e', border: '#c8102e' }, facing, 0, 34);
+          }
+          U.box(mx + facing * 0.5, 0.93, sz, 0.42, 0.03, 0.15, 0xe4e0d2, 0xc9c5b6);             // bàn phím
+          U.box(mx + facing * 0.48, 0.95, sz + 0.22, 0.16, 0.02, 0.1, 0xdfdfda);                 // miếng lót chuột
+          U.cyl(mx + facing * 0.42, 0.9, sz + 0.34, 0.035, 0.12, 0xd8452f, 6, 0.032);            // lon nước ngọt
+          if (i % 2 === 0) U.box(mx + facing * 0.3, 0.9, sz - 0.36, 0.18, 0.01, 0.13, 0xfdfbf2, 0xe4dfcc); // tờ giấy ghi tài khoản
+          plasticStool(U, mx + facing * 1.02, 0.13, sz, 0x2f5a8a, 0.42);
+        });
+      }
+      // Quạt trần + đèn tuýp, dãy ổ điện sạc nhờ
+      for (const fz of [3.2, 6.9]) {
+        U.box(w / 2, 3.26, fz, 0.05, 0.5, 0.05, 0x8a8f96);
+        U.cyl(w / 2, 2.98, fz, 0.11, 0.1, 0xdfe0d6, 8, 0.09);                                  // cục mô-tơ
+        U.box(w / 2, 2.96, fz, 1.42, 0.035, 0.14, 0xb9c0c8, 0x9aa0a6);
+        U.box(w / 2, 2.96, fz, 0.14, 0.035, 1.42, 0xb9c0c8, 0x9aa0a6);
+      }
+      ceilLight(b, w / 2, 3.44, 2.8, 1.5); ceilLight(b, w / 2, 3.44, 6.0, 1.5); ceilLight(b, w / 2, 3.44, 8.8, 1.5);
+      U.box(4.72, 1.02, 0.22, 0.9, 0.14, 0.08, 0xf3f0e8, 0xd9d2c0);                 // dãy ổ điện trên tường
+      for (let i = 0; i < 4; i++) U.box(4.4 + i * 0.21, 1.0, 0.27, 0.1, 0.08, 0.02, 0x4a4f56);
+      b.signAt(4.72, 1.2, 0.24, 0.72, 0.15, 'SẠC NHỜ 2K', { bg: '#f7f3e6', fg: '#1d3a55', border: '#1d3a55' }, 0, -1, 34);
+      // Tấm poster + bảng nội quy mặt sau quán
+      U.box(w / 2, 1.9, di - 0.26, 3.2, 1.5, 0.06, 0x1a2028, 0x2e3842);
+      b.signAt(w / 2, 2.42, di - 0.31, 2.9, 0.7, 'NỘI QUY QUÁN', { bg: '#1a2028', fg: '#ffd24d', sub: 'Không hút thuốc · Giữ trật tự · Trả tiền trước', subFg: '#cfd6dd' }, 0, -1, 62);
+      // Chỗ ngồi + người
+      // Quạt cây giữa quán + bình nước nóng lạnh góc trong
+      U.cyl(6.55, 0.13, 2.45, 0.3, 0.06, 0x4a4f56, 8);
+      U.box(6.55, 0.7, 2.45, 0.07, 1.2, 0.07, 0x9aa0a6);
+      U.cyl(6.55, 1.28, 2.45, 0.26, 0.07, 0xd9d7cc, 10);
+      U.box(6.55, 1.42, 2.45, 0.16, 0.5, 0.5, 0xdfe0d6, 0xb9c0c8, 0.04);
+      U.cyl(0.9, 0.13, 9.15, 0.22, 0.92, 0xe9eaea, 8, 0.2);
+      U.box(0.9, 1.05, 9.15, 0.38, 0.42, 0.34, 0xeef0f0, 0xd2d6d8, 0.04);
+      U.cyl(0.78, 1.26, 9.15, 0.09, 0.3, 0x8fd6f5, 8, 0.08);
+      U.cyl(1.02, 1.26, 9.15, 0.09, 0.3, 0x8fd6f5, 8, 0.08);
+      b.collide(0.55, 8.8, 1.2, 9.4);
+      // Đồng hồ treo tường, poster game dán vách, thùng lon
+      U.cyl(0.34, 2.72, 1.9, 0.19, 0.05, 0xf7f3e6, 10);
+      U.cyl(0.34, 2.7, 1.9, 0.02, 0.3, 0x2a2e34, 2);
+      b.signAt(0.26, 2.02, 3.3, 0.95, 0.62, 'KIẾM HIỆP', { bg: '#101b2a', fg: '#8fe6ff', sub: 'Bang hội Thiên Long', subFg: '#ffd24d', border: '#2f6fd5' }, 1, 0, 44);
+      b.signAt(0.26, 1.94, 5.1, 0.9, 0.58, 'GIẢI ĐẤU', { bg: '#1a1020', fg: '#ff8a2f', sub: 'Tháng 7 · 50.000₫', subFg: '#ffd24d', border: '#ff8a2f' }, 1, 0, 44);
+      U.cyl(8.9, 0.13, 2.2, 0.26, 0.7, 0x3f6b52, 10, 0.24);                                    // thùng rác
+      for (let i = 0; i < 4; i++) U.cyl(8.82 + (i % 2) * 0.14, 0.62 + Math.floor(i / 2) * 0.12, 2.14 + (i % 2) * 0.06, 0.035, 0.12, i % 2 ? 0xd8452f : 0x2f8fd5, 6, 0.032);
+      b.anchor('v_net', 1.75, 0.13, 0.4, 0);
+      b.anchor('v_net_bi', 2.02, 0.13, 4.3, -Math.PI / 2);
+      b.anchor('v_net_nhung', 7.95, 0.13, 8.5, Math.PI / 2);
+      b.anchor('may_net', 2.02, 0.13, 7.1, -Math.PI / 2);
+      b.signAt(2.02, 1.72, 7.1, 0.6, 0.22, 'MÁY 04', { bg: '#0f1a26', fg: '#ffd24d', border: '#2f6fd5' }, 1, 0, 32);
+      break;
+    }
     case 'depot': {
       const di = 8.2, col = 0x8fa3b0;
       shell(b, { w, d, di, h1: 4.6, H: 6.6, col, inner: 0xb8c0c4, floor: 0x8a8a84, ceil: 0x9aa2a8, opens: [{ x0: 2.2, x1: 9.8, top: 4.2 }] });

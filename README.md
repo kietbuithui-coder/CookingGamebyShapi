@@ -30,6 +30,8 @@ Sổ tay (nút hình cuốn sổ) có công thức, sổ sách lời lỗ, nợ 
 
 **Điện thoại đời 2005–2010:** ba mẫu bán ở tiệm Đồ Nghề — cục gạch (180.000₫), nắp gập (520.000₫), cảm ứng (1.450.000₫). Mở bằng nút trên màn hình hoặc phím `P`: sổ thu chi, danh bạ (gọi khách quen 1.000₫/lần), tin nhắn (nhắc nợ, nhắc tiền phòng, tin lừa, dự báo thời tiết), nghe radio, nghe nhạc, lướt web WAP. Pin tụt dần theo giờ, sạc qua đêm ở nhà có điện hoặc sạc nhờ ở tạp hoá 5.000₫.
 
+**Quán net Hải Anh:** quán 10 máy (một máy dán giấy HỎNG) ở khu dân cư, mở 6 giờ sáng tới 11 giờ đêm. Thuê máy 3.000₫/giờ, tính theo phút, xem phim tính thêm nửa giá: chơi game (+9 tinh thần/giờ) vui nhất nhưng mau đói khát, lướt web nhẹ người, xem phim lên tinh thần nhiều nhất. Ngồi quá 2 tiếng một ngày là **mỏi mắt**, chơi tiếp chỉ còn nửa tinh thần và tụt sức khoẻ. Có dãy ổ điện **sạc nhờ 2.000₫**, tủ nước ngọt 8.000₫/lon, quạt trần, bình nước nóng lạnh, và hai đứa nhỏ trong xóm ngồi máy cả buổi chiều.
+
 **HUD gọn trên điện thoại:** cụm chỉ số phía trên xếp 3 cột × 2 hàng (máy ngang) và dồn `#place` lên cùng hàng giờ – thời tiết, nên trên màn 390 px vẫn còn chỗ nhìn phố. Chip *Bị để ý* chỉ hiện khi công an đã để mắt tới.
 
 **Tự xếp nút:** vào Cài đặt › *Sắp xếp vị trí, độ lớn các nút* để kéo nút tương tác, nút chạy, hàng nút góc trên và các nút khi nấu ăn tới chỗ vừa tay, phóng to hay thu nhỏ từng nút (60–180%). Màn ngang và màn dọc lưu riêng. Thanh *Cỡ chữ và nút của cả màn hình* phóng cả giao diện (80–140%).
@@ -70,9 +72,9 @@ Nên **xoay ngang** điện thoại và bấm **Toàn màn hình** ở màn hìn
 
 ## Đã kiểm thử gì
 
-**Tự động:** 197 bài kiểm thử (`npm test`) cho toàn bộ luật chơi — giá cả, giá vốn, khách mua hay bỏ đi, đánh giá, hư hỏng nguyên liệu, nợ, thời tiết, sự kiện, nâng cấp bản lưu, tính nhất quán dữ liệu, và một bài mô phỏng 45 ngày liên tục.
+**Tự động:** 208 bài kiểm thử (`npm test`) cho toàn bộ luật chơi — giá cả, giá vốn, khách mua hay bỏ đi, đánh giá, hư hỏng nguyên liệu, nợ, thời tiết, sự kiện, nâng cấp bản lưu, tính nhất quán dữ liệu, và một bài mô phỏng 45 ngày liên tục.
 
-**Chạy thật trong Chrome không giao diện** (màn 844×390 ngang và 390×844 dọc, giả lập cảm ứng), không có lỗi console: vào game, chơi mới/chơi tiếp, lưu và nạp lại; đi bằng cần ảo và bàn phím, vuốt nhìn, va chạm tường; xin tiền, nhặt ve chai, bới thùng rác, bán ve chai, vác hàng, rửa chén, giao hàng, cơm chay; mua đồ nghề; bốc hàng – mặc cả – trả tiền; gánh/đẩy quầy, đặt quầy; cả 5 mini-game nấu ăn bằng thao tác chạm; mở bán, khách gọi món, làm món, giao món, nhận tiền và tiền boa; cả 6 nhân vật sự kiện (thanh tra, bảo kê, khách quậy, khách quen xin chịu, nhà phê bình, khách VIP); hội thoại với cả 34 nhân vật và 11 khách quen, chuyện của 6 nhân vật phụ, người xấc xược (ném giấy, khạc nhổ, đuổi theo), xe cộ và chim trời; ngân hàng, vay nóng, ba mức chỗ ở mới (căn hộ, nhà riêng, tạp hoá kiêm nhà ở: cửa khoá, đòi uy tín, ngủ, đóng tiền tuần); ngất vì kiệt sức và tỉnh dậy ở Bệnh viện Phước An (khám bệnh, quầy thuốc, phòng hồi sức, nhận lại đồ thất lạc), đấm người đi đường (la lên, có người đuổi đánh, uy tín tụt) và nhảy tại chỗ; mua điện thoại ở tiệm Đồ Nghề, mở máy xem sổ thu chi – danh bạ – tin nhắn, gọi khách quen, nghe radio, sạc pin; bị công an gọi lại vì gây sự — nộp phạt, cãi, bỏ chạy hay theo về phường, vào buồng tạm giữ đập đá cho bớt giờ rồi được thả trước cửa đồn; ngủ và tổng kết ngày; phá sản và làm lại; ban ngày lẫn ban đêm với mưa nhỏ, mưa to, giông, ngập; nhãn người lạ / người quen; màn hình sắp xếp nút (kéo, đổi cỡ, lưu, tải lại, màn dọc).
+**Chạy thật trong Chrome không giao diện** (màn 844×390 ngang và 390×844 dọc, giả lập cảm ứng), không có lỗi console: vào game, chơi mới/chơi tiếp, lưu và nạp lại; đi bằng cần ảo và bàn phím, vuốt nhìn, va chạm tường; xin tiền, nhặt ve chai, bới thùng rác, bán ve chai, vác hàng, rửa chén, giao hàng, cơm chay; mua đồ nghề; bốc hàng – mặc cả – trả tiền; gánh/đẩy quầy, đặt quầy; cả 5 mini-game nấu ăn bằng thao tác chạm; mở bán, khách gọi món, làm món, giao món, nhận tiền và tiền boa; cả 6 nhân vật sự kiện (thanh tra, bảo kê, khách quậy, khách quen xin chịu, nhà phê bình, khách VIP); hội thoại với cả 37 nhân vật và 11 khách quen, chuyện của 6 nhân vật phụ, người xấc xược (ném giấy, khạc nhổ, đuổi theo), xe cộ và chim trời; ngân hàng, vay nóng, ba mức chỗ ở mới (căn hộ, nhà riêng, tạp hoá kiêm nhà ở: cửa khoá, đòi uy tín, ngủ, đóng tiền tuần); ngất vì kiệt sức và tỉnh dậy ở Bệnh viện Phước An (khám bệnh, quầy thuốc, phòng hồi sức, nhận lại đồ thất lạc), đấm người đi đường (la lên, có người đuổi đánh, uy tín tụt) và nhảy tại chỗ; mua điện thoại ở tiệm Đồ Nghề, mở máy xem sổ thu chi – danh bạ – tin nhắn, gọi khách quen, nghe radio, sạc pin; thuê máy ở quán net (chơi game – lướt web – xem phim, sạc nhờ, nước ngọt, mỏi mắt sau 2 tiếng); bị công an gọi lại vì gây sự — nộp phạt, cãi, bỏ chạy hay theo về phường, vào buồng tạm giữ đập đá cho bớt giờ rồi được thả trước cửa đồn; ngủ và tổng kết ngày; phá sản và làm lại; ban ngày lẫn ban đêm với mưa nhỏ, mưa to, giông, ngập; nhãn người lạ / người quen; màn hình sắp xếp nút (kéo, đổi cỡ, lưu, tải lại, màn dọc).
 
 **Soát hình học tự động** (`tools/probe/steps/audit.mjs`): dò mọi cặp mặt trùng phẳng cùng hướng khác màu trên cả thành phố (nguồn gốc tường nhấp nháy) và bắn tia từ từng biển hiệu để tìm biển bị che. Sau khi sửa: mặt trùng phẳng giảm từ 1.289 m² còn 6,5 m² (phần còn lại là các mặt khuất hoặc cách nhau vài mi-li-mét); biển bị chắn ngay phía trước giảm từ 76 còn 23 trên 159 biển, hầu hết chỉ còn là một thân cây hay cột đèn đứng trước.
 
@@ -100,7 +102,7 @@ Cần Node.js 20 trở lên.
 ```bash
 npm install
 npm run dev          # máy chủ phát triển, mở địa chỉ được in ra
-npm test             # 197 bài kiểm thử luật chơi
+npm test             # 208 bài kiểm thử luật chơi
 npm run build        # kiểm tra kiểu + đóng gói ra dist/
 npm run build:pages  # kiểm tra kiểu + kiểm thử + đóng gói ra docs/ (GitHub Pages)
 ```

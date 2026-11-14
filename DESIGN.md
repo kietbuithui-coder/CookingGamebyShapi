@@ -257,6 +257,35 @@ nhắc bán ở đâu. Máy chỉ mở được khi còn pin.
 
 Mua máy mới thì máy cũ tự bán lại (chỉ giữ một máy trong ba lô). Bán máy ở tiệm thì mất sim.
 
+### 4.18 Quán net
+
+Một lô riêng ở Khu Dân Cư, mặt tiền 9,5 m: bảng hiệu *QUÁN NET HẢI ANH*, mái hiên sọc xanh, hai bảng nhỏ
+dán tường (**3.000₫/GIỜ — trả trước · sạc nhờ 2.000₫** và **MỞ 6H — 23H**), cửa mở, ô cửa sổ có song sắt
+nhìn vô thấy dãy máy sáng đèn.
+
+**Trong quán:** hai dãy bàn sát tường, mỗi dãy 5 máy CRT (màn hình phát sáng, màu khác nhau, một máy dán giấy
+*MÁY HỎNG*), ghế nhựa xanh, quạt trần, hai poster game dán vách, bảng nội quy, quạt cây, bình nước nóng lạnh,
+thùng lon, đồng hồ treo tường. Quầy thu tiền bên trái cửa có két tiền, xấp thẻ máy và bảng **3K/1H**; tủ kem
+nước ngọt bên phải. Dãy ổ điện trên tường có bảng **SẠC NHỜ 2K**.
+
+| Dịch vụ | Giá | Ghi chú |
+|---|---|---|
+| Chơi game · lướt web | 3.000₫/giờ | tính theo phút, làm tròn 500₫ |
+| Xem phim | 4.500₫/giờ | tính thêm nửa giá vì tốn đĩa |
+| Sạc nhờ điện thoại | 2.000₫ | ngồi chờ 20 phút, pin đầy 100% |
+| Nước ngọt | 8.000₫ | khát −24, tinh thần +3 |
+
+- **Bốn gói giờ:** 30 phút · 1 tiếng · 2 tiếng · 4 tiếng. Trả tiền trước, hộp thoại ghi rõ được gì mất gì.
+- **Hiệu ứng mỗi giờ:** chơi game +9 tinh thần, −4 sức, −7 no, −8 nước; lướt web +5, −1, −3, −4; xem phim +13,
+  −2, −4, −5.
+- **Mỏi mắt:** ngồi quá **120 phút một ngày** thì mọi gói giờ sau đó chỉ còn **45% tinh thần** và mất 2 sức khoẻ.
+  Sang ngày mới thì tính lại từ đầu (nhật ký `flags.netDay` / `flags.netMin`).
+- **Giờ mở cửa:** 6h–23h. Ngoài giờ đó thì chị chủ nói quán chưa mở.
+- **Người:** chị Hạnh (chủ quán, đứng sau quầy, bán máy – sạc – nước, có hai câu chuyện về quán), thằng Bi
+  (16h–22h, ngồi máy bên trái, mê kiếm hiệp) và con Nhung (18h–22h30, máy bên phải, chat với bạn trên Sài Gòn).
+  Cả hai ngồi ghế nhựa, nói chuyện được, mỗi người hai câu chuyện.
+- **Vào quán:** chạm vào chị Hạnh ở quầy, hoặc chạm **máy 04** (ghế trống) — cả hai mở cùng một bảng dịch vụ.
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
@@ -267,7 +296,7 @@ Mua máy mới thì máy cũ tự bán lại (chỉ giữ một máy trong ba l�
 
 ## 6. Lưu game
 
-`localStorage`, khoá `ganhhang.save.v1` (trạng thái) và `ganhhang.settings.v1` (cài đặt). Tự lưu sau việc quan trọng, mỗi 45 giây và khi rời trang. `SAVE_VERSION = 7`; `migrate()` nạp được bản lưu cũ thiếu trường và loại bỏ nguyên liệu không còn tồn tại. Bản lưu trước v4 chưa có sổ `met` nên được coi như đã quen hết người đứng quầy. Bản lưu trước v5 (chưa có bệnh viện) được nâng sức khoẻ lên 45 nếu đang ở 0 — nếu không, mở lên là ngất liền — và thêm sổ đồ thất lạc rỗng. Bản lưu trước v6 được cấp `wanted = 0` và `jailUntil = 0` (chưa ai biết mặt). Bản lưu trước v7 chưa có điện thoại (`phone = null`). Cài đặt có thêm `ui` (cỡ giao diện và cách xếp nút); `cleanLayout()` làm sạch dữ liệu đọc lên.
+`localStorage`, khoá `ganhhang.save.v1` (trạng thái) và `ganhhang.settings.v1` (cài đặt). Tự lưu sau việc quan trọng, mỗi 45 giây và khi rời trang. `SAVE_VERSION = 8`; `migrate()` nạp được bản lưu cũ thiếu trường và loại bỏ nguyên liệu không còn tồn tại. Bản lưu trước v4 chưa có sổ `met` nên được coi như đã quen hết người đứng quầy. Bản lưu trước v5 (chưa có bệnh viện) được nâng sức khoẻ lên 45 nếu đang ở 0 — nếu không, mở lên là ngất liền — và thêm sổ đồ thất lạc rỗng. Bản lưu trước v6 được cấp `wanted = 0` và `jailUntil = 0` (chưa ai biết mặt). Bản lưu trước v7 chưa có điện thoại (`phone = null`). Bản lưu trước v8 chưa có sổ phút ngồi quán net (`netDay = -1`, `netMin = 0`). Cài đặt có thêm `ui` (cỡ giao diện và cách xếp nút); `cleanLayout()` làm sạch dữ liệu đọc lên.
 
 ## 7. Kiểm thử
 
@@ -280,6 +309,7 @@ Mua máy mới thì máy cũ tự bán lại (chỉ giữ một máy trong ba l�
 - `tests/stall.test.ts` — sạp cố định: phí chỗ theo ngày, trừ tiền đầu ngày, thiếu tiền thì đóng quầy và treo nợ, mua sạp thì lên bậc 3 và chưa có chỗ.
 - `tests/housing.test.ts` — chỗ ở: mã không trùng, thuê theo tuần thì giá cao hơn phải chứa nhiều hơn và đòi uy tín cao hơn, ba chỗ mới có đúng lô đất, chưa đủ uy tín thì không cho thuê và không trừ tiền, mã lạ thì trả về `false`, nợ hai ngày thì mất chỗ và mất tủ lạnh, chỉ nhà thuê theo tuần mới cắm được tủ lạnh.
 - `tests/health.test.ts` — bệnh viện (lô đất riêng, ba món thuốc, chỉ thuốc cảm chữa cảm), mua thuốc/khám bệnh/nằm hồi sức kể cả khi không đủ tiền, ngất thì viện phí có trần và tiền không âm, rơi đúng 40% đồ và nhận lại được trong ngày, đồ nhặt lại không vượt sức chứa, bản lưu v4 đang ở máu 0.
+- `tests/net.test.ts` — quán net: giá theo phút và phụ thu phim, bốn gói giờ, hiệu ứng từng kiểu chơi, mỏi mắt sau 120 phút (tinh thần còn 45%, mất 2 sức khoẻ) và tính lại khi sang ngày, ngồi máy làm đói khát tụt sức, tinh thần không vượt 100, giờ mở cửa và số máy, sạc nhờ/nước ngọt, lô đất và ba nhân vật của quán, bản lưu v7 lên v8.
 - `tests/fun.test.ts` — bảng chỗ chơi (mã không trùng, có neo, có giờ hợp lệ, chơi lâu hơn thì lên tinh thần nhiều hơn) và thang mở công thức (cấp 1 mở đúng 1 món, cấp sau mở 2; luôn là món rẻ nhất còn thiếu; không vượt tay nghề; món sau không rẻ hơn món trước; cấp 10 mở đủ 60 món).
 
 Ba bài mới ở lượt 2: mỗi nhân vật phụ phải có tên, nhãn việc, câu mở đầu và ít nhất hai câu chuyện đủ dài; bảng `RUDE` chỉ được có tối đa 8 nhóm và phải có đủ lời cho cả năm kiểu (giấy, khạc nhổ, mắng, đuổi, khạc nhổ khi bị xin tiền); khách quen không được trùng id hay tên và phải có cả tên kiểu học sinh.
@@ -294,7 +324,7 @@ Người chơi đã thử bản đầu và gửi danh sách góp ý; việc đư
 
 **Lượt 3 — nội dung còn thiếu so với bản mô tả đầy đủ: đã xong phần chính** (60 món và thang mở công thức, chỗ chơi lên tinh thần, khách đứng mua, việc lúc rảnh của người đi đường, nút cất gánh, chạy bàn và bốc cảng). Chi tiết ở mục 4.3, 4.10, 4.11.
 
-**Lượt 6 — sức khoẻ và bệnh viện: đã xong** (ngất vì máu 0, viện phí có trần, rơi đồ nhặt lại được trong ngày, Bệnh viện Phước An với khám bệnh – quầy thuốc – phòng hồi sức, nút đấm và nút nhảy). Chi tiết ở mục 4.14–4.15. **Lượt 7 — công an phường, tạm giữ, lao động: đã xong** (mức bị để ý, công an đi tuần gọi lại, đồn Công an phường có buồng tạm giữ, nộp phạt / cãi / bỏ chạy / theo về phường, đập đá bớt giờ, ra tù mất uy tín). Chi tiết ở mục 4.16. **Lượt 8 — điện thoại: đã xong** (ba mẫu máy, pin, sổ thu chi, danh bạ, tin nhắn, radio – nhạc – WAP, sạc). Chi tiết ở mục 4.17. Các lượt còn lại (quán net, xe cộ 2005–2010, NPC sống động hơn) nằm ở `PLAN.md`.
+**Lượt 6 — sức khoẻ và bệnh viện: đã xong** (ngất vì máu 0, viện phí có trần, rơi đồ nhặt lại được trong ngày, Bệnh viện Phước An với khám bệnh – quầy thuốc – phòng hồi sức, nút đấm và nút nhảy). Chi tiết ở mục 4.14–4.15. **Lượt 7 — công an phường, tạm giữ, lao động: đã xong** (mức bị để ý, công an đi tuần gọi lại, đồn Công an phường có buồng tạm giữ, nộp phạt / cãi / bỏ chạy / theo về phường, đập đá bớt giờ, ra tù mất uy tín). Chi tiết ở mục 4.16. **Lượt 8 — điện thoại: đã xong** (ba mẫu máy, pin, sổ thu chi, danh bạ, tin nhắn, radio – nhạc – WAP, sạc). Chi tiết ở mục 4.17. **Lượt 9 — quán net: đã xong** (quán 10 máy ở Khu Dân Cư, thuê máy theo phút, chơi game – lướt web – xem phim, mỏi mắt sau 2 tiếng, sạc nhờ, nước ngọt, chủ quán và hai đứa nhỏ ngồi máy). Chi tiết ở mục 4.18. Các lượt còn lại (xe cộ 2005–2010, NPC sống động hơn) nằm ở `PLAN.md`.
 
 Còn lại:
 
