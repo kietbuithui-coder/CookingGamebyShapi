@@ -16,7 +16,9 @@ export type Pose = 'idle' | 'walk' | 'sit' | 'talk' | 'work' | 'carry' | 'wave' 
 export function lookFromArch(a: ArchDef, R: RNG, fem = R.chance(a.fem)): Look {
   let face = R.pick(a.faces);
   if (fem && (face === 0 || face === 7)) face = 1; if (!fem && face === 1) face = 0; if (fem && face === 3) face = 4; if (!fem && face === 4) face = 3;
-  let hs = R.pick(a.hairStyle); if (!fem && (hs === 1 || hs === 2) && a.id !== 'vogiacu') hs = 0; if (fem && hs === 3) hs = 2; if (fem && hs === 0 && R.chance(0.6)) hs = 1;
+  let hs = R.pick(a.hairStyle);
+  if (!fem) { if ((hs === 1 || hs === 7 || hs === 5) && a.id !== 'vogiacu') hs = R.chance(0.5) ? 0 : 6; if (hs === 2 && a.id !== 'vogiacu') hs = 0; }
+  else { if (hs === 3) hs = 2; if (hs === 6) hs = 7; if (hs === 0 && R.chance(0.6)) hs = R.chance(0.5) ? 1 : 7; }
   return {
     face, fem, shirt: R.pick(a.shirts), pants: R.pick(a.pants), hair: R.pick(a.hair), hat: R.pick(a.hats), hairStyle: hs, fat: R.range(a.fat[0], a.fat[1]) * (fem ? 0.94 : 1),
     h: R.range(a.h[0], a.h[1]) * (fem ? 0.96 : 1), skin: R.pick(SKINS), bag: R.chance(a.bag) ? R.pick([0x2a2e3a, 0x8a3a2a, 0x2f6fa8, 0x3f6a4a, 0xd9a05a]) : 0,
@@ -61,13 +63,34 @@ function buildBody(l: Look): THREE.BufferGeometry {
   m.cyl(0, 1.2, 0, 0.055, 0.1, sk, 6);
   m.sph(0, HEAD_Y, 0, HRX, HRY, HRX, sk, 10, mix(sk, 0xffffff, 0.08));
   for (const s of [-1, 1]) m.sph(s * HRX * 0.98, HEAD_Y - 0.01, 0, 0.028, 0.042, 0.03, shade(sk, 0.95), 5);
-  // tóc
+  // tóc: 0 ngắn, 1 dài, 2 búi, 3 hói, 4 xoăn, 5 đuôi ngựa, 6 húi cua, 7 tém ngang vai
   const hc = l.hair, covered = l.hat === 3;
   if (l.hairStyle === 3) { m.sph(0, HEAD_Y + 0.0, -0.035, HRX * 1.03, 0.11, HRX * 0.98, hc, 8); }
-  else if (!covered) {
+  else if (l.hairStyle === 6) { // húi cua: sát da đầu, hai bên cao hơn
+    if (!covered) {
+      m.sph(0, HEAD_Y + 0.03, -0.02, HRX * 1.01, HRY * 0.9, HRX * 0.99, shade(hc, 0.95), 8, shade(hc, 1.12));
+      m.sph(0, HEAD_Y + 0.1, 0.055, 0.115, 0.028, 0.085, shade(hc, 1.05), 6);
+    }
+  } else if (!covered) {
     m.sph(0, HEAD_Y + 0.045, -0.03, HRX * 1.06, HRY * 0.94, HRX * 1.04, hc, 9, shade(hc, 1.25));
     if (l.hairStyle === 1) { m.sph(0, HEAD_Y - 0.13, -0.085, HRX * 0.95, 0.2, 0.085, hc, 8); for (const s of [-1, 1]) m.sph(s * 0.135, HEAD_Y - 0.08, -0.01, 0.045, 0.15, 0.07, hc, 6); }
     if (l.hairStyle === 2) m.sph(0, HEAD_Y + 0.14, -0.13, 0.07, 0.065, 0.07, hc, 7);
+    if (l.hairStyle === 4) { // xoăn: từng lọn nhỏ phủ kín đỉnh đầu
+      for (let i = 0; i < 9; i++) {
+        const a = -1.15 + i * 0.29, ry = HEAD_Y + 0.09 + Math.sin(i * 1.7) * 0.022;
+        m.sph(Math.sin(a) * HRX * 1.02, ry, Math.cos(a) * HRX * 0.92 - 0.03, 0.058, 0.052, 0.058, i % 2 ? hc : shade(hc, 1.14), 6);
+      }
+      for (const s of [-1, 1]) m.sph(s * HRX * 0.98, HEAD_Y + 0.02, -0.02, 0.05, 0.07, 0.05, shade(hc, 1.06), 5);
+    }
+    if (l.hairStyle === 5) { // đuôi ngựa buộc sau gáy
+      m.sph(0, HEAD_Y + 0.01, -0.13, 0.062, 0.072, 0.07, shade(hc, 0.9), 6);
+      m.sph(0, HEAD_Y - 0.17, -0.15, 0.058, 0.16, 0.058, shade(hc, 0.95), 6, shade(hc, 1.15));
+      m.sph(0, HEAD_Y - 0.32, -0.128, 0.045, 0.11, 0.045, shade(hc, 0.88), 5);
+    }
+    if (l.hairStyle === 7) { // tém ngang vai: hai bên ôm tới quai hàm
+      for (const s of [-1, 1]) m.sph(s * HRX * 0.94, HEAD_Y - 0.08, 0.0, 0.052, 0.155, 0.098, hc, 6);
+      m.sph(0, HEAD_Y - 0.06, -0.1, HRX * 0.9, 0.15, 0.06, shade(hc, 0.95), 6);
+    }
     if (l.hairStyle === 0 && !l.fem) m.sph(0, HEAD_Y + 0.13, 0.06, 0.12, 0.05, 0.1, shade(hc, 1.15), 6);                    // mái
   }
   // nón

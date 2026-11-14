@@ -6,7 +6,7 @@ import { FIXED, REGULARS } from '../data/people';
 import type { WeatherId } from '../data/world';
 import { PLACES } from '../world/layout';
 
-export const SAVE_VERSION = 9;
+export const SAVE_VERSION = 10;
 /** Một lô nguyên liệu. fresh 0–100, q chất lượng 0–1, cost giá vốn mỗi đơn vị. */
 export interface Stack { id: string; n: number; fresh: number; q: number; cost: number; }
 /** Mẻ sơ chế sẵn ("cốt" món). */
@@ -26,6 +26,12 @@ export interface Stall {
   tier: number; where: 'none' | 'home' | 'carried' | 'placed'; spot: string | null; x: number; z: number; yaw: number;
   cond: number; open: boolean; store: Stack[]; preps: Prep[]; ready: Ready[]; fuel: number; fuelKind: string; paidDay: number; dirt: number;
 }
+/** Người phụ việc ở quầy: chỉ nhận sau khi quán đã có doanh thu và bán được vài ngày (xem helperGate). */
+export interface Helper {
+  name: string; fem: boolean; face: number; hairStyle: number; shirt: number; pants: number; hair: number; skin: number;
+  /** Lương mỗi ngày (trừ vào sáng hôm sau) và ngày bắt đầu làm, ngày đã trả lương gần nhất. */
+  wage: number; since: number; paid: number; hired: boolean;
+}
 export interface Game {
   v: number; seed: number; ac: 'anh' | 'chị';
   day: number; min: number;
@@ -42,6 +48,8 @@ export interface Game {
   phone: { id: string; battery: number } | null;
   housing: string; paidUntil: number; home: Stack[];
   stall: Stall;
+  /** Người phụ việc đang làm ở quầy (null = chưa thuê ai). */
+  help: Helper | null;
   rec: Record<string, RecState>;
   debts: Debt[]; debtSeq: number; credit: number;
   led: LedgerDay; hist: LedgerDay[];
@@ -73,7 +81,7 @@ export function newGame(seed = (Math.random() * 1e9) | 0, ac: 'anh' | 'chị' = 
     st: { hunger: 58, thirst: 55, energy: 82, health: 92, hygiene: 42, mood: 45 }, rep: 0, xp: 0,
     pos: { x: PLACES.camp.x, z: PLACES.camp.z - 1.2, yaw: Math.PI, pitch: 0 },
     bag: [], junk: {}, meals: [], lostBag: [], lostDay: -1, wanted: 0, jailUntil: 0, gear: {}, phone: null, housing: 'gamcau', paidUntil: 0, home: [],
-    stall: emptyStall(), rec, debts: [], debtSeq: 1, credit: 0,
+    stall: emptyStall(), help: null, rec, debts: [], debtSeq: 1, credit: 0,
     led: newLedger(0), hist: [], rel: {}, met: {}, flags: {},
     weather: { now: 'nang', until: 6 * 60 + 10 + 420, next: 'nang', flood: 0, wet: 0 },
     ev: { active: [], last: {}, check: 9 * 60, lastStart: -999 },
@@ -119,6 +127,11 @@ export function migrate(raw: any): Game | null {
   if ((raw.v ?? 0) < 8) { g.flags.netDay = -1; g.flags.netMin = 0; }
   // v9: đua xe đạp chủ nhật. Bản lưu cũ chưa có sổ ngày đua và số lần thắng.
   if ((raw.v ?? 0) < 9) { g.flags.raceDay = -1; g.flags.raceWin = 0; }
+  // v10: người phụ việc ở quầy. Bản lưu cũ chưa từng thuê ai; dọn luôn dữ liệu hỏng.
+  if ((raw.v ?? 0) < 10 || !raw.help) g.help = null;
+  else if (typeof g.help?.name !== 'string' || typeof g.help?.wage !== 'number') g.help = null;
+  if (g.help) { g.help.hired = true; if (typeof g.help.since !== 'number') g.help.since = g.day; if (typeof g.help.paid !== 'number') g.help.paid = g.day; }
+  if (typeof g.flags.firstSale !== 'number' && (g.hist.some((h) => h.revenue > 0) || g.led.revenue > 0)) g.flags.firstSale = 0;
   g.v = SAVE_VERSION;
   return g;
 }

@@ -2,7 +2,8 @@
 import * as THREE from 'three';
 import './ui/fonts.css';
 import { ctx, QUALITY, MIN_PER_SEC, SAVE_KEY, loadSettings, saveSettings, baseFov, canFullscreen, toggleFullscreen } from './game/ctx';
-import { fontsReady } from './gfx/tex';
+import { fontsReady, faceAtlas, FACE_COLS, FACE_ROWS } from './gfx/tex';
+import { EXPR_NAMES } from './data/expr';
 import { buildCity } from './world/city';
 import { Env } from './world/env';
 import { Input } from './game/input';
@@ -133,6 +134,16 @@ async function boot() {
     w.__lvl = (n: number) => { const g = ctx.g; g.xp = Math.max(0, 30 * n * n - 3); Rules.addXp(g, 1); return { xp: g.xp, known: Object.values(g.rec).filter((r) => r.known).length }; };
     w.__rude = (kind?: 'paper' | 'spit' | 'curse' | 'chase') => { const p = ctx.player, n = ctx.npcs.list.filter((x) => x.kind === 'ped').sort((a, b) => (a.x - p.x) ** 2 + (a.z - p.z) ** 2 - ((b.x - p.x) ** 2 + (b.z - p.z) ** 2))[0]; if (!n) return null; if (kind === 'spit') ctx.npcs.spit(n); else if (kind === 'chase') ctx.npcs.chase(n); else ctx.npcs['rude'](n, kind); return n.id; };
     w.__open = (id: string) => placeOpen(id);
+    // Bảng tra biểu cảm: vẽ nguyên atlas mặt lên màn hình để chụp ảnh kiểm tra.
+    w.__faces = () => {
+      document.getElementById('__faces')?.remove();
+      const src = faceAtlas().image as HTMLCanvasElement, box = document.createElement('div');
+      box.id = '__faces'; box.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#15121a;display:flex;align-items:center;justify-content:center';
+      const cv = document.createElement('canvas'); cv.width = src.width; cv.height = src.height;
+      cv.getContext('2d')!.drawImage(src, 0, 0); cv.style.cssText = 'width:100%;height:auto;max-height:100%';
+      box.appendChild(cv); document.body.appendChild(box);
+      return { w: src.width, h: src.height, cols: FACE_COLS, rows: FACE_ROWS, names: EXPR_NAMES };
+    };
     w.__give = (id: string, n: number, where: 'bag' | 'store' | 'home' = 'store') => State.addStack(where === 'bag' ? ctx.g.bag : where === 'home' ? ctx.g.home : ctx.g.stall.store, { id, n, fresh: 100, q: 1, cost: Rules.unitCost(ctx.g, id) });
   }
 }

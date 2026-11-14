@@ -15,7 +15,7 @@ Thứ tự dưới đây xếp theo phụ thuộc kỹ thuật và theo mức "c
 | 8 | Điện thoại (3 mẫu máy, giờ, thu chi, tin nhắn, lướt web) ✅ | Là cái khung UI cho quán net |
 | 9 | Quán net, chơi game, lướt web tăng tinh thần ✅ | Dùng lại UI + túi tiền theo giờ của lượt 8 |
 | 10 | Ô tô đời 2005–2010 · xe đạp · event đua xe đạp · xích đu công viên ✅ | Chỉ là cảnh vật + một event, không phụ thuộc hệ nào |
-| 11 | Khuôn mặt & kiểu tóc · lời thoại dễ thương/thô tục · âm thanh cảm xúc · NPC tạp hoá nhỏ | Làm cuối vì phải rà lại toàn bộ nhân vật một lượt |
+| 11 | Khuôn mặt & kiểu tóc · lời thoại dễ thương/thô tục · âm thanh cảm xúc · NPC tạp hoá nhỏ ✅ (lượt 14: 16 biểu cảm + 8 kiểu tóc) | Làm cuối vì phải rà lại toàn bộ nhân vật một lượt |
 
 Đã xong ngay trong lượt này (phần đầu của mục "sửa lỗi vặt"):
 
@@ -267,3 +267,41 @@ vô ngồi (3 chỗ `sit`) → giao món có tiền → `stallRent` khớp phí 
 
 **Còn lại của nhánh kinh doanh:** quán có chỗ ngồi (bậc 5), nhà hàng bình dân (bậc 6), chuỗi cửa hàng (bậc 7).
 Hướng làm: bậc 5 thêm người phụ bán và thực đơn theo buổi, bậc 6 có nhân viên + đặt bàn, bậc 7 mở điểm thứ hai.
+
+## Lượt 14 — Con người & nhân vật: biểu cảm, kiểu tóc, người phụ việc ✅ đã xong
+
+**Mười sáu biểu cảm.** Atlas mặt nới từ 8 × 8 lên **16 × 8** ô. Tám cột mới: cười mỉm, nháy mắt, buồn ngủ
+(mí sụp + chữ “z”), đau (mắt nhắm tịt kiểu X + mồ hôi), sợ (mắt mở to, mồm há, hai giọt mồ hôi), khinh (mí
+sụp, liếc bên), ăn ngon (mắt cong, mồm nhai, má hồng), phồng má hờn (má căng, môi chu). Tên biểu cảm nằm
+trong `src/data/expr.ts` để không còn số trần rải khắp nơi; `Npc.say` cũng chọn giọng đọc (giận/vui/thường)
+theo bảng đó, nên biểu cảm mới không bị đọc giọng giận như trước.
+
+Gắn vào việc đang diễn ra: chào người quen cười mỉm, mưa càu nhàu, nắng nóng/khuya buồn ngủ, lạnh phồng má,
+ăn đấm nhắn mặt, khách bỏ đi vì giá cười khẩy, khách chấm ≥ 4,7★ thì vừa nhai vừa gật.
+
+**Tám kiểu tóc** (thêm xoăn, đuôi ngựa, húi cua, tém ngang vai) và chia lại cho 14 nhóm người đi đường; nữ
+không còn bị gán kiểu hói, nam không còn bị gán đuôi ngựa.
+
+**Người phụ việc ở quầy.** Người chơi dặn: chỉ xuất hiện khi quán **đã có doanh thu** và **sau một thời
+gian**. Luật `helperGate` trong `src/sim/rules.ts` kiểm ba điều: bậc quầy ≥ 2 (xe đẩy trở lên), tổng doanh
+thu bán hàng ≥ 250.000₫, và đã bán qua ≥ 2 ngày (`flags.firstSale` ghi ở lần bán đầu tiên). Đủ cả ba thì mới
+thỉnh thoảng có người đi tới xin việc (240–420 giây một lần, chỉ khi quán đang mở và người chơi đứng gần);
+hộp thoại có lời chào, lời xin việc riêng của từng ứng viên (5 người, lương 55.000–70.000₫/ngày, trả trước
+một ngày) và hai lựa chọn nhận / hẹn sau.
+
+Đang làm thì người phụ đứng cạnh quầy phía người bán, khách chờ lâu hơn **×1,3**, quầy bớt bẩn, và nói
+chuyện theo tình huống với biểu cảm đi kèm (khách quậy → sợ, quầy bẩn → khó chịu, khách đông → vui, khuya →
+buồn ngủ, doanh thu cao → rất vui, người chơi mệt → phồng má). Chạm vào để hỏi chuyện bán buôn, dặn dò, hoặc
+cho nghỉ. Sáng hôm sau trừ lương; thiếu tiền thì họ xin nghỉ. Đóng quầy thì họ về.
+
+**Bản lưu v10**: thêm `Game.help`; `migrate()` bỏ dữ liệu hỏng và ghi mốc `firstSale` cho bản lưu cũ đã bán
+được hàng.
+
+**Kiểm thử:** `tests/helper.test.ts` 16 bài (điều kiện theo doanh thu/ngày/bậc, doanh thu cộng dồn nhiều
+ngày, ứng viên tất định, trả lương đầu ngày, hết tiền thì nghỉ, cho nghỉ, bản lưu v10). Tổng **247 bài / 16 tệp**.
+Probe `tools/probe/steps/nguoi.mjs`: chụp atlas 16 biểu cảm, 8 kiểu tóc xếp hàng, ba mức của `helperGate`,
+hộp thoại xin việc, nhận việc (trừ đúng 58.000₫), trò chuyện và câu nói theo tình huống.
+
+**Còn lại của mục “Con người & nhân vật”:** tuỳ biến ngoại hình người chơi (cần gương ở nhà hoặc góc nhìn thứ
+ba vì game đang ở góc nhìn thứ nhất), bộ thoại riêng cho từng nhân vật cố định, phản ứng khi người chơi
+giàu/nghèo/bị công an để ý.

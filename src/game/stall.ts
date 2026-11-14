@@ -3,13 +3,13 @@ import * as THREE from 'three';
 import { ctx, MIN_PER_SEC } from './ctx';
 import { MB, MAT } from '../gfx/mb';
 import { ganhModel, cartModel, charcoalStove, gasStove, boardModel, knifeModel, panModel, potModel, grateModel, iceBox, lanternModel, umbrellaModel, plasticStool, plasticTable, ingModel, signBoardModel } from '../gfx/props';
-import { takeawayBag } from '../gfx/people';
+import { takeawayBag, Look } from '../gfx/people';
 import { SPOTS, Spot, spotById, groundY, NAV_BLOCK, CORNER, edgeKey } from '../world/layout';
-import { Game, absMin, hourOf, addStack } from '../sim/state';
-import { arrivalRate, has, tier, menuOf, available, decide, review, settleSale, lostCustomer, readyCount, finishPossible, spend, earn, stove, changeRel, meet, wx, eventOn, Persona, addXp, canSell, missingFor, hasPrep, stallRoom, isNight, level, stallRent, payStallRent } from '../sim/rules';
+import { Game, Helper, absMin, hourOf, addStack } from '../sim/state';
+import { arrivalRate, has, tier, menuOf, available, decide, review, settleSale, lostCustomer, readyCount, finishPossible, spend, earn, stove, changeRel, meet, wx, eventOn, Persona, addXp, canSell, missingFor, hasPrep, stallRoom, isNight, level, stallRent, payStallRent, helperGate, hireHelper, fireHelper, helperCandidate, helperPatience } from '../sim/rules';
 import { RECIPES, RecipeDef } from '../data/recipes';
 import { INGS } from '../data/ingredients';
-import { ARCH, LINES, REGULARS, RegularDef } from '../data/people';
+import { ARCH, HelperDef, LINES, REGULARS, RegularDef } from '../data/people';
 import { EVENTS } from '../data/world';
 import { TIERS } from '../data/gear';
 import { bus, toast, sfx } from '../core/bus';
@@ -18,6 +18,7 @@ import type { Npc } from './npc';
 import { who } from './who';
 import type { Box2, Circ } from '../world/build';
 import { SignAtlas } from '../gfx/tex';
+import { EXPR } from '../data/expr';
 
 export interface Station { x: number; y: number; z: number; yaw: number; cam: THREE.Vector3; look: THREE.Vector3; }
 export class StallSys {
@@ -25,6 +26,8 @@ export class StallSys {
   customers: Npc[] = []; private acc = 0; private builtKey = ''; private stockKey = ''; private stockT = 0; private cols: (Box2 | Circ)[] = [];
   private actorT = 0; private actorId = ''; private actorTries = 0; busy: Npc | null = null; rowdy = 0; private signAtlas = new SignAtlas(512); private signMat: THREE.Material;
   private marks: THREE.Mesh[] = []; private regT = 30;
+  /** Người phụ việc đang đứng quầy + nhân vật tới xin việc + nhịp nói chuyện/lau quầy. */
+  helper: Npc | null = null; private offerNpc: Npc | null = null; private offerT = 45; private helperChat = 40; private helperWipe = 50; private helperRetry = 0;
   constructor() {
     ctx.scene.add(this.group); this.group.add(this.tools); this.group.visible = false;
     this.signMat = new THREE.MeshBasicMaterial({ map: this.signAtlas.texture });
@@ -253,10 +256,10 @@ export class StallSys {
     if (n.actor && n.actor !== 'critic' && n.actor !== 'vip') { this.actorTalk(n); return; }
     if (!s.open) { this.dismiss(n, false); return; }
     const res = decide(g, n.persona!, n.fem);
-    if (!res.order) { N.say(n, res.leave!, 3, res.why === 'price' ? 3 : 5); lostCustomer(g, res.why ?? 'none'); if (res.why === 'price') sfx('nope'); setTimeout(() => this.dismiss(n, false), 1400); return; }
+    if (!res.order) { N.say(n, res.leave!, 3, res.why === 'price' ? EXPR.smug : EXPR.sad); lostCustomer(g, res.why ?? 'none'); if (res.why === 'price') sfx('nope'); setTimeout(() => this.dismiss(n, false), 1400); return; }
     n.order = res.order; if (n.actor === 'vip') n.order.n = Math.min(3, Math.max(n.order.n, 2), readyCount(g, n.order.rid) + finishPossible(g, RECIPES[n.order.rid]));
-    const a = n.arch; n.patience = rnd.range(a.patience[0], a.patience[1]) * (this.seated(n.slot) ? 1.5 : has(g, 'ghe') ? 1.3 : 1) * (wx(g).rain > 0.3 && !has(g, 'odu') && s.tier < 4 ? 0.75 : 1); n.waited = 0;
-    N.say(n, res.order.line, 3.2, res.order.mood === 'pricey' ? 3 : 1); ctx.ui.order(n, res.order.rid, res.order.n); sfx('order');
+    const a = n.arch; n.patience = rnd.range(a.patience[0], a.patience[1]) * (this.seated(n.slot) ? 1.5 : has(g, 'ghe') ? 1.3 : 1) * (wx(g).rain > 0.3 && !has(g, 'odu') && s.tier < 4 ? 0.75 : 1) * helperPatience(g); n.waited = 0;
+    N.say(n, res.order.line, 3.2, res.order.mood === 'pricey' ? EXPR.annoyed : EXPR.happy); ctx.ui.order(n, res.order.rid, res.order.n); sfx('order');
     if (n.regular) changeRel(g, n.regular.id, 0, true);
   }
   dismiss(n: Npc, happy: boolean) {
@@ -290,6 +293,138 @@ export class StallSys {
     setTimeout(() => this.dismiss(n, rv.stars >= 3.7), 1500);
     if (!menuOf(g).some((r) => available(g, r))) { toast('Hết sạch hàng rồi! Sơ chế thêm hoặc đóng quầy đi mua nguyên liệu.', 'warn', 'box'); }
     bus.emit('ui', 'sale'); if (g.quest === 6) bus.emit('quest', 7);
+  }
+
+  // ───────── người phụ việc ─────────
+  /** Chỗ người phụ việc đứng: bên trái quầy (phía người bán), hơi lui ra sau. */
+  private helperSpot(): [number, number] {
+    const s = this.s, c = Math.cos(s.yaw), sn = Math.sin(s.yaw), lx = s.tier >= 4 ? -1.45 : -1.1, lz = s.tier <= 1 ? -1.55 : -1.1;
+    return [s.x + lx * c + lz * sn, s.z - lx * sn + lz * c];
+  }
+  private helperLook(h: Helper): Look {
+    return { face: h.face, fem: h.fem, shirt: h.shirt, pants: h.pants, hair: h.hair, hat: 0, hairStyle: h.hairStyle, fat: 1.02, h: 0.97, skin: h.skin, bag: 0, hatCol: 0x2f6fb5, long: false, apron: 0xc9473f, shoe: 0x2a2a2e };
+  }
+  /** Dựng (hoặc giữ) người phụ việc ở quầy, dỗ khách chờ và lau quầy; hết ca thì cho về. */
+  private updateHelper(dt: number) {
+    const g = ctx.g, s = g.stall, N = ctx.npcs, want = !!g.help && s.open;
+    if (this.helper && (!want || this.helper.state === 'gone')) {
+      const n = this.helper; this.helper = null;
+      if (n.state !== 'gone') { this.sayLine(n, ctx.g.help ? '' : 'Con về nghen, mai con qua sớm.', 2.6, EXPR.smile); N.leave(n); }
+    }
+    if (want && !this.helper) { this.helperRetry -= dt; if (this.helperRetry <= 0) { this.helperRetry = 3; this.spawnHelper(); } }
+    if (this.helper) {
+      const n = this.helper, [x, z] = this.helperSpot();
+      n.x = x; n.z = z; n.y = groundY(x, z); n.state = 'stand'; n.pose = 'idle'; n.timer = 1e9; n.yaw = s.yaw;
+      n.rig.root.position.set(x, n.y, z); n.rig.root.rotation.y = s.yaw;
+      this.helperChat -= dt;
+      if (this.helperChat <= 0) { this.helperChat = rnd.range(50, 85); this.helperLine(n); }
+      this.helperWipe -= dt;
+      if (this.helperWipe <= 0) { this.helperWipe = rnd.range(45, 75); if (s.dirt > 4) s.dirt = Math.max(0, s.dirt - 3); }
+    }
+    if (this.offerNpc && (!s.open || this.offerNpc.state === 'gone')) this.offerNpc = null;
+    this.offerHelper(dt);
+  }
+  private spawnHelper() {
+    const g = ctx.g, h = g.help; if (!h) return;
+    const [x, z] = this.helperSpot(), n = ctx.npcs.spawnPed(this.s.x, this.s.z, 18, 34, ARCH.hangrong);
+    if (!n) return;
+    n.kind = 'actor'; n.actor = 'helper'; n.name = h.name; n.fem = h.fem; n.rig.setLook(this.helperLook(h));
+    n.state = 'stand'; n.pose = 'idle'; n.timer = 1e9; n.plan = []; n.base = EXPR.normal; n.greetT = 9999;
+    n.x = x; n.z = z; n.y = groundY(x, z); n.yaw = this.s.yaw; n.rig.root.position.set(x, n.y, z); n.rig.root.rotation.y = n.yaw;
+    this.helper = n;
+    this.sayLine(n, rnd.pick([`Con tới rồi ${g.ac} ơi!`, `Dạ ${g.ac}, con nhận ca đây.`, `Quầy sạch rồi ${g.ac} ơi.`]), 3, EXPR.happy);
+    toast(`${h.name} đã tới nhận ca phụ quầy.`, 'good', 'heart');
+  }
+  /** Nói một câu với biểu cảm; nói nhỏ nếu người chơi ở xa. */
+  private sayLine(n: Npc, text: string, secs: number = 3, expr: number = EXPR.normal) { if (text) ctx.npcs.say(n, text, secs, expr); }
+  /** Câu thoại của người phụ việc, chọn theo tình huống đang diễn ra. */
+  private helperLine(n: Npc) {
+    const g = ctx.g, s = g.stall, ac = g.ac, h = hourOf(g), R = rnd;
+    const pool: [string, number][] = [];
+    if (this.rowdy > 0) pool.push([`Mấy người đó nhìn ghê quá ${ac} ơi…`, EXPR.fear]);
+    if (s.dirt > 45) pool.push(['Quầy bẩn quá, con lau lại một lượt nghen.', EXPR.annoyed]);
+    if (this.customers.length >= 2) pool.push([`Khách đông quá, con bưng ra phụ ${ac} nghen!`, EXPR.happy]);
+    if (wx(g).rain > 0.3) pool.push(['Trời mưa mà khách vẫn ghé, mừng ghê.', EXPR.smile]);
+    if (h >= 21 || h < 5) pool.push([`Tối rồi ${ac}, ${ac} nghỉ sớm đi, con coi quầy cho.`, EXPR.sleepy]);
+    if (g.led.revenue >= 300000) pool.push([`Hôm nay bán được ${money(g.led.revenue)} rồi đó ${ac}!`, EXPR.joy]);
+    if (g.led.lost >= 3) pool.push(['Nãy có mấy người bỏ đi vì chờ lâu, tiếc quá.', EXPR.sad]);
+    if (g.st.mood < 30) pool.push([`${ac} mệt hả? Để con lo, ${ac} ngồi nghỉ chút.`, EXPR.pout]);
+    pool.push([`Con rửa chén trước nghen, ${ac} cứ lo nấu.`, EXPR.smile]);
+    pool.push([`Món ${ac} nấu thơm quá, khách đứng ngoài hít mùi hoài.`, EXPR.savor]);
+    const [text, ex] = R.pick(pool);
+    this.sayLine(n, text, 3.2, ex);
+  }
+  /** Thỉnh thoảng có người ghé xin làm phụ — chỉ khi quán đã có doanh thu và bán đủ lâu. */
+  private offerHelper(dt: number) {
+    const g = ctx.g, s = g.stall;
+    if (this.offerNpc || g.help || ctx.mode !== 'play' || !s.open) return;
+    if (!helperGate(g).ok) return;
+    if (dist2(ctx.player.x, ctx.player.z, s.x, s.z) > 14 * 14) return;
+    if (this.customers.some((c) => c.state === 'queue' && c.order) && this.offerT > 0) { /* khách đang ăn: vẫn cho tới, chỉ chậm hơn */ }
+    this.offerT -= dt;
+    if (this.offerT > 0) return;
+    this.offerT = rnd.range(240, 420);
+    const d = helperCandidate(g), n = ctx.npcs.spawnPed(s.x, s.z, 18, 30, ARCH.hangrong);
+    if (!n) { this.offerT = 60; return; }
+    n.kind = 'actor'; n.actor = 'offer'; n.name = d.name; n.fem = d.fem;
+    n.rig.setLook({ face: d.face, fem: d.fem, shirt: d.shirt, pants: d.pants, hair: d.hair, hat: 0, hairStyle: d.hairStyle, fat: 1, h: 0.97, skin: d.skin, bag: 0, hatCol: 0x2f6fb5, long: false, apron: 0, shoe: 0x2a2a2e });
+    this.offerNpc = n;
+    const [x, z] = this.helperSpot();
+    ctx.npcs.goto(n, x, z, (c) => this.offerArrive(c, d));
+  }
+  private offerArrive(n: Npc, d: HelperDef) {
+    const g = ctx.g;
+    n.state = 'stand'; n.pose = 'idle'; n.timer = 1e9; n.yaw = this.s.yaw; n.rig.root.rotation.y = n.yaw;
+    ctx.npcs.say(n, rnd.pick([`Chào ${g.ac}, con ghé xin việc một chút được hông?`, `Dạ ${g.ac} rảnh năm phút hông ạ?`]), 3.4, EXPR.smile);
+    const off = g.cash < d.wage;
+    ctx.ui.dialog({
+      who: d.name, npc: n, text: d.ask.replace('{ac}', g.ac),
+      opts: [
+        { t: `Nhận làm phụ quầy — ${money(d.wage)}/ngày`, sub: off ? 'Không đủ tiền trả ngày đầu' : 'Trả trước một ngày lương', off, fn: () => {
+          if (!hireHelper(g, d)) { toast('Không đủ tiền trả ngày lương đầu tiên.', 'bad', 'cash'); return; }
+          toast(`${d.name} nhận làm phụ quầy. Từ nay khách chờ lâu hơn, quầy cũng sạch hơn.`, 'good', 'heart', true);
+          ctx.npcs.say(n, 'Dạ con cảm ơn! Con làm liền.', 3, EXPR.joy);
+          n.actor = 'helper'; this.helper = n; this.offerNpc = null; this.helperChat = 25;
+        } },
+        { t: 'Để hôm khác', fn: () => {
+          ctx.npcs.say(n, rnd.pick(['Dạ thôi con đi nghen.', 'Vậy con xin phép.', 'Khi nào cần thì kêu con.']), 2.6, EXPR.pout);
+          this.offerNpc = null; setTimeout(() => { if (n.state !== 'gone') ctx.npcs.leave(n); }, 1400);
+        } },
+      ],
+    });
+  }
+  /** Trò chuyện với người phụ việc: hỏi chuyện, dặn dò, hoặc cho nghỉ. */
+  talkHelper() {
+    const g = ctx.g, h = g.help, n = this.helper; if (!h) return;
+    ctx.ui.dialog({
+      who: `${h.name} — phụ quầy`, npc: n ?? undefined, text: rnd.pick([
+        `Dạ ${g.ac} cần con làm gì ạ?`, 'Con đang lau mấy cái bàn, khách tới là con tiếp liền.', `Quầy hôm nay ${g.led.customers ? `có ${g.led.customers} khách` : 'còn vắng'} ${g.ac} ơi.`,
+      ]),
+      opts: [
+        { t: 'Hỏi chuyện bán buôn', fn: () => this.helperTalkSales() },
+        { t: 'Dặn khách chờ thì dỗ dành', fn: () => {
+          if (n) ctx.npcs.say(n, 'Dạ con biết rồi, khách chờ con rót nước mời.', 3, EXPR.smile);
+          g.st.mood = Math.min(100, g.st.mood + 2); toast('Dặn dò xong. Khách chờ sẽ được dỗ, quầy đỡ căng.', 'info', 'heart');
+        } },
+        { t: `Cho ${h.name} nghỉ việc`, fn: () => {
+          const name = h.name; fireHelper(g);
+          if (n) { ctx.npcs.say(n, rnd.pick(['Dạ… con đi nghen.', 'Vậy con cảm ơn ' + g.ac + ' mấy bữa nay.', 'Thôi con về.']), 3, EXPR.sad); }
+          toast(`${name} đã nghỉ. Quầy lại một mình.`, 'info', 'heart');
+        } },
+        { t: 'Thôi, làm việc đi', fn: () => { if (n) ctx.npcs.say(n, 'Dạ.', 1.6, EXPR.smile); } },
+      ],
+    });
+  }
+  private helperTalkSales() {
+    const g = ctx.g, h = g.help, n = this.helper; if (!h) return;
+    const rev = g.led.revenue, cust = g.led.customers;
+    const text = cust === 0 ? `Hôm nay chưa có khách nào ${g.ac} ơi. Hay mình dọn quầy rồi ra chợ sớm?`
+      : rev >= 300000 ? `Hôm nay ${cust} khách, doanh thu ${money(rev)} — đắt lắm ${g.ac}! Con thấy mấy người quay lại lần hai.`
+      : `Hôm nay ${cust} khách, được ${money(rev)}. Con thấy khách thích món của ${g.ac} lắm, chỉ ngại chờ hơi lâu.`;
+    ctx.ui.dialog({ who: `${h.name} — phụ quầy`, npc: n ?? undefined, text, opts: [
+      { t: `Lương ${money(h.wage)}/ngày, trả sáng mai`, sub: 'Con giữ đúng giá đó', fn: () => { if (n) ctx.npcs.say(n, 'Dạ con cảm ơn.', 2, EXPR.happy); } },
+      { t: 'Thôi', fn: () => { if (n) ctx.npcs.say(n, 'Dạ, con ra tiếp khách.', 2, EXPR.normal); } },
+    ] });
   }
 
   // ───────── nhân vật sự kiện ─────────
@@ -386,6 +521,7 @@ export class StallSys {
       if (away && this.customers.length === 0 && dist2(ctx.player.x, ctx.player.z, s.x, s.z) > 40 * 40) { this.close(true); toast('Bạn đi xa quá nên quầy tạm ngưng bán.', 'warn', 'shop'); }
     }
     if (this.rowdy > 0) this.rowdy -= dt;
+    this.updateHelper(dt);
     if (this.actorId) { this.actorT -= dt; if (this.actorT <= 0) this.spawnActor(); }
     // khách quen trả nợ
     this.regT -= dt; if (this.regT <= 0) { this.regT = 20; for (const r of REGULARS) { const due = g.flags['owe_' + r.id], rel = g.rel[r.id]; if (due !== undefined && g.day >= due && rel?.owe && s.open) { delete g.flags['owe_' + r.id]; if (rnd.chance(0.75)) { const pay = round1k(rel.owe * rnd.range(1, 1.6)); earn(g, pay, 'revenue'); toast(`${r.name} ghé trả ${money(pay)} tiền ăn chịu hôm trước. "Cảm ơn ${g.ac} đã thương!"`, 'good', 'heart', true); changeRel(g, r.id, 5); } else toast(`Nghe nói ${r.name} đã chuyển đi nơi khác… khoản ăn chịu coi như mất.`, 'bad', 'heart'); rel.owe = 0; } } }
@@ -399,7 +535,7 @@ export class StallSys {
     }
   }
   /** Nạp lại sau khi tải save. */
-  reset() { for (const n of this.customers.slice()) this.dismiss(n, false); this.builtKey = ''; this.stockKey = ''; this.busy = null; this.actorId = ''; this.rowdy = 0; ctx.city.roadblock.visible = eventOn(ctx.g, 'cam_duong'); NAV_BLOCK.clear(); if (eventOn(ctx.g, 'cam_duong')) this.onEvent('cam_duong', true); }
+  reset() { for (const n of this.customers.slice()) this.dismiss(n, false); this.builtKey = ''; this.stockKey = ''; this.busy = null; this.actorId = ''; this.rowdy = 0; this.helper = null; this.offerNpc = null; this.offerT = 45; ctx.city.roadblock.visible = eventOn(ctx.g, 'cam_duong'); NAV_BLOCK.clear(); if (eventOn(ctx.g, 'cam_duong')) this.onEvent('cam_duong', true); }
   refresh() { this.builtKey = ''; this.stockKey = ''; }
 }
 export function stallHint(g: Game, stowed = false): string {

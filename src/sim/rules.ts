@@ -6,10 +6,11 @@ import { INGS } from '../data/ingredients';
 import { SHOPS, ShopDef } from '../data/shops';
 import { RECIPES, RecipeDef, fuelPerPortion, toolsFor, RECIPE_LIST } from '../data/recipes';
 import { GEAR, HOUSING, LENDERS, TIERS, JUNK } from '../data/gear';
-import { ARCH, ArchDef, LINES, FIXED, FIXED_ROLE } from '../data/people';
+import { ARCH, ArchDef, HELPER_POOL, HelperDef, LINES, FIXED, FIXED_ROLE } from '../data/people';
 import { EVENTS, EVENT_LIST, EventDef, WEATHER, WeatherDef, WeatherId, floodZone, hourCurve } from '../data/world';
+import { EXPR } from '../data/expr';
 import { District, DISTRICT, SPOTS, districtAt, spotById } from '../world/layout';
-import { Game, Stack, absMin, addStack, countOf, hourOf, newLedger, purge, spoil, takeFrom, weightOf, junkWeight, emptyStall, Debt, coldWeightOf } from './state';
+import { Game, Stack, Helper, absMin, addStack, countOf, hourOf, newLedger, purge, spoil, takeFrom, weightOf, junkWeight, emptyStall, Debt, coldWeightOf } from './state';
 import * as PH from './phone';
 
 // ───────────────────────── Tiện ích chung ─────────────────────────
@@ -291,11 +292,12 @@ export function review(g: Game, p: Persona, fem: boolean, o: Order, quality: num
   let line = say(R.pick(LINES[key]), p.arch, fem, g);
   if (tip > 0) line += ' ' + say(R.pick(LINES.tip), p.arch, fem, g);
   else if (o.mood === 'cheap' && stars >= 3.7 && R.chance(0.5)) line = say(R.pick(LINES.cheap), p.arch, fem, g);
-  const face = stars >= 4.5 ? 2 : stars >= 3.7 ? 1 : stars >= 2.8 ? 0 : stars >= 1.9 ? 3 : 4;
+  const face = stars >= 4.7 ? EXPR.savor : stars >= 4.4 ? EXPR.joy : stars >= 3.7 ? EXPR.happy : stars >= 2.8 ? EXPR.normal : stars >= 1.9 ? EXPR.annoyed : EXPR.angry;
   return { stars, rep, tip, line, face, back: stars >= 3.9 };
 }
 /** Ghi nhận một lần bán: tiền, sổ sách, uy tín. */
 export function settleSale(g: Game, o: Order, cost: number, rv: Review, quality: number) {
+  if (typeof g.flags.firstSale !== 'number') g.flags.firstSale = g.day;
   earn(g, o.price * o.n, 'revenue'); if (rv.tip) earn(g, rv.tip, 'tips');
   g.led.cogs += cost; g.led.sold += o.n; g.led.customers++; g.led.stars += rv.stars; g.led.rated++;
   g.tot.served += o.n; g.rep = clamp(g.rep + rv.rep, 0, 100);
@@ -647,6 +649,41 @@ function hourly(g: Game, R: RNG) {
   for (const rd of s.ready) { const r = RECIPES[rd.rid]; if (absMin(g) - rd.at > 90) rd.q = Math.max(0.15, rd.q - 0.06); void r; }
   if (g.weather.until <= absMin(g) && !activeEvents(g).some((e) => e.weather)) setWeather(g, g.weather.next, R);
 }
+// ───────────────────────── Người phụ việc ở quầy ─────────────────────────
+/** Điều kiện nhận phụ việc: quán phải đã bán được tiền thật và đã bán qua vài ngày. */
+export const HELPER_MIN_REVENUE = 250000;
+export const HELPER_MIN_DAYS = 2;
+export const HELPER_MIN_TIER = 2;
+/** Tổng doanh thu bán hàng từ trước tới giờ (sổ của ngày hôm nay + các ngày đã khoá sổ). */
+export function stallRevenue(g: Game): number { return g.led.revenue + g.hist.reduce((a, h) => a + h.revenue, 0); }
+export interface HelperGate { ok: boolean; revenue: number; days: number; tier: boolean; why: string; }
+/** Vì sao chưa có người phụ việc — dùng cho gợi ý trong UI và cho test. */
+export function helperGate(g: Game): HelperGate {
+  const revenue = stallRevenue(g), first = g.flags.firstSale, days = typeof first === 'number' ? g.day - first : 0;
+  const tier = g.stall.tier >= HELPER_MIN_TIER;
+  const ok = !g.help && tier && revenue >= HELPER_MIN_REVENUE && days >= HELPER_MIN_DAYS;
+  const why = g.help ? 'Đã có người phụ quầy'
+    : !tier ? 'Cần xe đẩy trở lên mới thuê được người'
+    : revenue < HELPER_MIN_REVENUE ? `Doanh thu mới ${money(revenue)} — cần ${money(HELPER_MIN_REVENUE)} mới nuôi nổi người phụ`
+    : days < HELPER_MIN_DAYS ? `Mới bán được ${days + 1} ngày — bán quen tay đã rồi hẵng thuê`
+    : '';
+  return { ok, revenue, days, tier, why };
+}
+/** Người ứng viên kế tiếp (chọn theo seed + ngày để mỗi ván mỗi khác nhưng vẫn tất định). */
+export function helperCandidate(g: Game): HelperDef { return HELPER_POOL[(Math.abs(g.seed) + g.day * 3) % HELPER_POOL.length]; }
+/** Nhận người phụ việc: ghi vào sổ, ứng lương trước một ngày. Trả về false nếu thiếu tiền. */
+export function hireHelper(g: Game, d: HelperDef = helperCandidate(g)): boolean {
+  if (g.help) return false;
+  if (!spend(g, d.wage, 'fees')) return false;
+  const h: Helper = { name: d.name, fem: d.fem, face: d.face, hairStyle: d.hairStyle, shirt: d.shirt, pants: d.pants, hair: d.hair, skin: d.skin, wage: d.wage, since: g.day, paid: g.day, hired: true };
+  g.help = h;
+  return true;
+}
+/** Cho người phụ việc nghỉ. */
+export function fireHelper(g: Game): Helper | null { const h = g.help; g.help = null; return h; }
+/** Tỉ lệ khách chờ lâu hơn nhờ có người phụ dỗ khách. */
+export function helperPatience(g: Game): number { return g.help ? 1.3 : 1; }
+
 function newDay(g: Game, R: RNG) {
   // khoá sổ ngày cũ
   const s = g.stall;
@@ -667,6 +704,11 @@ function newDay(g: Game, R: RNG) {
     const rent = stallRent(g);
     if (payStallRent(g)) toast(`Phí chỗ sạp hôm nay: ${money(rent)}.`, 'info', 'cash');
     else toast(`Không đủ ${money(rent)} đóng phí chỗ sạp — quầy đóng cửa tới khi đóng đủ.`, 'bad', 'cash', true);
+  }
+  // người phụ việc: trả lương đầu ngày, không có tiền thì họ nghỉ
+  if (g.help) {
+    if (spend(g, g.help.wage, 'fees')) { g.help.paid = g.day; toast(`Trả lương ${money(g.help.wage)} cho ${g.help.name}.`, 'info', 'cash'); }
+    else { const n = g.help.name; g.help = null; toast(`${n} xin nghỉ vì chưa được trả lương. Quầy lại một mình.`, 'bad', 'heart', true); }
   }
   // gửi ngân hàng có lãi nhỏ
   if (g.bank > 0) g.bank += Math.floor(g.bank * 0.0008);
