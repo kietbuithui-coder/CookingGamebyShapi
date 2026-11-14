@@ -61,7 +61,7 @@ async function boot() {
   bus.on('save', () => { dirty = true; });
   const hasSave = () => { try { return !!localStorage.getItem(SAVE_KEY); } catch { return false; } };
   const start = (g: Game, fresh: boolean) => {
-    ctx.g = g; ctx.mode = 'play'; ctx.speed = MIN_PER_SEC; ctx.player.place(g.pos.x, g.pos.z, g.pos.yaw, g.pos.pitch); ctx.player.eyeTarget = 1.6; ctx.player.setCarry('');
+    ctx.g = g; ctx.mode = 'play'; ctx.speed = MIN_PER_SEC; ctx.player.place(g.pos.x, g.pos.z, g.pos.yaw, g.pos.pitch); ctx.player.eyeTarget = 1.6; ctx.player.setCarry(''); ctx.player.applyLook();
     for (const n of ctx.npcs.list.slice()) if (n.state !== 'fixed') ctx.npcs.remove(n);
     ctx.stall.reset(); ctx.acts.cart = null; ctx.acts.job = null; ctx.acts.way = null; ctx.acts.spawnLitter(); ui.menu(null); ui.hud(true); ui.fade(false, 1.2); ctx.input.reset();
     if (fresh) {
@@ -134,6 +134,7 @@ async function boot() {
     w.__lvl = (n: number) => { const g = ctx.g; g.xp = Math.max(0, 30 * n * n - 3); Rules.addXp(g, 1); return { xp: g.xp, known: Object.values(g.rec).filter((r) => r.known).length }; };
     w.__rude = (kind?: 'paper' | 'spit' | 'curse' | 'chase') => { const p = ctx.player, n = ctx.npcs.list.filter((x) => x.kind === 'ped').sort((a, b) => (a.x - p.x) ** 2 + (a.z - p.z) ** 2 - ((b.x - p.x) ** 2 + (b.z - p.z) ** 2))[0]; if (!n) return null; if (kind === 'spit') ctx.npcs.spit(n); else if (kind === 'chase') ctx.npcs.chase(n); else ctx.npcs['rude'](n, kind); return n.id; };
     w.__open = (id: string) => placeOpen(id);
+    w.__cam3 = (on?: boolean) => { if (on !== undefined) ctx.set.cam3 = on; else ctx.player.toggleView(); return ctx.set.cam3; };
     // Bảng tra biểu cảm: vẽ nguyên atlas mặt lên màn hình để chụp ảnh kiểm tra.
     w.__faces = () => {
       document.getElementById('__faces')?.remove();

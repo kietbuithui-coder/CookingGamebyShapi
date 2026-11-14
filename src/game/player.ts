@@ -7,11 +7,14 @@ import { moveMul, staminaMax, tier, bagWeight, carryCap, floodPct } from '../sim
 import { floodZone } from '../data/world';
 import { MB, MAT } from '../gfx/mb';
 import { ganhModel, cartModel, basketModel } from '../gfx/props';
-import { sackMesh } from '../gfx/people';
+import { sackMesh, Rig, Look } from '../gfx/people';
 
 export type Carry = '' | 'ganh' | 'xeday' | 'sack' | 'box';
 const _o = { x: 0, z: 0 };
 export class Player {
+  /** Nhân vật của chính mình — chỉ hiện ở góc nhìn thứ ba (phím V hoặc trong Cài đặt). */
+  rig = new Rig(); look: Look | null = null; private rigCarry = new THREE.Group(); private carryMesh: Partial<Record<Carry, THREE.Object3D>> = {};
+  private camP = new THREE.Vector3(); private camDist = 3; private camOn = false;
   x = 0; z = 0; yaw = Math.PI; pitch = 0; eye = 1.6; eyeTarget = 1.6; y = 0.12;
   stamina = 1; /** Trần sức bền hiện tại (tụt khi đói, khát). */ staminaCap = 1; tired = false; moving = false; running = false; speed = 0; phase = 0; bob = 0;
   holder = new THREE.Group(); carry: Carry = ''; private models: Partial<Record<Carry, THREE.Object3D>> = {};
@@ -28,6 +31,13 @@ export class Player {
     this.models.xeday = mk((m) => { m.frame(0, -1.5, Math.PI, -1.62); cartModel(m, 0, 0, 0); });
     const sack = sackMesh(); sack.position.set(0.42, 0.16, -0.42); sack.rotation.set(0.2, 0.5, 0.1); sack.visible = false; this.holder.add(sack); this.models.sack = sack;
     this.models.box = mk((m) => { m.box(0, -0.62, -0.6, 0.44, 0.3, 0.32, 0xc9a56a, 0xd9b87a, 0.08, true); m.box(0, -0.32, -0.6, 0.06, 0.004, 0.32, 0xe9d9a8); });
+    // Đồ mang theo, dựng lại trong không gian của nhân vật (góc nhìn thứ ba).
+    this.rig.root.add(this.rigCarry); ctx.scene.add(this.rig.root); this.rig.root.visible = false;
+    const mkCarry = (fn: (m: MB) => void, pos: [number, number, number]) => { const mm = new MB(); fn(mm); const mesh = new THREE.Mesh(mm.build(), MAT.lit); mesh.position.set(...pos); mesh.visible = false; this.rigCarry.add(mesh); return mesh; };
+    this.carryMesh.ganh = mkCarry((m) => ganhModel(m, 0, 0.42, 0), [0, 0, 0]);
+    this.carryMesh.xeday = mkCarry((m) => cartModel(m, 0, 0, 0), [0, 0, 1.35]);
+    this.carryMesh.sack = mkCarry((m) => { m.sph(0.24, 1.12, 0.02, 0.3, 0.15, 0.21, 0xd9cdb0, 8, 0xe9dfc8); }, [0, 0, 0]);
+    this.carryMesh.box = mkCarry((m) => { m.box(0, 1.02, 0.42, 0.44, 0.3, 0.32, 0xc9a56a, 0xd9b87a, 0.08, true); }, [0, 0, 0]);
   }
   /** Còn đang trên đất thì mới nhảy được. */
   get onGround() { return this.jumpY <= 0.001; }
@@ -37,7 +47,17 @@ export class Player {
     this.vy = 3.4; return true;
   }
   place(x: number, z: number, yaw: number, pitch = 0) { this.x = x; this.z = z; this.yaw = yaw; this.pitch = pitch; this.y = groundY(x, z); }
-  setCarry(c: Carry) { if (c === this.carry) return; this.carry = c; for (const [k, m] of Object.entries(this.models)) m!.visible = k === c; }
+  setCarry(c: Carry) { if (c === this.carry) return; this.carry = c; for (const [k, m] of Object.entries(this.models)) m!.visible = k === c; this.syncCarry(); }
+  /** Đồ mang theo: bản gắn vào camera (góc nhìn 1) và bản gắn vào nhân vật (góc nhìn 3). */
+  private syncCarry() { for (const [k, m] of Object.entries(this.carryMesh)) m!.visible = k === this.carry; }
+  /** Dựng lại nhân vật theo ngoại hình đang lưu (sau khi cắt tóc, mua đồ, mở bản lưu). */
+  applyLook() {
+    const d = ctx.g?.look; if (!d) return;
+    this.look = { face: d.face, fem: d.fem, shirt: d.shirt, pants: d.pants, hair: d.hair, hat: d.hat, hairStyle: d.hairStyle, fat: d.fat, h: d.h, skin: d.skin, bag: 0, hatCol: d.hatCol, long: false, apron: 0, shoe: d.shoe };
+    this.rig.setLook(this.look); this.rig.root.visible = !!ctx.set.cam3;
+  }
+  /** Bật/tắt góc nhìn thứ ba; trả về trạng thái mới. */
+  toggleView(): boolean { ctx.set.cam3 = !ctx.set.cam3; this.camOn = false; this.rig.root.visible = !!ctx.set.cam3; return ctx.set.cam3; }
   get fwd(): [number, number] { return [Math.sin(this.yaw), Math.cos(this.yaw)]; }
   update(dt: number) {
     const g = ctx.g, inp = ctx.input, s = ctx.set;
@@ -97,11 +117,29 @@ export class Player {
         this.camK = Math.max(0, this.camK - dt * 3.2); const t = 1 - this.camK;
         _e.set(this.pitch, this.yaw + Math.PI, 0, 'YXZ'); _q.setFromEuler(_e); cam.position.lerp(_v.set(px, py, pz), t * t); cam.quaternion.slerp(_q, t * t);
         cam.fov += (bf - cam.fov) * t * t; cam.updateProjectionMatrix();
-      } else { cam.position.set(px, py, pz); cam.rotation.set(this.pitch, this.yaw + Math.PI, 0, 'YXZ'); if (cam.fov !== bf) { cam.fov = bf; cam.updateProjectionMatrix(); } }
+      } else if (ctx.set.cam3) {
+        // Góc nhìn thứ ba: camera lùi ra sau lưng, chạm tường thì nép sát lại để không nhìn xuyên tường.
+        const cp = Math.cos(this.pitch), sp2 = Math.sin(this.pitch), dirx = Math.sin(this.yaw) * cp, diry = sp2, dirz = Math.cos(this.yaw) * cp;
+        let want = 3.0 + (this.carry === 'xeday' ? 1.2 : 0) + (this.carry === 'ganh' ? 0.35 : 0);
+        for (; want > 1.6; want -= 0.2) { if (!ctx.world.blocked(px - dirx * want, pz - dirz * want, 0.26)) break; }
+        const wasOn = this.camOn;
+        this.camDist = wasOn ? damp(this.camDist, want, 10, dt) : want; this.camOn = true;
+        const tx = px - dirx * this.camDist, tz = pz - dirz * this.camDist, ty = Math.max(groundY(tx, tz) + 0.4, py - diry * this.camDist);
+        if (!wasOn) this.camP.set(tx, ty, tz); else { this.camP.x = damp(this.camP.x, tx, 14, dt); this.camP.y = damp(this.camP.y, ty, 14, dt); this.camP.z = damp(this.camP.z, tz, 14, dt); }
+        cam.position.copy(this.camP); cam.rotation.set(this.pitch, this.yaw + Math.PI, 0, 'YXZ');
+        if (cam.fov !== bf) { cam.fov = bf; cam.updateProjectionMatrix(); }
+        this.rig.root.position.set(this.x, this.y + this.jumpY, this.z); this.rig.root.rotation.y = this.yaw;
+        this.rig.pose = this.moving ? 'walk' : 'idle'; this.rig.update(dt, this.speed);
+      } else {
+        this.camOn = false;
+        cam.position.set(px, py, pz); cam.rotation.set(this.pitch, this.yaw + Math.PI, 0, 'YXZ'); if (cam.fov !== bf) { cam.fov = bf; cam.updateProjectionMatrix(); }
+      }
     }
+    // nép sát quá thì giấu nhân vật đi, đừng để camera chui vô trong đầu
+    this.rig.root.visible = !!ctx.set.cam3 && (this.camDist > 2.0 || !!this.camTo);
     // vật mang theo đung đưa
     this.holder.position.set(Math.cos(this.phase) * 0.012 * this.bob, Math.abs(Math.sin(this.phase)) * -0.025 * this.bob, 0);
-    this.holder.rotation.x = -this.pitch * 0.55; this.holder.visible = !this.camTo && this.camK === 0;
+    this.holder.rotation.x = -this.pitch * 0.55; this.holder.visible = !this.camTo && this.camK === 0 && !ctx.set.cam3;
     g.pos.x = this.x; g.pos.z = this.z; g.pos.yaw = this.yaw; g.pos.pitch = this.pitch;
   }
   /** Bật/tắt tư thế camera cố định. */

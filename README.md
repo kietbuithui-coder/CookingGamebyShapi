@@ -1,6 +1,6 @@
 # Gánh Hàng Đường Phố
 
-Game 3D góc nhìn thứ nhất chạy ngay trên trình duyệt (điện thoại và máy tính). Bạn tỉnh dậy dưới gầm cầu với 18.000₫ trong túi, xin tiền, nhặt ve chai, vác hàng thuê… rồi sắm đôi quang gánh, tự tay thái, nướng, chiên, pha và bán từng phần ăn cho khách qua đường.
+Game 3D góc nhìn thứ nhất (bấm **V** để đổi sang góc nhìn thứ ba, thấy chính mình) chạy ngay trên trình duyệt (điện thoại và máy tính). Bạn tỉnh dậy dưới gầm cầu với 18.000₫ trong túi, xin tiền, nhặt ve chai, vác hàng thuê… rồi sắm đôi quang gánh, tự tay thái, nướng, chiên, pha và bán từng phần ăn cho khách qua đường.
 
 **Chơi ngay:** <https://kietbuithui-coder.github.io/CookingGamebyShapi/>
 
@@ -64,6 +64,9 @@ Nên **xoay ngang** điện thoại và bấm **Toàn màn hình** ở màn hìn
 - **Khách đứng mua:** mỗi tiệm, sạp đang mở đều có một hai người đứng lựa hàng, trả giá, chờ tính tiền — phố bớt vắng mà vẫn đúng giờ mở cửa của từng tiệm.
 - **NPC có việc lúc rảnh:** đứng chờ thì thỉnh thoảng lấy báo ra đọc, cầm ly nước nhấp một ngụm, hoặc quay sang tám chuyện với người bên cạnh — rất thưa, mỗi lần 5–11 giây.
 - **Góc phố nhỏ:** quán trà đá vỉa hè, chỗ nhảy đường phố dưới gầm cầu (tường vẽ + loa), tiệm vá xe ngoài lề đường, cô hát rong trong cổng chợ, bàn cờ tướng trong công viên, cậu bé đánh giày — mỗi chỗ có một nhân vật phụ kể chuyện riêng, và việc dùng được ngay tại chỗ (mua ly trà đá, phụ bưng trà, chơi cờ, nghe hát, vá quầy…). Một số câu chuyện chỉ mở một lần, hỏi hết thì thôi.
+- **Góc nhìn thứ ba:** bấm **V** (hoặc nút trong Cài đặt) là camera lùi ra sau lưng, thấy được quần áo, kiểu tóc mình mua; tự nép lại khi đứng sát tường, đẩy xe đạp thì lùi xa hơn, gánh trên vai thì lùi vừa. Đi lại, nhảy, va chạm vẫn như cũ — chỉ đổi chỗ đặt camera.
+- **Tiệm cắt tóc Chú Bảy Kéo** (lối đi giữa chợ Xóm Chiều, mở 7–19h): ghế sắt có gương, bàn đồ nghề và thùng nước. Cắt **8 kiểu tóc** (12.000–45.000₫), nhuộm **4 màu** (10.000–30.000₫), ngồi ghế nghỉ 20 phút. Kiểu tóc đổi ngay trên người nhân vật và nằm trong bản lưu.
+- **Tiệm thời trang Cô Ngọc** (cùng dãy chợ, mở 7h30–20h): giá treo áo, bàn gấp đồ, khay kính, khay giày. Đổi **áo (6 màu), quần (5 màu), giày (3 đôi), kính (cận hoặc kính đen)** từ 12.000₫ tới 60.000₫ — mặc đồ mới là thấy ngay ở góc nhìn thứ ba.
 - **Người xấc xược:** chỉ vài nhóm người (giang hồ, khó tính, học sinh, công nhân, tài xế, shipper, khách du lịch) thỉnh thoảng ném cục giấy về phía người chơi, khạc nhổ, mắng rồi đuổi theo một quãng. Tỉ lệ rất thưa, mỗi lần chỉ mất một hai điểm tinh thần.
 - **Giao diện đọc được trên điện thoại:** rê chuột hoặc chạm vào biểu tượng nào trên HUD cũng hiện một câu giải thích (độ no, nước, sức, máu, sạch sẽ, vui vẻ, tiền, uy tín, giờ, thời tiết, khu phố, từng nút); thanh trượt **cỡ giao diện 70–160%** trong Cài đặt phóng to cả chữ, nút và thanh trạng thái, có ô xem trước; số tiền nhận / bị trừ hiện to hơn; ô **mục tiêu** có nút thu gọn; sổ tay công thức mỗi món một dòng, chạm mới mở chi tiết.
 - **Đơn giao hàng có người nhận:** nhận đơn ở bảng tin là có người đứng chờ trước cửa nhà nhận, hai chồng kiện hàng bên chân, cột sáng vàng có thêm vòng sáng dưới đất và chip chỉ đường đổi sang màu đỏ.
@@ -74,7 +77,7 @@ Nên **xoay ngang** điện thoại và bấm **Toàn màn hình** ở màn hìn
 
 - **Số lượng nội dung:** 60/60 món; 8/8 kiểu chỗ ở; 4/7 bậc kinh doanh chơi được. Quán có chỗ ngồi, nhà hàng bình dân, chuỗi cửa hàng chưa làm.
 - **Băng nhóm:** mới chỉ có sự kiện thu tiền bảo kê và chủ nợ Hùng Sẹo; chưa có hệ thống lãnh địa, đánh nhau hay nhiệm vụ băng nhóm.
-- Chưa tuỳ biến được ngoại hình người chơi (game góc nhìn thứ nhất, chưa có gương/góc nhìn thứ ba), chưa có nội thất trong quán cho khách ngồi ăn.
+- Ngoại hình mới đổi được tóc, áo, quần, giày và kính ở hai tiệm trong chợ; chưa có gương ở nhà, chưa đổi được dáng người, chiều cao hay mũ trong game, và chưa có nội thất trong quán cho khách ngồi ăn.
 - Mô hình 3D dựng bằng mã (hình khối cách điệu), không phải mô hình dựng tay chi tiết. Nội thất một số cửa hàng còn sơ sài.
 - Chưa có lưu đám mây; xoá dữ liệu trình duyệt là mất bản lưu.
 
@@ -82,9 +85,9 @@ Danh sách đầy đủ những gì còn lại (3 bậc kinh doanh, băng nhóm,
 
 ## Đã kiểm thử gì
 
-**Tự động:** 247 bài kiểm thử (`npm test`) cho toàn bộ luật chơi — giá cả, giá vốn, khách mua hay bỏ đi, đánh giá, hư hỏng nguyên liệu, nợ, thời tiết, sự kiện, nâng cấp bản lưu, tính nhất quán dữ liệu, và một bài mô phỏng 45 ngày liên tục.
+**Tự động:** 260 bài kiểm thử (`npm test`) cho toàn bộ luật chơi — giá cả, giá vốn, khách mua hay bỏ đi, đánh giá, hư hỏng nguyên liệu, nợ, thời tiết, sự kiện, nâng cấp bản lưu, tính nhất quán dữ liệu, và một bài mô phỏng 45 ngày liên tục.
 
-**Chạy thật trong Chrome không giao diện** (màn 844×390 ngang và 390×844 dọc, giả lập cảm ứng), không có lỗi console: vào game, chơi mới/chơi tiếp, lưu và nạp lại; đi bằng cần ảo và bàn phím, vuốt nhìn, va chạm tường; xin tiền, nhặt ve chai, bới thùng rác, bán ve chai, vác hàng, rửa chén, giao hàng, cơm chay; mua đồ nghề; bốc hàng – mặc cả – trả tiền; gánh/đẩy quầy, đặt quầy; cả 5 mini-game nấu ăn bằng thao tác chạm; mở bán, khách gọi món, làm món, giao món, nhận tiền và tiền boa; cả 6 nhân vật sự kiện (thanh tra, bảo kê, khách quậy, khách quen xin chịu, nhà phê bình, khách VIP); hội thoại với cả 38 nhân vật và 11 khách quen, chuyện của 6 nhân vật phụ, người xấc xược (ném giấy, khạc nhổ, đuổi theo), 16 biểu cảm trên cả 8 kiểu mặt, 8 kiểu tóc, người phụ việc xin việc – thuê – trò chuyện – cho nghỉ, xe cộ và chim trời; ngân hàng, vay nóng, ba mức chỗ ở mới (căn hộ, nhà riêng, tạp hoá kiêm nhà ở: cửa khoá, đòi uy tín, ngủ, đóng tiền tuần); ngất vì kiệt sức và tỉnh dậy ở Bệnh viện Phước An (khám bệnh, quầy thuốc, phòng hồi sức, nhận lại đồ thất lạc), đấm người đi đường (la lên, có người đuổi đánh, uy tín tụt) và nhảy tại chỗ; mua điện thoại ở tiệm Đồ Nghề, mở máy xem sổ thu chi – danh bạ – tin nhắn, gọi khách quen, nghe radio, sạc pin; thuê máy ở quán net (chơi game – lướt web – xem phim, sạc nhờ, nước ngọt, mỏi mắt sau 2 tiếng); xem ô tô đời cũ chạy trên đường, đua xe đạp chủ nhật với nhóm con gái (bấm ĐẠP đúng nhịp, thắng 40.000₫) và đu xích đu ở sân chơi; ngắm phố lúc tan tầm, người che dù khi mưa, hàng xóm đứng xem đua; bị công an gọi lại vì gây sự — nộp phạt, cãi, bỏ chạy hay theo về phường, vào buồng tạm giữ đập đá cho bớt giờ rồi được thả trước cửa đồn; ngủ và tổng kết ngày; phá sản và làm lại; ban ngày lẫn ban đêm với mưa nhỏ, mưa to, giông, ngập; nhãn người lạ / người quen; màn hình sắp xếp nút (kéo, đổi cỡ, lưu, tải lại, màn dọc).
+**Chạy thật trong Chrome không giao diện** (màn 844×390 ngang và 390×844 dọc, giả lập cảm ứng), không có lỗi console: vào game, chơi mới/chơi tiếp, lưu và nạp lại; đi bằng cần ảo và bàn phím, vuốt nhìn, va chạm tường; xin tiền, nhặt ve chai, bới thùng rác, bán ve chai, vác hàng, rửa chén, giao hàng, cơm chay; mua đồ nghề; bốc hàng – mặc cả – trả tiền; gánh/đẩy quầy, đặt quầy; cả 5 mini-game nấu ăn bằng thao tác chạm; mở bán, khách gọi món, làm món, giao món, nhận tiền và tiền boa; cả 6 nhân vật sự kiện (thanh tra, bảo kê, khách quậy, khách quen xin chịu, nhà phê bình, khách VIP); hội thoại với cả 38 nhân vật và 11 khách quen, chuyện của 6 nhân vật phụ, người xấc xược (ném giấy, khạc nhổ, đuổi theo), 16 biểu cảm trên cả 8 kiểu mặt, 8 kiểu tóc, người phụ việc xin việc – thuê – trò chuyện – cho nghỉ, góc nhìn thứ ba (phím V, thấy quần áo và kiểu tóc mình mua), tiệm cắt tóc Chú Bảy Kéo (8 kiểu tóc, 4 màu nhuộm, ngồi ghế nghỉ) và tiệm thời trang Cô Ngọc (áo, quần, giày, kính) trong chợ Xóm Chiều, xe cộ và chim trời; ngân hàng, vay nóng, ba mức chỗ ở mới (căn hộ, nhà riêng, tạp hoá kiêm nhà ở: cửa khoá, đòi uy tín, ngủ, đóng tiền tuần); ngất vì kiệt sức và tỉnh dậy ở Bệnh viện Phước An (khám bệnh, quầy thuốc, phòng hồi sức, nhận lại đồ thất lạc), đấm người đi đường (la lên, có người đuổi đánh, uy tín tụt) và nhảy tại chỗ; mua điện thoại ở tiệm Đồ Nghề, mở máy xem sổ thu chi – danh bạ – tin nhắn, gọi khách quen, nghe radio, sạc pin; thuê máy ở quán net (chơi game – lướt web – xem phim, sạc nhờ, nước ngọt, mỏi mắt sau 2 tiếng); xem ô tô đời cũ chạy trên đường, đua xe đạp chủ nhật với nhóm con gái (bấm ĐẠP đúng nhịp, thắng 40.000₫) và đu xích đu ở sân chơi; ngắm phố lúc tan tầm, người che dù khi mưa, hàng xóm đứng xem đua; bị công an gọi lại vì gây sự — nộp phạt, cãi, bỏ chạy hay theo về phường, vào buồng tạm giữ đập đá cho bớt giờ rồi được thả trước cửa đồn; ngủ và tổng kết ngày; phá sản và làm lại; ban ngày lẫn ban đêm với mưa nhỏ, mưa to, giông, ngập; nhãn người lạ / người quen; màn hình sắp xếp nút (kéo, đổi cỡ, lưu, tải lại, màn dọc).
 
 **Soát hình học tự động** (`tools/probe/steps/audit.mjs`): dò mọi cặp mặt trùng phẳng cùng hướng khác màu trên cả thành phố (nguồn gốc tường nhấp nháy) và bắn tia từ từng biển hiệu để tìm biển bị che. Sau khi sửa: mặt trùng phẳng giảm từ 1.289 m² còn 6,5 m² (phần còn lại là các mặt khuất hoặc cách nhau vài mi-li-mét); biển bị chắn ngay phía trước giảm từ 76 còn 23 trên 159 biển, hầu hết chỉ còn là một thân cây hay cột đèn đứng trước.
 
@@ -112,7 +115,7 @@ Cần Node.js 20 trở lên.
 ```bash
 npm install
 npm run dev          # máy chủ phát triển, mở địa chỉ được in ra
-npm test             # 247 bài kiểm thử luật chơi
+npm test             # 260 bài kiểm thử luật chơi
 npm run build        # kiểm tra kiểu + đóng gói ra dist/
 npm run build:pages  # kiểm tra kiểu + kiểm thử + đóng gói ra docs/ (GitHub Pages)
 ```

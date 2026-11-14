@@ -5,8 +5,9 @@ import { JUNK } from '../data/gear';
 import { FIXED, REGULARS } from '../data/people';
 import type { WeatherId } from '../data/world';
 import { PLACES } from '../world/layout';
+import { PlayerLookData, defaultLook, cleanLook } from '../data/looks';
 
-export const SAVE_VERSION = 10;
+export const SAVE_VERSION = 11;
 /** Một lô nguyên liệu. fresh 0–100, q chất lượng 0–1, cost giá vốn mỗi đơn vị. */
 export interface Stack { id: string; n: number; fresh: number; q: number; cost: number; }
 /** Mẻ sơ chế sẵn ("cốt" món). */
@@ -34,6 +35,8 @@ export interface Helper {
 }
 export interface Game {
   v: number; seed: number; ac: 'anh' | 'chị';
+  /** Ngoại hình người chơi (đổi ở tiệm cắt tóc / tiệm thời trang, xem ở góc nhìn thứ ba). */
+  look: PlayerLookData;
   day: number; min: number;
   cash: number; bank: number;
   st: Stats; rep: number; xp: number;
@@ -77,7 +80,7 @@ export function newGame(seed = (Math.random() * 1e9) | 0, ac: 'anh' | 'chị' = 
   const rec: Record<string, RecState> = {};
   for (const r of RECIPE_LIST) rec[r.id] = { known: START_RECIPES.includes(r.id), price: r.ref, on: false, made: 0, best: 0 };
   return {
-    v: SAVE_VERSION, seed, ac, day: 0, min: 6 * 60 + 10, cash: 18000, bank: 0,
+    v: SAVE_VERSION, seed, ac, look: defaultLook(ac === 'chị'), day: 0, min: 6 * 60 + 10, cash: 18000, bank: 0,
     st: { hunger: 58, thirst: 55, energy: 82, health: 92, hygiene: 42, mood: 45 }, rep: 0, xp: 0,
     pos: { x: PLACES.camp.x, z: PLACES.camp.z - 1.2, yaw: Math.PI, pitch: 0 },
     bag: [], junk: {}, meals: [], lostBag: [], lostDay: -1, wanted: 0, jailUntil: 0, gear: {}, phone: null, housing: 'gamcau', paidUntil: 0, home: [],
@@ -127,6 +130,9 @@ export function migrate(raw: any): Game | null {
   if ((raw.v ?? 0) < 8) { g.flags.netDay = -1; g.flags.netMin = 0; }
   // v9: đua xe đạp chủ nhật. Bản lưu cũ chưa có sổ ngày đua và số lần thắng.
   if ((raw.v ?? 0) < 9) { g.flags.raceDay = -1; g.flags.raceWin = 0; }
+  // v11: ngoại hình người chơi. Bản lưu cũ chưa có thì lấy mặc định theo anh/chị.
+  if ((raw.v ?? 0) < 11 || !raw.look) g.look = defaultLook(g.ac === 'chị');
+  else g.look = cleanLook(raw.look, g.ac === 'chị');
   // v10: người phụ việc ở quầy. Bản lưu cũ chưa từng thuê ai; dọn luôn dữ liệu hỏng.
   if ((raw.v ?? 0) < 10 || !raw.help) g.help = null;
   else if (typeof g.help?.name !== 'string' || typeof g.help?.wage !== 'number') g.help = null;

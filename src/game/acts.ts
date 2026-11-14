@@ -12,6 +12,8 @@ import { GEAR, GEAR_LIST, HOUSING, LENDERS, JUNK, JUNK_LIST, TIERS } from '../da
 import { RECIPE_LIST, RECIPES, toolsFor } from '../data/recipes';
 import { FIXED, LINES, SIDE } from '../data/people';
 import { FunDef, funHoursText, funOpenAt } from '../data/fun';
+import { HAIR_STYLES, HAIR_COLORS, SHIRT_COLORS, PANTS_COLORS, SHOE_COLORS, GLASSES, ColorDef } from '../data/looks';
+import { EXPR } from '../data/expr';
 import { Game, addStack, hourOf, absMin, Stack, weightOf } from '../sim/state';
 import * as R from '../sim/rules';
 import * as P from '../sim/police';
@@ -282,6 +284,63 @@ export class Acts {
     const done = S.topics.every((_, i) => g.flags[`side_${id}_${i}`]);
     this.D(who(n), n, text ?? (done ? S.again : S.intro), [...opts, { t: 'Thôi, đi nha.' }]);
   }
+  // ───────────────────────── Ngoại hình: tiệm cắt tóc & tiệm thời trang ─────────────────────────
+  /** Mua một lựa chọn ngoại hình: trừ tiền, ghi vào bản lưu, dựng lại nhân vật ngay. */
+  private buyLook(n: Npc, key: 'hairStyle' | 'hair' | 'shirt' | 'pants' | 'shoe' | 'face', val: number, price: number, what: string, line: string) {
+    const g = this.g;
+    if (price > 0 && !R.spend(g, price, 'other')) { toast('Không đủ tiền.', 'bad', 'cash'); return false; }
+    (g.look as any)[key] = val; ctx.player.applyLook();
+    R.advance(g, 15, this.act()); R.consume(g, { m: 4 }); sfx('coin');
+    ctx.npcs.say(n, line, 3, EXPR.happy);
+    toast(`Đã đổi ${what} (${money(price)}).` + (ctx.set.cam3 ? '' : ' Bấm V để ngắm mình ở góc nhìn thứ ba.'), 'good', 'heart');
+    return true;
+  }
+  /** Ngồi vào ghế của Chú Bảy (neo `hot_toc_ghe`): chào một câu rồi mở bảng kiểu tóc. */
+  barberChair(n: Npc) {
+    this.D(who(n), n, 'Ngồi đi con, ghế này là để cắt tóc đó. Muốn kiểu nào?', [
+      { t: 'Cắt kiểu mới', fn: () => this.barberStyles(n) },
+      { t: 'Nhuộm tóc', fn: () => this.barberColors(n) },
+      { t: 'Ngồi nghỉ chút thôi.', fn: () => { R.advance(this.g, 20, this.act()); R.consume(this.g, { m: 6 }); toast('Ngồi nghỉ trên ghế cắt tóc, người nhẹ hẳn.', 'info', 'heart'); } },
+    ]);
+  }
+  private barberStyles(n: Npc) {
+    const g = this.g, cur = g.look.hairStyle;
+    const opts: Opt[] = HAIR_STYLES.map((hs) => ({
+      t: `${hs.name} — ${money(hs.price)}`, sub: hs.id === cur ? 'Đang để kiểu này' : hs.id >= 4 ? 'Kiểu mới về, hơi lâu một chút' : undefined,
+      off: hs.id === cur || g.cash < hs.price,
+      fn: () => { if (this.buyLook(n, 'hairStyle', hs.id, hs.price, `kiểu tóc “${hs.name.toLowerCase()}”`, 'Xong rồi đó. Soi gương coi được không.')) this.barberStyles(n); },
+    }));
+    this.D(who(n), n, 'Chú Bảy vỗ vỗ cái ghế sắt: “Lên ngồi đi, muốn kiểu nào?”', [...opts, { t: 'Thôi, để hôm khác.' }]);
+  }
+  private barberColors(n: Npc) {
+    const g = this.g;
+    const opts: Opt[] = HAIR_COLORS.map((c) => ({
+      t: `${c.name} — ${money(c.price)}`, off: g.look.hair === c.col || g.cash < c.price,
+      sub: g.look.hair === c.col ? 'Đang nhuộm màu này' : undefined,
+      fn: () => { if (this.buyLook(n, 'hair', c.col, c.price, `màu tóc ${c.name.toLowerCase()}`, 'Màu này hợp với con đó.')) this.barberColors(n); },
+    }));
+    this.D(who(n), n, 'Chú Bảy mở hộp thuốc nhuộm: “Muốn màu nào? Nhuộm xong ba chục phút mới gội nghen.”', [...opts, { t: 'Thôi, để màu tự nhiên.' }]);
+  }
+  private shopColors(n: Npc, key: 'shirt' | 'pants' | 'shoe', list: ColorDef[], what: string) {
+    const g = this.g;
+    const opts: Opt[] = list.map((c) => ({
+      t: `${c.name} — ${money(c.price)}`, sub: g.look[key] === c.col ? 'Đang mặc cái này' : undefined,
+      off: g.look[key] === c.col || g.cash < c.price,
+      fn: () => { if (this.buyLook(n, key, c.col, c.price, what + ' màu ' + c.name.toLowerCase(), 'Mặc vô coi bộ được đó con.')) this.shopColors(n, key, list, what); },
+    }));
+    this.D(who(n), n, `Cô Ngọc kéo giá đồ ra: “Lựa ${what} đi con, màu nào cũng có.”`, [...opts, { t: 'Thôi, để coi đã.' }]);
+  }
+  private shopGlasses(n: Npc) {
+    const g = this.g, base = g.look.fem ? 1 : 0;
+    const cur = g.look.face >= 5 ? g.look.face : 0;
+    const opts: Opt[] = [
+      { t: 'Bỏ kính — miễn phí', off: cur === 0, fn: () => { this.buyLook(n, 'face', base, 0, 'kính', 'Đây, mặt mày nhìn rõ hơn rồi đó.'); this.shopGlasses(n); } },
+      { t: `Kính cận gọng đen — ${money(GLASSES[1].price)}`, off: cur === 5 || g.cash < GLASSES[1].price, fn: () => { this.buyLook(n, 'face', 5, GLASSES[1].price, 'kính cận', 'Cận thì đeo vô, chữ nhỏ xíu cũng thấy.'); this.shopGlasses(n); } },
+      { t: `Kính đen — ${money(GLASSES[2].price)}`, off: cur === 6 || g.cash < GLASSES[2].price, fn: () => { this.buyLook(n, 'face', 6, GLASSES[2].price, 'kính đen', 'Ui, nhìn ngầu ghê. Đi bán hàng hơi khó thấy đường đó nghen.'); this.shopGlasses(n); } },
+    ];
+    this.D(who(n), n, 'Cô Ngọc mở hộp kính: “Đeo thử coi, kính này mốt lắm.”', [...opts, { t: 'Thôi, mắt con còn tốt.' }]);
+  }
+
   /** Việc dùng được ngay tại chỗ của từng nhân vật phụ. */
   private sideOpts(n: Npc, id: string): Opt[] {
     const g = this.g, h = hourOf(g), say = (t: string) => ctx.npcs.say(n, t, 2.8, 1);
@@ -319,6 +378,21 @@ export class Acts {
         { t: 'Chơi một ván cờ', sub: g.st.energy < 10 ? 'Đang mệt, chơi không nổi' : '25 phút, đầu óc thư giãn', off: g.st.energy < 10,
           fn: () => { R.advance(g, 25, this.act()); R.consume(g, { e: -4, t: -4, m: 6 }); sfx('ok'); say('Hay lắm! Con đi xe pháo này là tui chịu rồi. Mai chơi tiếp nghen.'); } },
         { t: 'Hỏi thăm sức khoẻ ông', fn: () => this.D(who(n), n, 'Ông Tư xoa đầu gối: “Lưng còn đau, mà ngồi đây có người nói chuyện là khoẻ hơn thuốc. Con lo làm ăn đi, đừng lo cho tui.”', [{ t: 'Ông giữ sức nghen.' }]) },
+      ];
+      case 'hot_toc': {
+        const cur = g.look.hairStyle;
+        return [
+          { t: 'Cắt kiểu mới — 12.000–45.000₫', sub: `Đang để: ${HAIR_STYLES[cur]?.name.toLowerCase() ?? 'tóc ngắn'}`, fn: () => this.barberStyles(n) },
+          { t: 'Nhuộm tóc — 10.000–30.000₫', sub: 'Bốn màu, nhuộm nhanh 15 phút', fn: () => this.barberColors(n) },
+          { t: 'Bật gương — xem mình ở góc nhìn thứ ba', sub: ctx.set.cam3 ? 'Đang bật rồi' : 'Phím tắt: V', off: ctx.set.cam3, fn: () => { ctx.ui.switchView(); } },
+        ];
+      }
+      case 'thoi_trang': return [
+        { t: 'Áo — 25.000–30.000₫', sub: 'Sáu màu, vải mát', fn: () => this.shopColors(n, 'shirt', SHIRT_COLORS, 'cái áo') },
+        { t: 'Quần — 18.000–24.000₫', sub: 'Năm màu', fn: () => this.shopColors(n, 'pants', PANTS_COLORS, 'cái quần') },
+        { t: 'Giày dép — 12.000–45.000₫', sub: 'Dép nhựa, giày vải, giày thể thao', fn: () => this.shopColors(n, 'shoe', SHOE_COLORS, 'đôi giày') },
+        { t: 'Kính — 45.000–60.000₫', sub: 'Kính cận gọng đen, kính đen', fn: () => this.shopGlasses(n) },
+        { t: 'Bật gương — xem mình ở góc nhìn thứ ba', sub: ctx.set.cam3 ? 'Đang bật rồi' : 'Phím tắt: V', off: ctx.set.cam3, fn: () => { ctx.ui.switchView(); } },
       ];
       case 'danh_giay': return [
         { t: 'Đánh giày — 5.000₫', sub: `Vệ sinh hiện tại ${Math.round(g.st.hygiene)}%`, off: g.cash < 5000,

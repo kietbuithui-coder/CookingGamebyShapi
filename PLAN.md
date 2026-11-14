@@ -305,3 +305,30 @@ hộp thoại xin việc, nhận việc (trừ đúng 58.000₫), trò chuyện 
 **Còn lại của mục “Con người & nhân vật”:** tuỳ biến ngoại hình người chơi (cần gương ở nhà hoặc góc nhìn thứ
 ba vì game đang ở góc nhìn thứ nhất), bộ thoại riêng cho từng nhân vật cố định, phản ứng khi người chơi
 giàu/nghèo/bị công an để ý.
+
+## Lượt 15 — góc nhìn thứ ba, tiệm cắt tóc, tiệm thời trang
+
+Người chơi dặn: "làm góc nhìn thứ ba, khó thì để đó", và "làm luôn tiệm cắt tóc để cắt các kiểu vừa rồi với
+tiệm thời trang, có sẵn thì tận dụng luôn". Góc nhìn thứ ba hoá ra không khó, vì `Rig` dựng người đi đường đã
+có sẵn cả 8 kiểu tóc và bảng màu — chỉ cần một `Rig` riêng cho người chơi và một nhánh camera lùi sau lưng.
+
+**Ngoại hình thành dữ liệu.** `src/data/looks.ts`: `PlayerLookData`, ba bảng bán (`HAIR_STYLES`, `HAIR_COLORS`,
+`SHIRT_COLORS`, `PANTS_COLORS`, `SHOE_COLORS`, `GLASSES`), `defaultLook(fem)` và `cleanLook(raw, fem)`.
+`Game.look` nằm trong bản lưu v11; `migrate()` cấp bộ đồ mặc định cho bản lưu cũ, `cleanLook()` kẹp lại nếu hỏng.
+
+**Góc nhìn thứ ba.** `Player` có `rig`, `look`, `applyLook()`, `syncCarry()`, `toggleView()`. Camera lùi 3,0 m
+(1,2 m nữa khi đẩy xe đạp, 0,35 m khi gánh), dò tường để nép lại, dưới 2,0 m thì giấu nhân vật. Phím **V** hoặc
+nút trong Cài đặt; `Settings.cam3` được lưu lại. Góc nhìn thứ nhất vẫn là mặc định nên lối chơi cũ không đổi.
+
+**Hai tiệm trong chợ Xóm Chiều.** Chú Bảy Kéo cắt tóc ở lối đi giữa hai dãy sạp (x ≈ −45,5 / z ≈ 8,2): ghế sắt,
+gương, bàn đồ nghề, thùng nước, biển "CẮT TÓC 15.000₫"; bán 8 kiểu tóc và 4 màu nhuộm. Cô Ngọc bán quần áo ở
+cùng dãy, phía nam (z ≈ −8,2): giá treo áo, bàn gấp đồ, khay kính, khay giày; bán áo (6 màu), quần (5 màu),
+giày (3 đôi), kính (cận / đen). Cả hai dùng chung `Acts.buyLook()`: trừ tiền, ghi `g.look`, `applyLook()` ngay,
++4 tinh thần, 15 phút. Ghế cắt tóc còn là chỗ ngồi nghỉ.
+
+**Bản lưu v11**: thêm `Game.look`; cài đặt thêm `cam3`.
+
+**Kiểm thử:** `tests/look.test.ts` 13 bài (bảng giá, mặc định nam/nữ, `cleanLook` với dữ liệu rác, bản lưu
+v10 → v11, hai người bán mới). Tổng **260 bài / 17 tệp**. Probe `tools/probe/steps/nguoi3.mjs`: bấm V ở bờ kè,
+tiệm cắt tóc và tiệm thời trang trong chợ, menu kiểu tóc, uốn xoăn trừ đúng 45.000₫, mua áo đỏ + quần xanh bò +
+kính đen, và ngoại hình vào bản lưu v11 — chạy cả desktop 1500×820 lẫn mobile 844×390.

@@ -1,7 +1,7 @@
 // GIAO DIỆN: HUD, bong bóng thoại/gọi món bám theo nhân vật 3D, hội thoại lựa chọn, lớp phủ khi nấu, thông báo.
 import * as THREE from 'three';
 import './style.css';
-import { ctx, MIN_PER_SEC } from '../game/ctx';
+import { ctx, MIN_PER_SEC, saveSettings } from '../game/ctx';
 import type { Npc } from '../game/npc';
 import type { Focus } from '../game/interact';
 import type { Opt } from '../game/acts';
@@ -137,8 +137,15 @@ export class UI {
       else if (ctx.mode === 'play' && k === 'm') this.panel('map');
       else if (ctx.mode === 'play' && k === 'b') this.panel('book');
       else if (ctx.mode === 'play' && k === 'p') this.panel('phone');
+      else if (ctx.mode === 'play' && k === 'v') this.switchView();
       else if (k === 'escape') { if (this.modalName) this.closePanel(); else if (ctx.mode === 'play') this.panel('settings'); }
     };
+  }
+  /** Đổi góc nhìn thứ nhất / thứ ba (phím V hoặc nút trong Cài đặt). */
+  switchView() {
+    const third = ctx.player.toggleView(); saveSettings();
+    bus.emit('toast', { text: third ? 'Góc nhìn thứ ba: bạn thấy được quần áo, kiểu tóc của mình.' : 'Về góc nhìn thứ nhất.', kind: 'info', icon: 'eye' });
+    bus.emit('ui', 'view');
   }
   $(id: string) { return this.E[id]; }
   /** Áp lại cỡ giao diện và vị trí nút (sau khi đổi cài đặt). */
