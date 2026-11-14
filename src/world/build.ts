@@ -20,6 +20,8 @@ export class World {
   doors: DoorDef[] = []; lamps: [number, number, number][] = []; slots: SlotDef[] = [];
   bins: Anchor[] = []; benches: Anchor[] = []; litter: [number, number][] = []; taps: Anchor[] = [];
   shutters: ShutterDef[] = []; spotsMark: Anchor[] = [];
+  /** Nhóm lưới hàng hoá trên sạp của từng quán chợ — ẩn đi khi quán đóng cửa / về đêm. */
+  shopGoods = new Map<string, THREE.Group>();
   /** Danh sách lô đất (kèm khung toạ độ) — dùng cho bản đồ, chỉ đường và công cụ thử nghiệm. */
   lots: Lot[] = [];
   /** Vùng có mái che (trú mưa): hộp chữ nhật trong toạ độ thế giới. */
@@ -82,6 +84,8 @@ export class Builder {
   chunks = new Map<string, ChunkSet>(); cur!: ChunkSet;
   lit!: MB; glow!: MB; unlit!: MB; detail!: MB; sign!: MB; tileIn!: MB;
   marks = new MB(); festive = new MB(); roadblock = new MB();
+  /** Hàng bày trên sạp chợ của từng quán — tách riêng để ẩn khi hết giờ mở cửa. */
+  shopGoods = new Map<string, { detail: MB; sign: MB }>();
   /** Các biển hiệu đủ lớn đã dựng (toạ độ thế giới) — để cây xanh, đồ vỉa hè… biết đường tránh, không che mất biển. */
   signs: { x: number; z: number; y0: number; y1: number; w: number; nx: number; nz: number }[] = [];
   ground: Record<GroundKind, MB> = { asphalt: new MB(true), pave: new MB(true), grass: new MB(true), dirt: new MB(true), tile: new MB(true), concrete: new MB(true), water: new MB(true), wood: new MB(true) };
@@ -96,7 +100,25 @@ export class Builder {
     this.all = [c.lit, c.glow, c.unlit, c.detail, c.sign, c.tileIn, this.marks, this.festive, this.roadblock, ...Object.values(this.ground)];
     return this.frame(this.fr, this.ox, this.oz);
   }
-  frame(fr: Frame, ox = 0, oz = 0) { this.fr = fr; this.ox = ox; this.oz = oz; for (const m of this.all) { m.frame(fr.tx, fr.tz, fr.yaw); m.off(ox, oz); } return this; }
+  frame(fr: Frame, ox = 0, oz = 0) {
+    this.fr = fr; this.ox = ox; this.oz = oz;
+    for (const m of this.all) { m.frame(fr.tx, fr.tz, fr.yaw); m.off(ox, oz); }
+    for (const g of this.shopGoods.values()) { g.detail.frame(fr.tx, fr.tz, fr.yaw); g.detail.off(ox, oz); g.sign.frame(fr.tx, fr.tz, fr.yaw); g.sign.off(ox, oz); }
+    return this;
+  }
+  /** Vẽ hàng hoá của một sạp chợ vào bộ lưới riêng để dọn hàng khi đóng cửa. */
+  withShopGoods(shop: string, fn: (mb: MB) => void) {
+    let g = this.shopGoods.get(shop);
+    if (!g) {
+      g = { detail: new MB(), sign: new MB(true) };
+      g.detail.frame(this.fr.tx, this.fr.tz, this.fr.yaw); g.detail.off(this.ox, this.oz);
+      g.sign.frame(this.fr.tx, this.fr.tz, this.fr.yaw); g.sign.off(this.ox, this.oz);
+      this.shopGoods.set(shop, g);
+    }
+    const oldD = this.detail, oldS = this.sign;
+    this.detail = g.detail; this.sign = g.sign;
+    try { fn(g.detail); } finally { this.detail = oldD; this.sign = oldS; }
+  }
   /** Dựng một vật trong hệ toạ độ con (dịch + xoay so với khung hiện tại). */
   sub(lx: number, lz: number, ry: number, fn: () => void) {
     const f = this.fr, ox = this.ox, oz = this.oz, [tx, tz] = this.W(lx, lz);

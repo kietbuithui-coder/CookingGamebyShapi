@@ -389,4 +389,292 @@ export class WashGame implements Mini {
     return null;
   }
 }
+
+// ───────────────────────── Việc làm thêm: BỐC HÀNG (xếp bao gạo lên kiện gỗ) ─────────────────────────
+export class SackGame implements Mini {
+  planeH = 0.08; frame: [number, number, number] = [0.88, 0.64, 0];
+  private sack!: THREE.Group; private target!: THREE.Mesh; private stack: THREE.Mesh[] = [];
+  private idx = 0; private total = 3; private t = 0; private dropT = 0; private targetX = 0; private scores: number[] = [];
+  constructor(private cook: Cook) {}
+  start() {
+    const st = this.cook.stage;
+    // Kiện gỗ (pallet) trên nền kho
+    mk(GEO.box, 0x8a6a4a, 0.54, 0.025, 0.36, 0, 0.012, 0.02, st);
+    for (const x of [-0.2, 0, 0.2]) mk(GEO.box, 0x6a4e32, 0.06, 0.02, 0.36, x, 0.002, 0.02, st);
+    // Vạch đích màu vàng chỉ chỗ cần hạ bao xuống cho cân kiện
+    this.target = mk(GEO.box, 0xffd24d, 0.24, 0.008, 0.18, 0, 0.028, 0.02, st);
+    this.target.material = pm(0xffd24d, { opacity: 0.75 });
+    // Bao gạo đang vác trên vai chuẩn bị hạ xuống
+    this.sack = new THREE.Group();
+    mk(GEO.box, 0xd9cdb0, 0.22, 0.055, 0.15, 0, 0, 0, this.sack);
+    mk(GEO.box, 0xc8102e, 0.16, 0.057, 0.025, 0, 0, 0, this.sack);
+    this.sack.position.set(0, 0.25, 0.02); st.add(this.sack);
+    this.nextSack();
+    ctx.ui.cookHint('Canh lúc bao gạo đung đưa ngay trên vạch vàng rồi bấm “Hạ bao xuống” (hoặc chạm vào kiện gỗ).');
+    ctx.ui.cookButtons([{ id: 'drop', t: 'Hạ bao xuống', hot: true }]);
+    ctx.ui.cookProg(0, 0.38, 0.62, `0/${this.total} bao`);
+  }
+  private nextSack() {
+    this.targetX = (this.idx === 0 ? 0 : this.idx === 1 ? -0.06 : 0.06);
+    this.target.position.set(this.targetX, 0.028 + this.idx * 0.055, 0.02);
+    this.sack.position.y = 0.26 + this.idx * 0.04;
+    this.sack.visible = true;
+    ctx.ui.cookLabels([{ t: 'Vạch hạ bao', p: this.cook.world(this.targetX, 0.06 + this.idx * 0.055, 0.02), cur: true }]);
+  }
+  private dropNow() {
+    if (this.dropT > 0 || this.idx >= this.total) return;
+    const x = this.sack.position.x, err = Math.abs(x - this.targetX), sc = clamp(1 - err / 0.22, 0.25, 1);
+    this.scores.push(sc);
+    const landed = mk(GEO.box, this.idx % 2 ? 0xd9cdb0 : 0xc9b890, 0.22, 0.055, 0.15, x, 0.052 + this.idx * 0.055, 0.02, this.cook.stage);
+    mk(GEO.box, 0xc8102e, 0.16, 0.057, 0.025, 0, 0, 0, landed);
+    this.stack.push(landed);
+    this.sack.visible = false;
+    this.cook.puff(x, 0.07 + this.idx * 0.055, 0.02, 0xf3ead2, 4, 0.09);
+    sfx(sc >= 0.75 ? 'ding' : 'chop');
+    ctx.ui.floatAt(sc >= 0.8 ? 'Ngay ngắn!' : sc >= 0.55 ? 'Tạm ổn' : 'Lệch kiện!', this.cook.world(x, 0.16 + this.idx * 0.055, 0.02), sc >= 0.75 ? 'good' : 'warn');
+    this.idx++; this.dropT = 0.42;
+    ctx.ui.cookProg(this.idx / this.total, 0.38, 0.62, `${this.idx}/${this.total} bao`);
+  }
+  down() { this.dropNow(); }
+  btn(id: string, down: boolean) { if (down && id === 'drop') this.dropNow(); }
+  update(dt: number) {
+    this.t += dt;
+    if (this.dropT > 0) {
+      this.dropT -= dt;
+      if (this.dropT <= 0) {
+        if (this.idx >= this.total) {
+          ctx.ui.cookLabels([]); ctx.ui.cookButtons([]);
+          return clamp(this.scores.reduce((a, b) => a + b, 0) / this.scores.length, 0.25, 1);
+        }
+        this.nextSack();
+      }
+      return null;
+    }
+    const spd = 2.5 + this.idx * 0.55;
+    this.sack.position.x = Math.sin(this.t * spd) * 0.21;
+    this.sack.rotation.z = Math.cos(this.t * spd) * 0.08;
+    const norm = clamp(0.5 + (this.sack.position.x - this.targetX) / 0.44, 0, 1);
+    ctx.ui.cookProg(norm, 0.38, 0.62, `Bao ${this.idx + 1}/${this.total} — canh giữa vạch xanh`);
+    return null;
+  }
+}
+
+// ───────────────────────── Việc làm thêm: BỐC CÁ (phân loại cá tươi & ướp đá) ─────────────────────────
+export class FishGame implements Mini {
+  planeH = 0.05; frame: [number, number, number] = [0.94, 0.66, -0.02];
+  private curFish = new THREE.Group(); private isFresh = true; private idx = 0; private total = 6;
+  private right = 0; private ice = 0.85; private t = 0; private pauseT = 0; private iceMesh!: THREE.Mesh;
+  private readonly seq = [true, false, true, true, false, true];
+  constructor(private cook: Cook) {}
+  start() {
+    const st = this.cook.stage;
+    // Khay nhựa xanh bên trái: cá tươi ướp đá
+    mk(GEO.box, 0x2f8fd5, 0.32, 0.08, 0.26, -0.25, 0.04, 0.05, st);
+    this.iceMesh = mk(GEO.box, 0xdff4ff, 0.28, 0.04, 0.22, -0.25, 0.05, 0.05, st);
+    this.iceMesh.material = pm(0xdff4ff, { opacity: 0.82 });
+    // Thùng xám bên phải: cá ươn / loại
+    mk(GEO.box, 0x55585e, 0.3, 0.08, 0.26, 0.25, 0.04, 0.05, st);
+    mk(GEO.box, 0x3a3d42, 0.26, 0.03, 0.22, 0.25, 0.04, 0.05, st);
+    // Mâm sắt ở giữa đặt con cá vừa đổ từ ghe lên
+    mk(GEO.disc, 0xc9d3da, 0.28, 0.012, 0.22, 0, 0.008, -0.14, st);
+    st.add(this.curFish);
+    this.spawnFish();
+    ctx.ui.cookHint('Phân loại từng con cá: cá tươi (mình bạc xanh) bỏ vào Khay đá, cá ươn (xám đục) bỏ vào Thùng loại. Nhớ xúc thêm đá khi đá tan!');
+    ctx.ui.cookButtons([
+      { id: 'fresh', t: 'Khay đá (Cá tươi)', hot: true },
+      { id: 'bad', t: 'Thùng loại (Cá ươn)' },
+      { id: 'ice', t: 'Xúc đá ướp' },
+    ]);
+    ctx.ui.cookProg(0, 0, 0, `0/${this.total} khay · Đá ${Math.round(this.ice * 100)}%`);
+  }
+  private spawnFish() {
+    while (this.curFish.children.length) this.curFish.remove(this.curFish.children[0]);
+    this.isFresh = this.seq[this.idx % this.seq.length];
+    const col = this.isFresh ? 0x6fb2dc : 0x6a5d4d;
+    mk(GEO.sph, col, 0.18, 0.035, 0.07, 0, 0.035, 0, this.curFish);
+    mk(GEO.cone, shade(col, 0.85), 0.06, 0.06, 0.02, -0.1, 0.035, 0, this.curFish).rotation.z = Math.PI / 2;
+    mk(GEO.sph, this.isFresh ? 0xffffff : 0x8a7a5a, 0.016, 0.016, 0.016, 0.055, 0.048, 0.022, this.curFish);
+    this.curFish.position.set(0, 0, -0.14);
+    this.curFish.visible = true;
+    ctx.ui.cookLabels([
+      { t: this.isFresh ? 'Cá tươi (vảy sáng)' : 'Cá ươn (mắt đục)', p: this.cook.world(0, 0.11, -0.14), cur: true },
+      { t: 'Khay đá (Cá tươi)', p: this.cook.world(-0.25, 0.12, 0.05) },
+      { t: 'Thùng loại (Cá ươn)', p: this.cook.world(0.25, 0.12, 0.05) },
+    ]);
+  }
+  private sort(chooseFresh: boolean) {
+    if (this.pauseT > 0 || this.idx >= this.total) return;
+    const ok = chooseFresh === this.isFresh;
+    if (ok) this.right++;
+    const tx = chooseFresh ? -0.25 : 0.25;
+    mk(GEO.sph, this.isFresh ? 0x6fb2dc : 0x6a5d4d, 0.11, 0.022, 0.045, tx + (this.idx % 3 - 1) * 0.05, 0.075, 0.05 + (this.idx % 2 - 0.5) * 0.05, this.cook.stage);
+    this.curFish.visible = false;
+    this.cook.puff(tx, 0.09, 0.05, chooseFresh ? 0xdff4ff : 0x9a8a7a, 3, 0.07);
+    sfx(ok ? 'plop' : 'bad');
+    ctx.ui.floatAt(ok ? 'Đúng khay!' : 'Nhầm khay rồi!', this.cook.world(tx, 0.16, 0.05), ok ? 'good' : 'bad');
+    this.idx++; this.pauseT = 0.35;
+    ctx.ui.cookProg(this.idx / this.total, 0, 0, `${this.idx}/${this.total} con · Đá ${Math.round(this.ice * 100)}%`);
+  }
+  private addIce() {
+    this.ice = Math.min(1, this.ice + 0.38);
+    this.cook.puff(-0.25, 0.1, 0.05, 0xdff4ff, 4, 0.08);
+    sfx('pour');
+    ctx.ui.floatAt('+Đá bào mát lạnh', this.cook.world(-0.25, 0.16, 0.05), 'good');
+  }
+  down(p: THREE.Vector3) {
+    if (p.x < -0.07) this.sort(true);
+    else if (p.x > 0.07) this.sort(false);
+  }
+  btn(id: string, down: boolean) {
+    if (!down) return;
+    if (id === 'fresh') this.sort(true);
+    else if (id === 'bad') this.sort(false);
+    else if (id === 'ice') this.addIce();
+  }
+  update(dt: number) {
+    this.t += dt;
+    this.ice = Math.max(0.1, this.ice - dt * 0.035);
+    this.iceMesh.scale.y = 0.4 + this.ice * 0.8;
+    if (this.pauseT > 0) {
+      this.pauseT -= dt;
+      if (this.pauseT <= 0) {
+        if (this.idx >= this.total) {
+          ctx.ui.cookLabels([]); ctx.ui.cookButtons([]);
+          const acc = this.right / this.total, iceBonus = this.ice >= 0.35 ? 1 : 0.82;
+          return clamp(acc * iceBonus, 0.2, 1);
+        }
+        this.spawnFish();
+      }
+    }
+    return null;
+  }
+}
+
+// ───────────────────────── Giải trí: ĐÁNH CỜ TƯỚNG VỚI ÔNG TƯ ─────────────────────────
+interface ChessTurn {
+  prompt: string;
+  pieceIdx: number;
+  opts: { id: string; label: string; to: [number, number]; score: number; note: string }[];
+  reply: { pieceIdx: number; to: [number, number] };
+}
+export class ChessGame implements Mini {
+  planeH = 0.03; frame: [number, number, number] = [0.82, 0.64, 0];
+  private pieces: THREE.Group[] = []; private markers: { m: THREE.Mesh; optIdx: number }[] = [];
+  private turn = 0; private scores: number[] = []; private waitT = 0;
+  private readonly turns: ChessTurn[] = [
+    {
+      prompt: 'Nước 1/3: Xe Đỏ đang chiếm lộ sườn — chọn nước tấn công!',
+      pieceIdx: 1,
+      opts: [
+        { id: 'm0', label: 'Tiến Xe chiếu tướng (Nước cao)', to: [0.14, -0.18], score: 1.0, note: 'Chiếu tướng! Nước cờ sắc bén!' },
+        { id: 'm1', label: 'Bình Xe giữ trung lộ (Chắc chắn)', to: [0.0, 0.06], score: 0.68, note: 'Nước đi chắc chắn, giữ thế chủ động.' },
+        { id: 'm2', label: 'Lùi Xe về hà (Hơi nhát)', to: [0.14, 0.16], score: 0.3, note: 'Lùi Xe hơi phí tiên!' },
+      ],
+      reply: { pieceIdx: 5, to: [0.0, -0.14] },
+    },
+    {
+      prompt: 'Nước 2/3: Ông Tư vừa lên Sĩ cản — điều Pháo Đỏ phối hợp!',
+      pieceIdx: 2,
+      opts: [
+        { id: 'm0', label: 'Bình Pháo lồng chiếu đôi (Nước cao)', to: [0.0, -0.06], score: 1.0, note: 'Pháo đầu đóng chặt! Ông Tư toát mồ hôi!' },
+        { id: 'm1', label: 'Vật Pháo ăn Tốt đen (Tạm ổn)', to: [-0.16, -0.04], score: 0.65, note: 'Ăn hơn quân nhưng chưa dứt điểm.' },
+        { id: 'm2', label: 'Thối Pháo giữ cung (Thụ động)', to: [-0.14, 0.18], score: 0.28, note: 'Bỏ lỡ cơ hội ép cung!' },
+      ],
+      reply: { pieceIdx: 4, to: [-0.07, -0.18] },
+    },
+    {
+      prompt: 'Nước 3/3: Tướng Đen kẹt cung — nhảy Mã Đỏ dứt điểm ván cờ!',
+      pieceIdx: 3,
+      opts: [
+        { id: 'm0', label: 'Nhảy Mã ngoa tào — Chiếu bí!', to: [0.07, -0.12], score: 1.0, note: 'Chiếu bí tuyệt đẹp!' },
+        { id: 'm1', label: 'Nhảy Mã bắt Xe đen (Đấu quân)', to: [-0.12, -0.12], score: 0.65, note: 'Đấu quân giữ thế hoà.' },
+        { id: 'm2', label: 'Lùi Mã về giữ Tướng (Hở sườn)', to: [-0.04, 0.16], score: 0.25, note: 'Lùi Mã làm mất thế công!' },
+      ],
+      reply: { pieceIdx: 4, to: [-0.07, -0.18] },
+    },
+  ];
+  constructor(private cook: Cook) {}
+  start() {
+    const st = this.cook.stage;
+    // Bàn cờ gỗ + đường kẻ + sông Sở Hà Hán Giới
+    mk(GEO.box, 0xc99a5b, 0.52, 0.024, 0.48, 0, 0.012, 0, st);
+    mk(GEO.box, 0x8a5a2a, 0.55, 0.018, 0.51, 0, 0.008, 0, st);
+    mk(GEO.box, 0xb88646, 0.44, 0.003, 0.055, 0, 0.025, 0, st);
+    for (let i = -3; i <= 3; i++) mk(GEO.box, 0x4a321e, 0.004, 0.003, 0.42, i * 0.07, 0.025, 0, st);
+    for (let j = -3; j <= 3; j++) mk(GEO.box, 0x4a321e, 0.42, 0.003, 0.004, 0, 0.025, j * 0.068, st);
+    // Quân Đỏ (0..3: Tướng, Xe, Pháo, Mã) và Quân Đen (4..6: Tướng, Sĩ, Xe)
+    const init: [number, number, boolean][] = [
+      [0, 0.19, true], [0.14, 0.06, true], [-0.14, 0.08, true], [0.08, 0.14, true],
+      [0, -0.19, false], [-0.07, -0.19, false], [-0.14, -0.12, false],
+    ];
+    for (const [x, z, red] of init) {
+      const g = new THREE.Group();
+      mk(GEO.disc, 0xf3e2b8, 0.048, 0.016, 0.048, 0, 0.008, 0, g);
+      mk(GEO.disc, red ? 0xc81e1e : 0x22252a, 0.036, 0.004, 0.036, 0, 0.017, 0, g);
+      g.position.set(x, 0.024, z); st.add(g); this.pieces.push(g);
+    }
+    this.showTurn();
+  }
+  private showTurn() {
+    for (const m of this.markers) this.cook.stage.remove(m.m);
+    this.markers = [];
+    const T = this.turns[this.turn];
+    T.opts.forEach((o, i) => {
+      const col = i === 0 ? 0xffd24d : i === 1 ? 0x5fd068 : 0xd98a4a;
+      const m = mk(GEO.ring, col, 0.058, 0.01, 0.058, o.to[0], 0.028, o.to[1], this.cook.stage);
+      this.markers.push({ m, optIdx: i });
+    });
+    const p = this.pieces[T.pieceIdx];
+    ctx.ui.cookHint(T.prompt);
+    ctx.ui.cookButtons(T.opts.map((o, i) => ({ id: o.id, t: o.label, hot: i === 0 })));
+    ctx.ui.cookLabels([
+      { t: this.turn === 0 ? 'Xe Đỏ' : this.turn === 1 ? 'Pháo Đỏ' : 'Mã Đỏ', p: this.cook.world(p.position.x, 0.07, p.position.z), cur: true },
+      { t: 'Tướng Đen', p: this.cook.world(this.pieces[4].position.x, 0.07, this.pieces[4].position.z) },
+    ]);
+    ctx.ui.cookProg(this.turn / this.turns.length, 0, 0, `Nước ${this.turn + 1}/${this.turns.length}`);
+  }
+  private pickOpt(optIdx: number) {
+    if (this.waitT > 0 || this.turn >= this.turns.length) return;
+    const T = this.turns[this.turn], o = T.opts[optIdx];
+    if (!o) return;
+    const p = this.pieces[T.pieceIdx];
+    p.position.set(o.to[0], 0.024, o.to[1]);
+    this.scores.push(o.score);
+    sfx(o.score >= 0.9 ? 'ding' : 'chop');
+    ctx.ui.floatAt(o.note, this.cook.world(o.to[0], 0.1, o.to[1]), o.score >= 0.8 ? 'good' : o.score >= 0.5 ? 'info' : 'warn');
+    // Nước đỡ của Ông Tư
+    const rp = this.pieces[T.reply.pieceIdx];
+    rp.position.set(T.reply.to[0], 0.024, T.reply.to[1]);
+    this.turn++;
+    this.waitT = 0.5;
+    ctx.ui.cookProg(this.turn / this.turns.length, 0, 0, `Nước ${this.turn}/${this.turns.length}`);
+  }
+  down(p: THREE.Vector3) {
+    if (this.waitT > 0) return;
+    let best = -1, bd = 0.085;
+    for (const mk of this.markers) {
+      const d = Math.hypot(mk.m.position.x - p.x, mk.m.position.z - p.z);
+      if (d < bd) { bd = d; best = mk.optIdx; }
+    }
+    if (best >= 0) this.pickOpt(best);
+  }
+  btn(id: string, down: boolean) {
+    if (!down) return;
+    const i = this.turns[this.turn]?.opts.findIndex((o) => o.id === id) ?? -1;
+    if (i >= 0) this.pickOpt(i);
+  }
+  update(dt: number) {
+    if (this.waitT > 0) {
+      this.waitT -= dt;
+      if (this.waitT <= 0) {
+        if (this.turn >= this.turns.length) {
+          ctx.ui.cookLabels([]); ctx.ui.cookButtons([]);
+          return clamp(this.scores.reduce((a, b) => a + b, 0) / this.scores.length, 0.2, 1);
+        }
+        this.showTurn();
+      }
+    }
+    return null;
+  }
+}
 export { mix };

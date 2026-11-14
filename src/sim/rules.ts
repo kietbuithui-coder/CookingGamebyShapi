@@ -383,12 +383,12 @@ export function tickStats(g: Game, dm: number, a: Activity) {
   for (const k of Object.keys(s) as (keyof typeof s)[]) s[k] = clamp(s[k], 0, 100);
 }
 /** Ăn/uống một món. */
-export function consume(g: Game, eff: { h?: number; t?: number; m?: number; hp?: number; e?: number; hy?: number }, risky = 0) {
+export function consume(g: Game, eff: { h?: number; t?: number; m?: number; hp?: number; e?: number; hy?: number }, risky = 0, badMsg = 'Ăn đồ ôi thiu — đau bụng quá!') {
   const s = g.st;
   s.hunger = clamp(s.hunger + (eff.h ?? 0), 0, 100); s.thirst = clamp(s.thirst + (eff.t ?? 0), 0, 100); s.mood = clamp(s.mood + (eff.m ?? 0), 0, 100);
   s.health = clamp(s.health + (eff.hp ?? 0), 0, 100); s.energy = clamp(s.energy + (eff.e ?? 0), 0, 100); s.hygiene = clamp(s.hygiene + (eff.hy ?? 0), 0, 100);
   if ((eff.hp ?? 0) >= 20 && g.flags.sick) { delete g.flags.sick; toast('Hết cảm rồi, khoẻ lại rồi!', 'good', 'heart'); }
-  if (risky > 0 && rnd.chance(risky)) { s.health = clamp(s.health - 18, 0, 100); s.mood = clamp(s.mood - 8, 0, 100); toast('Ăn đồ ôi thiu — đau bụng quá!', 'bad', 'heart'); }
+  if (risky > 0 && rnd.chance(risky)) { s.health = clamp(s.health - 18, 0, 100); s.mood = clamp(s.mood - 8, 0, 100); toast(badMsg, 'bad', 'heart'); }
 }
 
 // ───────────────────────── Sức khoẻ: xỉu & bệnh viện ─────────────────────────
@@ -816,3 +816,64 @@ export function addXp(g: Game, score: number) {
   toast(`Tay nghề lên cấp ${lv}! Thao tác nấu dễ chuẩn hơn.`, 'good', 'star');
   if (got.length) { toast(`Tự nghĩ ra ${got.length > 1 ? 'hai món mới' : 'một món mới'}: ${got.map((r) => r.name).join(', ')}. Xem trong Sổ tay.`, 'good', 'dish', true); bus.emit('save', 'len cap'); }
 }
+
+/** Thay {ac} / {Ac} bằng đại từ nhân xưng đúng giới tính của người chơi ('anh'/'chị', 'Anh'/'Chị'). */
+export const fmtAc = (s: string, g: Game): string =>
+  s.replace(/\{ac\}/g, g.ac).replace(/\{Ac\}/g, g.ac === 'anh' ? 'Anh' : 'Chị');
+
+/** Người chơi đã bắt đầu buôn bán chưa (đã sắm quầy hoặc đã từng bán ít nhất một phần). */
+export const hasStartedSelling = (g: Game): boolean =>
+  g.stall.tier > 0 || g.tot.served > 0 || typeof g.flags.firstSale === 'number';
+
+/** Chỉ cho học công thức nấu ăn và nghe lời khuyên mở quán sau khi đã bắt đầu có quầy bán hàng. */
+export const canLearnRecipes = (g: Game): boolean => g.stall.tier > 0;
+
+/** Tỉ lệ Bà Tư cho thêm một phần cơm dư sau khi rửa chén xong. */
+export const DISH_MEAL_CHANCE = 0.22;
+/** Khung giờ rửa chén ở quán Bà Tư: 1 = ca trưa (10h–14h30), 2 = ca tối (17h30–21h), 0 = ngoài giờ. */
+export const dishWindow = (h: number): 0 | 1 | 2 => (h >= 10 && h < 14.5 ? 1 : h >= 17.5 && h < 21 ? 2 : 0);
+/** Có thể nhận rửa chén ở quán Bà Tư lúc này không (đúng khung giờ và chưa rửa ca đó trong ngày). */
+export function canWashDishes(g: Game): { ok: boolean; win: 0 | 1 | 2; why: string } {
+  const win = dishWindow(hourOf(g));
+  if (!win) return { ok: false, win: 0, why: 'Chỉ cần người lúc 10–14h30 và 17h30–21h' };
+  const done = g.flags['dish_' + win] === g.day || g.wd.plates >= 2;
+  if (done) return { ok: false, win, why: win === 1 ? 'Ca trưa hôm nay rửa rồi — tối 17h30 ghé lại' : 'Ca tối hôm nay rửa rồi — mai ghé lại' };
+  return { ok: true, win, why: 'Được 4.000₫ mỗi cái đĩa · đôi khi có cơm dư' };
+}
+/** Hoàn tất một ca rửa chén: trả tiền công, ghi nhận đã rửa ca hiện tại, và có tỉ lệ nhỏ được cho cơm dư. */
+export function finishDishes(g: Game, score: number, R: RNG = rnd): { pay: number; meal: boolean } {
+  const win = dishWindow(hourOf(g)) || (g.flags.dish_1 === g.day ? 2 : 1);
+  g.flags['dish_' + win] = g.day;
+  g.wd.plates++;
+  const pay = round1k(8 * 4000 * (0.75 + 0.25 * clamp(score)));
+  earn(g, pay, 'side');
+  g.st.hygiene = clamp(g.st.hygiene + 6, 0, 100);
+  g.st.energy = clamp(g.st.energy - 6, 0, 100);
+  changeRel(g, 'eatery', 4, true);
+  const meal = R.chance(DISH_MEAL_CHANCE);
+  if (meal) consume(g, { h: 45, t: 10, m: 3 });
+  return { pay, meal };
+}
+
+/** Tiền công một chuyến bốc vác + xếp bao hàng ở kho theo điểm mini-game (6.000₫ – 9.000₫). */
+export const sackPay = (score: number): number => round1k(6000 + 3000 * clamp(score));
+
+/** Kết quả ván cờ tướng với Ông Tư theo điểm mini-game. */
+export function chessOutcome(score: number): { result: 'win' | 'draw' | 'lose'; mood: number; rel: number; line: string } {
+  const s = clamp(score);
+  if (s >= 0.75) return { result: 'win', mood: 10, rel: 6, line: 'Khá lắm! Nước Xe Pháo liên hoàn đó làm tui trở tay không kịp. Bữa sau tái đấu nghen!' };
+  if (s >= 0.45) return { result: 'draw', mood: 7, rel: 4, line: 'Cờ ngang ngửa đó! Ván này hoà, mai bày thế khác chơi tiếp.' };
+  return { result: 'lose', mood: 4, rel: 2, line: 'Nước đó con vội quá nên hở sườn bị chiếu bí. Thôi thua keo này bày keo khác!' };
+}
+
+/** Nguy cơ bị phạt lấn chiếm vỉa hè khi mở bán ở chỗ miễn phí vỉa hè. */
+export function curbFineRisk(g: Game): number {
+  const s = g.stall;
+  if (!s.open || s.where !== 'placed' || !s.spot) return 0;
+  const sp = SPOTS.find((p) => p.id === s.spot);
+  if (!sp?.curbRisk) return 0;
+  return clamp(sp.curbRisk * (s.tier <= 1 ? 1 : 1.25), 0, 0.85);
+}
+/** Mức tiền phạt hành chính khi bị lập biên bản lấn chiếm vỉa hè. */
+export const curbFineAmount = (g: Game): number => (g.stall.tier <= 1 ? 35000 : 60000);
+

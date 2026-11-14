@@ -91,7 +91,7 @@ export class Interact {
       case 'spot': {
         const sp = c.ref, sap = g.stall.tier >= 3, quan = g.stall.tier >= 4;
         return mk(`${quan ? 'Dựng quán' : sap ? 'Dựng sạp' : 'Đặt quầy'} tại ${sp.name}`, () => ctx.stall.placeAt(sp),
-          (sp.fee ? `Phí ${quan ? 'mặt bằng' : 'chỗ'} ${money(sp.fee)}/ngày` : 'Miễn phí') + ' · ' + sp.note + (sap ? ' · đặt rồi không dời được' : ''));
+          (sp.fee ? `Phí ${quan ? 'mặt bằng' : 'chỗ'} ${money(sp.fee)}/ngày` : sp.curbRisk ? 'Miễn phí vỉa hè (dễ bị phạt lấn chiếm)' : 'Miễn phí') + ' · ' + sp.note + (sap ? ' · đặt rồi không dời được' : ''));
       }
       case 'door': {
         const d = c.ref, lock = d.d.lock as string | undefined, ok = !lock || (g.housing === lock && (HOUSING[lock].per !== 'đêm' || g.day < g.paidUntil));
@@ -138,6 +138,7 @@ export class Interact {
     this.T -= dt; const tick = this.T <= 0; if (tick) this.T = 0.5;
     for (const d of this.doors) { d.open = damp(d.open, d.want, 9, dt); d.m.rotation.y = -d.d.yaw - d.open * 1.5; d.d.box.on = d.open < 0.5; }
     for (const s of this.shut) { if (tick) s.s.box.on = !placeOpen(s.s.shop) || (s.s.shop === 'mart' && R.eventOn(g, 'cup_dien')); const want = s.s.box.on ? 1 : 0; s.k = damp(s.k, want, 3, dt); s.m.visible = s.k > 0.02; s.m.position.y = 0.12 + (1 - s.k) * s.s.h; s.m.scale.y = Math.max(0.02, s.k); }
+    for (const [shopId, grp] of ctx.world.shopGoods) grp.visible = placeOpen(shopId);
     if (ctx.mode !== 'play') { this.focus = null; ctx.input.taps.length = 0; return; }
     this.collect();
     cam.getWorldDirection(_f);

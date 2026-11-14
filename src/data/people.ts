@@ -209,8 +209,8 @@ export const SIDE: Record<string, SideDef> = {
     ],
   },
   danh_giay: {
-    intro: 'Thằng bé ngồi trên cái thùng gỗ, hộp xi đánh giày mở toang. “Anh/chị ơi, đánh giày không? Năm ngàn thôi.”',
-    again: '“Anh/chị tới nữa hả! Ngồi đi, con đánh cho bóng liền.”',
+    intro: 'Thằng bé ngồi trên cái thùng gỗ, hộp xi đánh giày mở toang. “{Ac} ơi, đánh giày không? Năm ngàn thôi.”',
+    again: '“{Ac} tới nữa hả! Ngồi đi, con đánh cho bóng liền.”',
     topics: [
       { q: 'Sao không đi học vậy Bo?', a: 'Học buổi sáng rồi mà. Chiều ra đây kiếm tiền… Bà nội bệnh, ba con đi làm xa. Con đánh giày một ngày được sáu chục, đủ mua thuốc cho bà.' },
       { q: 'Hộp xi này của con hả?', a: 'Của ông Năm để lại. Ông nói đánh giày phải đánh hai lớp, lớp đầu lấy bụi, lớp sau mới bóng. Ông mất rồi, con giữ hộp xi này, còn cái ghế nhỏ này nữa.' },
@@ -313,9 +313,9 @@ export const RUDE: Partial<Record<ArchId, number>> = { giangho: 3.4, khotinh: 2.
 export interface HelperDef { name: string; fem: boolean; face: number; hairStyle: number; shirt: number; pants: number; hair: number; skin: number; wage: number; ask: string; }
 export const HELPER_POOL: HelperDef[] = [
   { name: 'Bé Tư', fem: true, face: 1, hairStyle: 7, shirt: 0xe86f9a, pants: 0x2f3a52, hair: 0x1e1a18, skin: 0xecbe94, wage: 55000, ask: 'Dạ con thấy quán đông quá, con phụ bưng ra dọn vô cho. Ngày 55 ngàn, được hông {ac}?' },
-  { name: 'Thằng Cò', fem: false, face: 0, hairStyle: 6, shirt: 0x2f8fd5, pants: 0x3a5a8a, hair: 0x2a2420, skin: 0xd49a6a, wage: 60000, ask: 'Chú cho con phụ bán với. Con rửa chén, lau bàn, tiếp khách được hết. 60 ngàn một ngày thôi.' },
+  { name: 'Thằng Cò', fem: false, face: 0, hairStyle: 6, shirt: 0x2f8fd5, pants: 0x3a5a8a, hair: 0x2a2420, skin: 0xd49a6a, wage: 60000, ask: '{Ac} cho con phụ bán với. Con rửa chén, lau bàn, tiếp khách được hết. 60 ngàn một ngày thôi.' },
   { name: 'Chị Hạnh', fem: true, face: 1, hairStyle: 5, shirt: 0x6a8a4a, pants: 0x4a4a42, hair: 0x3a2a22, skin: 0xf2c9a4, wage: 70000, ask: 'Nghe nói quán {ac} đông khách. Chị phụ một tay nghen — 70 ngàn một ngày, khách chờ lâu chị dỗ cho.' },
-  { name: 'Chú Em', fem: false, face: 7, hairStyle: 0, shirt: 0x4a5a6a, pants: 0x2a2e3a, hair: 0x1e1a18, skin: 0xe0aa7c, wage: 65000, ask: 'Tui rảnh buổi sáng. Chú mướn tui phụ quầy, 65 ngàn một ngày, khỏi lo khách bỏ đi.' },
+  { name: 'Chú Em', fem: false, face: 7, hairStyle: 0, shirt: 0x4a5a6a, pants: 0x2a2e3a, hair: 0x1e1a18, skin: 0xe0aa7c, wage: 65000, ask: 'Tui rảnh buổi sáng. {Ac} mướn tui phụ quầy, 65 ngàn một ngày, khỏi lo khách bỏ đi.' },
   { name: 'Nhỏ Nhung', fem: true, face: 1, hairStyle: 4, shirt: 0xf5c531, pants: 0x2a3a6a, hair: 0x6a3a22, skin: 0xf6d6b6, wage: 58000, ask: 'Cho con phụ quán với {ac} ơi! Con lanh lắm, 58 ngàn một ngày là được rồi.' },
 ];
 

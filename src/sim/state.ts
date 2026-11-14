@@ -9,7 +9,7 @@ import { PlayerLookData, defaultLook, cleanLook } from '../data/looks';
 
 export const SAVE_VERSION = 11;
 /** Một lô nguyên liệu. fresh 0–100, q chất lượng 0–1, cost giá vốn mỗi đơn vị. */
-export interface Stack { id: string; n: number; fresh: number; q: number; cost: number; }
+export interface Stack { id: string; n: number; fresh: number; q: number; cost: number; stolen?: boolean; }
 /** Mẻ sơ chế sẵn ("cốt" món). */
 export interface Prep { rid: string; n: number; q: number; at: number; cost: number; }
 /** Phần ăn đã hoàn thiện, đang để trên khay. */
