@@ -101,8 +101,12 @@ export function softDot(inner = 'rgba(255,255,255,1)', outer = 'rgba(255,255,255
 }
 
 // ───────────────────────── Khuôn mặt NPC ─────────────────────────
-export const FACE_COLS = 8, FACE_ROWS = 8;
-/** Cột: 0 thường, 1 vui, 2 rất vui, 3 khó chịu, 4 giận, 5 buồn, 6 ngạc nhiên/nói, 7 chớp mắt.
+export const FACE_COLS = 16, FACE_ROWS = 8;
+/** Tên các biểu cảm — dùng thay số trần để khỏi phải nhớ cột nào là gì. */
+export { EXPR } from '../data/expr';
+export type { ExprId } from '../data/expr';
+/** Cột: 0 thường, 1 vui, 2 rất vui, 3 khó chịu, 4 giận, 5 buồn, 6 ngạc nhiên/nói, 7 chớp mắt,
+ *  8 cười mỉm, 9 nháy mắt, 10 buồn ngủ, 11 đau, 12 sợ, 13 khinh, 14 ăn ngon (nhai), 15 phồng má hờn.
  *  Hàng: 0 nam trẻ, 1 nữ trẻ, 2 trẻ em, 3 ông cụ, 4 bà cụ, 5 đeo kính, 6 kính đen (giang hồ), 7 chú có ria. */
 export function faceAtlas(): THREE.CanvasTexture {
   const C = 128, [c, g] = canvas(C * FACE_COLS, C * FACE_ROWS);
@@ -117,35 +121,47 @@ export function faceAtlas(): THREE.CanvasTexture {
 function drawFace(g: CanvasRenderingContext2D, id: number, ex: number) {
   const ink = '#2a1c18', kid = id === 2, old = id === 3 || id === 4, fem = id === 1 || id === 4;
   const eyeY = kid ? 60 : 56, ex0 = 64 - 23, ex1 = 64 + 23, erx = kid ? 12 : 10, ery = kid ? 15 : fem ? 13 : 12;
-  const closed = ex === 2 || ex === 7, half = ex === 3;
+  const arc = ex === 2 || ex === 8 || ex === 14;                       // mắt cong (cười híp)
+  const half = ex === 3 || ex === 10 || ex === 13;                     // mí sụp
   // má hồng
-  if (kid || fem || ex === 1 || ex === 2) { g.fillStyle = 'rgba(240,110,110,.42)'; for (const x of [28, 100]) { g.beginPath(); g.ellipse(x, 82, 11, 7, 0, 0, TAU); g.fill(); } }
+  if (kid || fem || ex === 1 || ex === 2 || ex === 8 || ex === 9 || ex === 14 || ex === 15) {
+    g.fillStyle = 'rgba(240,110,110,.42)';
+    const rx = ex === 15 ? 15 : 11, ry = ex === 15 ? 11 : 7;
+    for (const x of [28, 100]) { g.beginPath(); g.ellipse(x, 82, rx, ry, 0, 0, TAU); g.fill(); }
+  }
   // mắt
   for (const x of [ex0, ex1]) {
     if (id === 6) continue;
-    if (closed) {
-      g.strokeStyle = ink; g.lineWidth = 4.5; g.beginPath();
-      if (ex === 2) g.arc(x, eyeY + 4, 9, Math.PI * 1.15, Math.PI * 1.85); else { g.moveTo(x - 9, eyeY + 1); g.quadraticCurveTo(x, eyeY + 5, x + 9, eyeY + 1); }
-      g.stroke();
-    } else {
-      const ry = old ? ery * 0.72 : ex === 6 ? ery * 1.12 : ery;
-      g.fillStyle = '#fff'; g.beginPath(); g.ellipse(x, eyeY, erx, ry, 0, 0, TAU); g.fill();
-      g.strokeStyle = ink; g.lineWidth = 2.6; g.stroke();
-      const dx = ex === 3 ? 2.5 : 0, pr = ex === 6 ? 5.2 : 6.6;
-      g.fillStyle = ink; g.beginPath(); g.arc(x + dx, eyeY + (ex === 5 ? 2.5 : 0.5), pr, 0, TAU); g.fill();
-      g.fillStyle = '#fff'; g.beginPath(); g.arc(x + dx - 2.2, eyeY - 2.4, 2.1, 0, TAU); g.fill();
-      if (half || ex === 4) { // mí sụp
-        g.save(); g.globalCompositeOperation = 'destination-out'; g.fillRect(x - erx - 3, eyeY - ry - 4, erx * 2 + 6, ry * (ex === 4 ? 0.55 : 0.75) + 4); g.restore();
-        g.strokeStyle = ink; g.lineWidth = 3.4; g.beginPath(); const yy = eyeY - ry + ry * (ex === 4 ? 0.55 : 0.75);
-        g.moveTo(x - erx, yy); g.lineTo(x + erx, yy); g.stroke();
-      }
-      if (fem) { g.strokeStyle = ink; g.lineWidth = 2.4; const s = x < 64 ? -1 : 1; for (let k = 0; k < 3; k++) { g.beginPath(); g.moveTo(x + s * (erx - 3 + k), eyeY - ry * 0.7 + k * 3); g.lineTo(x + s * (erx + 5 + k), eyeY - ry * 0.95 + k * 3.5); g.stroke(); } }
-      if (old) { g.strokeStyle = 'rgba(60,40,30,.55)'; g.lineWidth = 1.8; const s = x < 64 ? -1 : 1; for (let k = 0; k < 2; k++) { g.beginPath(); g.moveTo(x + s * (erx + 3), eyeY - 3 + k * 6); g.lineTo(x + s * (erx + 10), eyeY - 6 + k * 10); g.stroke(); } }
+    if (ex === 11) { // đau: nhắm tịt, hai vệt chéo
+      g.strokeStyle = ink; g.lineWidth = 4; g.beginPath();
+      g.moveTo(x - 8, eyeY - 6); g.lineTo(x + 8, eyeY + 6); g.moveTo(x + 8, eyeY - 6); g.lineTo(x - 8, eyeY + 6); g.stroke();
+      continue;
     }
+    const wink = ex === 9 && x === ex0;
+    if (arc || ex === 7 || wink) {
+      g.strokeStyle = ink; g.lineWidth = 4.5; g.beginPath();
+      if (arc || wink) g.arc(x, eyeY + 4, 9, Math.PI * 1.15, Math.PI * 1.85); else { g.moveTo(x - 9, eyeY + 1); g.quadraticCurveTo(x, eyeY + 5, x + 9, eyeY + 1); }
+      g.stroke(); continue;
+    }
+    const fear = ex === 12, sleep = ex === 10;
+    const ry = old && !fear ? ery * 0.72 : fear ? ery * 1.28 : ex === 6 ? ery * 1.12 : sleep ? ery * 0.9 : ery;
+    g.fillStyle = '#fff'; g.beginPath(); g.ellipse(x, eyeY, fear ? erx * 1.14 : erx, ry, 0, 0, TAU); g.fill();
+    g.strokeStyle = ink; g.lineWidth = 2.6; g.stroke();
+    const dx = ex === 3 || ex === 13 ? 2.5 : sleep ? -1.5 : 0, pr = ex === 6 ? 5.2 : fear ? 4.6 : sleep ? 5.6 : 6.6;
+    g.fillStyle = ink; g.beginPath(); g.arc(x + dx, eyeY + (ex === 5 || sleep ? 2.5 : 0.5), pr, 0, TAU); g.fill();
+    g.fillStyle = '#fff'; g.beginPath(); g.arc(x + dx - 2.2, eyeY - 2.4, 2.1, 0, TAU); g.fill();
+    if (half || ex === 4) { // mí sụp
+      const lid = ex === 4 ? 0.55 : ex === 13 ? 0.62 : 0.78;
+      g.save(); g.globalCompositeOperation = 'destination-out'; g.fillRect(x - erx - 3, eyeY - ry - 4, erx * 2 + 6, ry * lid + 4); g.restore();
+      g.strokeStyle = ink; g.lineWidth = 3.4; g.beginPath(); const yy = eyeY - ry + ry * lid;
+      g.moveTo(x - erx, yy); g.lineTo(x + erx, yy); g.stroke();
+    }
+    if (fem) { g.strokeStyle = ink; g.lineWidth = 2.4; const s = x < 64 ? -1 : 1; for (let k = 0; k < 3; k++) { g.beginPath(); g.moveTo(x + s * (erx - 3 + k), eyeY - ry * 0.7 + k * 3); g.lineTo(x + s * (erx + 5 + k), eyeY - ry * 0.95 + k * 3.5); g.stroke(); } }
+    if (old) { g.strokeStyle = 'rgba(60,40,30,.55)'; g.lineWidth = 1.8; const s = x < 64 ? -1 : 1; for (let k = 0; k < 2; k++) { g.beginPath(); g.moveTo(x + s * (erx + 3), eyeY - 3 + k * 6); g.lineTo(x + s * (erx + 10), eyeY - 6 + k * 10); g.stroke(); } }
   }
   // lông mày
-  const bw = id === 7 || id === 0 ? 5.2 : fem ? 2.8 : 4, by = eyeY - (kid ? 22 : 20) - (ex === 6 ? 5 : 0);
-  const tilt = ex === 4 ? 9 : ex === 3 ? 5 : ex === 5 ? -7 : ex === 1 || ex === 2 ? -1 : 0; // + = nhíu vào trong
+  const bw = id === 7 || id === 0 ? 5.2 : fem ? 2.8 : 4, by = eyeY - (kid ? 22 : 20) - (ex === 6 ? 5 : ex === 12 ? 7 : 0);
+  const tilt = ex === 4 ? 9 : ex === 11 ? 10 : ex === 15 ? 8 : ex === 3 || ex === 13 ? 5 : ex === 12 ? -6 : ex === 5 ? -7 : ex === 1 || ex === 2 || ex === 8 ? -1 : 0; // + = nhíu vào trong
   g.strokeStyle = old ? '#9a9590' : ink; g.lineWidth = bw;
   if (id !== 6) for (const s of [-1, 1]) { const x = 64 + s * 23; g.beginPath(); g.moveTo(x - s * 11, by + tilt); g.quadraticCurveTo(x, by - 3 - (ex === 6 ? 3 : 0), x + s * 11, by - tilt * 0.6 + 1); g.stroke(); }
   // mũi
@@ -160,7 +176,15 @@ function drawFace(g: CanvasRenderingContext2D, id: number, ex: number) {
   else if (ex === 4) { g.moveTo(50, my + 7); g.quadraticCurveTo(64, my - 9, 78, my + 7); g.closePath(); g.fill(); g.stroke(); }
   else if (ex === 5) { g.moveTo(51, my + 5); g.quadraticCurveTo(64, my - 6, 77, my + 5); g.stroke(); }
   else if (ex === 6) { g.ellipse(64, my + 2, 7.5, 9.5, 0, 0, TAU); g.fill(); g.stroke(); }
-  if (fem && ex !== 2 && ex !== 4 && ex !== 6) { g.strokeStyle = 'rgba(200,60,80,.6)'; g.lineWidth = 2; g.beginPath(); g.moveTo(56, my + 4); g.quadraticCurveTo(64, my + 8, 72, my + 4); g.stroke(); }
+  else if (ex === 8) { g.moveTo(54, my + 1); g.quadraticCurveTo(64, my + 9, 74, my + 1); g.stroke(); }                       // cười mỉm
+  else if (ex === 9) { g.moveTo(48, my - 3); g.quadraticCurveTo(64, my + 14, 80, my - 3); g.closePath(); g.fill(); g.stroke(); g.fillStyle = '#fff'; g.fillRect(54, my - 3, 20, 4); } // cười tươi
+  else if (ex === 10) { g.ellipse(64, my + 3, 5, 7.5, 0, 0, TAU); g.fill(); g.stroke(); }                                 // ngáp
+  else if (ex === 11) { g.moveTo(50, my + 2); g.lineTo(56, my - 3); g.lineTo(62, my + 3); g.lineTo(68, my - 3); g.lineTo(74, my + 3); g.lineTo(78, my - 1); g.stroke(); } // nghiến răng
+  else if (ex === 12) { g.ellipse(64, my + 2, 6, 8.5, 0, 0, TAU); g.fill(); g.stroke(); }                                 // há miệng vì sợ
+  else if (ex === 13) { g.moveTo(52, my + 5); g.quadraticCurveTo(64, my + 2, 77, my - 4); g.stroke(); }                    // cười khẩy
+  else if (ex === 14) { g.moveTo(52, my - 2); g.quadraticCurveTo(64, my + 12, 76, my - 2); g.closePath(); g.fill(); g.stroke(); g.fillStyle = '#fff'; g.fillRect(55, my - 3, 18, 4); } // nhai ngon
+  else if (ex === 15) { g.ellipse(64, my + 2, 5.5, 6.5, 0, 0, TAU); g.fill(); g.stroke(); }                               // chu môi hờn
+  if (fem && !(ex === 2 || ex === 4 || ex === 6 || ex === 10 || ex === 11 || ex === 12 || ex === 13)) { g.strokeStyle = 'rgba(200,60,80,.6)'; g.lineWidth = 2; g.beginPath(); g.moveTo(56, my + 4); g.quadraticCurveTo(64, my + 8, 72, my + 4); g.stroke(); }
   // phụ kiện theo kiểu mặt
   if (id === 5) { g.strokeStyle = '#1e2430'; g.lineWidth = 3.2; for (const x of [ex0, ex1]) { g.beginPath(); g.arc(x, eyeY, 15.5, 0, TAU); g.stroke(); } g.beginPath(); g.moveTo(ex0 + 15, eyeY - 2); g.lineTo(ex1 - 15, eyeY - 2); g.stroke(); }
   if (id === 6) {
@@ -173,6 +197,17 @@ function drawFace(g: CanvasRenderingContext2D, id: number, ex: number) {
   if (id === 7) { g.fillStyle = ink; g.beginPath(); g.moveTo(46, 87); g.quadraticCurveTo(64, 76, 82, 87); g.quadraticCurveTo(64, 85, 46, 87); g.fill(); g.lineWidth = 4; g.strokeStyle = ink; g.stroke(); }
   if (id === 3) { g.strokeStyle = '#c9c4be'; g.lineWidth = 5; g.beginPath(); g.moveTo(48, 87); g.quadraticCurveTo(64, 80, 80, 87); g.stroke(); }
   if (ex === 5 && id !== 6) { g.fillStyle = 'rgba(120,190,255,.85)'; g.beginPath(); g.ellipse(ex1 + 9, eyeY + 17, 3.5, 6, 0, 0, TAU); g.fill(); }
+  // mồ hôi: sợ / đau; giọt to bên thái dương
+  if ((ex === 11 || ex === 12) && id !== 6) {
+    const drop = (x: number, y: number, r: number) => { g.fillStyle = 'rgba(120,190,255,.85)'; g.beginPath(); g.ellipse(x, y, r * 0.8, r * 1.5, 0, 0, TAU); g.fill(); };
+    drop(30, eyeY + 12, 4.4);
+    if (ex === 12) drop(98, eyeY + 2, 3.6);
+  }
+  // buồn ngủ: hai chữ z lơ lửng góc trên
+  if (ex === 10) {
+    g.fillStyle = 'rgba(60,55,70,.75)'; g.font = 'bold 17px system-ui,sans-serif'; g.textAlign = 'center';
+    g.fillText('z', 100, 32); g.font = 'bold 13px system-ui,sans-serif'; g.fillText('z', 112, 20);
+  }
 }
 
 // ───────────────────────── Biển hiệu ─────────────────────────

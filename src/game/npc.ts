@@ -10,6 +10,7 @@ import { hourOf } from '../sim/state';
 import { wx, mods, Persona, Order, say, shopOpen } from '../sim/rules';
 import { SHOPS } from '../data/shops';
 import { MB, MAT } from '../gfx/mb';
+import { EXPR } from '../gfx/tex';
 import { toast } from '../core/bus';
 import { GREET_GAP, GREET_NEAR, crowdWeight, greetKind, routineFor, rushMul, voicePitch } from '../sim/life';
 
@@ -194,7 +195,9 @@ export class Npcs {
     // Nghe được tiếng nói khi ở gần: cao độ theo người nói, gắt hay vui theo biểu cảm.
     if (ctx.mode === 'play' && dist2(n.x, n.z, ctx.player.x, ctx.player.z) < 22 * 22) {
       const size = n.kind === 'kid' ? 0.84 : n.arch.id === 'hocsinh' ? 0.9 : n.arch.id === 'nguoigia' ? 1.03 : 1;
-      ctx.sound.voice(voicePitch(n.fem, size), expr >= 3 ? 'angry' : expr >= 1 ? 'happy' : 'talk');
+      const tone = expr === EXPR.angry || expr === EXPR.pain || expr === EXPR.smug || expr === EXPR.annoyed ? 'angry'
+        : expr === EXPR.happy || expr === EXPR.joy || expr === EXPR.smile || expr === EXPR.wink || expr === EXPR.savor ? 'happy' : 'talk';
+      ctx.sound.voice(voicePitch(n.fem, size), tone);
     }
   }
   /** Khạc nhổ (khi xin tiền bị từ chối, hoặc gặp người khó ở). */
@@ -213,7 +216,7 @@ export class Npcs {
     const R = this.R, g = ctx.g, L = LINES.hit;
     ctx.sound.play('thud');
     n.hurt = (n.hurt ?? 0) + 1;
-    this.say(n, R.pick(L.cry), 2.4, 4);
+    this.say(n, R.pick(L.cry), 2.4, EXPR.pain);
     g.st.mood = clamp(g.st.mood + 1, 0, 100);
     g.rep = clamp(g.rep - 3, 0, 100);
     // người đứng gần thấy hết: mỗi hai người chứng kiến thì mất thêm uy tín
@@ -343,13 +346,15 @@ export class Npcs {
         if (n.greetT <= 0) {
           n.greetT = GREET_GAP * R.range(0.7, 1.4);
           const kind = greetKind({ hour: h, rain: w.rain, weather: w.id, rep: g.rep, met: !!n.met });
-          this.say(n, say(R.pick(LINES.greet[kind] ?? LINES.greet.morning), n.arch, n.fem, g), 2.8);
+          const ex = kind === 'known' ? EXPR.smile : kind === 'rain' ? EXPR.annoyed : kind === 'hot' ? EXPR.sleepy : kind === 'cold' ? EXPR.pout : kind === 'night' ? EXPR.sleepy : EXPR.smile;
+          this.say(n, say(R.pick(LINES.greet[kind] ?? LINES.greet.morning), n.arch, n.fem, g), 2.8, ex);
         }
       }
       // lời vu vơ
       if (n.kind === 'ped' && n.state === 'walk' && pd2 < 30 && this.barkCd <= 0 && ctx.mode === 'play') { n.barkT -= dt; if (n.barkT <= 0) { n.barkT = 60; this.barkCd = R.range(7, 15);
-        const pool = w.rain > 0.3 && R.chance(0.4) ? LINES.rain : w.id === 'nong' && R.chance(0.4) ? LINES.hot : w.id === 'lanh' && R.chance(0.3) ? LINES.cold : LINES.bark[n.arch.id];
-        this.say(n, say(R.pick(pool), n.arch, n.fem, g), 2.6); } }
+        const rainB = w.rain > 0.3 && R.chance(0.4), hotB = w.id === 'nong' && R.chance(0.4), coldB = w.id === 'lanh' && R.chance(0.3);
+        const pool = rainB ? LINES.rain : hotB ? LINES.hot : coldB ? LINES.cold : LINES.bark[n.arch.id];
+        this.say(n, say(R.pick(pool), n.arch, n.fem, g), 2.6, rainB ? EXPR.annoyed : hotB ? EXPR.sleepy : coldB ? EXPR.pout : EXPR.normal); } }
       // thỉnh thoảng có người xấc xược: chỉ những nhóm trong bảng RUDE, chỉ khi đi ngang gần, và rất thưa
       if (n.kind === 'ped' && !n.persona && (n.state === 'walk' || n.state === 'stand') && pd2 < 7.5 * 7.5 && this.rudeCd <= 0) {
         n.rudeT -= dt;

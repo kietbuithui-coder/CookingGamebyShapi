@@ -1,9 +1,9 @@
 # Việc còn lại
 
-Danh sách những gì **chưa làm** tính tới lượt 13 (`main` = `f3ab638`). Đã xong: 60/60 món · 8/8 kiểu chỗ ở ·
+Danh sách những gì **chưa làm** tính tới lượt 14 (`main` = `6992fa4`). Đã xong: 60/60 món · 8/8 kiểu chỗ ở ·
 4/7 bậc kinh doanh · 8 thời tiết · 22 sự kiện · 76 nguyên liệu · 12 cửa hàng · 21 món đồ nghề · 16 nhóm người ·
 11 khách quen · 37 nhân vật cố định · chuỗi 11 mục tiêu hướng dẫn · điện thoại · quán net · công an · bệnh viện ·
-đua xe đạp · NPC sinh hoạt theo giờ · giao diện dễ đọc · 231 bài kiểm thử / 15 tệp.
+đua xe đạp · NPC sinh hoạt theo giờ · giao diện dễ đọc · 16 biểu cảm · 8 kiểu tóc · người phụ việc · 247 bài kiểm thử / 16 tệp.
 
 ---
 
@@ -11,7 +11,7 @@ Danh sách những gì **chưa làm** tính tới lượt 13 (`main` = `f3ab638`
 
 | Bậc | Tên | Cần gì để làm |
 |---|---|---|
-| 5 | Quán có chỗ ngồi | Người phụ bán (trả lương theo ca), thực đơn theo buổi (sáng/trưa/chiều), khách ngồi ăn lâu hơn, bàn trong nhà thay vì bàn nhựa ngoài sân |
+| 5 | Quán có chỗ ngồi | Đã có người phụ bán (lượt 14) — còn thực đơn theo buổi (sáng/trưa/chiều), khách ngồi ăn lâu hơn, bàn trong nhà thay vì bàn nhựa ngoài sân |
 | 6 | Nhà hàng bình dân | Nội thất trong nhà (bàn ghế, quầy thu ngân), đặt bàn trước, nhân viên phụ bếp, khách đoàn |
 | 7 | Chuỗi cửa hàng | Mở điểm bán thứ hai cùng lúc, quản lý từ xa (sổ sách từng điểm), thuê người trông coi |
 
@@ -26,11 +26,11 @@ Hiện `FUTURE_TIERS` trong `src/data/gear.ts` mới có tên; chưa có dữ li
 
 ## 3. Con người & nhân vật
 
-- **Tuỳ biến ngoại hình người chơi**: hiện chọn nam/nữ lúc mở ván, không đổi được mặt, tóc, áo, dáng người.
-- **Khuôn mặt & kiểu tóc**: atlas 8 × 8 ô nhưng mới dùng mặt 0–7 và 4 kiểu tóc (ngắn / dài / búi / hói); chưa có kiểu tóc mới, râu, kính, mũ đa dạng.
+- **Tuỳ biến ngoại hình người chơi**: vẫn chỉ chọn nam/nữ lúc mở ván. Game đang ở góc nhìn thứ nhất nên muốn thấy mình phải làm **gương ở nhà** (hoặc góc nhìn thứ ba) rồi mới cho đổi mặt/tóc/áo/dáng — để lượt sau.
+- ✅ **Khuôn mặt & kiểu tóc** (lượt 14): atlas **16 × 8** với 16 biểu cảm, **8 kiểu tóc** (thêm xoăn, đuôi ngựa, húi cua, tém ngang vai) chia theo giới tính và nhóm người. Còn thiếu: râu, kính, mũ đa dạng hơn.
 - **Lời thoại**: đã có câu chào, câu thô lỗ, câu mặc cả, câu vu vơ theo nhóm người; còn thiếu bộ thoại riêng cho từng nhân vật cố định và phản ứng khi người chơi giàu/nghèo/bị công an để ý.
 - **Nhân vật phụ ở tiệm nhỏ**: tạp hoá, MiniMart, tiệm cầm đồ mới có người bán cố định; chưa có khách lựa hàng nói chuyện, chưa có việc vặt riêng.
-- **Nhân viên phụ bán** (thuê người trông quầy theo ca) — chưa có.
+- ✅ **Người phụ việc** (lượt 14): chỉ hiện khi quầy ≥ xe đẩy, doanh thu ≥ 250.000₫ và đã bán qua ≥ 2 ngày; thuê theo ngày, dỗ khách chờ (kiên nhẫn ×1,3), lau quầy, có thoại + biểu cảm theo tình huống. Còn thiếu: nhiều người cùng lúc, chia ca sáng/tối, tự bưng món ra cho khách.
 
 ## 4. Kỹ thuật & hiệu năng
 
@@ -38,7 +38,7 @@ Hiện `FUTURE_TIERS` trong `src/data/gear.ts` mới có tên; chưa có dữ li
 - Khi cần tối ưu: gộp các khối cơ thể NPC thành một lưới, dùng instancing cho đồ vật lặp lại (ghế, cây, xe), bỏ sương mù theo điểm ảnh ở mức đồ hoạ thấp, thêm LOD cho khu ở xa.
 - **Tách gói JavaScript**: hiện một tệp khoảng 1,05 MB (nén còn ~328 kB). Nên tách phần dựng thành phố ra khỏi phần giao diện.
 - **Chơi ngoại tuyến**: chưa có service worker; mất mạng là không mở được.
-- **Lưu đám mây**: chưa có; xoá dữ liệu trình duyệt là mất bản lưu (bản lưu v9, tự lưu sau mỗi việc quan trọng).
+- **Lưu đám mây**: chưa có; xoá dữ liệu trình duyệt là mất bản lưu (bản lưu v10, tự lưu sau mỗi việc quan trọng).
 - **Nội thất cửa hàng**: một số tiệm còn sơ sài (kệ hàng, quầy, biển giá mới ở mức khối hộp).
 
 ## 5. Cân chỉnh

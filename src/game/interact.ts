@@ -79,6 +79,7 @@ export class Interact {
       }
       case 'npc': {
         const n: Npc = c.ref;
+        if (n.actor === 'helper') return mk(`Nói chuyện với ${n.name} — phụ quầy`, () => { ctx.player.face(n.x, n.z); ctx.stall.talkHelper(); }, 'Hỏi chuyện bán buôn · dặn dò · cho nghỉ việc');
         if (n.state === 'fixed') { const cart = A.cart && A.cart.shop === n.fixedId; return mk(cart ? `Tính tiền — ${money(A.cartTotal())}` : `Nói chuyện với ${whoIn(n)}`, () => { ctx.player.face(n.x, n.z); A.talk(n); }); }
         if (n.state === 'queue' && n.order) { const r = RECIPES[n.order.rid], have = R.readyCount(g, r.id) >= n.order.n; return mk(have ? `Giao ${n.order.n} ${r.short}` : `Làm ${r.short} cho khách`, () => ctx.stall.serve(n), who(n) + (n.regular && known(n) ? ' · khách quen' : '')); }
         if (n.state === 'toStall' || n.state === 'actor' || n.state === 'queue' || n.kind === 'actor') return null;

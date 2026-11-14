@@ -8,7 +8,7 @@ export type BegStyle = 'lephep' | 'kekho' | 'naini';
 export interface ArchDef {
   id: ArchId; name: string; w: number;                    // w: tỉ lệ xuất hiện
   faces: number[]; shirts: number[]; pants: number[]; hair: number[]; hats: number[]; // hats: 0 không, 1 nón lá, 2 nón kết, 3 mũ bảo hiểm, 4 mũ tai bèo
-  hairStyle: number[];                                    // 0 ngắn, 1 dài, 2 búi, 3 hói
+  hairStyle: number[];                                    // 0 ngắn, 1 dài, 2 búi, 3 hói, 4 xoăn, 5 đuôi ngựa, 6 húi cua, 7 tém ngang vai
   h: [number, number]; fat: [number, number]; fem: number; // chiều cao, độ mập, xác suất nữ
   bag: number;                                            // xác suất đeo ba lô/túi
   budget: [number, number]; wtp: number; sens: number; patience: [number, number]; tip: number;
@@ -25,50 +25,50 @@ const P = { // bảng màu quần áo
   hairB: [0x1e1a18, 0x2a2420, 0x3a2a22], hairDye: [0x1e1a18, 0x6a3a22, 0x9a5a2a, 0xd9a05a, 0x2a2420], hairW: [0xd9d9d6, 0xbfbfbc, 0xe9e9e6],
 };
 export const ARCH: Record<ArchId, ArchDef> = {
-  congnhan: { id: 'congnhan', name: 'Công nhân', w: 18, faces: [0, 7, 0, 1], shirts: P.work, pants: P.khaki, hair: P.hairB, hats: [0, 2, 3, 4, 0], hairStyle: [0, 0, 1], h: [0.96, 1.04], fat: [0.95, 1.15], fem: 0.25, bag: 0.1,
+  congnhan: { id: 'congnhan', name: 'Công nhân', w: 18, faces: [0, 7, 0, 1], shirts: P.work, pants: P.khaki, hair: P.hairB, hats: [0, 2, 3, 4, 0], hairStyle: [0, 0, 6], h: [0.96, 1.04], fat: [0.95, 1.15], fem: 0.25, bag: 0.1,
     budget: [15000, 32000], wtp: 0.88, sens: 1.5, patience: [50, 85], tip: 0.03, pref: { com: 1.6, banhmi: 1.4, bunpho: 1.2, nuoc: 1.2, mi: 1.1, nuong: 1 },
     beg: { lephep: 0.3, kekho: 0.38, naini: 0.12, amt: [1000, 5000], food: 0.08 }, speed: 1.45, self: ['anh', 'chị'], you: 'em', where: { laodong: 3, khobai: 2, nhanghi: 2, cho: 1, trungtam: 1 }, hours: [5, 21] },
-  hocsinh: { id: 'hocsinh', name: 'Học sinh', w: 14, faces: [0, 1, 5, 1], shirts: P.white, pants: [0x2a3a6a, 0x2f3a52], hair: P.hairB, hats: [0, 0, 2], hairStyle: [0, 1, 2], h: [0.86, 0.96], fat: [0.85, 1], fem: 0.5, bag: 0.9,
+  hocsinh: { id: 'hocsinh', name: 'Học sinh', w: 14, faces: [0, 1, 5, 1], shirts: P.white, pants: [0x2a3a6a, 0x2f3a52], hair: P.hairB, hats: [0, 0, 2], hairStyle: [0, 1, 2, 7, 5], h: [0.86, 0.96], fat: [0.85, 1], fem: 0.5, bag: 0.9,
     budget: [8000, 22000], wtp: 0.8, sens: 1.8, patience: [40, 75], tip: 0, pref: { anvat: 2, xien: 2, chien: 1.7, nuoc: 1.5, che: 1.5, banhmi: 1.2, burger: 1.2 },
     beg: { lephep: 0.22, kekho: 0.3, naini: 0.08, amt: [1000, 3000], food: 0.1 }, speed: 1.5, self: ['em', 'em'], you: '{ac}', where: { dancu: 3, congvien: 2, trungtam: 2, cho: 1 }, hours: [6, 20] },
-  vanphong: { id: 'vanphong', name: 'Dân văn phòng', w: 14, faces: [0, 1, 5, 5], shirts: P.office, pants: P.dark, hair: P.hairDye, hats: [0], hairStyle: [0, 1, 2], h: [0.96, 1.04], fat: [0.9, 1.05], fem: 0.5, bag: 0.5,
+  vanphong: { id: 'vanphong', name: 'Dân văn phòng', w: 14, faces: [0, 1, 5, 5], shirts: P.office, pants: P.dark, hair: P.hairDye, hats: [0], hairStyle: [0, 1, 2, 5, 7], h: [0.96, 1.04], fat: [0.9, 1.05], fem: 0.5, bag: 0.5,
     budget: [25000, 60000], wtp: 1.15, sens: 1.0, patience: [35, 60], tip: 0.1, pref: { com: 1.4, bunpho: 1.5, mi: 1.3, nuoc: 1.6, goi: 1.4, burger: 1.2, banhmi: 1.1 },
     beg: { lephep: 0.3, kekho: 0.22, naini: 0.05, amt: [2000, 10000], food: 0.05 }, speed: 1.6, self: ['anh', 'chị'], you: 'em', where: { vanphong: 4, trungtam: 2, nhagiau: 1.5, congvien: 1 }, hours: [7, 20] },
-  shipper: { id: 'shipper', name: 'Shipper', w: 8, faces: [0, 7, 0], shirts: [0x2fae5a, 0xf08a2f, 0xe2402f, 0x2f8fd5], pants: P.jeans, hair: P.hairB, hats: [3, 3, 2], hairStyle: [0], h: [0.96, 1.03], fat: [0.9, 1.05], fem: 0.12, bag: 0.8,
+  shipper: { id: 'shipper', name: 'Shipper', w: 8, faces: [0, 7, 0], shirts: [0x2fae5a, 0xf08a2f, 0xe2402f, 0x2f8fd5], pants: P.jeans, hair: P.hairB, hats: [3, 3, 2], hairStyle: [0, 6], h: [0.96, 1.03], fat: [0.9, 1.05], fem: 0.12, bag: 0.8,
     budget: [15000, 35000], wtp: 0.92, sens: 1.4, patience: [25, 45], tip: 0.03, pref: { banhmi: 1.8, com: 1.4, nuoc: 1.6, xien: 1, mi: 1.1 },
     beg: { lephep: 0.3, kekho: 0.35, naini: 0.1, amt: [1000, 5000], food: 0.1 }, speed: 1.75, self: ['anh', 'chị'], you: 'em', where: { trungtam: 3, nhanghi: 2, cho: 2, vanphong: 1.5, dancu: 1 }, hours: [6, 23] },
-  taixe: { id: 'taixe', name: 'Tài xế', w: 7, faces: [7, 0, 3], shirts: P.work, pants: P.khaki, hair: P.hairB, hats: [0, 2, 2], hairStyle: [0, 3], h: [0.97, 1.04], fat: [1.05, 1.25], fem: 0.05, bag: 0,
+  taixe: { id: 'taixe', name: 'Tài xế', w: 7, faces: [7, 0, 3], shirts: P.work, pants: P.khaki, hair: P.hairB, hats: [0, 2, 2], hairStyle: [0, 3, 6], h: [0.97, 1.04], fat: [1.05, 1.25], fem: 0.05, bag: 0,
     budget: [20000, 40000], wtp: 0.95, sens: 1.3, patience: [45, 80], tip: 0.05, pref: { com: 1.6, bunpho: 1.5, nuoc: 1.5, nuong: 1.2, haisan: 1 },
     beg: { lephep: 0.3, kekho: 0.3, naini: 0.15, amt: [1000, 5000], food: 0.05 }, speed: 1.35, self: ['chú', 'cô'], you: 'con', where: { nhanghi: 3, khobai: 2, cho: 2, laodong: 1 }, hours: [5, 23] },
   nguoigia: { id: 'nguoigia', name: 'Người lớn tuổi', w: 9, faces: [3, 4], shirts: P.old, pants: P.dark, hair: P.hairW, hats: [0, 1, 4, 0], hairStyle: [0, 2, 3], h: [0.9, 0.98], fat: [0.9, 1.15], fem: 0.55, bag: 0.15,
     budget: [12000, 35000], wtp: 0.9, sens: 1.5, patience: [70, 120], tip: 0.04, pref: { bunpho: 1.7, che: 1.6, com: 1.2, nuoc: 1.1, goi: 1.2 },
     beg: { lephep: 0.55, kekho: 0.45, naini: 0.06, amt: [2000, 10000], food: 0.18 }, speed: 0.95, self: ['bác', 'bà'], you: 'con', where: { dancu: 3, congvien: 3, cho: 2.5, khobai: 1 }, hours: [5, 19] },
-  phuhuynh: { id: 'phuhuynh', name: 'Phụ huynh', w: 6, faces: [1, 0, 5], shirts: P.bright, pants: P.jeans, hair: P.hairDye, hats: [0, 4], hairStyle: [1, 0, 2], h: [0.95, 1.02], fat: [0.92, 1.1], fem: 0.7, bag: 0.6,
+  phuhuynh: { id: 'phuhuynh', name: 'Phụ huynh', w: 6, faces: [1, 0, 5], shirts: P.bright, pants: P.jeans, hair: P.hairDye, hats: [0, 4], hairStyle: [1, 0, 2, 5, 7], h: [0.95, 1.02], fat: [0.92, 1.1], fem: 0.7, bag: 0.6,
     budget: [25000, 70000], wtp: 1.05, sens: 1.1, patience: [40, 70], tip: 0.06, pref: { anvat: 1.4, che: 1.5, nuoc: 1.4, burger: 1.5, chien: 1.5, xien: 1.3, com: 1 },
     beg: { lephep: 0.4, kekho: 0.4, naini: 0.04, amt: [2000, 10000], food: 0.1 }, speed: 1.2, self: ['anh', 'chị'], you: 'em', where: { congvien: 4, dancu: 3, trungtam: 1.5, cho: 1.5 }, hours: [6, 20] },
-  treem: { id: 'treem', name: 'Trẻ em', w: 0, faces: [2], shirts: P.bright, pants: P.bright, hair: P.hairB, hats: [0, 2, 4], hairStyle: [0, 1, 2], h: [0.6, 0.72], fat: [0.9, 1.05], fem: 0.5, bag: 0.3,
+  treem: { id: 'treem', name: 'Trẻ em', w: 0, faces: [2], shirts: P.bright, pants: P.bright, hair: P.hairB, hats: [0, 2, 4], hairStyle: [0, 1, 2, 6], h: [0.6, 0.72], fat: [0.9, 1.05], fem: 0.5, bag: 0.3,
     budget: [0, 0], wtp: 1, sens: 1, patience: [30, 60], tip: 0, pref: {}, beg: { lephep: 0, kekho: 0, naini: 0, amt: [0, 0], food: 0 }, speed: 1.25, self: ['con', 'con'], you: '{ac}', where: {}, hours: [6, 20] },
-  dukhach: { id: 'dukhach', name: 'Khách du lịch', w: 5, faces: [0, 1, 5, 7], shirts: P.bright, pants: P.khaki, hair: [0xd9a05a, 0x9a5a2a, 0x6a3a22, 0xe9c88a], hats: [1, 2, 4, 0], hairStyle: [0, 1], h: [1.0, 1.1], fat: [0.95, 1.2], fem: 0.5, bag: 0.9,
+  dukhach: { id: 'dukhach', name: 'Khách du lịch', w: 5, faces: [0, 1, 5, 7], shirts: P.bright, pants: P.khaki, hair: [0xd9a05a, 0x9a5a2a, 0x6a3a22, 0xe9c88a], hats: [1, 2, 4, 0], hairStyle: [0, 1, 4, 5], h: [1.0, 1.1], fat: [0.95, 1.2], fem: 0.5, bag: 0.9,
     budget: [40000, 120000], wtp: 1.45, sens: 0.6, patience: [50, 90], tip: 0.3, pref: { bunpho: 2, banhmi: 1.8, goi: 1.6, nuoc: 1.4, haisan: 1.4, nuong: 1.3 },
     beg: { lephep: 0.45, kekho: 0.4, naini: 0.18, amt: [5000, 20000], food: 0.05 }, speed: 1.1, self: ['tôi', 'tôi'], you: 'bạn', where: { congvien: 3, vanphong: 2, trungtam: 2.5, cho: 2.5, nhagiau: 1 }, hours: [8, 22] },
-  nhagiau: { id: 'nhagiau', name: 'Người giàu', w: 5, faces: [5, 1, 0], shirts: P.rich, pants: P.dark, hair: P.hairDye, hats: [0], hairStyle: [0, 1, 2], h: [0.98, 1.06], fat: [0.95, 1.2], fem: 0.5, bag: 0.4,
+  nhagiau: { id: 'nhagiau', name: 'Người giàu', w: 5, faces: [5, 1, 0], shirts: P.rich, pants: P.dark, hair: P.hairDye, hats: [0], hairStyle: [0, 1, 2, 7], h: [0.98, 1.06], fat: [0.95, 1.2], fem: 0.5, bag: 0.4,
     budget: [50000, 200000], wtp: 1.6, sens: 0.5, patience: [25, 45], tip: 0.25, pref: { haisan: 2, burger: 1.3, nuoc: 1.4, goi: 1.4, bunpho: 1.2 },
     beg: { lephep: 0.22, kekho: 0.14, naini: 0.02, amt: [5000, 50000], food: 0 }, speed: 1.3, self: ['anh', 'chị'], you: 'em', where: { nhagiau: 4, vanphong: 2.5, congvien: 1 }, hours: [7, 22] },
-  vogiacu: { id: 'vogiacu', name: 'Người vô gia cư', w: 3, faces: [3, 7, 0], shirts: P.rag, pants: P.rag, hair: P.hairB, hats: [0, 4, 0], hairStyle: [1, 3, 0], h: [0.93, 1.0], fat: [0.85, 0.95], fem: 0.15, bag: 0.5,
+  vogiacu: { id: 'vogiacu', name: 'Người vô gia cư', w: 3, faces: [3, 7, 0], shirts: P.rag, pants: P.rag, hair: P.hairB, hats: [0, 4, 0], hairStyle: [1, 3, 0, 4], h: [0.93, 1.0], fat: [0.85, 0.95], fem: 0.15, bag: 0.5,
     budget: [3000, 10000], wtp: 0.6, sens: 2.4, patience: [80, 140], tip: 0, pref: { nuoc: 1.5, banhmi: 1.5, anvat: 1 },
     beg: { lephep: 0.1, kekho: 0.15, naini: 0, amt: [500, 1000], food: 0.2 }, speed: 0.9, self: ['tui', 'tui'], you: 'chú em', where: { gamcau: 4, laodong: 2, congvien: 1.5 }, hours: [5, 24] },
   khotinh: { id: 'khotinh', name: 'Khách khó tính', w: 4, faces: [5, 4, 3], shirts: P.office, pants: P.dark, hair: P.hairDye, hats: [0], hairStyle: [2, 0, 3], h: [0.94, 1.02], fat: [0.95, 1.2], fem: 0.6, bag: 0.5,
     budget: [25000, 70000], wtp: 1.0, sens: 1.6, patience: [22, 40], tip: 0, pref: { bunpho: 1.4, com: 1.3, goi: 1.3, haisan: 1.3 },
     beg: { lephep: 0.12, kekho: 0.08, naini: 0, amt: [1000, 5000], food: 0 }, speed: 1.3, self: ['cô', 'cô'], you: 'cháu', where: { trungtam: 2, dancu: 2, vanphong: 1.5, nhagiau: 2 }, hours: [7, 20] },
-  phebinh: { id: 'phebinh', name: 'Nhà phê bình ẩm thực', w: 0, faces: [5], shirts: [0x6a1e2e, 0x1e4a3a], pants: P.dark, hair: P.hairDye, hats: [4, 0], hairStyle: [0, 1], h: [0.98, 1.04], fat: [1.05, 1.25], fem: 0.4, bag: 1,
+  phebinh: { id: 'phebinh', name: 'Nhà phê bình ẩm thực', w: 0, faces: [5], shirts: [0x6a1e2e, 0x1e4a3a], pants: P.dark, hair: P.hairDye, hats: [4, 0], hairStyle: [0, 1, 7], h: [0.98, 1.04], fat: [1.05, 1.25], fem: 0.4, bag: 1,
     budget: [200000, 300000], wtp: 1.5, sens: 0.6, patience: [45, 70], tip: 0.2, pref: {}, beg: { lephep: 0.1, kekho: 0.05, naini: 0, amt: [5000, 20000], food: 0 }, speed: 1.2, self: ['tôi', 'tôi'], you: 'bạn', where: {}, hours: [10, 20] },
-  hangrong: { id: 'hangrong', name: 'Người bán hàng rong', w: 4, faces: [4, 1, 7], shirts: P.old, pants: P.dark, hair: P.hairB, hats: [1, 1, 4], hairStyle: [2, 0], h: [0.92, 1.0], fat: [0.9, 1.1], fem: 0.7, bag: 0.2,
+  hangrong: { id: 'hangrong', name: 'Người bán hàng rong', w: 4, faces: [4, 1, 7], shirts: P.old, pants: P.dark, hair: P.hairB, hats: [1, 1, 4], hairStyle: [2, 0, 5], h: [0.92, 1.0], fat: [0.9, 1.1], fem: 0.7, bag: 0.2,
     budget: [10000, 25000], wtp: 0.8, sens: 1.8, patience: [50, 90], tip: 0, pref: { nuoc: 1.6, che: 1.2, banhmi: 1.2, com: 1.2 },
     beg: { lephep: 0.35, kekho: 0.45, naini: 0.1, amt: [1000, 3000], food: 0.25 }, speed: 1.1, self: ['cô', 'cô'], you: 'con', where: { cho: 3, laodong: 2, trungtam: 1.5, congvien: 1.5, nhanghi: 1 }, hours: [5, 21] },
-  giangho: { id: 'giangho', name: 'Giang hồ', w: 2, faces: [6], shirts: [0x1e1e22, 0x6a1e1e, 0xf3f0e8], pants: P.dark, hair: P.hairB, hats: [0], hairStyle: [0, 3], h: [1.0, 1.08], fat: [1.05, 1.3], fem: 0, bag: 0,
+  giangho: { id: 'giangho', name: 'Giang hồ', w: 2, faces: [6], shirts: [0x1e1e22, 0x6a1e1e, 0xf3f0e8], pants: P.dark, hair: P.hairB, hats: [0], hairStyle: [0, 3, 6], h: [1.0, 1.08], fat: [1.05, 1.3], fem: 0, bag: 0,
     budget: [20000, 60000], wtp: 0.7, sens: 0.8, patience: [18, 35], tip: 0, pref: { nuong: 1.6, haisan: 1.4, nuoc: 1.5, xien: 1.2 },
     beg: { lephep: 0.05, kekho: 0.05, naini: 0, amt: [1000, 2000], food: 0 }, speed: 1.2, self: ['anh', 'anh'], you: 'chú em', where: { laodong: 3, nhanghi: 2.5 }, hours: [10, 24] },
-  congan: { id: 'congan', name: 'Công an phường', w: 2, faces: [0, 7], shirts: [0x6a8a4a, 0x5a7a42], pants: [0x4a6238, 0x3a5230], hair: P.hairB, hats: [2], hairStyle: [0], h: [1.0, 1.06], fat: [0.95, 1.15], fem: 0.1, bag: 0,
+  congan: { id: 'congan', name: 'Công an phường', w: 2, faces: [0, 7], shirts: [0x6a8a4a, 0x5a7a42], pants: [0x4a6238, 0x3a5230], hair: P.hairB, hats: [2], hairStyle: [0, 6], h: [1.0, 1.06], fat: [0.95, 1.15], fem: 0.1, bag: 0,
     budget: [20000, 45000], wtp: 1.0, sens: 1.1, patience: [35, 60], tip: 0, pref: { nuoc: 1.6, com: 1.3, bunpho: 1.3, banhmi: 1.2 },
     beg: { lephep: 0.05, kekho: 0.08, naini: 0, amt: [2000, 5000], food: 0 }, speed: 1.2, self: ['anh', 'chị'], you: 'em', where: { trungtam: 2, cho: 2, vanphong: 2, congvien: 1.5, nhanghi: 1 }, hours: [7, 22] },
 };
@@ -291,6 +291,16 @@ export const RUDE: Partial<Record<ArchId, number>> = { giangho: 3.4, khotinh: 2.
 
 
 /** Người bán & nhân vật cố định. look = hàng trong bảng khuôn mặt. */
+/** Ứng viên phụ việc ở quầy: chỉ xuất hiện khi quán đã có doanh thu và đã bán được vài ngày. */
+export interface HelperDef { name: string; fem: boolean; face: number; hairStyle: number; shirt: number; pants: number; hair: number; skin: number; wage: number; ask: string; }
+export const HELPER_POOL: HelperDef[] = [
+  { name: 'Bé Tư', fem: true, face: 1, hairStyle: 7, shirt: 0xe86f9a, pants: 0x2f3a52, hair: 0x1e1a18, skin: 0xecbe94, wage: 55000, ask: 'Dạ con thấy quán đông quá, con phụ bưng ra dọn vô cho. Ngày 55 ngàn, được hông {ac}?' },
+  { name: 'Thằng Cò', fem: false, face: 0, hairStyle: 6, shirt: 0x2f8fd5, pants: 0x3a5a8a, hair: 0x2a2420, skin: 0xd49a6a, wage: 60000, ask: 'Chú cho con phụ bán với. Con rửa chén, lau bàn, tiếp khách được hết. 60 ngàn một ngày thôi.' },
+  { name: 'Chị Hạnh', fem: true, face: 1, hairStyle: 5, shirt: 0x6a8a4a, pants: 0x4a4a42, hair: 0x3a2a22, skin: 0xf2c9a4, wage: 70000, ask: 'Nghe nói quán {ac} đông khách. Chị phụ một tay nghen — 70 ngàn một ngày, khách chờ lâu chị dỗ cho.' },
+  { name: 'Chú Em', fem: false, face: 7, hairStyle: 0, shirt: 0x4a5a6a, pants: 0x2a2e3a, hair: 0x1e1a18, skin: 0xe0aa7c, wage: 65000, ask: 'Tui rảnh buổi sáng. Chú mướn tui phụ quầy, 65 ngàn một ngày, khỏi lo khách bỏ đi.' },
+  { name: 'Nhỏ Nhung', fem: true, face: 1, hairStyle: 4, shirt: 0xf5c531, pants: 0x2a3a6a, hair: 0x6a3a22, skin: 0xf6d6b6, wage: 58000, ask: 'Cho con phụ quán với {ac} ơi! Con lanh lắm, 58 ngàn một ngày là được rồi.' },
+];
+
 export interface FixedNpcDef { id: string; name: string; face: number; fem: boolean; shirt: number; pants: number; hair: number; hat: number; hairStyle: number; fat: number; h: number; }
 export const FIXED: Record<string, FixedNpcDef> = {
   m_rau: { id: 'm_rau', name: 'Cô Bảy', face: 4, fem: true, shirt: 0x8a5a9a, pants: 0x2a2e3a, hair: 0x3a2a22, hat: 1, hairStyle: 2, fat: 1.1, h: 0.95 },
@@ -301,7 +311,7 @@ export const FIXED: Record<string, FixedNpcDef> = {
   m_giavi: { id: 'm_giavi', name: 'Cô Út', face: 1, fem: true, shirt: 0xe86f9a, pants: 0x2a2e3a, hair: 0x2a2420, hat: 0, hairStyle: 1, fat: 0.95, h: 0.96 },
   m_trung: { id: 'm_trung', name: 'Dì Sáu', face: 4, fem: true, shirt: 0x3fae5a, pants: 0x3a3a42, hair: 0x3a2a22, hat: 1, hairStyle: 2, fat: 1.15, h: 0.94 },
   bakery: { id: 'bakery', name: 'Anh Bảo', face: 0, fem: false, shirt: 0xf5c531, pants: 0x3a5a8a, hair: 0x1e1a18, hat: 2, hairStyle: 0, fat: 1, h: 1.02 },
-  mart: { id: 'mart', name: 'Bé Na', face: 1, fem: true, shirt: 0x2fae5a, pants: 0x2a2e3a, hair: 0x6a3a22, hat: 0, hairStyle: 1, fat: 0.92, h: 0.95 },
+  mart: { id: 'mart', name: 'Bé Na', face: 1, fem: true, shirt: 0x2fae5a, pants: 0x2a2e3a, hair: 0x6a3a22, hat: 0, hairStyle: 7, fat: 0.92, h: 0.95 },
   kiosk: { id: 'kiosk', name: 'Cô Ba', face: 4, fem: true, shirt: 0xc9665a, pants: 0x2a2e3a, hair: 0x3a2a22, hat: 0, hairStyle: 2, fat: 1.2, h: 0.94 },
   wholesale: { id: 'wholesale', name: 'Chú Tám', face: 7, fem: false, shirt: 0x4a5a6a, pants: 0x4a4a42, hair: 0x1e1a18, hat: 2, hairStyle: 0, fat: 1.25, h: 1.02 },
   pharmacy: { id: 'pharmacy', name: 'Cô Hiền', face: 5, fem: true, shirt: 0xf7f7f7, pants: 0x2a2e3a, hair: 0x1e1a18, hat: 0, hairStyle: 2, fat: 0.95, h: 0.96 },

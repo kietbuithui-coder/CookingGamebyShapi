@@ -398,6 +398,43 @@ cho `i < 4` và chỗ đứng (lz 3,6) cho phần còn lại; `freeSlot` xếp k
 `arrived` đặt `pose = 'sit'` cho khách có ghế, và kiên nhẫn ×1,5 (mưa không trừ vì đã có mái). Khách vẫn
 được phục vụ như cũ: chạm vào khách, giao món, tính tiền, rồi đứng dậy đi.
 
+### 4.23 Biểu cảm, kiểu tóc và người phụ việc
+
+**Atlas mặt 16 × 8.** `FACE_COLS = 16`, `FACE_ROWS = 8` (`src/gfx/tex.ts`): 8 cột cũ (thường, vui, rất vui,
+khó chịu, giận, buồn, ngạc nhiên/nói, chớp mắt) và 8 cột mới — 8 cười mỉm, 9 nháy mắt, 10 buồn ngủ, 11 đau,
+12 sợ, 13 khinh, 14 ăn ngon, 15 phồng má hờn. Tên đặt trong `src/data/expr.ts` (`EXPR`, `EXPR_NAMES`) — tệp
+thuần dữ liệu để `src/sim/rules.ts` dùng được mà không kéo three.js vào phần kiểm thử. `faceAtlas()` và
+`Rig.setExpr` tính UV từ `FACE_COLS`/`FACE_ROWS` nên đổi bề ngang atlas là đủ; `drawFace` chỉ thêm nhánh theo
+`ex` (mắt cong cho 2/8/14, nháy mắt một bên cho 9, X cho 11, mắt mở to + mồ hôi cho 12, mí sụp 0,6 cho 13,
+mồm nghiến cho 11, chu môi cho 15, chữ “z” cho 10). Giọng đọc trong `Npc.say` cũng đổi theo bảng này:
+giận = 3/4/11/13, vui = 1/2/8/9/14.
+
+**Gắn với tình huống** (`npc.ts`, `stall.ts`, `rules.review`): chào người quen → cười mỉm, mưa → khó chịu,
+nắng nóng/khuya → buồn ngủ, lạnh → phồng má hờn, bị đấm → đau, khách bỏ đi vì giá → khinh, khách hài lòng
+→ ăn ngon (≥ 4,7★) hoặc rất vui (≥ 4,4★).
+
+**Tám kiểu tóc** (`Look.hairStyle`, dựng trong `buildBody`): 0 ngắn, 1 dài, 2 búi, 3 hói, 4 xoăn (chùm lọn
+nhỏ phủ đỉnh đầu), 5 đuôi ngựa (buộc sau gáy, đuôi dài 0,3 m), 6 húi cua (sát da đầu, hai bên cao), 7 tém
+ngang vai. `lookFromArch` lọc lại theo giới tính (nam: 1/5/7 → 0 hoặc 6; nữ: 3 → 2, 6 → 7) và dữ liệu nhóm
+người (`src/data/people.ts`) đã chia kiểu tóc mới cho công nhân, học sinh, dân văn phòng, shipper, tài xế,
+phụ huynh, trẻ em, du khách, người giàu, vô gia cư, phê bình, hàng rong, giang hồ, công an.
+
+**Người phụ việc.** Luật thuần trong `src/sim/rules.ts` (`helperGate`, `hireHelper`, `fireHelper`,
+`helperPatience`, `helperCandidate`), dữ liệu ứng viên trong `HELPER_POOL` (5 người, lương 55.000–70.000₫).
+Chỉ được nhận khi **cả ba**: quầy từ xe đẩy trở lên (`tier ≥ 2`), **tổng doanh thu bán hàng ≥ 250.000₫**
+(`stallRevenue` = sổ hôm nay + 30 ngày đã khoá), và **đã bán qua ≥ 2 ngày** (`firstSale` ghi ở lần bán đầu).
+Đủ điều kiện thì `StallSys.offerHelper` mới thỉnh thoảng (240–420 giây, chỉ khi quán mở và người chơi ở gần)
+cho một người đi tới xin việc; hộp thoại có hai lựa chọn, nhận việc thì trả trước một ngày lương
+(`hireHelper` gọi `spend(..., 'fees')`).
+
+Đang làm việc (`Game.help`, lưu vào bản lưu v10) thì người phụ đứng cạnh quầy phía người bán
+(`helperSpot`, lệch 1,1 m), giữ kiên nhẫn khách ×1,3 (`helperPatience` trong `arrived`), tự lau quầy
+(–3 độ bẩn mỗi 45–75 giây) và nói theo tình huống mỗi 50–85 giây: khách quậy → sợ, quầy bẩn → khó chịu,
+khách đông → vui, mưa → cười mỉm, khuya → buồn ngủ, doanh thu ≥ 300.000₫ → rất vui, khách bỏ đi → buồn,
+người chơi mệt → phồng má hờn. Sáng hôm sau `newDay` trừ lương; không đủ tiền thì người phụ xin nghỉ. Chạm vào
+người phụ để mở hộp thoại: hỏi chuyện bán buôn (doanh thu + số khách hôm nay), dặn dò khách chờ (tinh thần +2),
+hoặc cho nghỉ việc. Đóng quầy thì họ về.
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
@@ -408,7 +445,7 @@ cho `i < 4` và chỗ đứng (lz 3,6) cho phần còn lại; `freeSlot` xếp k
 
 ## 6. Lưu game
 
-`localStorage`, khoá `ganhhang.save.v1` (trạng thái) và `ganhhang.settings.v1` (cài đặt). Tự lưu sau việc quan trọng, mỗi 45 giây và khi rời trang. `SAVE_VERSION = 9`; `migrate()` nạp được bản lưu cũ thiếu trường và loại bỏ nguyên liệu không còn tồn tại. Bản lưu trước v4 chưa có sổ `met` nên được coi như đã quen hết người đứng quầy. Bản lưu trước v5 (chưa có bệnh viện) được nâng sức khoẻ lên 45 nếu đang ở 0 — nếu không, mở lên là ngất liền — và thêm sổ đồ thất lạc rỗng. Bản lưu trước v6 được cấp `wanted = 0` và `jailUntil = 0` (chưa ai biết mặt). Bản lưu trước v7 chưa có điện thoại (`phone = null`). Bản lưu trước v8 chưa có sổ phút ngồi quán net (`netDay = -1`, `netMin = 0`). Bản lưu trước v9 chưa có sổ ngày đua xe đạp (`raceDay = -1`, `raceWin = 0`). Cài đặt có thêm `ui` (cỡ giao diện và cách xếp nút); `cleanLayout()` làm sạch dữ liệu đọc lên.
+`localStorage`, khoá `ganhhang.save.v1` (trạng thái) và `ganhhang.settings.v1` (cài đặt). Tự lưu sau việc quan trọng, mỗi 45 giây và khi rời trang. `SAVE_VERSION = 10`; `migrate()` nạp được bản lưu cũ thiếu trường và loại bỏ nguyên liệu không còn tồn tại. Bản lưu trước v4 chưa có sổ `met` nên được coi như đã quen hết người đứng quầy. Bản lưu trước v5 (chưa có bệnh viện) được nâng sức khoẻ lên 45 nếu đang ở 0 — nếu không, mở lên là ngất liền — và thêm sổ đồ thất lạc rỗng. Bản lưu trước v6 được cấp `wanted = 0` và `jailUntil = 0` (chưa ai biết mặt). Bản lưu trước v7 chưa có điện thoại (`phone = null`). Bản lưu trước v8 chưa có sổ phút ngồi quán net (`netDay = -1`, `netMin = 0`). Bản lưu trước v9 chưa có sổ ngày đua xe đạp (`raceDay = -1`, `raceWin = 0`). Bản lưu trước v10 chưa có người phụ việc (`help = null`); dữ liệu `help` hỏng cũng bị bỏ, và bản lưu cũ đã từng bán được hàng thì được ghi mốc `firstSale = 0`. Cài đặt có thêm `ui` (cỡ giao diện và cách xếp nút); `cleanLayout()` làm sạch dữ liệu đọc lên.
 
 ## 7. Kiểm thử
 
