@@ -7,6 +7,8 @@ export const GEAR_LIST: GearDef[] = [
   { id: 'sap', name: 'Sạp cố định', price: 9000000, kind: 'stall', tier: 3, desc: 'Sạp lớn có bàn ghế, đặt lâu dài một chỗ.' },
   { id: 'quanan', name: 'Quán ăn nhỏ', price: 24000000, kind: 'stall', tier: 4, desc: 'Mặt bằng có mái, bốn chỗ ngồi ăn tại chỗ, bày được 16 món.' },
   { id: 'quanngoi', name: 'Quán có chỗ ngồi', price: 58000000, kind: 'stall', tier: 5, desc: 'Sáu chỗ ngồi bàn gỗ kê trong nhà, bày 20 món, 12 khách một lúc; khách ăn xong còn gọi thêm tráng miệng.' },
+  { id: 'nhahang', name: 'Nhà hàng bình dân', price: 135000000, kind: 'stall', tier: 6, desc: 'Nhà hàng khang trang tám chỗ ngồi trong nhà, có phòng bếp riêng, thuê được phụ bếp, đón khách đoàn và nhận đặt bàn trước.' },
+  { id: 'chuoi', name: 'Chuỗi cửa hàng', price: 280000000, kind: 'stall', tier: 7, desc: 'Thương hiệu ẩm thực mở thêm chi nhánh thứ hai hoạt động song song, có quản lý trông coi và sổ sách riêng từng điểm.' },
   { id: 'daothot', name: 'Dao & thớt', price: 45000, kind: 'tool', desc: 'Để cắt thái mọi thứ.', wear: 0.25 },
   { id: 'bepthan', name: 'Bếp than', price: 60000, kind: 'stove', desc: 'Rẻ, nướng thơm. Phải quạt, sợ mưa.', wear: 0.5 },
   { id: 'bepgas', name: 'Bếp gas mini', price: 280000, kind: 'stove', desc: 'Chỉnh lửa chính xác, dùng bình gas.', wear: 0.4 },
@@ -38,9 +40,13 @@ export const TIERS: TierDef[] = [
   { tier: 4, id: 'quanan', name: 'Quán ăn nhỏ', cap: 150, coldCap: 55, queue: 9, speed: 0, menu: 16, visible: 1.5, trays: 32 },
   // Bậc 5: sáu chỗ ngồi bàn gỗ kê trong nhà, khách ăn tại chỗ lâu hơn và gọi thêm món tráng miệng.
   { tier: 5, id: 'quanngoi', name: 'Quán có chỗ ngồi', cap: 200, coldCap: 70, queue: 12, speed: 0, menu: 20, visible: 1.6, trays: 40 },
+  // Bậc 6: nhà hàng bình dân khang trang, tám ghế bàn gỗ trong nhà, thuê phụ bếp, đón khách đoàn và đặt bàn trước.
+  { tier: 6, id: 'nhahang', name: 'Nhà hàng bình dân', cap: 280, coldCap: 100, queue: 16, speed: 0, menu: 28, visible: 1.8, trays: 56 },
+  // Bậc 7: chuỗi cửa hàng ẩm thực — mở thêm chi nhánh thứ hai có người quản lý trông coi và sổ sách riêng.
+  { tier: 7, id: 'chuoi', name: 'Chuỗi cửa hàng', cap: 360, coldCap: 140, queue: 20, speed: 0, menu: 40, visible: 2.05, trays: 80 },
 ];
-/** Các bậc kinh doanh tiếp theo (đã lên kế hoạch, chưa mở trong bản chơi đầu). */
-export const FUTURE_TIERS = ['Nhà hàng bình dân', 'Chuỗi cửa hàng'];
+/** Các bậc kinh doanh tiếp theo (đã mở đủ 7/7 bậc). */
+export const FUTURE_TIERS: string[] = [];
 
 export interface HousingDef {
   id: string; name: string; rent: number; per: 'đêm' | 'tuần' | ''; safety: number; sleep: number; storage: number; cold: boolean; shower: boolean;

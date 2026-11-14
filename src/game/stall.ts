@@ -6,7 +6,7 @@ import { ganhModel, cartModel, charcoalStove, gasStove, boardModel, knifeModel, 
 import { takeawayBag, Look } from '../gfx/people';
 import { SPOTS, Spot, spotById, groundY, NAV_BLOCK, CORNER, edgeKey } from '../world/layout';
 import { Game, Helper, absMin, hourOf, addStack } from '../sim/state';
-import { arrivalRate, has, tier, menuOf, available, decide, review, settleSale, lostCustomer, readyCount, finishPossible, spend, earn, stove, changeRel, meet, wx, eventOn, Persona, addXp, canSell, missingFor, hasPrep, stallRoom, isNight, level, stallRent, payStallRent, helperGate, hireHelper, fireHelper, helperCandidate, helperPatience, seatCount, dineIn, secondOrder, periodName, fmtAc, curbFineRisk, curbFineAmount } from '../sim/rules';
+import { arrivalRate, has, tier, menuOf, available, decide, review, settleSale, lostCustomer, readyCount, finishPossible, spend, earn, stove, changeRel, meet, wx, eventOn, Persona, addXp, canSell, missingFor, hasPrep, stallRoom, isNight, level, stallRent, payStallRent, helperGate, hireHelper, fireHelper, helperCandidate, helperPatience, seatCount, dineIn, isRestaurant, chefAutoCook, secondOrder, periodName, fmtAc, curbFineRisk, curbFineAmount } from '../sim/rules';
 import { RECIPES, RecipeDef } from '../data/recipes';
 import { INGS } from '../data/ingredients';
 import { ARCH, HelperDef, LINES, REGULARS, RegularDef } from '../data/people';
@@ -25,11 +25,13 @@ export class StallSys {
   group = new THREE.Group(); body: THREE.Mesh | null = null; stock: THREE.Mesh | null = null; tools = new THREE.Group(); sign: THREE.Mesh | null = null;
   customers: Npc[] = []; private acc = 0; private builtKey = ''; private stockKey = ''; private stockT = 0; private cols: (Box2 | Circ)[] = [];
   private actorT = 0; private actorId = ''; private actorTries = 0; busy: Npc | null = null; rowdy = 0; private signAtlas = new SignAtlas(512); private signMat: THREE.Material;
-  private marks: THREE.Mesh[] = []; private regT = 30; private curbT = 32;
+  private marks: THREE.Mesh[] = []; private regT = 30; private curbT = 32; private chefT = 36;
+  private branchGroup = new THREE.Group(); private branchMesh: THREE.Mesh | null = null; private branchKey = '';
   /** Người phụ việc đang đứng quầy + nhân vật tới xin việc + nhịp nói chuyện/lau quầy. */
   helper: Npc | null = null; private offerNpc: Npc | null = null; private offerT = 45; private helperChat = 40; private helperWipe = 50; private helperRetry = 0;
   constructor() {
     ctx.scene.add(this.group); this.group.add(this.tools); this.group.visible = false;
+    ctx.scene.add(this.branchGroup); this.branchGroup.visible = false;
     this.signMat = new THREE.MeshBasicMaterial({ map: this.signAtlas.texture });
     for (let i = 0; i < 3; i++) { const b: Circ = { x: 0, z: 0, r: 0.3, on: false }; this.cols.push(b); ctx.world.dyn.push(b); }
     // mũi tên phát sáng trên các chỗ bán còn trống
@@ -64,24 +66,26 @@ export class StallSys {
   }
   /** Chỗ người chơi đứng bán. */
   standPos(): [number, number] { const s = this.s, d = s.tier <= 1 ? -1.5 : -1.0; return [s.x + Math.sin(s.yaw) * d, s.z + Math.cos(s.yaw) * d]; }
-  /** Số ghế tối đa (bậc 5): ba bàn gỗ, mỗi bàn hai ghế. Bậc 4 chỉ có bốn ghế nhựa. */
-  static readonly MAX_SEATS = 6;
+  /** Số ghế tối đa (bậc 6+): bốn bàn gỗ, mỗi bàn hai ghế (8 ghế). Bậc 5 có sáu ghế, bậc 4 bốn ghế nhựa. */
+  static readonly MAX_SEATS = 8;
   /** Bốn ghế nhựa của quán ăn nhỏ (bậc 4) — hai bàn ngoài sân. */
   private static readonly SEATS4: [number, number][] = [[-1.75, 2.85], [-1.75, 1.45], [1.75, 2.85], [1.75, 1.45]];
   /** Sáu ghế bàn gỗ kê trong nhà (bậc 5) — ba bàn, mỗi bàn hai ghế đối nhau. */
   private static readonly SEATS5: [number, number][] = [[-2.3, 3.2], [-2.3, 1.7], [0, 3.2], [0, 1.7], [2.3, 3.2], [2.3, 1.7]];
+  /** Tám ghế bàn gỗ trong phòng ăn Nhà hàng bình dân (bậc 6+) — bốn bàn lớn, mỗi bàn hai ghế tựa lưng. */
+  private static readonly SEATS6: [number, number][] = [[-2.55, 3.3], [-2.55, 1.8], [-0.85, 3.3], [-0.85, 1.8], [0.85, 3.3], [0.85, 1.8], [2.55, 3.3], [2.55, 1.8]];
   seatPos(i: number): [number, number] {
     const s = this.s, c = Math.cos(s.yaw), sn = Math.sin(s.yaw);
-    const arr = s.tier >= 5 ? StallSys.SEATS5 : StallSys.SEATS4;
+    const arr = s.tier >= 6 ? StallSys.SEATS6 : s.tier >= 5 ? StallSys.SEATS5 : StallSys.SEATS4;
     const [lx, lz] = arr[((i % arr.length) + arr.length) % arr.length];
     return [s.x + lx * c + lz * sn, s.z - lx * sn + lz * c];
   }
-  /** Chỗ này có ghế ngồi ăn tại chỗ không (bậc 4 trở lên; bậc 5 có sáu ghế). */
+  /** Chỗ này có ghế ngồi ăn tại chỗ không (bậc 4: 4 ghế, bậc 5: 6 ghế, bậc 6+: 8 ghế). */
   seated(i: number): boolean { return i >= 0 && i < seatCount(ctx.g); }
   slotPos(i: number, n: number): [number, number] {
     const s = this.s;
     if (this.seated(i)) return this.seatPos(i);
-    const lx = (i - (n - 1) / 2) * 0.82, lz = s.tier <= 1 ? 1.5 : s.tier >= 5 ? 5.4 : s.tier >= 4 ? 3.6 : 1.35;
+    const lx = (i - (n - 1) / 2) * 0.82, lz = s.tier <= 1 ? 1.5 : s.tier >= 6 ? 5.8 : s.tier >= 5 ? 5.4 : s.tier >= 4 ? 3.6 : 1.35;
     return [s.x + lx * Math.cos(s.yaw) + lz * Math.sin(s.yaw), s.z - lx * Math.sin(s.yaw) + lz * Math.cos(s.yaw)];
   }
 
@@ -141,7 +145,7 @@ export class StallSys {
       if (has(g, 'thungda')) iceBox(m, -2.6, 0, -0.3, 1); if (has(g, 'den')) lanternModel(m, 1.9, 0.955, 0.42);
       // bàn ghế nhựa trong sân — khách ngồi ăn tại chỗ
       for (const bx of [-1.75, 1.75]) { plasticTable(m, bx, 0, 2.15); plasticStool(m, bx, 0, 2.85, 0x2f8fd5); plasticStool(m, bx, 0, 1.45, 0xd9463c); }
-    } else {
+    } else if (s.tier === 5) {
       // Bậc 5 — quán có chỗ ngồi: quầy gỗ dài 5,6 m, hiên có mái, nền gạch bông, ba bàn gỗ sáu ghế tựa lưng.
       m.box(0, 0, 0.1, 5.6, 0.92, 0.9, 0x8a6a4a, 0xd9c8a8, 0.12); m.box(0, 0.3, 0.552, 5.5, 0.5, 0.004, 0xd9463c); m.box(0, 0.92, 0.1, 5.7, 0.04, 1.02, 0xe9e2d0, 0xf3efe6, 0, true);
       for (const sx of [-2.78, 2.78]) for (const sz of [-0.36, 0.56]) m.box(sx, 0, sz, 0.06, 0.92, 0.06, 0x7d6a52);
@@ -175,6 +179,55 @@ export class StallSys {
       // quầy thu ngân nhỏ bên hông
       m.box(-3.0, 0.5, 0.9, 0.7, 0.06, 0.5, 0x8a6a4a, 0xa07c56, 0.04, true);
       for (const dz of [-0.2, 0.2]) m.box(-3.0, 0, 0.9 + dz, 0.05, 0.5, 0.05, 0x6a4a32);
+    } else {
+      // Bậc 6 (Nhà hàng bình dân) & Bậc 7 (Chuỗi cửa hàng): nhà hàng khang trang có phòng bếp riêng, tường bao cửa sổ kính, 4 bàn gỗ lớn 8 ghế tựa lưng, bàn lễ tân sổ đặt bàn.
+      const is7 = s.tier >= 7;
+      m.box(0, 0, 0.1, 6.4, 0.94, 0.96, 0x6a4a32, 0xd8c3a5, 0.12);
+      m.box(0, 0.32, 0.585, 6.2, 0.52, 0.006, is7 ? 0xb8860b : 0xa8322a);
+      m.box(0, 0.94, 0.1, 6.5, 0.045, 1.08, 0xf2ece1, 0xfaf6ee, 0, true);
+      // Vách ngăn khu bếp riêng phía sau + chụp hút mùi inox
+      m.box(0, 0, -1.55, 7.4, 3.1, 0.14, 0xefe7d6, 0xf5efe2, 0, true);
+      m.box(1.9, 2.15, -0.1, 1.5, 0.35, 0.85, 0xc8cfd4, 0xdfe5ea, 0.05, true);
+      // Sàn gạch men sáng kem - đỏ đô
+      m.box(0, 0, 2.0, 7.6, 0.06, 5.6, 0xe8dec8, 0xf2ead8);
+      for (let ix = -5; ix <= 5; ix++) for (let iz = -3; iz <= 3; iz++) if (!((ix + iz) & 1)) m.box(ix * 0.65, 0.062, 2.0 + iz * 0.65, 0.62, 0.008, 0.62, is7 ? 0x2f5f7a : 0x9c4138);
+      // Tường bao hai bên có ô cửa kính khung gỗ + mái ngói đỏ / hộp đèn thương hiệu
+      for (const sx of [-3.72, 3.72]) {
+        m.box(sx, 0, 1.6, 0.14, 1.1, 5.4, 0xe6decb, 0xf2ebdc, 0, true);
+        m.box(sx, 1.1, 1.6, 0.06, 1.25, 4.2, 0xbfe2f2, 0xdaf0fa, 0, true);
+        m.box(sx, 2.35, 1.6, 0.14, 0.75, 5.4, 0xe6decb, 0xf2ebdc, 0, true);
+        m.box(sx, 0, 4.65, 0.16, 3.1, 0.16, 0x7a563b, 0x8f6849);
+      }
+      m.box(0, 3.1, 1.75, 7.8, 0.12, 6.3, is7 ? 0x1e4d6b : 0x8f2d24, 0xf5efe2, 0, true);
+      m.box(0, 2.74, 4.88, 7.8, 0.36, 0.04, is7 ? 0xd4a017 : 0xb8332a, 0xffd24d, 0, true);
+      // Đèn lồng trang trí treo trần
+      for (const lx of [-2.4, 0, 2.4]) {
+        m.cyl(lx, 2.68, 3.6, 0.14, 0.22, 0xe84a36, 10);
+        m.cyl(lx, 2.66, 3.6, 0.08, 0.26, 0xffd24d, 8);
+      }
+      // Bàn lễ tân & sổ đặt bàn trước ở lối vào
+      m.box(-3.2, 0, 4.25, 0.85, 0.98, 0.55, 0x6a4a32, 0x8a6446, 0.06, true);
+      m.box(-3.2, 0.99, 4.25, 0.42, 0.03, 0.3, 0xfaf3e0, 0xffffff);
+      // Bốn bàn ăn gỗ lớn — tám ghế tựa lưng bọc nệm (SEATS6)
+      for (const bx of [-2.55, -0.85, 0.85, 2.55]) {
+        m.box(bx, 0.74, 2.55, 0.96, 0.06, 0.96, 0x7c5032, 0x9c6844, 0.04, true);
+        m.box(bx, 0.772, 2.55, 0.82, 0.008, 0.82, 0xf7f0e2, 0xfffaf0);
+        for (const dx of [-0.38, 0.38]) for (const dz of [-0.38, 0.38]) m.box(bx + dx, 0, 2.55 + dz, 0.06, 0.74, 0.06, 0x5a3a22);
+        for (const cz of [1.8, 3.3]) {
+          const bz = cz > 2.55 ? 0.22 : -0.22;
+          m.box(bx, 0.46, cz, 0.48, 0.06, 0.48, 0x8a5838, 0xb84238, 0.04, true);
+          for (const dx of [-0.19, 0.19]) for (const dz of [-0.19, 0.19]) m.box(bx + dx, 0, cz + dz, 0.045, 0.46, 0.045, 0x5a3a22);
+          for (const dx of [-0.19, 0.19]) m.box(bx + dx, 0.51, cz + bz, 0.04, 0.5, 0.04, 0x5a3a22);
+          m.box(bx, 0.92, cz + bz, 0.48, 0.16, 0.05, 0x7c5032, 0x9c6844, 0.03, true);
+        }
+        m.box(bx + 0.28, 0.78, 2.35, 0.1, 0.1, 0.1, 0xe9e2d0, 0xf3efe6);
+        m.cyl(bx - 0.28, 0.78, 2.38, 0.035, 0.16, 0x4a2f1a, 8);
+        m.cyl(bx, 0.78, 2.55, 0.04, 0.14, 0xd86b7a, 8);
+      }
+      if (st === 'bepthan') charcoalStove(tm, 2.1, 0.965, 0, 0.95); else if (st === 'bepgas') gasStove(tm, 2.1, 0.965, 0, 0.95);
+      if (has(g, 'daothot')) { boardModel(tm, -1.65, 0.965, -0.05, 0.38, 0.26); knifeModel(tm, -1.55, 0.992, -0.03); }
+      if (has(g, 'noi')) potModel(tm, -2.15, 0.965, 0.3, 0.75); if (has(g, 'chao')) panModel(tm, 0.9, 0.97, 0.3, 0.75); if (has(g, 'vi')) grateModel(tm, 2.1, st ? 1.15 : 0.98, 0, 0.38, 0.28);
+      if (has(g, 'thungda')) iceBox(m, -3.4, 0, -0.3, 1.05); if (has(g, 'den')) lanternModel(m, 2.7, 0.965, 0.42);
     }
     if (placed) {
       if (has(g, 'odu') && s.tier < 3) umbrellaModel(m, s.tier === 1 ? -1.05 : -1.15, 0, s.tier === 1 ? -0.9 : -0.55, 1.7, 2.5);
@@ -233,7 +286,9 @@ export class StallSys {
     if (s.tier >= 4 && sp.minTier < 4) { toast(`Quán ăn nhỏ cần MẶT BẰNG có sân kê bàn ghế — ${sp.name} hẹp quá. Tìm điểm vàng có chữ “Mặt bằng”.`, 'warn', 'shop'); return false; }
     if (sp.fee > 0 && s.paidDay !== g.day) { if (!spend(g, sp.fee, 'fees')) { toast(`Không đủ ${money(sp.fee)} phí chỗ ở ${sp.name}.`, 'bad', 'cash'); return false; } toast(`Đã đóng ${money(sp.fee)} phí chỗ hôm nay.`, 'info', 'cash'); }
     s.paidDay = g.day; s.where = 'placed'; s.spot = sp.id; s.x = sp.x; s.z = sp.z; s.yaw = sp.yaw; s.open = false; this.stowed = false;
-    if (s.tier >= 5) { delete g.flags.sapNo; toast(`Quán có chỗ ngồi mở ở ${sp.name}. Sáu ghế bàn gỗ trong nhà, khách ăn tại chỗ lâu hơn và hay gọi thêm tráng miệng — nhớ ${periodName(g).toLowerCase()} mà bày món hợp buổi.`, 'good', 'shop', true); }
+    if (s.tier >= 7) { delete g.flags.sapNo; toast(`Chuỗi cửa hàng trụ sở chính đặt ở ${sp.name}! Vào bảng Quầy › Quản lý & Chi nhánh để mở thêm Chi nhánh 2 hoạt động song song.`, 'good', 'shop', true); }
+    else if (s.tier >= 6) { delete g.flags.sapNo; toast(`Nhà hàng bình dân mở ở ${sp.name}! Tám chỗ ngồi trong nhà, đón khách đoàn và đặt bàn trước — vào bảng Quầy › Quản lý để thuê Phụ bếp.`, 'good', 'shop', true); }
+    else if (s.tier >= 5) { delete g.flags.sapNo; toast(`Quán có chỗ ngồi mở ở ${sp.name}. Sáu ghế bàn gỗ trong nhà, khách ăn tại chỗ lâu hơn và hay gọi thêm tráng miệng — nhớ ${periodName(g).toLowerCase()} mà bày món hợp buổi.`, 'good', 'shop', true); }
     else if (s.tier >= 4) { delete g.flags.sapNo; toast(`Quán ăn nhỏ mở ở ${sp.name}. Mỗi ngày đóng ${money(sp.fee)} phí mặt bằng; bốn chỗ ngồi cho khách ăn tại chỗ nên ai cũng đợi lâu hơn.`, 'good', 'shop', true); }
     else if (s.tier >= 3) { delete g.flags.sapNo; toast(`Sạp đặt cố định ở ${sp.name}. Từ nay mỗi ngày đóng ${money(sp.fee)} phí chỗ, đổi ${money(sp.fee)} lấy chỗ đông khách và không ai dọn được quầy của bạn.`, 'good', 'shop', true); }
     else if (sp.curbRisk) { toast(`Đã đặt tại ${sp.name} (miễn phí — coi chừng đội trật tự đô thị đi tuần phạt lấn chiếm vỉa hè!).`, 'info', 'shop'); }
@@ -300,7 +355,8 @@ export class StallSys {
     const res = decide(g, n.persona!, n.fem);
     if (!res.order) { N.say(n, res.leave!, 3, res.why === 'price' ? EXPR.smug : EXPR.sad); lostCustomer(g, res.why ?? 'none'); if (res.why === 'price') sfx('nope'); setTimeout(() => this.dismiss(n, false), 1400); return; }
     n.order = res.order; if (n.actor === 'vip') n.order.n = Math.min(3, Math.max(n.order.n, 2), readyCount(g, n.order.rid) + finishPossible(g, RECIPES[n.order.rid]));
-    const a = n.arch; n.patience = rnd.range(a.patience[0], a.patience[1]) * (this.seated(n.slot) ? (dineIn(g) ? 1.9 : 1.5) : has(g, 'ghe') ? 1.3 : 1) * (wx(g).rain > 0.3 && !has(g, 'odu') && s.tier < 4 ? 0.75 : 1) * helperPatience(g); n.waited = 0;
+    const a = n.arch, seatMul = this.seated(n.slot) ? (isRestaurant(g) ? (res.order.group ? 2.4 : 2.2) : dineIn(g) ? 1.9 : 1.5) : has(g, 'ghe') ? 1.3 : 1;
+    n.patience = rnd.range(a.patience[0], a.patience[1]) * seatMul * (wx(g).rain > 0.3 && !has(g, 'odu') && s.tier < 4 ? 0.75 : 1) * helperPatience(g); n.waited = 0;
     N.say(n, res.order.line, 3.2, res.order.mood === 'pricey' ? EXPR.annoyed : EXPR.happy); ctx.ui.order(n, res.order.rid, res.order.n); sfx('order');
     if (n.regular) changeRel(g, n.regular.id, 0, true);
   }
@@ -597,9 +653,33 @@ export class StallSys {
     toast(`Chưa có sẵn ${r.name} — hãy làm trước rồi đưa sau.`, 'warn'); return false;
   }
 
+  private rebuildBranch() {
+    const g = ctx.g, b = g.branch, key = g.stall.tier >= 7 && b && b.spot ? `${b.spot}|${b.open ? 1 : 0}` : '';
+    if (key === this.branchKey) return;
+    this.branchKey = key;
+    if (this.branchMesh) { this.branchGroup.remove(this.branchMesh); this.branchMesh.geometry.dispose(); this.branchMesh = null; }
+    if (!key || !b?.spot) { this.branchGroup.visible = false; return; }
+    const sp = spotById(b.spot);
+    if (!sp) { this.branchGroup.visible = false; return; }
+    this.branchGroup.visible = true;
+    this.branchGroup.position.set(sp.x, groundY(sp.x, sp.z), sp.z);
+    this.branchGroup.rotation.y = sp.yaw;
+    const m = new MB();
+    m.box(0, 0, 0.1, 3.8, 0.92, 0.9, 0x6a4a32, 0xd8c3a5, 0.12);
+    m.box(0, 0.3, 0.555, 3.6, 0.5, 0.006, 0x1e4d6b);
+    m.box(0, 0.92, 0.1, 3.9, 0.04, 1.0, 0xf2ece1, 0xfaf6ee, 0, true);
+    for (const sx of [-1.85, 1.85]) for (const sz of [-0.36, 0.56]) m.box(sx, 0.92, sz, 0.05, 1.7, 0.05, 0x8a8f96);
+    m.box(0, 2.62, 0.1, 4.4, 0.08, 1.8, 0x1e4d6b, 0xf5efe2, 0, true);
+    m.box(0, 2.34, 0.98, 4.4, 0.28, 0.03, 0xd4a017, 0xffd24d, 0, true);
+    for (const bx of [-1.2, 1.2]) { plasticTable(m, bx, 0, 2.0); plasticStool(m, bx, 0, 2.65, 0x1e4d6b); plasticStool(m, bx, 0, 1.35, 0xd4a017); }
+    this.branchMesh = new THREE.Mesh(m.build(), MAT.litDouble);
+    this.branchMesh.castShadow = true;
+    this.branchGroup.add(this.branchMesh);
+  }
+
   update(dt: number) {
     const g = ctx.g, s = g.stall, N = ctx.npcs;
-    this.rebuild(); this.stockT -= dt; if (this.stockT <= 0) { this.stockT = 0.5; this.rebuildStock(); }
+    this.rebuild(); this.rebuildBranch(); this.stockT -= dt; if (this.stockT <= 0) { this.stockT = 0.5; this.rebuildStock(); }
     // vòng đánh dấu chỗ bán khi đang mang quầy
     const carrying = s.where === 'carried'; this.marks.forEach((m, i) => { m.visible = carrying && dist2(SPOTS[i].x, SPOTS[i].z, ctx.player.x, ctx.player.z) < 60 * 60; if (m.visible) m.scale.setScalar(1 + Math.sin(ctx.time * 3) * 0.05); });
     if (s.where !== 'placed') { if (this.customers.length) for (const n of this.customers.slice()) this.dismiss(n, false); return; }
@@ -618,6 +698,18 @@ export class StallSys {
     }
     if (this.rowdy > 0) this.rowdy -= dt;
     this.updateHelper(dt);
+    // Phụ bếp (bậc 6+): tự động sơ chế / nấu thêm món khi khay vơi
+    if (s.open && s.tier >= 6 && g.chef) {
+      this.chefT -= dt;
+      if (this.chefT <= 0) {
+        this.chefT = rnd.range(30, 48);
+        const cooked = chefAutoCook(g);
+        if (cooked) {
+          this.stockKey = '';
+          toast(`Phụ bếp ${g.chef.name} vừa chuẩn bị thêm ${cooked.name.toLowerCase()}.`, 'info', 'dish');
+        }
+      }
+    }
     if (this.actorId) { this.actorT -= dt; if (this.actorT <= 0) this.spawnActor(); }
     if (s.open && !this.actorId && curbFineRisk(g) > 0) {
       this.curbT -= dt;
@@ -631,6 +723,11 @@ export class StallSys {
     // sự kiên nhẫn của khách đang chờ
     for (const n of this.customers.slice()) {
       if (n.state !== 'queue' || !n.order) continue;
+      // Ở nhà hàng (bậc 6+) có người phụ việc hoặc phụ bếp: nếu món đã có sẵn trên khay thì nhân viên tự bưng ra bàn cho khách ngồi!
+      if (s.tier >= 6 && (g.help || g.chef) && this.seated(n.slot) && n.waited >= 3.2 && this.busy !== n && readyCount(g, n.order.rid) >= n.order.n) {
+        this.handOver(n);
+        continue;
+      }
       n.waited += dt * (this.busy === n ? 0.35 : 1) * (away ? 2.5 : 1);
       const f = n.waited / n.patience; ctx.ui.patience(n, 1 - f);
       if (f > 0.55 && !n.data?.warn) { n.data = { warn: 1 }; N.say(n, LINES.wait[(n.id + g.day) % LINES.wait.length].replace('{you}', n.arch.you.replace('{ac}', g.ac)).replace('{Self}', n.arch.self[n.fem ? 1 : 0]).replace('{self}', n.arch.self[n.fem ? 1 : 0]), 2.4, 3); n.base = 3; }

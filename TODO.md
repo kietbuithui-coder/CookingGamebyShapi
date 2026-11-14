@@ -1,56 +1,76 @@
-# Việc còn lại
+# Việc còn lại & Ghi chú Kế hoạch Tổng hợp
 
-Danh sách những gì **chưa làm** tính tới lượt 16 (`main` = `f45a2f8`). Đã xong: 60/60 món · 8/8 kiểu chỗ ở ·
-5/7 bậc kinh doanh · 8 thời tiết · 22 sự kiện · 76 nguyên liệu · 14 cửa hàng · 22 món đồ nghề · 16 nhóm người ·
-11 khách quen · 39 nhân vật cố định · chuỗi 11 mục tiêu hướng dẫn · điện thoại · quán net · công an · bệnh viện ·
-đua xe đạp · NPC sinh hoạt theo giờ · giao diện dễ đọc · 16 biểu cảm · 8 kiểu tóc · người phụ việc ·
-ngoại hình người chơi (góc nhìn thứ ba, cắt tóc, thời trang) · quán có chỗ ngồi (sáu ghế bàn gỗ, thực đơn theo buổi, gọi thêm) ·
-278 bài kiểm thử / 18 tệp.
+Danh sách những gì **đã hoàn thành** và **các kế hoạch còn lại** tính tới **Lượt 18**.
+
+Đã xong:
+- **7/7 bậc kinh doanh** (Gánh hàng rong · Xe đẩy · Sạp cố định · Quán ăn nhỏ · Quán có chỗ ngồi · **Nhà hàng bình dân** · **Chuỗi cửa hàng**)
+- **60/60 món ăn** · **8/8 kiểu chỗ ở** · **8 thời tiết** · **22 sự kiện** · **76 nguyên liệu** · **14 cửa hàng** · **24 món đồ nghề/cấp quầy**
+- **16 nhóm người** · **11 khách quen** · **39 nhân vật cố định** · **chuỗi 11 mục tiêu hướng dẫn**
+- **Điện thoại (3 mẫu máy)** · **Quán net Hải Anh** · **Đồn Công an & tạm giữ** · **Bệnh viện Phước An** · **Đua xe đạp Chủ nhật**
+- **NPC sinh hoạt theo giờ** · **16 biểu cảm & 8 kiểu tóc** · **Người phụ việc ở quầy** · **Góc nhìn thứ ba, Tiệm cắt tóc & Tiệm thời trang**
+- **Xưng hô linh hoạt theo giới tính (`anh`/`chị`)** · **Mini-game 3D cho Bốc hàng, Bốc cá, Đánh cờ tướng** · **Sạp chợ tự dọn hàng ban đêm** · **Điểm bán vỉa hè miễn phí & phạt lấn chiếm vỉa hè** · **Cơ chế ăn cắp (`shoplifting`) & truy đuổi của công an**
+- **20 tệp kiểm thử / 291 bài kiểm thử tự động**.
 
 ---
 
-## 1. Nhánh kinh doanh — còn 2 bậc
+## 1. Nhánh kinh doanh — ✅ ĐÃ HOÀN THÀNH ĐỦ 7/7 BẬC (Lượt 18)
 
-| Bậc | Tên | Cần gì để làm |
+| Bậc | Tên | Trạng thái & Tính năng |
 |---|---|---|
-| ✅ 5 | Quán có chỗ ngồi | **Đã xong (lượt 16):** 58.000.000₫, 200 kg, 20 món, 12 khách, hiên mái tôn + nền gạch bông + 3 bàn gỗ 6 ghế tựa lưng, thực đơn theo buổi (sáng/trưa/chiều/khuya, `fitsPeriod` ×1,35), khách ăn tại chỗ kiên nhẫn ×1,9 và gọi thêm món tráng miệng/nước (`secondOrder`) |
-| 6 | Nhà hàng bình dân | Nội thất trong nhà kín (nhiều bàn, phòng bếp riêng), đặt bàn trước, nhân viên phụ bếp, khách đoàn |
-| 7 | Chuỗi cửa hàng | Mở điểm bán thứ hai cùng lúc, quản lý từ xa (sổ sách từng điểm), thuê người trông coi |
+| ✅ 1 | Gánh hàng rong | 120.000₫, 14 kg, 3 món, 3 khách; đứng được cả ở 3 điểm vỉa hè miễn phí (có rủi ro phạt lấn chiếm) |
+| ✅ 2 | Xe đẩy | 2.400.000₫, 40 kg, 6 món, 5 khách; vá/bơm bánh ở chỗ Chú Hậu |
+| ✅ 3 | Sạp cố định | 9.000.000₫, 90 kg, 10 món, 7 khách, có mái che cố định, đóng phí chỗ theo ngày |
+| ✅ 4 | Quán ăn nhỏ | 24.000.000₫, 150 kg, 16 món, 9 khách, dựng ở mặt bằng có sân, 4 ghế nhựa ngoài sân |
+| ✅ 5 | Quán có chỗ ngồi | 58.000.000₫, 200 kg, 20 món, 12 khách, hiên mái tôn + nền gạch bông + 3 bàn gỗ 6 ghế tựa lưng, thực đơn theo buổi (`fitsPeriod` ×1,35), khách gọi thêm món tráng miệng/nước (`secondOrder`) |
+| ✅ 6 | Nhà hàng bình dân | **Đã xong (Lượt 18):** 135.000.000₫, 280 kg, giữ lạnh 100 kg, 28 món, 16 khách, phòng ăn 4 bàn gỗ lớn **8 ghế tựa lưng** + vách phòng bếp riêng + bàn lễ tân; thuê **Phụ bếp** (`CHEF_POOL`: giữ cốt sơ chế tươi lâu ×1,5, nấu dễ hơn, tự nấu bù khi khay vơi & nhân viên tự bưng món làm sẵn ra bàn); đón **khách đoàn** (`group`: 2–4 phần/lượt) và **Sổ đặt bàn trước theo ngày** (`bookings`) |
+| ✅ 7 | Chuỗi cửa hàng | **Đã xong (Lượt 18):** 280.000.000₫, 360 kg, giữ lạnh 140 kg, 40 món, 20 khách; mở thêm **Chi nhánh thứ 2** ở điểm bán khác hoạt động song song (7h–21h), thuê **Quản lý cửa hàng** (`BRANCH_MANAGERS`) trông coi, tự động bán hàng theo giờ và có **bảng sổ sách thu–chi tách riêng từng điểm bán** |
 
-Hiện `FUTURE_TIERS` trong `src/data/gear.ts` còn 2 bậc (`Nhà hàng bình dân`, `Chuỗi cửa hàng`); chưa có dữ liệu, mô hình, luật đặt chỗ và kiểm thử.
+---
 
-## 2. Băng nhóm
+## 2. Hệ thống Băng nhóm & Giang hồ (Kế hoạch tiếp theo)
 
-- Chưa có **lãnh địa**: hiện chỉ có sự kiện thu tiền bảo kê và chủ nợ Hùng Sẹo.
-- Chưa có **đánh nhau** (đấm người đi đường đã có, nhưng chưa có đụng độ băng nhóm, không có máu/đồng bọn).
-- Chưa có **nhiệm vụ băng nhóm** (đòi nợ thuê, giữ hàng, chở hàng lậu…) và chưa có quan hệ tốt/xấu với Hùng Sẹo.
-- Chưa có chủ đề "làm ăn với băng nhóm" (được bảo kê đổi lấy phần trăm).
+- **Lãnh địa băng nhóm** theo từng khu phố (ngoài sự kiện thu tiền bảo kê ngẫu nhiên và vay nóng Hùng Sẹo hiện có).
+- **Đụng độ / đánh nhau với băng nhóm** (có đồng bọn, máu/sức chiến đấu khi xô xát).
+- **Nhiệm vụ băng nhóm** (đòi nợ thuê, giữ hàng, chở hàng lậu…) và điểm **quan hệ tốt/xấu với Hùng Sẹo**.
+- **Làm ăn với băng nhóm**: đóng phần trăm doanh thu để được bảo kê cố định (không bị khách quậy, không bị đòi bảo kê lẻ).
 
-## 3. Con người & nhân vật
+---
 
-- ✅ **Ngoại hình người chơi** (lượt 15): góc nhìn thứ ba (phím V) để thấy chính mình; tiệm cắt tóc Chú Bảy Kéo đổi 8 kiểu tóc + 4 màu nhuộm; tiệm thời trang Cô Ngọc đổi áo (6 màu), quần (5 màu), giày (3 đôi), kính (cận / đen). Ngoại hình nằm trong bản lưu v11. Còn thiếu: **gương ở nhà**, đổi dáng người – chiều cao, mũ/nón, và bộ đồ riêng theo nghề (tạp dề, áo bảo hộ).
-- ✅ **Khuôn mặt & kiểu tóc** (lượt 14): atlas **16 × 8** với 16 biểu cảm, **8 kiểu tóc** (thêm xoăn, đuôi ngựa, húi cua, tém ngang vai) chia theo giới tính và nhóm người. Còn thiếu: râu, kính, mũ đa dạng hơn.
-- **Lời thoại**: đã có câu chào, câu thô lỗ, câu mặc cả, câu vu vơ theo nhóm người; còn thiếu bộ thoại riêng cho từng nhân vật cố định và phản ứng khi người chơi giàu/nghèo/bị công an để ý.
-- **Nhân vật phụ ở tiệm nhỏ**: tạp hoá, MiniMart, tiệm cầm đồ mới có người bán cố định; chưa có khách lựa hàng nói chuyện, chưa có việc vặt riêng.
-- ✅ **Người phụ việc** (lượt 14): chỉ hiện khi quầy ≥ xe đẩy, doanh thu ≥ 250.000₫ và đã bán qua ≥ 2 ngày; thuê theo ngày, dỗ khách chờ (kiên nhẫn ×1,3), lau quầy, có thoại + biểu cảm theo tình huống. Còn thiếu: nhiều người cùng lúc, chia ca sáng/tối, tự bưng món ra cho khách.
+## 3. Con người, Nhân vật & Người phụ việc (Các phần mở rộng)
 
-## 4. Kỹ thuật & hiệu năng
+- **Ngoại hình người chơi (mở rộng sau Lượt 15)**:
+  - **Gương soi ở trong nhà trọ/nhà ở** để xem và đổi đồ ngay tại nhà.
+  - Chỉnh **dáng người / chiều cao** (`fat`, `h`), mua **mũ/nón**, và **trang phục theo nghề** (tạp dề đầu bếp, áo bảo hộ…).
+  - NPC trên phố có thêm **râu, kính, mũ** đa dạng hơn.
+- **Người phụ việc ở quầy (mở rộng sau Lượt 14 & 18)**:
+  - Đã có **Phụ bếp** (Bậc 6), **Quản lý chi nhánh** (Bậc 7) và **tự động bưng món làm sẵn ra bàn** khi ở Nhà hàng.
+  - Còn có thể mở rộng thêm: **chia ca sáng / tối** cho nhiều nhân viên phục vụ bàn cùng lúc.
+- **Lời thoại & tương tác xã hội sâu hơn**:
+  - Bộ thoại riêng phong phú hơn cho từng nhân vật cố định.
+  - Phản ứng của người dân thay đổi rõ theo vị thế người chơi (**khi giàu có / khi nghèo rớt / khi đang bị công an để ý**).
+  - Các tiệm nhỏ (tạp hoá, MiniMart, tiệm cầm đồ) có thêm **việc vặt riêng** cho người chơi nhận làm và khách đứng lựa hàng trò chuyện được.
 
-- **Chưa đo trên máy yếu thật**: người chơi báo máy chạy trên 50 khung hình/giây nhưng chưa rõ máy nào.
-- Khi cần tối ưu: gộp các khối cơ thể NPC thành một lưới, dùng instancing cho đồ vật lặp lại (ghế, cây, xe), bỏ sương mù theo điểm ảnh ở mức đồ hoạ thấp, thêm LOD cho khu ở xa.
-- **Tách gói JavaScript**: hiện một tệp khoảng 1,05 MB (nén còn ~328 kB). Nên tách phần dựng thành phố ra khỏi phần giao diện.
-- **Chơi ngoại tuyến**: chưa có service worker; mất mạng là không mở được.
-- **Lưu đám mây**: chưa có; xoá dữ liệu trình duyệt là mất bản lưu (bản lưu v10, tự lưu sau mỗi việc quan trọng).
-- **Nội thất cửa hàng**: một số tiệm còn sơ sài (kệ hàng, quầy, biển giá mới ở mức khối hộp).
+---
 
-## 5. Cân chỉnh
+## 4. Công an & Đường phố (Phần để dành từ Lượt 7)
 
-- **Âm thanh**: chưa nghe thử trên tai nghe/loa điện thoại thật để cân lại nhạc nền với hiệu ứng.
-- **Nhịp độ**: chưa chơi thử dài để cân tốc độ kiếm vốn ngày đầu, lượng khách khi uy tín thấp, độ khó các mini-game (nấu, đua xe đạp).
-- **Màn dọc**: HUD vẫn chật khi điện thoại để dọc (đã có thanh cỡ giao diện 70–160% và lời khuyên xoay ngang, nhưng chưa bố trí lại riêng cho màn dọc).
+- **Chốt CSGT đứng ở ngã tư**.
+- **Còi và loa phát thanh phường** theo khung giờ sáng/chiều.
+- **Lao động công ích ngoài đường** (quét phố, bốc vác công ích ngoài bến để giảm án/trừ phạt thay vì chỉ đập đá trong buồng giam).
 
-## 6. Việc nhỏ đã biết
+---
 
-- Dòng "Dụng cụ" / "Sơ chế" trong Sổ tay từng thừa dấu "·" — đã sửa khi viết lại mục công thức ở lượt 12, cần rà lại lần nữa sau khi thêm bậc 4.
-- Bảng "Nợ & khách quen" chưa có nút nhắc nợ qua điện thoại (chỉ nhắc khi gặp mặt).
-- Chưa có bảng thành tích / thống kê sau khi chơi xong (mới có tổng kết cuối ngày).
+## 5. Điện thoại, Sổ tay & Tiện ích nhỏ
+
+- **Nhắc nợ qua điện thoại**: Thêm nút gọi/nhắn **đòi nợ khách quen mua chịu** từ xa trong bảng *"Nợ & khách quen"* hoặc ứng dụng Danh bạ (hiện chỉ đòi được khi gặp mặt trực tiếp).
+- **Bảng Thành tích / Thống kê tổng kết sự nghiệp**: Thêm bảng Thành tích (Achievements / Milestones) cho toàn bộ quá trình chơi bên cạnh bảng tổng kết cuối mỗi ngày.
+- **Bố cục riêng cho màn hình dọc (Portrait)**: Tối ưu lại bố cục HUD riêng cho điện thoại cầm dọc.
+
+---
+
+## 6. Kỹ thuật, Nội thất & Hiệu năng
+
+- **Nội thất cửa hàng chi tiết hơn**: Bổ sung kệ hàng, quầy và biển giá chi tiết hơn cho một số tiệm nhỏ.
+- **Chơi ngoại tuyến (Offline PWA)**: Thêm `Service Worker` để mở game khi mất mạng.
+- **Lưu đám mây / Xuất–Nhập bản lưu (Export/Import Save)**: Cho phép xuất/nhập chuỗi bản lưu để không mất tiến trình khi xoá dữ liệu trình duyệt.
+- **Tối ưu gói JS & đồ hoạ máy yếu**: Tách chunk (`code-splitting`) để giảm kích thước gói tải ban đầu; thêm `InstancedMesh` / `LOD` cho vật thể lặp lại trên máy yếu.

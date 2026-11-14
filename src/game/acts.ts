@@ -149,8 +149,12 @@ export class Acts {
       case 'equip': {
         const rc = R.repairCost(g), opts: Opt[] = [];
         if (g.stall.tier > 0 && g.stall.cond < 96) opts.push({ t: `Sửa quầy — ${money(rc)}`, sub: `Tình trạng hiện tại ${Math.round(g.stall.cond)}%`, off: g.cash < rc, fn: () => { R.spend(g, rc, 'gear'); g.stall.cond = 100; sfx('fix'); toast('Quầy đã được sửa như mới.', 'good', 'tool'); } });
+        if (g.stall.tier >= 3 && g.stall.tier < 7) {
+          const next = TIERS[g.stall.tier + 1], gd = GEAR[next.id];
+          if (gd) opts.push({ t: `Nâng cấp lên ${gd.name} — ${money(gd.price)}`, sub: gd.desc, fn: () => this.buyGear(gd.id) });
+        }
         opts.push({ t: 'Bán lại đồ nghề cũ', off: !Object.keys(g.gear).length, fn: () => this.sellGearMenu(n) });
-        opts.push({ t: 'Nên mua gì trước hả chú?', fn: () => this.D(who(n), n, 'Mới vô nghề thì cặp GÁNH trước đã. Rồi DAO THỚT là làm được bánh tráng trộn. Có BẾP THAN với VỈ thì nướng khoai, nướng bắp. Muốn pha trà đá thì thêm cái NỒI. Cứ đi quanh tiệm, thấy món nào thì chạm vô coi giá.', [bye]) });
+        opts.push({ t: 'Nên mua gì trước hả chú?', fn: () => this.D(who(n), n, 'Mới vô nghề thì cặp GÁNH trước đã. Rồi DAO THỚT là làm được bánh tráng trộn. Có BẾP THAN với VỈ thì nướng khoai, nướng bắp. Muốn pha trà đá thì thêm cái NỒI. Làm ăn khấm khá lên Sạp rồi thì hỏi chú nâng cấp lên Quán ăn nhỏ, Quán có chỗ ngồi, Nhà hàng bình dân và Chuỗi cửa hàng!', [bye]) });
         this.D(who(n), n, 'Tiệm Ba Tài, xe đẩy bếp núc gì cũng có! Hàng bày quanh đó, ưng món nào cứ chạm vô.', [...opts, bye]); break;
       }
       case 'net': this.netMenu(n); break;
@@ -305,10 +309,14 @@ export class Acts {
     const block = id === 'tulanh' && !['tro', 'canho', 'nharieng', 'cuahang'].includes(g.housing) ? 'Phải thuê chỗ ở có khoá (trọ, căn hộ, nhà) mới đặt được tủ lạnh.' : '';
     this.D(n ? who(n) : 'Chủ tiệm đồ nghề', n, `${d.name} — ${money(d.price)}. ${d.desc} ${need}${block}` + (id === 'sap' ? ' Mua rồi phải chọn chỗ đặt ngoài phố (chỗ nào cũng được), đặt xuống là cố định, mỗi ngày đóng phí chỗ. Bù lại chứa được 90 kg, bày 10 món, 7 khách xếp hàng, mưa gió không ai dỡ hàng.'
         : id === 'quanan' ? ' Quán phải dựng ở MẶT BẰNG có sân (điểm vàng ghi “Mặt bằng”, hai chỗ: Phố Văn Phòng và Khu Căn Hộ), mỗi ngày đóng phí mặt bằng. Đổi lại chứa 150 kg, bày 16 món, 9 khách một lúc và bốn chỗ ngồi ăn tại chỗ.'
-        : id === 'quanngoi' ? ' Cũng dựng ở MẶT BẰNG có sân. Đổi lại chứa 200 kg, bày 20 món, 12 khách một lúc, sáu ghế bàn gỗ kê trong nhà — khách ngồi ăn lâu hơn gấp rưỡi và ăn xong hay gọi thêm tráng miệng, mà món đúng buổi thì bán chạy hơn.' : ''), [{ t: `Mua — ${money(d.price)}`, off: g.cash < d.price || !!block, sub: g.cash < d.price ? `Còn thiếu ${money(d.price - g.cash)}` : undefined, fn: () => {
+        : id === 'quanngoi' ? ' Cũng dựng ở MẶT BẰNG có sân. Đổi lại chứa 200 kg, bày 20 món, 12 khách một lúc, sáu ghế bàn gỗ kê trong nhà — khách ngồi ăn lâu hơn gấp rưỡi và ăn xong hay gọi thêm tráng miệng, mà món đúng buổi thì bán chạy hơn.'
+        : id === 'nhahang' ? ' Nhà hàng bình dân có phòng ăn tám chỗ ngồi, vách bếp riêng, chứa 280 kg, bày 28 món, đón khách đoàn (2–4 phần/lượt), nhận đặt bàn trước và thuê được Phụ bếp tự động nấu phụ.'
+        : id === 'chuoi' ? ' Đỉnh cao nghề ẩm thực: chứa 360 kg, bày 40 món, 20 khách cùng lúc, và mở thêm Chi nhánh thứ hai hoạt động song song dưới quyền Quản lý riêng!' : ''), [{ t: `Mua — ${money(d.price)}`, off: g.cash < d.price || !!block, sub: g.cash < d.price ? `Còn thiếu ${money(d.price - g.cash)}` : undefined, fn: () => {
       if (R.buyGear(g, id) === 'ok') {
         sfx('buy'); ctx.stall.refresh();
         if (id === 'sap') { toast('Sạp đã mua! Giờ tìm một CHỖ BÁN (vòng sáng vàng) ngoài phố, chạm vào để dựng sạp — đặt rồi thì không dời được nữa.', 'good', 'shop', true); if (g.stall.tier >= 3) this.way = null; }
+        else if (id === 'chuoi') { toast('Chuỗi cửa hàng đã mua! Dựng trụ sở chính ở MẶT BẰNG rồi mở bảng Quầy › Quản lý để khai trương Chi nhánh 2.', 'good', 'shop', true); }
+        else if (id === 'nhahang') { toast('Nhà hàng bình dân đã mua! Dựng ở MẶT BẰNG có sân để đón khách đoàn, nhận đặt bàn trước và thuê Phụ bếp.', 'good', 'shop', true); }
         else if (id === 'quanngoi') { toast('Quán có chỗ ngồi đã mua! Tìm MẶT BẰNG có sân (điểm vàng “Mặt bằng”: Phố Văn Phòng hoặc Khu Căn Hộ) để dựng quán — sáu ghế trong nhà, khách ăn tại chỗ.', 'good', 'shop', true); }
         else if (id === 'quanan') { toast('Quán ăn nhỏ đã mua! Tìm MẶT BẰNG (điểm vàng có chữ “Mặt bằng”: Phố Văn Phòng hoặc Khu Căn Hộ), chạm vào để dựng quán — mỗi ngày đóng phí mặt bằng.', 'good', 'shop', true); }
         else if (d.kind === 'phone') { toast(`Đã mua ${d.name.toLowerCase()}, cắm sim vô liền. Bấm nút điện thoại trên màn hình (hoặc phím P) để mở.`, 'good', 'tool', true); toast('Máy có sổ thu chi, danh bạ, tin nhắn. Pin tụt dần — ngủ ở nhà có điện thì đầy pin, hoặc sạc nhờ ở tạp hoá 5.000₫.', 'info', 'bolt'); }

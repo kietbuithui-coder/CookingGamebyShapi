@@ -64,7 +64,8 @@ export function openPanel(ui: UI, name: string) {
       }
       draw(`${ic('bag')} Túi đồ`, [['bag', 'Nguyên liệu'], ['gear', 'Dụng cụ']], body, `<span class="muted">Tiền mặt ${money(g.cash)}${g.bank ? ' · ngân hàng ' + money(g.bank) : ''}</span>`);
     } else if (name === 'stall') {
-      if (!['menu', 'store', 'info'].includes(tab)) tab = 'menu';
+      const validTabs = s.tier >= 6 ? ['menu', 'store', 'info', 'mgmt'] : ['menu', 'store', 'info'];
+      if (!validTabs.includes(tab)) tab = 'menu';
       const placed = s.where === 'placed';
       acts.sw = (_i, e) => { const rs = g.rec[e.dataset.k!], on = R.menuOf(g).length; if (!rs.on && on >= T.menu) { toast(`${T.name} chỉ bán được tối đa ${T.menu} món cùng lúc.`, 'warn'); return; } rs.on = !rs.on; sfx('ui'); };
       acts.pm = (_i, e) => { const rs = g.rec[e.dataset.k!]; rs.price = clamp(rs.price + +e.dataset.d!, 1000, 500000); };
@@ -78,6 +79,44 @@ export function openPanel(ui: UI, name: string) {
       acts.pack = () => { if (ctx.stall.pickUp()) ui.closePanel(); };
       acts.clean = () => { R.advance(g, 12, ctx.acts.act()); s.dirt = 0; g.st.hygiene = clamp(g.st.hygiene - 1.5, 0, 100); sfx('splash'); toast('Lau dọn quầy sạch bong.', 'good'); };
       acts.dump = () => { const lost = s.ready.reduce((a, x) => a + x.n * x.cost, 0) + purge(s.store).lost; s.ready = []; g.led.loss += lost; toast(`Đổ bỏ đồ ế và đồ hỏng (${money(lost)}).`, 'info'); };
+      acts.hireChef = (i) => {
+        const d = R.CHEF_POOL[i] ?? R.CHEF_POOL[0];
+        if (!R.hireChef(g, d)) { toast(`Không đủ ${money(d.wage)} ứng lương ngày đầu cho ${d.name}.`, 'bad', 'cash'); return; }
+        sfx('coin'); toast(`Đã nhận phụ bếp ${d.name}! Cốt sơ chế giữ tươi lâu ×1,5 và tự nấu phụ khi khay vơi.`, 'good', 'heart');
+      };
+      acts.fireChef = () => {
+        const c = R.fireChef(g);
+        if (c) toast(`Đã cho phụ bếp ${c.name} nghỉ việc.`, 'info', 'heart');
+      };
+      acts.cookNow = () => {
+        const r = R.chefAutoCook(g);
+        if (r) { sfx('good'); ctx.stall.refresh(); toast(`Phụ bếp ${g.chef?.name} vừa chuẩn bị thêm ${r.name.toLowerCase()}!`, 'good', 'dish'); }
+        else toast('Khay đang đủ món hoặc thiếu nguyên liệu/chưa mở bán.', 'warn');
+      };
+      acts.serveBook = (id) => {
+        const res = R.fulfillBooking(g, id);
+        if (!res.ok) { toast(res.why ?? 'Chưa phục vụ được đoàn đặt bàn.', 'warn'); sfx('nope'); return; }
+        sfx('coin'); ctx.stall.refresh();
+        toast(`Đã phục vụ đoàn đặt bàn: thu ${money(res.rev)} + thưởng đặt bàn ${money(res.bonus)}, uy tín +0,8!`, 'good', 'star', true);
+      };
+      acts.openBranch = (_i, e) => {
+        const spotId = e.dataset.k!, mgr = R.BRANCH_MANAGERS[+(e.dataset.m ?? 0)] ?? R.BRANCH_MANAGERS[0];
+        const res = R.openBranch(g, spotId, mgr);
+        if (!res.ok) { toast(res.why ?? 'Không mở được chi nhánh.', 'bad', 'cash'); return; }
+        sfx('buy'); ctx.stall.refresh();
+        const sp = SPOTS.find((x) => x.id === spotId);
+        toast(`Khai trương Chi nhánh 2 tại ${sp?.name ?? spotId} do ${mgr.name} trông coi!`, 'good', 'shop', true);
+      };
+      acts.toggleBranch = () => {
+        const on = R.toggleBranch(g);
+        ctx.stall.refresh();
+        toast(on ? 'Đã mở bán lại Chi nhánh 2.' : 'Đã tạm đóng Chi nhánh 2.', 'info', 'shop');
+      };
+      acts.closeBranch = () => {
+        R.closeBranch(g);
+        ctx.stall.refresh();
+        toast('Đã đóng hẳn Chi nhánh 2.', 'info', 'shop');
+      };
       let body = '';
       if (tab === 'menu') {
         const known = RECIPE_LIST.filter((r) => g.rec[r.id].known);
@@ -97,12 +136,42 @@ export function openPanel(ui: UI, name: string) {
         body = `<div class="grid2"><div><h4>Trong quầy (${weightOf(s.store).toFixed(1).replace('.', ',')}/${T.cap} kg)${chilled ? ' · đang ướp đá' : ''}</h4>${stackList(s.store, (_s, i) => `<button class="btn small" data-a="toBag" data-i="${i}">› Túi</button>`, 'Quầy chưa có nguyên liệu.')}</div><div><h4>Trong túi (${R.bagWeight(g).toFixed(1).replace('.', ',')}/${R.carryCap(g)} kg)</h4>${stackList(g.bag, (_s, i) => `<button class="btn small" data-a="toStall" data-i="${i}">› Quầy</button>`, 'Túi trống.')}</div></div>` +
           (s.preps.length ? `<h4>Đã sơ chế</h4>${s.preps.map((p) => `<span class="tag ${R.holdFactor(g, RECIPES[p.rid], p.at) < 1 ? 'warn' : 'good'}">${RECIPES[p.rid].short}: ${p.n} phần · ${Math.round(p.q * 100)}đ${R.holdFactor(g, RECIPES[p.rid], p.at) < 1 ? ' · để lâu, kém ngon' : ''}</span>`).join('')}` : '') +
           (R.has(g, 'thungda') && !chilled ? '<p class="muted">Có thùng đá nhưng chưa có đá viên — mua đá ở tạp hoá Cô Ba để giữ lạnh thịt cá.</p>' : !R.has(g, 'thungda') ? '<p class="muted">Chưa có thùng đá: thịt cá để ngoài trời nóng rất mau hỏng.</p>' : '');
+      } else if (tab === 'mgmt') {
+        const bks = R.ensureBookings(g);
+        body = `<h4>Phụ bếp nhà hàng</h4>` + (g.chef
+          ? `<div class="item"><div class="grow"><b>${g.chef.name} <span class="tag good">đang làm</span></b><small>Lương ${money(g.chef.wage)}/ngày · Giữ cốt sơ chế tươi lâu ×1,5 · Nấu dễ hơn · Tự nấu bù khi khay vơi</small></div><button class="btn small green${!s.open ? ' off' : ''}" data-a="cookNow">Nấu phụ ngay</button><button class="btn small red" data-a="fireChef">Cho nghỉ</button></div>`
+          : `<p class="muted">Thuê đầu bếp phụ đứng phòng bếp sau để giữ cốt sơ chế lâu hỏng (×1,5), thao tác nấu dễ hơn và tự động làm thêm món khi khay vơi:</p><div class="list">${R.CHEF_POOL.map((c, i) => `<div class="item"><div class="grow"><b>${c.name} — ${money(c.wage)}/ngày</b><small>${c.bio}</small></div><button class="btn small green${g.cash < c.wage ? ' off' : ''}" data-a="hireChef" data-i="${i}">Thuê</button></div>`).join('')}</div>`);
+        body += `<h4>Sổ đặt bàn trước hôm nay (Ngày ${g.day + 1})</h4>` + (bks.length
+          ? `<div class="list">${bks.map((b) => {
+              const r = RECIPES[b.rid], rd = R.readyCount(g, b.rid), ok = !b.done && rd >= b.pax;
+              return `<div class="item${b.done ? ' off' : ''}"><div class="grow"><b>${b.name} (${b.pax} khách · hẹn ${hhmm(b.hour * 60)})</b><small>Đặt ${b.pax} phần <b>${r.name}</b> · Thưởng giữ bàn +${money(b.bonus)} · Đang có sẵn ${rd}/${b.pax} phần</small></div>${b.done ? '<span class="tag good">ĐÃ PHỤC VỤ</span>' : `<button class="btn small green${ok ? '' : ' off'}" data-a="serveBook" data-i="${b.id}">Phục vụ đoàn</button>`}</div>`;
+            }).join('')}</div>`
+          : '<p class="muted">Hôm nay chưa có đoàn đặt bàn.</p>');
+        if (s.tier >= 7) {
+          const br = g.branch, mainSold = Math.max(0, g.led.sold - (br?.todaySold ?? 0)), mainRev = Math.max(0, g.led.revenue - (br?.todayRev ?? 0));
+          body += `<h4>Quản lý Chuỗi cửa hàng & Chi nhánh 2</h4>`;
+          if (br && br.spot) {
+            const bsp = SPOTS.find((x) => x.id === br.spot);
+            body += `<div class="grid2"><div><h4>Trụ sở chính (${ctx.stall.spot()?.name ?? 'Chưa đặt'})</h4><div class="kv"><span>Số phần bán hôm nay</span><b>${mainSold} phần</b></div><div class="kv"><span>Doanh thu tại chỗ</span><b class="pos">+${money(mainRev)}</b></div></div>
+              <div><h4>Chi nhánh 2 (${bsp?.name ?? br.spot})</h4><div class="kv"><span>Quản lý trông coi</span><b>${br.manager} (${money(br.wage)}/ngày)</b></div><div class="kv"><span>Trạng thái</span><b class="${br.open ? 'pos' : 'neg'}">${br.open ? 'Đang mở bán (7h–21h)' : 'Tạm đóng'}</b></div><div class="kv"><span>Hôm nay đã bán</span><b>${br.todaySold} phần</b></div><div class="kv"><span>Doanh thu Chi nhánh 2</span><b class="pos">+${money(br.todayRev)}</b></div><div class="kv"><span>Giá vốn nguyên liệu</span><b class="neg">−${money(br.todayCost)}</b></div><div class="kv sum"><span>Lãi gộp Chi nhánh 2</span><b class="${br.todayRev - br.todayCost < 0 ? 'neg' : 'pos'}">${money(br.todayRev - br.todayCost)}</b></div><small class="muted">Lũy kế Chi nhánh 2: ${br.totalSold} phần · ${money(br.totalRev)}</small></div></div>
+              <div style="display:flex;gap:.4em;flex-wrap:wrap;margin-top:.5em"><button class="btn small ${br.open ? 'yellow' : 'green'}" data-a="toggleBranch">${br.open ? 'Tạm đóng Chi nhánh 2' : 'Mở bán Chi nhánh 2'}</button><button class="btn small red" data-a="closeBranch">Giải thể / Đổi địa điểm</button></div>`;
+          } else {
+            const cands = R.branchSpots(g);
+            body += `<p class="muted">Chọn địa điểm mở Chi nhánh 2 hoạt động song song (tự động bán hàng từ 7h–21h dưới sự điều hành của Quản lý ${R.BRANCH_MANAGERS[0].name}):</p><div class="list">${cands.map((bs) => {
+              const fee = bs.fee + R.BRANCH_MANAGERS[0].wage;
+              return `<div class="item"><div class="grow"><b>${bs.name}</b><small>Phí chỗ ${money(bs.fee)}/ngày + lương Quản lý ${money(R.BRANCH_MANAGERS[0].wage)}/ngày · Lượng khách ×${bs.traffic}</small></div><button class="btn small green${g.cash < fee ? ' off' : ''}" data-a="openBranch" data-k="${bs.id}" data-m="0">Mở — ${money(fee)}</button></div>`;
+            }).join('')}</div>`;
+          }
+        }
       } else {
         const sp = ctx.stall.spot(), rate = R.arrivalRate(g);
-        body = `<div class="grid2"><div><div class="kv"><span>Loại quầy</span><b>${T.name}</b></div><div class="kv"><span>Vị trí</span><b>${sp ? sp.name : s.where === 'home' ? 'Ở chỗ ở' : '—'}</b></div><div class="kv"><span>Phí chỗ</span><b>${sp ? (sp.fee ? money(sp.fee) + '/ngày' : 'miễn phí') : '—'}</b></div><div class="kv"><span>Tình trạng</span><b class="${s.cond < 40 ? 'neg' : ''}">${Math.round(s.cond)}%</b></div><div class="kv"><span>Độ bẩn</span><b class="${s.dirt > 40 ? 'neg' : ''}">${Math.round(s.dirt)}%</b></div><div class="kv"><span>Độ thu hút</span><b>${Math.round(R.stallAppeal(g) * 100)}%</b></div><div class="kv"><span>Ước lượng khách</span><b>${s.open ? '~' + rate.toFixed(1).replace('.', ',') + ' người/giờ' : 'chưa mở'}</b></div>${R.seatCount(g) ? `<div class="kv"><span>Chỗ ngồi</span><b>${R.seatCount(g)} ghế${R.dineIn(g) ? ' trong nhà' : ' nhựa ngoài sân'}</b></div>` : ''}<div class="kv"><span>Buổi bán</span><b>${R.periodName(g)}</b></div>${R.dineIn(g) ? `<div class="kv"><span>Hợp buổi</span><b>${R.periodMenu(g).length} món</b></div>` : ''}</div>
-          <div><p class="muted">${sp ? sp.note : 'Gánh quầy tới một chỗ bán (vòng vàng) để bày hàng.'} Bảng hiệu, ô dù, đèn, bàn ghế đều làm quầy hút khách hơn. Quầy bẩn hoặc người bán lem luốc sẽ bị chê và dễ bị phạt khi kiểm tra.</p>' + (T.tier >= 3 && g.flags.sapNo ? '<p class="neg">Đang nợ phí chỗ — mở bán sẽ trừ tiền trước.</p>' : '') + '<div style="display:flex;gap:.4em;flex-wrap:wrap"><button class="btn${s.dirt < 3 ? ' off' : ''}" data-a="clean">Lau dọn quầy (12 phút)</button><button class="btn${s.ready.length || s.store.some(isSpoiled) ? '' : ' off'}" data-a="dump">Đổ bỏ đồ ế, đồ hỏng</button></div></div></div>`;
+        body = `<div class="grid2"><div><div class="kv"><span>Loại quầy</span><b>${T.name}</b></div><div class="kv"><span>Vị trí</span><b>${sp ? sp.name : s.where === 'home' ? 'Ở chỗ ở' : '—'}</b></div><div class="kv"><span>Phí chỗ</span><b>${sp ? (sp.fee ? money(sp.fee) + '/ngày' : 'miễn phí') : '—'}</b></div><div class="kv"><span>Tình trạng</span><b class="${s.cond < 40 ? 'neg' : ''}">${Math.round(s.cond)}%</b></div><div class="kv"><span>Độ bẩn</span><b class="${s.dirt > 40 ? 'neg' : ''}">${Math.round(s.dirt)}%</b></div><div class="kv"><span>Độ thu hút</span><b>${Math.round(R.stallAppeal(g) * 100)}%</b></div><div class="kv"><span>Ước lượng khách</span><b>${s.open ? '~' + rate.toFixed(1).replace('.', ',') + ' người/giờ' : 'chưa mở'}</b></div>${R.seatCount(g) ? `<div class="kv"><span>Chỗ ngồi</span><b>${R.seatCount(g)} ghế${R.dineIn(g) ? ' trong nhà' : ' nhựa ngoài sân'}</b></div>` : ''}<div class="kv"><span>Buổi bán</span><b>${R.periodName(g)}</b></div>${R.dineIn(g) ? `<div class="kv"><span>Hợp buổi</span><b>${R.periodMenu(g).length} món</b></div>` : ''}${R.isRestaurant(g) ? `<div class="kv"><span>Phụ bếp</span><b>${g.chef ? g.chef.name : 'Chưa thuê'}</b></div>` : ''}${R.isChain(g) ? `<div class="kv"><span>Chi nhánh 2</span><b>${g.branch?.spot ? (SPOTS.find((x) => x.id === g.branch!.spot)?.name ?? g.branch.spot) : 'Chưa mở'}</b></div>` : ''}</div>
+          <div><p class="muted">${sp ? sp.note : 'Gánh quầy tới một chỗ bán (vòng vàng) để bày hàng.'} Bảng hiệu, ô dù, đèn, bàn ghế đều làm quầy hút khách hơn. Quầy bẩn hoặc người bán lem luốc sẽ bị chê và dễ bị phạt khi kiểm tra.</p>${T.tier >= 3 && g.flags.sapNo ? '<p class="neg">Đang nợ phí chỗ — mở bán sẽ trừ tiền trước.</p>' : ''}<div style="display:flex;gap:.4em;flex-wrap:wrap"><button class="btn${s.dirt < 3 ? ' off' : ''}" data-a="clean">Lau dọn quầy (12 phút)</button><button class="btn${s.ready.length || s.store.some(isSpoiled) ? '' : ' off'}" data-a="dump">Đổ bỏ đồ ế, đồ hỏng</button></div></div></div>`;
       }
-      draw(`${ic('shop')} ${T.name}`, [['menu', 'Thực đơn'], ['store', 'Kho quầy'], ['info', 'Quầy']], body, placed ? `<button class="btn ${s.open ? 'red' : 'green'}" data-a="open">${s.open ? 'Đóng quầy' : 'MỞ BÁN'}</button>${T.tier < 3 ? `<button class="btn" data-a="pack">Dọn hàng, mang đi</button>` : ''}<span class="muted">Hôm nay: ${g.led.sold} phần · ${money(g.led.revenue + g.led.tips)}</span>` : T.tier < 3 ? `<button class="btn" data-a="pack">Mang quầy đi</button>` : `<span class="muted">Chạm vào vòng sáng vàng ngoài phố để đặt sạp.</span>`);
+      const stallTabs: [string, string][] = s.tier >= 6
+        ? [['menu', 'Thực đơn'], ['store', 'Kho quầy'], ['info', 'Quầy'], ['mgmt', s.tier >= 7 ? 'Quản lý & Chi nhánh' : 'Đặt bàn & Phụ bếp']]
+        : [['menu', 'Thực đơn'], ['store', 'Kho quầy'], ['info', 'Quầy']];
+      draw(`${ic('shop')} ${T.name}`, stallTabs, body, placed ? `<button class="btn ${s.open ? 'red' : 'green'}" data-a="open">${s.open ? 'Đóng quầy' : 'MỞ BÁN'}</button>${T.tier < 3 ? `<button class="btn" data-a="pack">Dọn hàng, mang đi</button>` : ''}<span class="muted">Hôm nay: ${g.led.sold} phần · ${money(g.led.revenue + g.led.tips)}</span>` : T.tier < 3 ? `<button class="btn" data-a="pack">Mang quầy đi</button>` : `<span class="muted">Chạm vào vòng sáng vàng ngoài phố để đặt sạp.</span>`);
     } else if (name === 'home') {
       const h = HOUSING[g.housing];
       acts.take = (i) => { const k = moveStack(g.home, g.bag, i, 1e9, R.carryCap(g) - R.bagWeight(g)); if (!k) toast('Túi đầy rồi.', 'warn'); else sfx('pick'); };
