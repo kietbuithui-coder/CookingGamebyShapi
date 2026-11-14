@@ -54,7 +54,7 @@ Nên **xoay ngang** điện thoại và bấm **Toàn màn hình** ở màn hìn
 - **60 món** (4 món biết sẵn, 56 món học từ người trong phố), từ trà đá 5.000₫ tới lẩu bò 80.000₫ — bánh mì, xôi, bánh xèo, bánh khọt, bún bò Huế, cơm gà, ốc luộc, bánh canh cua…
 - **Thang mở công thức:** mỗi lần lên cấp (1–10) chỉ tự nghĩ ra **một món lúc cấp 1, sau đó hai món**, luôn là món rẻ nhất còn thiếu trong số món tay nghề mình đã đủ — nên món mở sau bao giờ cũng lãi hơn món mở trước. Học tại quán thì mỗi quán chỉ gợi ý **một món rẻ nhất** và chỉ khi đã nói chuyện đủ nhiều với người bán (3 lần, hoặc 25 uy tín).
 - **Bán hàng:** 4 chỗ bán (phí 0–60.000₫/ngày), thực đơn và giá tự đặt, khách có túi tiền/khẩu vị/độ kiên nhẫn riêng (16 nhóm khách, 11 khách quen), đánh giá sao, tiền boa, uy tín.
-- **4 bậc quầy chơi được:** gánh hàng rong → xe đẩy → **sạp cố định** (9.000.000₫: 90 kg, bày 10 món, 7 khách xếp hàng, có mái che sẵn, phí chỗ 20.000–60.000₫/ngày tự trừ đầu ngày, đặt rồi không dời được, để qua đêm không bị dỡ trộm) → **quán ăn nhỏ** (24.000.000₫: 150 kg, bày 16 món, 9 khách, quầy gỗ 4,4 m có mái tôn, **bốn chỗ ngồi ăn tại chỗ** cho khách đợi lâu hơn; phải dựng ở *mặt bằng có sân* — Phố Văn Phòng 160.000₫/ngày hoặc Khu Căn Hộ 120.000₫/ngày); 21 món đồ nghề (bếp gas, thùng đá, ô dù, bàn ghế, bảng hiệu, ba mẫu điện thoại…).
+- **5 bậc quầy chơi được:** gánh hàng rong → xe đẩy → **sạp cố định** (9.000.000₫: 90 kg, bày 10 món, 7 khách xếp hàng, có mái che sẵn, phí chỗ 20.000–60.000₫/ngày tự trừ đầu ngày, đặt rồi không dời được, để qua đêm không bị dỡ trộm) → **quán ăn nhỏ** (24.000.000₫: 150 kg, bày 16 món, 9 khách, quầy gỗ 4,4 m có mái tôn, **bốn chỗ ngồi ăn tại chỗ** cho khách đợi lâu hơn; phải dựng ở *mặt bằng có sân* — Phố Văn Phòng 160.000₫/ngày hoặc Khu Căn Hộ 120.000₫/ngày) → **quán có chỗ ngồi** (58.000.000₫: 200 kg, giữ lạnh 70 kg, bày 20 món, 12 khách, hiên mái tôn + nền gạch bông ca-rô + **ba bàn gỗ sáu ghế tựa lưng** có khăn giấy và nước tương, khách ngồi ăn lâu hơn ×1,9, ưu tiên **món hợp buổi** sáng/trưa/chiều/khuya và ăn ngon ≥ 3,8★ hay **gọi thêm nước hoặc tráng miệng**); 22 món đồ nghề (bếp gas, thùng đá, ô dù, bàn ghế, bảng hiệu, ba mẫu điện thoại…).
 - **Tiền bạc:** sổ sách lời lỗ từng ngày, giá vốn từng món, gửi tiết kiệm, vay ngân hàng, vay nóng Hùng Sẹo, phá sản và làm lại.
 - **22 sự kiện:** lễ hội, ngày lĩnh lương, giá thịt tăng, cúp điện, cấm đường, đối thủ mở quán, thanh tra vệ sinh, nhà phê bình, khách VIP, thu tiền bảo kê, khách quậy, khách quen xin ăn chịu, trộm đêm…
 - **Người lạ và người quen:** người đi đường chỉ hiện theo vẻ ngoài (Người lạ, Học sinh, Người vô gia cư, Người lớn tuổi, Khách du lịch, Công an…), không lộ tên hay nghề. Người đứng quầy phải nói chuyện một lần mới biết tên; khách quen phải bán cho họ một lần.
@@ -75,17 +75,17 @@ Nên **xoay ngang** điện thoại và bấm **Toàn màn hình** ở màn hìn
 
 ## Chưa có (so với bản mô tả đầy đủ)
 
-- **Số lượng nội dung:** 60/60 món; 8/8 kiểu chỗ ở; 4/7 bậc kinh doanh chơi được. Quán có chỗ ngồi, nhà hàng bình dân, chuỗi cửa hàng chưa làm.
+- **Số lượng nội dung:** 60/60 món; 8/8 kiểu chỗ ở; 5/7 bậc kinh doanh chơi được. Nhà hàng bình dân (bậc 6) và chuỗi cửa hàng (bậc 7) chưa làm.
 - **Băng nhóm:** mới chỉ có sự kiện thu tiền bảo kê và chủ nợ Hùng Sẹo; chưa có hệ thống lãnh địa, đánh nhau hay nhiệm vụ băng nhóm.
-- Ngoại hình mới đổi được tóc, áo, quần, giày và kính ở hai tiệm trong chợ; chưa có gương ở nhà, chưa đổi được dáng người, chiều cao hay mũ trong game, và chưa có nội thất trong quán cho khách ngồi ăn.
+- Ngoại hình mới đổi được tóc, áo, quần, giày và kính ở hai tiệm trong chợ; chưa có gương ở nhà, chưa đổi được dáng người, chiều cao hay mũ trong game.
 - Mô hình 3D dựng bằng mã (hình khối cách điệu), không phải mô hình dựng tay chi tiết. Nội thất một số cửa hàng còn sơ sài.
 - Chưa có lưu đám mây; xoá dữ liệu trình duyệt là mất bản lưu.
 
-Danh sách đầy đủ những gì còn lại (3 bậc kinh doanh, băng nhóm, tuỳ biến ngoại hình, hiệu năng, cân chỉnh) nằm ở [`TODO.md`](TODO.md).
+Danh sách đầy đủ những gì còn lại (2 bậc kinh doanh, băng nhóm, tuỳ biến ngoại hình, hiệu năng, cân chỉnh) nằm ở [`TODO.md`](TODO.md).
 
 ## Đã kiểm thử gì
 
-**Tự động:** 260 bài kiểm thử (`npm test`) cho toàn bộ luật chơi — giá cả, giá vốn, khách mua hay bỏ đi, đánh giá, hư hỏng nguyên liệu, nợ, thời tiết, sự kiện, nâng cấp bản lưu, tính nhất quán dữ liệu, và một bài mô phỏng 45 ngày liên tục.
+**Tự động:** 278 bài kiểm thử (`npm test`) cho toàn bộ luật chơi — giá cả, giá vốn, khách mua hay bỏ đi, đánh giá, hư hỏng nguyên liệu, nợ, thời tiết, sự kiện, nâng cấp bản lưu, tính nhất quán dữ liệu, và một bài mô phỏng 45 ngày liên tục.
 
 **Chạy thật trong Chrome không giao diện** (màn 844×390 ngang và 390×844 dọc, giả lập cảm ứng), không có lỗi console: vào game, chơi mới/chơi tiếp, lưu và nạp lại; đi bằng cần ảo và bàn phím, vuốt nhìn, va chạm tường; xin tiền, nhặt ve chai, bới thùng rác, bán ve chai, vác hàng, rửa chén, giao hàng, cơm chay; mua đồ nghề; bốc hàng – mặc cả – trả tiền; gánh/đẩy quầy, đặt quầy; cả 5 mini-game nấu ăn bằng thao tác chạm; mở bán, khách gọi món, làm món, giao món, nhận tiền và tiền boa; cả 6 nhân vật sự kiện (thanh tra, bảo kê, khách quậy, khách quen xin chịu, nhà phê bình, khách VIP); hội thoại với cả 38 nhân vật và 11 khách quen, chuyện của 6 nhân vật phụ, người xấc xược (ném giấy, khạc nhổ, đuổi theo), 16 biểu cảm trên cả 8 kiểu mặt, 8 kiểu tóc, người phụ việc xin việc – thuê – trò chuyện – cho nghỉ, góc nhìn thứ ba (phím V, thấy quần áo và kiểu tóc mình mua), tiệm cắt tóc Chú Bảy Kéo (8 kiểu tóc, 4 màu nhuộm, ngồi ghế nghỉ) và tiệm thời trang Cô Ngọc (áo, quần, giày, kính) trong chợ Xóm Chiều, xe cộ và chim trời; ngân hàng, vay nóng, ba mức chỗ ở mới (căn hộ, nhà riêng, tạp hoá kiêm nhà ở: cửa khoá, đòi uy tín, ngủ, đóng tiền tuần); ngất vì kiệt sức và tỉnh dậy ở Bệnh viện Phước An (khám bệnh, quầy thuốc, phòng hồi sức, nhận lại đồ thất lạc), đấm người đi đường (la lên, có người đuổi đánh, uy tín tụt) và nhảy tại chỗ; mua điện thoại ở tiệm Đồ Nghề, mở máy xem sổ thu chi – danh bạ – tin nhắn, gọi khách quen, nghe radio, sạc pin; thuê máy ở quán net (chơi game – lướt web – xem phim, sạc nhờ, nước ngọt, mỏi mắt sau 2 tiếng); xem ô tô đời cũ chạy trên đường, đua xe đạp chủ nhật với nhóm con gái (bấm ĐẠP đúng nhịp, thắng 40.000₫) và đu xích đu ở sân chơi; ngắm phố lúc tan tầm, người che dù khi mưa, hàng xóm đứng xem đua; bị công an gọi lại vì gây sự — nộp phạt, cãi, bỏ chạy hay theo về phường, vào buồng tạm giữ đập đá cho bớt giờ rồi được thả trước cửa đồn; ngủ và tổng kết ngày; phá sản và làm lại; ban ngày lẫn ban đêm với mưa nhỏ, mưa to, giông, ngập; nhãn người lạ / người quen; màn hình sắp xếp nút (kéo, đổi cỡ, lưu, tải lại, màn dọc).
 
@@ -115,7 +115,7 @@ Cần Node.js 20 trở lên.
 ```bash
 npm install
 npm run dev          # máy chủ phát triển, mở địa chỉ được in ra
-npm test             # 260 bài kiểm thử luật chơi
+npm test             # 278 bài kiểm thử luật chơi
 npm run build        # kiểm tra kiểu + đóng gói ra dist/
 npm run build:pages  # kiểm tra kiểu + kiểm thử + đóng gói ra docs/ (GitHub Pages)
 ```

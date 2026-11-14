@@ -6,6 +6,7 @@ export const GEAR_LIST: GearDef[] = [
   { id: 'xeday', name: 'Xe đẩy', price: 2400000, kind: 'stall', tier: 2, desc: 'Xe đẩy inox có mái che, chứa nhiều, bán nhanh.' },
   { id: 'sap', name: 'Sạp cố định', price: 9000000, kind: 'stall', tier: 3, desc: 'Sạp lớn có bàn ghế, đặt lâu dài một chỗ.' },
   { id: 'quanan', name: 'Quán ăn nhỏ', price: 24000000, kind: 'stall', tier: 4, desc: 'Mặt bằng có mái, bốn chỗ ngồi ăn tại chỗ, bày được 16 món.' },
+  { id: 'quanngoi', name: 'Quán có chỗ ngồi', price: 58000000, kind: 'stall', tier: 5, desc: 'Sáu chỗ ngồi bàn gỗ kê trong nhà, bày 20 món, 12 khách một lúc; khách ăn xong còn gọi thêm tráng miệng.' },
   { id: 'daothot', name: 'Dao & thớt', price: 45000, kind: 'tool', desc: 'Để cắt thái mọi thứ.', wear: 0.25 },
   { id: 'bepthan', name: 'Bếp than', price: 60000, kind: 'stove', desc: 'Rẻ, nướng thơm. Phải quạt, sợ mưa.', wear: 0.5 },
   { id: 'bepgas', name: 'Bếp gas mini', price: 280000, kind: 'stove', desc: 'Chỉnh lửa chính xác, dùng bình gas.', wear: 0.4 },
@@ -35,9 +36,11 @@ export const TIERS: TierDef[] = [
   { tier: 3, id: 'sap', name: 'Sạp cố định', cap: 90, coldCap: 30, queue: 7, speed: 0, menu: 10, visible: 1.35, trays: 20 },
   // Bậc 4: mặt bằng thuê theo ngày (phí chỗ cao hơn hẳn), khách ngồi ăn tại chỗ nên đợi lâu hơn và đông hơn.
   { tier: 4, id: 'quanan', name: 'Quán ăn nhỏ', cap: 150, coldCap: 55, queue: 9, speed: 0, menu: 16, visible: 1.5, trays: 32 },
+  // Bậc 5: sáu chỗ ngồi bàn gỗ kê trong nhà, khách ăn tại chỗ lâu hơn và gọi thêm món tráng miệng.
+  { tier: 5, id: 'quanngoi', name: 'Quán có chỗ ngồi', cap: 200, coldCap: 70, queue: 12, speed: 0, menu: 20, visible: 1.6, trays: 40 },
 ];
 /** Các bậc kinh doanh tiếp theo (đã lên kế hoạch, chưa mở trong bản chơi đầu). */
-export const FUTURE_TIERS = ['Quán có chỗ ngồi', 'Nhà hàng bình dân', 'Chuỗi cửa hàng'];
+export const FUTURE_TIERS = ['Nhà hàng bình dân', 'Chuỗi cửa hàng'];
 
 export interface HousingDef {
   id: string; name: string; rent: number; per: 'đêm' | 'tuần' | ''; safety: number; sleep: number; storage: number; cold: boolean; shower: boolean;

@@ -17,6 +17,18 @@ import * as PH from './phone';
 export const wx = (g: Game): WeatherDef => WEATHER[g.weather.now];
 export const level = (g: Game) => Math.min(10, Math.floor(Math.sqrt(g.xp / 30)));
 export const tier = (g: Game) => TIERS[g.stall.tier];
+/** Chỗ ngồi ăn tại chỗ: quán ăn nhỏ (bậc 4) bốn ghế nhựa, quán có chỗ ngồi (bậc 5) sáu ghế bàn gỗ. */
+export const seatCount = (g: Game) => (g.stall.tier >= 5 ? 6 : g.stall.tier >= 4 ? 4 : 0);
+/** Quán đã có chỗ ngồi trong nhà chưa (bậc 5): khách ăn lâu hơn và gọi thêm tráng miệng. */
+export const dineIn = (g: Game) => g.stall.tier >= 5;
+/** Bốn buổi trong ngày, khớp thứ tự `RecipeDef.meal`: sáng, trưa, chiều tối, khuya. */
+export const PERIODS = ['Buổi sáng', 'Buổi trưa', 'Buổi chiều', 'Khuya'] as const;
+export const mealSlot = (h: number) => (h < 10 ? 0 : h < 14.5 ? 1 : h < 20 ? 2 : 3);
+export const periodName = (g: Game) => PERIODS[mealSlot(hourOf(g))];
+/** Món này có đúng buổi không (điểm hợp buổi từ 0,8 trở lên). */
+export const fitsPeriod = (r: RecipeDef, h: number) => r.meal[mealSlot(h)] >= 0.8;
+/** Những món đang bật của quán mà hợp với buổi hiện tại — quán có chỗ ngồi ưu tiên bán mấy món này. */
+export const periodMenu = (g: Game) => menuOf(g).filter((r) => fitsPeriod(r, hourOf(g)));
 export const has = (g: Game, gear: string) => g.gear[gear] !== undefined && g.gear[gear] > 0;
 export const stove = (g: Game): 'bepgas' | 'bepthan' | null => (has(g, 'bepgas') ? 'bepgas' : has(g, 'bepthan') ? 'bepthan' : null);
 export const hasTool = (g: Game, t: string) => (t === 'bep' ? stove(g) !== null : has(g, t));
@@ -233,7 +245,7 @@ export function arrivalRate(g: Game): number {
   return rate;
 }
 export interface Persona { arch: ArchDef; budget: number; noise: number; regular?: string; likes?: string[]; }
-export interface Order { rid: string; n: number; price: number; ratio: number; line: string; mood: 'ok' | 'pricey' | 'cheap'; }
+export interface Order { rid: string; n: number; price: number; ratio: number; line: string; mood: 'ok' | 'pricey' | 'cheap'; /** món gọi thêm sau khi ăn xong (quán có chỗ ngồi) */ more?: boolean; }
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 export function say(tpl: string, a: ArchDef, fem: boolean, g: Game, extra: Record<string, string | number> = {}): string {
   const self = a.self[fem ? 1 : 0], you = a.you.replace('{ac}', g.ac);
@@ -253,16 +265,25 @@ export function decide(g: Game, p: Persona, fem: boolean, R: RNG = rnd): { order
   if (g.st.hygiene < 18 && R.chance(0.5 - g.st.hygiene / 60)) return { leave: say(R.pick(LINES.dirty), p.arch, fem, g), why: 'dirty' };
   const menu = menuOf(g).filter((r) => available(g, r));
   if (!menu.length) return { leave: say(R.pick(LINES.none), p.arch, fem, g), why: 'none' };
-  const slot = h < 10 ? 0 : h < 14.5 ? 1 : h < 20 ? 2 : 3;
-  let best: RecipeDef | null = null, bu = -1, br = 1;
+  const slot = mealSlot(h), w5 = g.stall.tier >= 5;
+  // Chọn món theo trọng số chứ không phải "món điểm cao nhất": thực đơn càng nhiều món thì khách
+  // càng gọi đa dạng, và món đúng buổi (quán có chỗ ngồi) được ưu tiên rõ rệt.
+  const cands: { r: RecipeDef; u: number; ratio: number }[] = [];
+  let sum = 0;
   for (const r of menu) {
     const price = g.rec[r.id].price, ratio = price / fairPrice(g, r, p, d);
     let u = (p.arch.pref[r.cat] ?? 0.8) * (0.35 + r.meal[slot]) * (1 + 0.35 * w.hot * r.hot) * (m.demand[r.cat] ?? 1) * Math.pow(1 / ratio, 1.2) * R.range(0.7, 1.3);
     if (p.likes?.includes(r.cat)) u *= 1.6;
+    // Quán có chỗ ngồi: khách ăn tại chỗ nên thích món đúng buổi hơn hẳn (sáng ăn sáng, trưa ăn cơm…).
+    if (w5 && r.meal[slot] >= 0.8) u *= 1.35;
     if (price > p.budget) u *= 0.05;
-    if (u > bu) { bu = u; best = r; br = ratio; }
+    if (!(u > 0)) continue;
+    cands.push({ r, u, ratio }); sum += u;
   }
-  const r = best!, price = g.rec[r.id].price;
+  if (!cands.length) return { leave: say(R.pick(LINES.none), p.arch, fem, g), why: 'none' };
+  let roll = R.range(0, sum), pick = cands[cands.length - 1];
+  for (const c of cands) { roll -= c.u; if (roll <= 0) { pick = c; break; } }
+  const r = pick.r, br = pick.ratio, price = g.rec[r.id].price;
   const k = 5 * r.elastic * Math.sqrt(p.arch.sens), pBuy = price > p.budget * 1.25 ? 0.03 : 1 / (1 + Math.exp((br - 1.15) * k));
   if (!R.chance(pBuy)) return { leave: say(R.pick(LINES.pricey_leave), p.arch, fem, g, { dish: r.name.toLowerCase(), price: money(price) }), why: 'price' };
   let n = 1;
@@ -276,6 +297,21 @@ export function decide(g: Game, p: Persona, fem: boolean, R: RNG = rnd): { order
 }
 export interface Review { stars: number; rep: number; tip: number; line: string; face: number; back: boolean; }
 /** Khách đánh giá sau khi nhận món. quality 0–1, wait: tỉ lệ thời gian đã chờ so với sự kiên nhẫn. */
+/** Khách ngồi ăn xong có thể gọi thêm một món tráng miệng / đồ uống (chỉ quán có chỗ ngồi, bậc 5). */
+export function secondOrder(g: Game, p: Persona, first: Order, fem = false, R: RNG = rnd): Order | null {
+  if (!dineIn(g)) return null;
+  const slot = mealSlot(hourOf(g)), left = p.budget - first.price * first.n;
+  const cand = menuOf(g).filter((r) => r.id !== first.rid && available(g, r) && ['che', 'nuoc', 'anvat'].includes(r.cat) && r.meal[slot] >= 0.6 && g.rec[r.id].price <= left);
+  if (!cand.length) return null;
+  // Ăn món nhẹ (bánh tráng, gỏi cuốn…) thì dễ gọi thêm; món no thì thôi.
+  const light = RECIPES[first.rid].fill < 30;
+  if (!R.chance(light ? 0.5 : 0.3)) return null;
+  const r = cand[Math.min(cand.length - 1, Math.floor(R.range(0, cand.length)))];
+  const price = g.rec[r.id].price;
+  const line = say(R.pick(LINES.order_more), p.arch, fem, g, { dish: r.name.toLowerCase(), price: money(price) });
+  return { rid: r.id, n: 1, price, ratio: price / fairPrice(g, r, p, districtAt(g.stall.x, g.stall.z)), line, mood: 'ok', more: true };
+}
+
 export function review(g: Game, p: Persona, fem: boolean, o: Order, quality: number, wait: number, R: RNG = rnd): Review {
   const value = clamp(1.35 - o.ratio, 0, 1), hyg = (g.st.hygiene < 30 ? (30 - g.st.hygiene) / 100 : 0) + clamp(g.stall.dirt / 100) * 0.12;
   const service = (g.st.mood < 25 ? -0.05 : g.st.mood > 70 ? 0.03 : 0) + (has(g, 'ghe') ? 0.03 : 0);

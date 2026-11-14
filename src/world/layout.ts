@@ -145,8 +145,8 @@ export const SPOTS: Spot[] = [
   { id: 'cho', name: 'Cổng Chợ', x: -37.2, z: 9, yaw: Math.PI / 2, fee: 30000, traffic: 1.35, district: 'cho', minTier: 1, note: 'Đông người qua lại, hay bị kiểm tra.' },
   { id: 'cv', name: 'Cổng Công Viên', x: 41, z: -37.3, yaw: 0, fee: 20000, traffic: 1.05, district: 'congvien', minTier: 1, note: 'Gia đình, sinh viên, khách du lịch.' },
   spotFromLot('vp', 'Phố Văn Phòng', 60000, 1.25, 2, 'Khách chịu chi nhưng khó tính. Cần xe đẩy trở lên.'),
-  spotFromLot('matbang_tb', 'Mặt bằng Phố Văn Phòng', 160000, 1.45, 4, 'Có sân kê bàn ghế, khách văn phòng ăn trưa rất đông. Cần quán ăn nhỏ.'),
-  spotFromLot('matbang_dc', 'Mặt bằng Khu Căn Hộ', 120000, 1.3, 4, 'Cạnh quán cà phê và chung cư, khách ăn sáng – ăn trưa cả ngày. Cần quán ăn nhỏ.'),
+  spotFromLot('matbang_tb', 'Mặt bằng Phố Văn Phòng', 160000, 1.45, 4, 'Có sân kê bàn ghế, khách văn phòng ăn trưa rất đông. Cần quán ăn nhỏ trở lên.'),
+  spotFromLot('matbang_dc', 'Mặt bằng Khu Căn Hộ', 120000, 1.3, 4, 'Cạnh quán cà phê và chung cư, khách ăn sáng – ăn trưa cả ngày. Cần quán ăn nhỏ trở lên.'),
 ];
 export const spotById = (id: string) => SPOTS.find((s) => s.id === id);
 
