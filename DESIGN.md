@@ -230,17 +230,44 @@ giường là bị kéo lại kèm lời nhắc. Hết hạn thì `acts.jailOver
 về (khi đang bị giữ), và chuyện kiểm tra lấn chiếm lòng đường. Chip **"Bị để ý xx%"** hiện ở góc phải HUD,
 đỏ khi từ 45% trở lên.
 
+### 4.17 Điện thoại
+
+Ba mẫu máy bán ở tiệm Đồ Nghề Ba Tài, bày trên tủ kính giữa tiệm (bấm vào từng máy để xem giá):
+
+| Máy | Giá | Chức năng | Pin |
+|---|---|---|---|
+| Cục gạch (Nokia 1110i) | 180.000₫ | sổ thu chi, danh bạ, tin nhắn | 54 giờ |
+| Nắp gập (Samsung E250) | 520.000₫ | thêm radio FM, nghe nhạc | 46 giờ |
+| Cảm ứng (O2 Xphone) | 1.450.000₫ | thêm lướt web WAP | 40 giờ |
+
+**Mở máy** bằng nút điện thoại trên HUD (chỉ hiện khi đã có máy) hoặc phím `P`. Chưa có máy thì bảng
+nhắc bán ở đâu. Máy chỉ mở được khi còn pin.
+
+- **Pin:** tụt 2,2%/giờ trong game khi để trong túi, cộng thêm khi nghe radio (−3%), nghe nhạc (−4%), lướt WAP
+  (−6%), gọi điện (−2%). Hết pin thì mọi chức năng khoá. Sạc đầy khi ngủ ở chỗ trọ trở lên (nhà có ổ điện);
+  gầm cầu và ghế đá công viên thì không. Tạp hoá Cô Ba và MiniMart cho **sạc nhờ 5.000₫** (ngồi chờ 20 phút).
+- **Sổ thu chi:** đúng bảng của sổ tay giấy (doanh thu, giá vốn, tiền nhà, lãi lỗ, khách, điểm sao). Sổ giấy
+  trong sổ tay vẫn giữ — ai chưa có máy thì không mất bảng này.
+- **Danh bạ:** người đã quen + khách quen từng ghé. Gọi khách quen tốn 1.000₫ cước, mỗi người một lần một
+  ngày, thân thêm 2 điểm (khách quen nhớ mặt, mai ghé sớm hơn).
+- **Tin nhắn:** dựng từ tình hình hiện tại chứ không lưu vào bản lưu — nhắc khoản vay (kèm số ngày trễ), nhắc
+  tiền phòng, tin của khách quen (khi thân từ 15 điểm trở lên), tin lừa "trúng thưởng xe Wave", dự báo thời
+  tiết của tổng đài 1080. Chưa đọc thì có chấm đỏ trên nút điện thoại.
+- **Giải trí:** radio 15 phút (+6 tinh thần), nhạc 15 phút (+8), WAP 10 phút (+5).
+
+Mua máy mới thì máy cũ tự bán lại (chỉ giữ một máy trong ba lô). Bán máy ở tiệm thì mất sim.
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
 - **Chạm nhanh** (nhấc tay trong 0,6 giây, xê dịch dưới 14 px) ở bất kỳ đâu = chạm vào vật gần điểm chạm nhất trong bán kính `max(64 px, 11% chiều cao)`. Thời lượng đo bằng mốc thời gian của chính sự kiện nên máy giật vẫn nhận đúng.
 - Nút tròn vàng thực hiện hành động với vật đang ở giữa màn hình.
 - Trong mini-game, mọi thao tác trỏ được chuyển thẳng cho mini-game.
-- **Người chơi tự xếp nút** (`ui/layout.ts`): sáu nhóm — nút tương tác, nút chạy, nút đấm, nút nhảy, hàng nút túi/sổ/bản đồ/cài đặt, các nút khi nấu ăn. Bàn phím: `E`/`Enter` tương tác, `F` đấm, `Space` nhảy, `R` hành động phụ, `M`/`B`/`Tab`, `Esc`. Mỗi nhóm lưu độ lệch so với chỗ mặc định tính theo phần bề ngang/bề cao màn hình và một hệ số phóng 0,6–1,8, riêng cho màn ngang và màn dọc. Áp bằng `transform`, và mỗi lần áp đều ép nút nằm trọn trong màn hình. Cỡ chung của giao diện là biến CSS `--ui-scale` (0,8–1,4) nhân vào cỡ chữ gốc; mọi kích thước HUD đều tính bằng `em` nên phóng theo.
+- **Người chơi tự xếp nút** (`ui/layout.ts`): sáu nhóm — nút tương tác, nút chạy, nút đấm, nút nhảy, hàng nút túi/sổ/bản đồ/cài đặt, các nút khi nấu ăn. Bàn phím: `E`/`Enter` tương tác, `F` đấm, `Space` nhảy, `R` hành động phụ, `M`/`B`/`Tab`/`P` (điện thoại), `Esc`. Mỗi nhóm lưu độ lệch so với chỗ mặc định tính theo phần bề ngang/bề cao màn hình và một hệ số phóng 0,6–1,8, riêng cho màn ngang và màn dọc. Áp bằng `transform`, và mỗi lần áp đều ép nút nằm trọn trong màn hình. Cỡ chung của giao diện là biến CSS `--ui-scale` (0,8–1,4) nhân vào cỡ chữ gốc; mọi kích thước HUD đều tính bằng `em` nên phóng theo.
 
 ## 6. Lưu game
 
-`localStorage`, khoá `ganhhang.save.v1` (trạng thái) và `ganhhang.settings.v1` (cài đặt). Tự lưu sau việc quan trọng, mỗi 45 giây và khi rời trang. `SAVE_VERSION = 6`; `migrate()` nạp được bản lưu cũ thiếu trường và loại bỏ nguyên liệu không còn tồn tại. Bản lưu trước v4 chưa có sổ `met` nên được coi như đã quen hết người đứng quầy. Bản lưu trước v5 (chưa có bệnh viện) được nâng sức khoẻ lên 45 nếu đang ở 0 — nếu không, mở lên là ngất liền — và thêm sổ đồ thất lạc rỗng. Bản lưu trước v6 được cấp `wanted = 0` và `jailUntil = 0` (chưa ai biết mặt). Cài đặt có thêm `ui` (cỡ giao diện và cách xếp nút); `cleanLayout()` làm sạch dữ liệu đọc lên.
+`localStorage`, khoá `ganhhang.save.v1` (trạng thái) và `ganhhang.settings.v1` (cài đặt). Tự lưu sau việc quan trọng, mỗi 45 giây và khi rời trang. `SAVE_VERSION = 7`; `migrate()` nạp được bản lưu cũ thiếu trường và loại bỏ nguyên liệu không còn tồn tại. Bản lưu trước v4 chưa có sổ `met` nên được coi như đã quen hết người đứng quầy. Bản lưu trước v5 (chưa có bệnh viện) được nâng sức khoẻ lên 45 nếu đang ở 0 — nếu không, mở lên là ngất liền — và thêm sổ đồ thất lạc rỗng. Bản lưu trước v6 được cấp `wanted = 0` và `jailUntil = 0` (chưa ai biết mặt). Bản lưu trước v7 chưa có điện thoại (`phone = null`). Cài đặt có thêm `ui` (cỡ giao diện và cách xếp nút); `cleanLayout()` làm sạch dữ liệu đọc lên.
 
 ## 7. Kiểm thử
 
@@ -267,7 +294,7 @@ Người chơi đã thử bản đầu và gửi danh sách góp ý; việc đư
 
 **Lượt 3 — nội dung còn thiếu so với bản mô tả đầy đủ: đã xong phần chính** (60 món và thang mở công thức, chỗ chơi lên tinh thần, khách đứng mua, việc lúc rảnh của người đi đường, nút cất gánh, chạy bàn và bốc cảng). Chi tiết ở mục 4.3, 4.10, 4.11.
 
-**Lượt 6 — sức khoẻ và bệnh viện: đã xong** (ngất vì máu 0, viện phí có trần, rơi đồ nhặt lại được trong ngày, Bệnh viện Phước An với khám bệnh – quầy thuốc – phòng hồi sức, nút đấm và nút nhảy). Chi tiết ở mục 4.14–4.15. **Lượt 7 — công an phường, tạm giữ, lao động: đã xong** (mức bị để ý, công an đi tuần gọi lại, đồn Công an phường có buồng tạm giữ, nộp phạt / cãi / bỏ chạy / theo về phường, đập đá bớt giờ, ra tù mất uy tín). Chi tiết ở mục 4.16. Các lượt còn lại (điện thoại, quán net, xe cộ 2005–2010, NPC sống động hơn) nằm ở `PLAN.md`.
+**Lượt 6 — sức khoẻ và bệnh viện: đã xong** (ngất vì máu 0, viện phí có trần, rơi đồ nhặt lại được trong ngày, Bệnh viện Phước An với khám bệnh – quầy thuốc – phòng hồi sức, nút đấm và nút nhảy). Chi tiết ở mục 4.14–4.15. **Lượt 7 — công an phường, tạm giữ, lao động: đã xong** (mức bị để ý, công an đi tuần gọi lại, đồn Công an phường có buồng tạm giữ, nộp phạt / cãi / bỏ chạy / theo về phường, đập đá bớt giờ, ra tù mất uy tín). Chi tiết ở mục 4.16. **Lượt 8 — điện thoại: đã xong** (ba mẫu máy, pin, sổ thu chi, danh bạ, tin nhắn, radio – nhạc – WAP, sạc). Chi tiết ở mục 4.17. Các lượt còn lại (quán net, xe cộ 2005–2010, NPC sống động hơn) nằm ở `PLAN.md`.
 
 Còn lại:
 

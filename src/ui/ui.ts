@@ -16,6 +16,7 @@ import { hourOf } from '../sim/state';
 import { activeEvents, totalDebt, level, tier, hasMet, fixedLabel } from '../sim/rules';
 import { stallHint } from '../game/stall';
 import { openPanel } from './panels';
+import * as PH from '../sim/phone';
 import { applyLayout, editLayout } from './layout';
 
 const IC: Record<string, string> = {
@@ -37,6 +38,7 @@ const IC: Record<string, string> = {
   hand: '<path d="M8 13V5a1.5 1.5 0 013 0v6V4a1.5 1.5 0 013 0v7V6a1.5 1.5 0 013 0v9c0 4-2 6-6 6s-6-3-7-7l-1-3c1-1 2-1 3 1z"/>', clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   pin: '<path d="M12 21s7-6 7-12a7 7 0 00-14 0c0 6 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/>', arrow: '<path d="M12 3l7 9h-4v9H9v-9H5z" fill="currentColor"/>', check: '<path d="M5 12l5 5 9-10"/>',
   fist: '<path d="M5.2 12.4V9.6a1.5 1.5 0 013 0v1.6V6.8a1.5 1.5 0 013 0v4.4V7.4a1.5 1.5 0 013 0v6.4"/><path d="M14.2 8.2a1.5 1.5 0 013 0v5.2a6 6 0 01-6 6h-1.2a5.2 5.2 0 01-5.2-5.2v-1.6"/>', jump: '<path d="M12 20V6M6.5 11.5L12 5l5.5 6.5"/><path d="M5 21h14"/>',
+  phone: '<rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M10.5 5.5h3M11 18.5h2"/>',
   x: '<path d="M6 6l12 12M18 6L6 18"/>', info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v.5"/>', chat: '<path d="M4 5h16v11H10l-5 4v-4H4z"/>',
 };
 export const ic = (n: string) => `<svg class="ic" viewBox="0 0 24 24">${IC[n] ?? IC.info}</svg>`;
@@ -73,14 +75,14 @@ export class UI {
     this.world = add('world');
     // ba chip giờ – thời tiết – chỗ đang đứng nằm chung một hàng cho gọn (hẹp quá thì tự xuống dòng)
     add('hud-tl', `<div class="row"><span class="chip" id="clock"></span><span class="chip" id="wx"></span><span class="chip" id="place"></span></div><div id="stats"></div>`);
-    add('hud-tr', `<div class="row"><span class="chip" id="rep"></span><span class="chip" id="money"></span></div><div class="row" id="menub"><button class="ib hide" id="stowb" title="Cất gánh vào ba lô">${ic('box')}</button><button class="ib" data-p="bag">${ic('bag')}<span class="dot hide" id="bagdot"></span></button><button class="ib" data-p="book">${ic('book')}</button><button class="ib" data-p="map">${ic('map')}</button><button class="ib" data-p="settings">${ic('gear')}</button></div><div class="row"><span class="chip hide" id="wanted"></span><span class="chip hide" id="debt"></span><span class="chip" id="fps"></span></div>`);
+    add('hud-tr', `<div class="row"><span class="chip" id="rep"></span><span class="chip" id="money"></span></div><div class="row" id="menub"><button class="ib hide" id="stowb" title="Cất gánh vào ba lô">${ic('box')}</button><button class="ib" data-p="bag">${ic('bag')}<span class="dot hide" id="bagdot"></span></button><button class="ib" data-p="book">${ic('book')}</button><button class="ib hide" id="phoneb" data-p="phone" title="Điện thoại (P)">${ic('phone')}<span class="dot hide" id="phonedot"></span></button><button class="ib" data-p="map">${ic('map')}</button><button class="ib" data-p="settings">${ic('gear')}</button></div><div class="row"><span class="chip hide" id="wanted"></span><span class="chip hide" id="debt"></span><span class="chip" id="fps"></span></div>`);
     add('quest', '<small>MỤC TIÊU</small><span></span>'); add('way', '', 'chip hide'); add('events'); add('cross'); add('focus'); add('stam', '<b></b>', 'hide');
     add('act', `<button class="alt hide"></button><button class="main dim">${ic('hand')}</button>`); add('runb', `<button class="run">${ic('run')}</button>`);
     add('act2', `<button class="hit" title="Đấm (F)">${ic('fist')}</button><button class="jump" title="Nhảy (Space)">${ic('jump')}</button>`);
     add('stick', '<i></i>', 'hide'); add('cart', '', 'chip hide'); add('stallchip', '', 'chip hide'); add('toasts');
     add('cook', `<button class="btn small red quit">${ic('x')} Bỏ dở</button><div class="top"><div class="title"></div><div class="steps"></div><div class="hint"></div><div class="prog hide"><div class="meter"><div class="z"></div><div class="v"></div></div><small></small></div></div><div class="heat hide"><small>LỬA</small><div class="meter"><div class="z"></div><div class="v"></div><div class="n"></div></div></div><div class="slider hide"><i>LỬA</i></div><div class="card hide"></div><div class="btns"></div>`, 'hide');
     add('grade', '', 'hide'); add('dlg', '', 'hide'); add('fade'); add('zzz', '', 'hide'); add('modal', '', 'hide'); add('menu', '', 'hide'); add('load', 'Đang dựng thành phố…<small>Gánh Hàng Đường Phố</small>'); add('rotate', 'Hãy xoay ngang điện thoại để chơi thoải mái hơn.<br><br><button class="btn" id="rotok">Cứ chơi dọc</button>', 'want');
-    for (const id of ['clock', 'wx', 'place', 'stats', 'rep', 'money', 'bagdot', 'debt', 'fps', 'stowb', 'wanted']) E[id] = document.getElementById(id)!;
+    for (const id of ['clock', 'wx', 'place', 'stats', 'rep', 'money', 'bagdot', 'debt', 'fps', 'stowb', 'wanted', 'phoneb', 'phonedot']) E[id] = document.getElementById(id)!;
     E.stowb.onclick = () => { if (ctx.mode === 'play') ctx.stall.stow(); };
     E.stats.innerHTML = [['dish', 'hunger', 'Đói'], ['drop', 'thirst', 'Khát'], ['bolt', 'energy', 'Sức'], ['heart', 'health', 'Khoẻ'], ['sparkle', 'hygiene', 'Sạch'], ['smile', 'mood', 'Vui']].map(([i, k, t]) => `<div class="stat" data-k="${k}" title="${t}">${ic(i)}<i><b></b></i></div>`).join('');
     document.getElementById('rotok')!.onclick = () => E.rotate.classList.remove('want');
@@ -114,6 +116,7 @@ export class UI {
       else if (ctx.mode === 'play' && (k === 'tab' || k === 'i')) this.panel('bag');
       else if (ctx.mode === 'play' && k === 'm') this.panel('map');
       else if (ctx.mode === 'play' && k === 'b') this.panel('book');
+      else if (ctx.mode === 'play' && k === 'p') this.panel('phone');
       else if (k === 'escape') { if (this.modalName) this.closePanel(); else if (ctx.mode === 'play') this.panel('settings'); }
     };
   }
@@ -215,6 +218,8 @@ export class UI {
     E.place.innerHTML = `${ic('pin')}${DISTRICT[districtAt(p.x, p.z)].name}`;
     if (g.cash !== this.lastCash) { this.lastCash = g.cash; E.money.innerHTML = `${ic('cash')}${money(g.cash)}`; }
     E.rep.innerHTML = `${ic('star')}${Math.round(g.rep)} · cấp ${level(g)}`;
+    E.phoneb.classList.toggle('hide', !PH.hasPhone(g));
+    if (PH.hasPhone(g)) E.phonedot.classList.toggle('hide', PH.unread(g) === 0);
     E.wanted.classList.toggle('hide', (g.wanted ?? 0) < 1);
     if (g.wanted >= 1) { E.wanted.innerHTML = `${ic('badge')}Bị để ý ${Math.round(g.wanted)}%`; E.wanted.style.background = g.wanted >= 45 ? 'rgba(160,30,24,.92)' : 'rgba(40,26,16,.72)'; }
     const td = totalDebt(g); E.debt.classList.toggle('hide', td <= 0); if (td > 0) { const due = Math.min(...g.debts.map((d) => d.due)); E.debt.innerHTML = `${ic('skull')}Nợ ${money(td)} · ${due < g.day ? 'QUÁ HẠN' : due === g.day ? 'hạn hôm nay' : 'còn ' + (due - g.day) + ' ngày'}`; E.debt.style.background = due <= g.day ? 'rgba(160,30,24,.9)' : ''; }
