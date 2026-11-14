@@ -366,3 +366,56 @@ mua `sap → quanan → quanngoi` ở tiệm Ba Tài → dựng ở Mặt bằng
 nền gạch bông ca-rô → giao món cho 4 khách, khách ngồi lại gọi thêm trà đá (`more: true`) → bảng quầy hiện nhãn
 `hợp buổi này` / `ngoài buổi` → đóng quán, kiểm bản lưu v11 giữ nguyên bậc 5 và 6 ghế.
 
+## Lượt 17 — Xưng hô theo giới tính, mini-game việc làm & đánh cờ, dọn sạp chợ đêm, hàng rong vỉa hè & cơ chế ăn cắp ✅ đã xong
+
+**Xưng hô linh hoạt (`fmtAc`).** Toàn bộ hội thoại chủ quán, người dân, khách xin việc (`HELPER_POOL`), bé Bo đánh
+giày (`SIDE.danh_giay`), nhân viên ngân hàng tự động gọi `anh` hoặc `chị` theo `g.ac`.
+
+**Sửa thông báo uống nước lã.** Uống nước ở vòi công cộng bị đau bụng báo đúng *"Uống nước lã chưa đun — đau bụng quá!"*
+thay vì báo ăn đồ ôi thiu.
+
+**Rửa chén quán Bà Tư theo ca.** Mỗi khung giờ (`10h–14h30`, `17h30–21h`) chỉ rửa 1 lần (`dishWindow`, `canWashDishes`,
+`finishDishes`), và chỉ có xác suất nhỏ (`DISH_MEAL_CHANCE = 0.22`) được Bà Tư cho thêm phần cơm dư.
+
+**Ông Bảy & ẩn gợi ý/giao diện bán hàng trước khi mở quầy.** Ông Bảy có thoại ngạc nhiên mừng cho người chơi khi sắm
+được quầy (`g.stall.tier > 0`); lời khuyên buôn bán, mục hỏi học công thức (`canLearnRecipes`) và chỉ số doanh thu /
+uy tín trên HUD + bảng tổng kết cuối ngày chỉ hiện sau khi bắt đầu có quầy (`hasStartedSelling`).
+
+**Ba mini-game 3D mới.** `SackGame` (canh thanh nhịp lực vác 5 bao tải ở bến cảng), `FishGame` (phân loại cá thu /
+cá basa / cá ngừ trên băng chuyền vào 3 thùng đá), và `ChessGame` (giải 3 thế cờ tàn trên bàn cờ gỗ với Ông Tư).
+
+**Sạp chợ tự dọn hàng ban đêm.** Toàn bộ hàng hoá trưng bày ở các sạp chợ, tiệm cắt tóc, tiệm thời trang được gom
+vào `world.shopGoods` và tự động ẩn khi hết giờ mở cửa (`!placeOpen(shopId)`).
+
+**Điểm bán vỉa hè miễn phí & phạt lấn chiếm vỉa hè.** Thêm 3 điểm bán miễn phí (`viahe_truong`, `viahe_trungtam`,
+`viahe_benxe`, `maxTier: 2`, `curbRisk > 0`) cho gánh hàng rong / xe đẩy kèm sự kiện Đội trật tự đô thị đi tuần
+lập biên bản phạt lấn chiếm (`35.000₫`).
+
+**Cơ chế ăn cắp (`shoplifting`).** Cầm hàng chưa thanh toán rời khỏi quầy sẽ bị chủ tiệm tri hô và công an rượt đuổi
+(`triggerShoplift`); bị bắt thì tịch thu hàng ăn cắp (`confiscateStolen`), trốn thoát thì giữ được hàng nhưng giảm
+nặng uy tín (`escapeShoplift`, `−15` uy tín).
+
+## Lượt 18 — Bậc 6 (Nhà hàng bình dân) & Bậc 7 (Chuỗi cửa hàng): hoàn tất 7/7 bậc kinh doanh ✅ đã xong
+
+Hoàn tất trọn vẹn **Mục #1 (Nhánh kinh doanh 7/7 bậc)** cùng việc cập nhật toàn bộ kế hoạch còn lại vào `TODO.md`.
+
+**Bậc 6 — Nhà hàng bình dân (`nhahang`, 135.000.000₫).** Chứa 280 kg, giữ lạnh 100 kg, bày **28 món**, hàng đợi 16
+khách, 56 khay, độ thu hút 1,8. Mô hình 3D nhà hàng khang trang có tường bao ô cửa kính khung gỗ, vách ngăn khu bếp
+riêng phía sau + chụp hút mùi inox, bàn lễ tân & sổ đặt bàn, đèn lồng treo trần và **4 bàn gỗ lớn — 8 ghế tựa lưng**
+(`SEATS6`). Mở các tính năng nhà hàng:
+- **Thuê Phụ bếp (`CHEF_POOL`, `hireChef`, `chefAutoCook`)**: giữ cốt sơ chế tươi lâu hơn **×1,5**, thao tác nấu dễ
+  hơn (`+0,15`), định kỳ tự sơ chế / hoàn thiện bù món khi khay vơi, và nhân viên tự động bưng món có sẵn ra bàn cho
+  khách ngồi chờ.
+- **Khách đi theo đoàn (`order.group`)**: gọi 2–4 phần một lượt, kiên nhẫn ngồi bàn ×2,4, tiền boa và uy tín cao hơn.
+- **Sổ đặt bàn trước theo ngày (`ensureBookings`, `fulfillBooking`)**: mỗi ngày có 3 đoàn khách đặt bàn trước theo
+  khung giờ (11h30, 13h00, 18h30); chuẩn bị đủ phần ăn phục vụ đoàn nhận thêm tiền thưởng giữ bàn (`15.000–35.000₫`)
+  và `+0,8` uy tín.
+
+**Bậc 7 — Chuỗi cửa hàng (`chuoi`, 280.000.000₫).** Chứa 360 kg, giữ lạnh 140 kg, bày **40 món**, 20 khách, 80 khay,
+độ thu hút 2,05. Mở tính năng **Chi nhánh thứ 2 (`openBranch`, `tickBranchHour`)**:
+- Chọn mặt bằng thứ hai ngoài phố để mở Chi nhánh 2 hoạt động song song (dựng mô hình 3D Chi nhánh 2 ngay tại điểm
+  bán đó) và thuê **Quản lý cửa hàng (`BRANCH_MANAGERS`)** trông coi.
+- Tự động đón khách và bán hàng mỗi giờ từ 7h–21h, cộng doanh thu/giá vốn/số phần bán vào sổ chung và **bảng sổ sách
+  tách riêng từng điểm bán** (Trụ sở chính vs Chi nhánh 2) trong thẻ **Quầy › Quản lý & Chi nhánh**.
+
+

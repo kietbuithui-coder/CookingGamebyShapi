@@ -33,6 +33,20 @@ export interface Helper {
   /** Lương mỗi ngày (trừ vào sáng hôm sau) và ngày bắt đầu làm, ngày đã trả lương gần nhất. */
   wage: number; since: number; paid: number; hired: boolean;
 }
+/** Đầu bếp phụ (bậc 6 — Nhà hàng bình dân trở lên): giữ cốt sơ chế tươi lâu hơn, tự nấu phụ khi vắng món. */
+export interface Chef {
+  name: string; fem: boolean; wage: number; since: number; paid: number;
+}
+/** Đơn đặt bàn trước theo đoàn ở Nhà hàng bình dân (bậc 6+). */
+export interface Booking {
+  id: number; day: number; name: string; pax: number; rid: string; hour: number; bonus: number; done: boolean;
+}
+/** Chi nhánh thứ hai của Chuỗi cửa hàng (bậc 7): hoạt động song song, có quản lý và sổ sách riêng. */
+export interface Branch {
+  spot: string | null; manager: string | null; wage: number; open: boolean;
+  todaySold: number; todayRev: number; todayCost: number; todayRent: number;
+  totalSold: number; totalRev: number;
+}
 export interface Game {
   v: number; seed: number; ac: 'anh' | 'chị';
   /** Ngoại hình người chơi (đổi ở tiệm cắt tóc / tiệm thời trang, xem ở góc nhìn thứ ba). */
@@ -53,6 +67,12 @@ export interface Game {
   stall: Stall;
   /** Người phụ việc đang làm ở quầy (null = chưa thuê ai). */
   help: Helper | null;
+  /** Phụ bếp của Nhà hàng bình dân bậc 6+ (null = chưa thuê). */
+  chef: Chef | null;
+  /** Sổ đặt bàn trước trong ngày của Nhà hàng bình dân bậc 6+. */
+  bookings: Booking[];
+  /** Chi nhánh thứ hai của Chuỗi cửa hàng bậc 7 (null = chưa mở chi nhánh). */
+  branch: Branch | null;
   rec: Record<string, RecState>;
   debts: Debt[]; debtSeq: number; credit: number;
   led: LedgerDay; hist: LedgerDay[];
@@ -84,7 +104,7 @@ export function newGame(seed = (Math.random() * 1e9) | 0, ac: 'anh' | 'chị' = 
     st: { hunger: 58, thirst: 55, energy: 82, health: 92, hygiene: 42, mood: 45 }, rep: 0, xp: 0,
     pos: { x: PLACES.camp.x, z: PLACES.camp.z - 1.2, yaw: Math.PI, pitch: 0 },
     bag: [], junk: {}, meals: [], lostBag: [], lostDay: -1, wanted: 0, jailUntil: 0, gear: {}, phone: null, housing: 'gamcau', paidUntil: 0, home: [],
-    stall: emptyStall(), help: null, rec, debts: [], debtSeq: 1, credit: 0,
+    stall: emptyStall(), help: null, chef: null, bookings: [], branch: null, rec, debts: [], debtSeq: 1, credit: 0,
     led: newLedger(0), hist: [], rel: {}, met: {}, flags: {},
     weather: { now: 'nang', until: 6 * 60 + 10 + 420, next: 'nang', flood: 0, wet: 0 },
     ev: { active: [], last: {}, check: 9 * 60, lastStart: -999 },
@@ -137,6 +157,9 @@ export function migrate(raw: any): Game | null {
   if ((raw.v ?? 0) < 10 || !raw.help) g.help = null;
   else if (typeof g.help?.name !== 'string' || typeof g.help?.wage !== 'number') g.help = null;
   if (g.help) { g.help.hired = true; if (typeof g.help.since !== 'number') g.help.since = g.day; if (typeof g.help.paid !== 'number') g.help.paid = g.day; }
+  if (!raw.chef || typeof raw.chef?.name !== 'string' || typeof raw.chef?.wage !== 'number') g.chef = null;
+  if (!Array.isArray(raw.bookings)) g.bookings = [];
+  if (!raw.branch || typeof raw.branch !== 'object' || typeof raw.branch.wage !== 'number') g.branch = null;
   if (typeof g.flags.firstSale !== 'number' && (g.hist.some((h) => h.revenue > 0) || g.led.revenue > 0)) g.flags.firstSale = 0;
   g.v = SAVE_VERSION;
   return g;

@@ -40,20 +40,23 @@ describe('dữ liệu bậc 5', () => {
     expect(d.price).toBeGreaterThan(GEAR.quanan.price);
     expect(d.desc).toContain('Sáu chỗ ngồi');
   });
-  it('danh sách bậc tương lai còn hai bậc', () => {
-    expect(FUTURE_TIERS).toEqual(['Nhà hàng bình dân', 'Chuỗi cửa hàng']);
+  it('danh sách bậc tương lai đã mở hết (7/7 bậc kinh doanh)', () => {
+    expect(FUTURE_TIERS).toEqual([]);
   });
-  it('bậc 5 là bậc cuối cùng đang mở', () => {
-    expect(TIERS[TIERS.length - 1].tier).toBe(5);
+  it('bậc 5 đứng trước bậc 6 (Nhà hàng bình dân) và bậc 7 (Chuỗi cửa hàng)', () => {
+    expect(TIERS[5].tier).toBe(5);
+    expect(TIERS[TIERS.length - 1].tier).toBe(7);
     expect(TIERS.every((t, i) => t.tier === i)).toBe(true);
   });
 });
 
 describe('chỗ ngồi', () => {
-  it('chưa lên quán thì không có ghế; bậc 4 bốn ghế, bậc 5 sáu ghế', () => {
+  it('chưa lên quán thì không có ghế; bậc 4 bốn ghế, bậc 5 sáu ghế, bậc 6+ tám ghế', () => {
     for (const tier of [0, 1, 2, 3]) expect(R.seatCount(stallAt(tier))).toBe(0);
     expect(R.seatCount(stallAt(4))).toBe(4);
     expect(R.seatCount(stallAt(5))).toBe(6);
+    expect(R.seatCount(stallAt(6))).toBe(8);
+    expect(R.seatCount(stallAt(7))).toBe(8);
   });
   it('chỉ quán có chỗ ngồi mới là ăn tại chỗ trong nhà', () => {
     expect(R.dineIn(stallAt(4))).toBe(false);
