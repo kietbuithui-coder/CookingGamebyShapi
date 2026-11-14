@@ -224,6 +224,7 @@ export const SIDE: Record<string, SideDef> = {
 export const LINES = {
   order: ['Cho {self} {n} {dish} nha {you}.', '{You} ơi, {n} {dish}!', 'Bán {self} {n} {dish} đi {you}.', 'Lấy {self} {n} {dish} nghen.', '{n} {dish}, làm lẹ giùm {self} nha.', 'Ở đây có {dish} hả? Cho {self} {n} phần.'],
   order_regular: ['Như mọi khi nha {you}, {n} {dish}.', '{Self} lại ghé nè. {n} {dish} nhé!', 'Nhớ quán {you} quá, cho {self} {n} {dish}.'],
+  order_more: ['{Self} ăn thấy ngon quá, cho {self} thêm {dish} nữa đi.', 'Ừ ngon đó. Làm thêm {self} phần {dish} nha.', 'Còn {dish} không {you}? {Self} ăn thêm một phần.', '{Self} ngồi đây ăn luôn. Cho thêm {dish} — {price} hả, được.'],
   pricey_buy: ['Ủa, hôm nay tăng giá rồi hả? Thôi kệ, lấy {self} {n} {dish}.', '{price} lận hả… Ừ thì lấy {n} phần.', 'Hơi mắc đó nha. Mà thôi, {n} {dish}.'],
   pricey_leave: ['{dish} mà {price}? Mắc quá, thôi {self} đi chỗ khác.', 'Trời đất, chém dữ vậy {you}!', 'Giá này {self} ăn không nổi.', 'Ủa, hôm nay tăng giá rồi hả? Thôi để bữa khác.', 'Bên kia bán rẻ hơn nhiều đó {you}.'],
   cheap: ['Rẻ ghê, bán vậy có lời không {you}?', 'Giá này thì {self} ủng hộ dài dài.', 'Ui, rẻ bất ngờ luôn!'],

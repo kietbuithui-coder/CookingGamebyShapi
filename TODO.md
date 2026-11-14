@@ -1,21 +1,23 @@
 # Việc còn lại
 
-Danh sách những gì **chưa làm** tính tới lượt 14 (`main` = `6992fa4`). Đã xong: 60/60 món · 8/8 kiểu chỗ ở ·
-4/7 bậc kinh doanh · 8 thời tiết · 22 sự kiện · 76 nguyên liệu · 12 cửa hàng · 21 món đồ nghề · 16 nhóm người ·
-11 khách quen · 37 nhân vật cố định · chuỗi 11 mục tiêu hướng dẫn · điện thoại · quán net · công an · bệnh viện ·
-đua xe đạp · NPC sinh hoạt theo giờ · giao diện dễ đọc · 16 biểu cảm · 8 kiểu tóc · người phụ việc · 247 bài kiểm thử / 16 tệp.
+Danh sách những gì **chưa làm** tính tới lượt 16 (`main` = `f45a2f8`). Đã xong: 60/60 món · 8/8 kiểu chỗ ở ·
+5/7 bậc kinh doanh · 8 thời tiết · 22 sự kiện · 76 nguyên liệu · 14 cửa hàng · 22 món đồ nghề · 16 nhóm người ·
+11 khách quen · 39 nhân vật cố định · chuỗi 11 mục tiêu hướng dẫn · điện thoại · quán net · công an · bệnh viện ·
+đua xe đạp · NPC sinh hoạt theo giờ · giao diện dễ đọc · 16 biểu cảm · 8 kiểu tóc · người phụ việc ·
+ngoại hình người chơi (góc nhìn thứ ba, cắt tóc, thời trang) · quán có chỗ ngồi (sáu ghế bàn gỗ, thực đơn theo buổi, gọi thêm) ·
+278 bài kiểm thử / 18 tệp.
 
 ---
 
-## 1. Nhánh kinh doanh — còn 3 bậc
+## 1. Nhánh kinh doanh — còn 2 bậc
 
 | Bậc | Tên | Cần gì để làm |
 |---|---|---|
-| 5 | Quán có chỗ ngồi | Đã có người phụ bán (lượt 14) — còn thực đơn theo buổi (sáng/trưa/chiều), khách ngồi ăn lâu hơn, bàn trong nhà thay vì bàn nhựa ngoài sân |
-| 6 | Nhà hàng bình dân | Nội thất trong nhà (bàn ghế, quầy thu ngân), đặt bàn trước, nhân viên phụ bếp, khách đoàn |
+| ✅ 5 | Quán có chỗ ngồi | **Đã xong (lượt 16):** 58.000.000₫, 200 kg, 20 món, 12 khách, hiên mái tôn + nền gạch bông + 3 bàn gỗ 6 ghế tựa lưng, thực đơn theo buổi (sáng/trưa/chiều/khuya, `fitsPeriod` ×1,35), khách ăn tại chỗ kiên nhẫn ×1,9 và gọi thêm món tráng miệng/nước (`secondOrder`) |
+| 6 | Nhà hàng bình dân | Nội thất trong nhà kín (nhiều bàn, phòng bếp riêng), đặt bàn trước, nhân viên phụ bếp, khách đoàn |
 | 7 | Chuỗi cửa hàng | Mở điểm bán thứ hai cùng lúc, quản lý từ xa (sổ sách từng điểm), thuê người trông coi |
 
-Hiện `FUTURE_TIERS` trong `src/data/gear.ts` mới có tên; chưa có dữ liệu, mô hình, luật đặt chỗ và kiểm thử.
+Hiện `FUTURE_TIERS` trong `src/data/gear.ts` còn 2 bậc (`Nhà hàng bình dân`, `Chuỗi cửa hàng`); chưa có dữ liệu, mô hình, luật đặt chỗ và kiểm thử.
 
 ## 2. Băng nhóm
 

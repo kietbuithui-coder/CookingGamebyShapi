@@ -19,7 +19,7 @@ Một vòng chơi trọn vẹn và thật sự chạy được: **tay trắng �
 
 Hai nguyên tắc giữ cho mã kiểm thử được:
 
-1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 260 bài kiểm thử chạy trong Node trong chưa tới 2 giây.
+1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 278 bài kiểm thử chạy trong Node trong chưa tới 3 giây.
 2. **Mọi ngẫu nhiên trong luật chơi nhận một `RNG` có hạt giống** làm tham số cuối, nên kết quả kiểm thử lặp lại được.
 
 Vòng lặp chính (`src/main.ts`): đọc điều khiển → `advance()` cho thời gian game trôi (0,75 phút game mỗi giây thật, một ngày = 32 phút thật; khi ngủ 48 phút game mỗi giây) → cập nhật người chơi, NPC, quầy, nấu ăn, môi trường → vẽ. `dt` bị chặn ở 50 ms nên máy rất chậm thì game chạy chậm lại chứ không nhảy cóc.
@@ -466,6 +466,39 @@ quần, giày, kính — dùng chung `shopColors()`; kính là `face` 5 (gọng 
 `ctx.player.applyLook()` để thấy ngay, cộng 4 tinh thần, mất 15 phút, tiếng xu và câu cảm ơn kèm biểu cảm vui của
 người bán. Bấm V khi chưa bật góc nhìn thứ ba thì toast nhắc — đó là cách duy nhất thấy bộ đồ mình vừa mua.
 
+### 4.25 Bậc 5 — quán có chỗ ngồi, thực đơn theo buổi và gọi thêm món
+
+`TIERS[5]` (`src/data/gear.ts`): chứa 200 kg, giữ lạnh 70 kg, hàng đợi 12, bày 20 món, 40 khay, độ hiện 1,6.
+Đồ nghề `quanngoi` giá 58.000.000₫ ở tiệm Đồ Nghề Ba Tài, đòi có **quán ăn nhỏ (bậc 4)** trước. Dựng tại hai mặt
+bằng có sân (`matbang_tb` Phố Văn Phòng 160.000₫/ngày, `matbang_dc` Khu Căn Hộ 120.000₫/ngày). `FUTURE_TIERS`
+nay chỉ còn hai bậc (`Nhà hàng bình dân`, `Chuỗi cửa hàng`).
+
+**Mô hình** (`StallSys.rebuild`): quầy gỗ dài 5,6 m mặt đá + yếm đỏ, hiên mái tôn xanh 6,9 × 5,9 m có diềm vàng,
+hai vách thấp hai bên, hai bồn cây phía trước chừa lối vào rộng ở giữa, nền gạch bông ca-rô đỏ–kem, quầy thu ngân
+nhỏ bên hông, và **ba bàn gỗ – sáu ghế tựa lưng** (trên mỗi bàn có hộp khăn giấy và chai nước tương). Khi đã lên
+bậc 5 thì bộ bàn nhựa rời (`ghe`) không vẽ đè lên sân gạch bông nữa.
+
+**Chỗ ngồi và ăn tại chỗ.** `seatCount(tier)` (`src/sim/rules.ts`) trả về 6 cho bậc ≥ 5, 4 cho bậc 4, 0 cho bậc ≤ 3;
+`dineIn(tier)` là `true` từ bậc 5 trở lên. Hàng đợi lùi ra `lz = 5,4 m` (ngoài hiên) để không đứng chen vào ba bàn
+gỗ; sáu chỗ đầu (`SEATS5`) ngồi vào 6 ghế (`pose = 'sit'`), kiên nhẫn **×1,9** (nhân thêm `helperPatience` nếu có
+người phụ việc).
+
+**Thực đơn theo buổi.** Bốn buổi trong `PERIODS`: *Buổi sáng* (< 10h), *Buổi trưa* (10h–14h30), *Buổi chiều*
+(14h30–20h), *Khuya* (≥ 20h). `fitsPeriod(dish, h)` kiểm `dish.hours[mealSlot(h)] ≥ 0,8`; `periodMenu(g)` đếm số
+món đang bật hợp buổi hiện tại. Trong `decide()`, khách chọn món theo xác suất có trọng số tỉ lệ với `w³` (thay vì
+chọn cứng `argmax`), và ở quán `dineIn` món hợp buổi được nhân thêm **×1,35** — nên khách vừa ưu tiên món đúng buổi
+rõ rệt (tăng ~5 điểm phần trăm tỉ lệ chọn món hợp buổi), vừa giữ đủ độ đa dạng cho cả thực đơn 20 món. Bảng Quầy
+gắn nhãn xanh **`hợp buổi này`** / vàng **`ngoài buổi`** trên từng món khi quầy từ bậc 5 trở lên, và thẻ Thông tin
+quầy hiện thêm *Chỗ ngồi (6 ghế trong nhà)*, *Buổi bán*, *Hợp buổi (N món)*.
+
+**Gọi thêm món (`secondOrder`).** Khách ngồi ghế ở quán `dineIn`, không phải nhân vật sự kiện (`!n.actor`), mới gọi
+lần đầu (`!o.more`), sau khi ăn món chính hoặc món vặt hài lòng (`stars ≥ 3,8`) sẽ có xác suất `0,28 + 0,22 × (stars − 3,8)`
+(khoảng 32–54%) ngồi lại gọi thêm một món **nước uống** hoặc **tráng miệng** (`drink` / `sweet`) đang bật trên thực
+đơn và còn nguyên liệu (trừ món vừa ăn), với giá thấy hợp lý ≥ 85% giá bán. Đơn gọi thêm đánh dấu `o.more = true`,
+kiên nhẫn ×1,8 × `helperPatience`, câu thoại lấy từ `LINES.order_more` (*"Cho thêm ly nước nữa nha."*, *"Ngon quá,
+bán thêm phần tráng miệng đi!"*…). Khi giao món đầu mà khách gọi thêm thì khách **vẫn ngồi tại ghế** chờ món thứ hai;
+ăn xong món thứ hai mới đứng dậy ra về.
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
@@ -493,6 +526,7 @@ người bán. Bấm V khi chưa bật góc nhìn thứ ba thì toast nhắc —
 - `tests/street.test.ts` — 12 bài về đường phố 2005–2010: bốn mẫu ô tô (tên, màu, cỡ, chậm hơn xe máy, xe tải chậm nhất), chín nhịp đua và vùng ăn điểm tất định theo hạt giống, chấm điểm giữa vùng/mép/trượt, sức đối thủ cố định, thắng–thua–hoà và tiền thưởng, chỉ chủ nhật và đúng khung giờ, mỗi ngày một lượt, bản lưu v8 lên v9, xích đu ba mức (lâu hơn thì nhiều tinh thần hơn, có trần, miễn phí, đêm đóng cửa).
 - `tests/net.test.ts` — quán net: giá theo phút và phụ thu phim, bốn gói giờ, hiệu ứng từng kiểu chơi, mỏi mắt sau 120 phút (tinh thần còn 45%, mất 2 sức khoẻ) và tính lại khi sang ngày, ngồi máy làm đói khát tụt sức, tinh thần không vượt 100, giờ mở cửa và số máy, sạc nhờ/nước ngọt, lô đất và ba nhân vật của quán, bản lưu v7 lên v8.
 - `tests/look.test.ts` — ngoại hình: 8 kiểu tóc liền id và giá tăng theo độ cầu kỳ, mọi bảng màu có giá dương và không trùng màu, giá trong tầm một buổi bán, `defaultLook` khác nhau nam/nữ, `cleanLook` chặn dữ liệu rác (kiểu tóc ngoài phạm vi, màu lẫn alpha, dáng người vô lý), bản lưu v10 lên v11, và hai người bán mới có đủ tên – nghề – lời thoại.
+- `tests/quanngoi.test.ts` — 18 bài về bậc 5 quán có chỗ ngồi: chỉ số `TIERS[5]` lớn hơn bậc 4, `FUTURE_TIERS` còn 2 bậc, mua chuỗi sạp → quán ăn nhỏ → quán có chỗ ngồi, dựng ở hai mặt bằng có sân, 6 ghế ăn tại chỗ (`seatCount` = 6, `dineIn` = true), bốn buổi trong ngày (`mealSlot`, `periodName`, `fitsPeriod`, `periodMenu`), khách ưu tiên món hợp buổi hơn ở bậc 5 mà vẫn giữ đa dạng thực đơn, gọi thêm nước/tráng miệng (`secondOrder`: chỉ khi ngồi ghế bậc 5, hài lòng ≥ 3,8★, đúng nhóm `drink`/`sweet`, không gọi lần 3, không áp cho nhân vật sự kiện), và nâng cấp bản lưu giữ nguyên bậc 5.
 - `tests/fun.test.ts` — bảng chỗ chơi (mã không trùng, có neo, có giờ hợp lệ, chơi lâu hơn thì lên tinh thần nhiều hơn) và thang mở công thức (cấp 1 mở đúng 1 món, cấp sau mở 2; luôn là món rẻ nhất còn thiếu; không vượt tay nghề; món sau không rẻ hơn món trước; cấp 10 mở đủ 60 món).
 
 Ba bài mới ở lượt 2: mỗi nhân vật phụ phải có tên, nhãn việc, câu mở đầu và ít nhất hai câu chuyện đủ dài; bảng `RUDE` chỉ được có tối đa 8 nhóm và phải có đủ lời cho cả năm kiểu (giấy, khạc nhổ, mắng, đuổi, khạc nhổ khi bị xin tiền); khách quen không được trùng id hay tên và phải có cả tên kiểu học sinh.
@@ -512,8 +546,8 @@ Người chơi đã thử bản đầu và gửi danh sách góp ý; việc đư
 Còn lại:
 
 1. **Đã xong 3 kiểu chỗ ở mới: căn hộ, nhà riêng, cửa hàng kiêm nhà ở** (8/8) — xem mục 4.13.
-2. **Đã xong sạp cố định (bậc 3)** — xem mục 4.12 — và **quán ăn nhỏ (bậc 4)** — xem mục 4.22. Việc kế tiếp của nhánh này: quán có chỗ ngồi, nhà hàng bình dân, chuỗi cửa hàng (mới có tên trong `FUTURE_TIERS`).
-3. Hệ thống băng nhóm, nhân viên phụ bán.
+2. **Đã xong sạp cố định (bậc 3)** — mục 4.12, **quán ăn nhỏ (bậc 4)** — mục 4.22, và **quán có chỗ ngồi (bậc 5)** — mục 4.25. Việc kế tiếp của nhánh này: nhà hàng bình dân (bậc 6), chuỗi cửa hàng (bậc 7) trong `FUTURE_TIERS`.
+3. Hệ thống băng nhóm.
 4. Danh sách đầy đủ những gì còn lại nằm ở `TODO.md`.
 
 **Việc nền chưa làm**

@@ -332,3 +332,37 @@ giày (3 đôi), kính (cận / đen). Cả hai dùng chung `Acts.buyLook()`: tr
 v10 → v11, hai người bán mới). Tổng **260 bài / 17 tệp**. Probe `tools/probe/steps/nguoi3.mjs`: bấm V ở bờ kè,
 tiệm cắt tóc và tiệm thời trang trong chợ, menu kiểu tóc, uốn xoăn trừ đúng 45.000₫, mua áo đỏ + quần xanh bò +
 kính đen, và ngoại hình vào bản lưu v11 — chạy cả desktop 1500×820 lẫn mobile 844×390.
+
+## Lượt 16 — Bậc 5: quán có chỗ ngồi, thực đơn theo buổi, gọi thêm món ✅ đã xong
+
+Tiếp nhánh kinh doanh sau bậc 4 (quán ăn nhỏ): mở **bậc 5 — Quán có chỗ ngồi** (`quanngoi`, 58.000.000₫ ở tiệm
+Đồ Nghề Ba Tài, cần có quán ăn nhỏ trước). `FUTURE_TIERS` còn lại 2 bậc (`Nhà hàng bình dân`, `Chuỗi cửa hàng`).
+
+**Chỉ số và mặt bằng.** Chứa 200 kg, giữ lạnh 70 kg, bày **20 món**, 12 khách cùng lúc, 40 khay, độ thu hút 1,6.
+Dựng tại hai mặt bằng có sân (`matbang_tb` Phố Văn Phòng 160.000₫/ngày, `matbang_dc` Khu Căn Hộ 120.000₫/ngày).
+
+**Mô hình quán.** Quầy gỗ dài 5,6 m mặt đá + yếm đỏ, hiên mái tôn xanh 6,9 × 5,9 m có diềm vàng, vách thấp hai
+bên, hai bồn cây phía trước chừa lối vào rộng ở giữa, nền **gạch bông ca-rô đỏ–kem**, quầy thu ngân nhỏ bên hông,
+và **ba bàn gỗ – sáu ghế tựa lưng** (trên bàn có hộp khăn giấy và chai nước tương). Bộ bàn nhựa rời (`ghe`) tự ẩn
+khi đã lên bậc 5.
+
+**Sáu ghế ăn tại chỗ & hàng đợi ngoài hiên.** `seatCount(tier)` trả về 6 cho bậc 5 (4 cho bậc 4), `dineIn(tier)`
+bật từ bậc 5. Sáu chỗ đầu (`SEATS5`) ngồi vào ba bàn gỗ (`pose = 'sit'`), kiên nhẫn **×1,9**; khách thứ 7 trở đi
+xếp hàng ngoài hiên (`lz = 5,4 m`) để không đứng chen giữa bàn ăn.
+
+**Thực đơn theo buổi.** Bốn buổi (`PERIODS`: *Buổi sáng*, *Buổi trưa*, *Buổi chiều*, *Khuya*) tính từ `mealSlot(h)`.
+Món hợp buổi (`fitsPeriod(dish, h)` khi `dish.hours[slot] ≥ 0,8`) được nhân **×1,35** sức hút ở quán `dineIn`, và
+`decide()` chọn món theo xác suất có trọng số (`w³`) thay vì chọn cứng `argmax` nên vừa tăng rõ tỉ lệ bán món hợp
+buổi (~+5 điểm phần trăm), vừa giữ đa dạng thực đơn. Bảng Quầy hiện nhãn xanh **`hợp buổi này`** / vàng **`ngoài buổi`**
+trên từng món và hiện số ghế, buổi đang bán, số món hợp buổi trong thẻ Thông tin.
+
+**Khách gọi thêm món (`secondOrder`).** Khách ngồi ghế ở quán bậc 5, sau khi ăn món đầu hài lòng (`stars ≥ 3,8`),
+có 32–54% cơ hội ngồi lại gọi thêm một món **nước uống** hoặc **tráng miệng** (`drink` / `sweet`) đang bán và còn
+nguyên liệu (`o.more = true`, kiên nhẫn ×1,8 × `helperPatience`, câu thoại riêng trong `LINES.order_more`). Giao
+xong món thứ hai khách mới đứng dậy về.
+
+**Kiểm thử:** `tests/quanngoi.test.ts` 18 bài — tổng **278 bài / 18 tệp**. Probe `tools/probe/steps/quanngoi.mjs`:
+mua `sap → quanan → quanngoi` ở tiệm Ba Tài → dựng ở Mặt bằng Khu Căn Hộ → mở bán, 6 khách ngồi vào 3 bàn gỗ trên
+nền gạch bông ca-rô → giao món cho 4 khách, khách ngồi lại gọi thêm trà đá (`more: true`) → bảng quầy hiện nhãn
+`hợp buổi này` / `ngoài buổi` → đóng quán, kiểm bản lưu v11 giữ nguyên bậc 5 và 6 ghế.
+
