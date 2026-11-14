@@ -19,7 +19,7 @@ Một vòng chơi trọn vẹn và thật sự chạy được: **tay trắng �
 
 Hai nguyên tắc giữ cho mã kiểm thử được:
 
-1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 128 bài kiểm thử chạy trong Node trong chưa tới 2 giây.
+1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 172 bài kiểm thử chạy trong Node trong chưa tới 2 giây.
 2. **Mọi ngẫu nhiên trong luật chơi nhận một `RNG` có hạt giống** làm tham số cuối, nên kết quả kiểm thử lặp lại được.
 
 Vòng lặp chính (`src/main.ts`): đọc điều khiển → `advance()` cho thời gian game trôi (0,75 phút game mỗi giây thật, một ngày = 32 phút thật; khi ngủ 48 phút game mỗi giây) → cập nhật người chơi, NPC, quầy, nấu ăn, môi trường → vẽ. `dt` bị chặn ở 50 ms nên máy rất chậm thì game chạy chậm lại chứ không nhảy cóc.
@@ -176,17 +176,71 @@ Thêm ba địa chỉ có nội thất thật, không phải mô hình trang tr�
 
 Mỗi nơi có đủ mỏ neo `bed_/store_/wash_/v_` nên mọi hệ thống sẵn có (ngủ, cất đồ, tắm, nói chuyện, giờ mở cửa, bản đồ) chạy mà không cần nhánh riêng. Cửa khoá theo `g.housing`; giờ mở cửa 6–22h (tạp hoá 6–21h).
 
+### 4.14 Sức khoẻ, ngất và Bệnh viện Phước An
+
+Sức khoẻ tụt khi đói, khát, hết năng lượng hoặc đi mưa lâu (`tickStats`). Về 0 là **ngất**, không phải chết:
+
+- **Viện phí**: `min(tiền đang có, 30.000₫ + 15% tiền đang có)`, làm tròn nghìn (`faint()` trong `sim/rules.ts`). Không bao giờ âm tiền; nghèo quá thì bệnh viện cho ghi sổ.
+- **Rơi đồ**: mất `ceil(40%)` số món đang mang trong ba lô (lấy từ cuối danh sách). Số đồ ấy nằm ở quầy thất lạc của bệnh viện tới hết **ngày hôm bạn tỉnh dậy** — hỏi bác sĩ "Hỏi đồ thất lạc" là nhận lại; chật ba lô thì cất về nhà.
+- **Tỉnh dậy**: 6 giờ sáng hôm sau, trên giường phòng hồi sức; sức khoẻ 45, tinh thần −18, vệ sinh −22, uy tín −6, đói/khát −8. Bệnh viện cho ăn cháo nên không thể ngất tiếp ngay.
+- Bản lưu v4 đang ở máu 0 được nâng lên 45 khi nạp (xem mục 6).
+
+**Bệnh viện Phước An** — lô riêng trên Phố Trung Tâm, mở 0–24 giờ, có ba chỗ tương tác:
+
+| Chỗ | Việc | Giá |
+|---|---|---|
+| Bác sĩ Hạnh (bàn tiếp nhận) | Khám bệnh, nói đúng bệnh đang có (cảm, suy nhược, đói, bẩn) | 20.000₫ |
+| Quầy thuốc | Thuốc cảm (hết `flags.sick`), bông băng, thuốc bổ — uống ngay tại chỗ | 15.000 / 8.000 / 25.000₫ |
+| Phòng hồi sức (giường + rèm) | Nằm hồi sức theo giờ: +14 máu, +10 năng lượng mỗi giờ | 5.000₫/giờ |
+
+### 4.15 Đấm và nhảy
+
+- **Nhảy** (`Space`, nút mũi tên): nảy 0,46 m trong 0,55 giây, tốn 0,7 năng lượng. Đang cõng gánh/xe đẩy/bao hàng thì không nhảy.
+- **Đấm** (`F`, nút nắm tay): hồi chiêu 0,9 giây, tầm 1,7 m và phải đang nhìn về phía người đó (cos > 0,45), tốn 1,2 năng lượng. Trúng thì người đó la lên, **uy tín −3**, người xung quanh nhìn thấy (−1 nữa nếu từ hai người trở lên), tinh thần +1 (xả). Người đi đường: 55% quay lại đuổi đánh (`chase`), còn lại bỏ đi; đánh ba lần thì chắc chắn bị đuổi. Người đứng bán thì giận 90 giây, không nói chuyện. Trẻ con thì không đấm được.
+- Đấm ai thì **mức bị để ý** tăng 18 điểm (xem 4.16). Không đấm được trẻ con.
+
+### 4.16 Công an phường, tạm giữ và lao động
+
+**Mức bị để ý (`wanted`, 0–100).** Mỗi cú đấm +18. Mỗi phút trong game tự nguôi 0,25 điểm, nên đánh lẻ tẻ
+thì vài tiếng sau là hết. Từ **45 điểm** trở lên thì công an phường bắt đầu để mắt: cứ 2,5 giây một lần, nếu
+chưa có chú nào đang đi tới thì gọi một chú (`Npcs.sendPolice()`) từ nút đường cách 9–26 m, chú đi thẳng tới
+người chơi rồi mở hội thoại xử lý. Nộp phạt xong thì được yên 60 phút, `letGo()` (cãi thắng) trừ 15 điểm và
+cho yên 45 phút.
+
+**Đồn Công an phường** là lô thứ tư của block `12S` (rộng 9 m): mặt tiền biển xanh "CÔNG AN PHƯỜNG" +
+băng đỏ, cột cờ, hòm thư góp ý, ghế nhựa ngoài sân. Trong nhà: bàn tiếp dân (chú Tám đứng sau), tủ hồ sơ,
+bình nước, quạt trần, đồng hồ, bảng tin và bảng nội quy; vách ngăn ở z 6,0 có cửa song sắt dẫn vào **buồng
+tạm giữ** — hai giường sắt, chiếu cói, xô nước, cửa sổ song sắt, một đống gạch và cây búa để lao động.
+
+**Xử lý vi phạm** (`acts.caught`): bốn lựa chọn — nộp phạt hành chính (không đủ tiền thì khoá lựa chọn),
+cãi (40% được tha), bỏ chạy (45% thoát, trượt thì thêm 10 điểm bị để ý) và đi theo chú về phường.
+
+| Việc | Số |
+|---|---|
+| Tiền phạt | `60.000₫ + 900₫ × mức bị để ý + 40.000₫ × số lần đã vào phường` (làm tròn nghìn) |
+| Án tạm giữ | `2 + ⌊mức bị để ý / 18⌋ + 2 × số lần` giờ, chặn trong 2–12 giờ |
+| Đập đá một giờ | −60 phút tù (sàn 30 phút còn lại), −5 máu, −12 năng lượng, −8 vệ sinh, −6 tinh thần, −8 no |
+| Nằm giường sắt | tua 2 giờ (hoặc tới hạn), +14 năng lượng, +2 máu, −2 tinh thần |
+| Ra tù | uy tín −8, tinh thần −10, vệ sinh −18, thả trước cửa đồn |
+
+Vào buồng thì `jailUntil` được đặt, `wanted` về 0, `flags.jail` +1. Trong lúc bị giữ, đi xa quá 6,5 m khỏi
+giường là bị kéo lại kèm lời nhắc. Hết hạn thì `acts.jailOver()` gọi `release()` rồi đặt người chơi trước cửa.
+
+**Chú Tám** (nhân vật cố định `police`, trực 24/24) bấm vào có menu: tự thú để nộp phạt, hỏi bao giờ được
+về (khi đang bị giữ), và chuyện kiểm tra lấn chiếm lòng đường. Chip **"Bị để ý xx%"** hiện ở góc phải HUD,
+đỏ khi từ 45% trở lên.
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
 - **Chạm nhanh** (nhấc tay trong 0,6 giây, xê dịch dưới 14 px) ở bất kỳ đâu = chạm vào vật gần điểm chạm nhất trong bán kính `max(64 px, 11% chiều cao)`. Thời lượng đo bằng mốc thời gian của chính sự kiện nên máy giật vẫn nhận đúng.
 - Nút tròn vàng thực hiện hành động với vật đang ở giữa màn hình.
 - Trong mini-game, mọi thao tác trỏ được chuyển thẳng cho mini-game.
-- **Người chơi tự xếp nút** (`ui/layout.ts`): bốn nhóm — nút tương tác, nút chạy, hàng nút túi/sổ/bản đồ/cài đặt, các nút khi nấu ăn. Mỗi nhóm lưu độ lệch so với chỗ mặc định tính theo phần bề ngang/bề cao màn hình và một hệ số phóng 0,6–1,8, riêng cho màn ngang và màn dọc. Áp bằng `transform`, và mỗi lần áp đều ép nút nằm trọn trong màn hình. Cỡ chung của giao diện là biến CSS `--ui-scale` (0,8–1,4) nhân vào cỡ chữ gốc; mọi kích thước HUD đều tính bằng `em` nên phóng theo.
+- **Người chơi tự xếp nút** (`ui/layout.ts`): sáu nhóm — nút tương tác, nút chạy, nút đấm, nút nhảy, hàng nút túi/sổ/bản đồ/cài đặt, các nút khi nấu ăn. Bàn phím: `E`/`Enter` tương tác, `F` đấm, `Space` nhảy, `R` hành động phụ, `M`/`B`/`Tab`, `Esc`. Mỗi nhóm lưu độ lệch so với chỗ mặc định tính theo phần bề ngang/bề cao màn hình và một hệ số phóng 0,6–1,8, riêng cho màn ngang và màn dọc. Áp bằng `transform`, và mỗi lần áp đều ép nút nằm trọn trong màn hình. Cỡ chung của giao diện là biến CSS `--ui-scale` (0,8–1,4) nhân vào cỡ chữ gốc; mọi kích thước HUD đều tính bằng `em` nên phóng theo.
 
 ## 6. Lưu game
 
-`localStorage`, khoá `ganhhang.save.v1` (trạng thái) và `ganhhang.settings.v1` (cài đặt). Tự lưu sau việc quan trọng, mỗi 45 giây và khi rời trang. `SAVE_VERSION = 4`; `migrate()` nạp được bản lưu cũ thiếu trường và loại bỏ nguyên liệu không còn tồn tại. Bản lưu trước v4 chưa có sổ `met` nên được coi như đã quen hết người đứng quầy. Cài đặt có thêm `ui` (cỡ giao diện và cách xếp nút); `cleanLayout()` làm sạch dữ liệu đọc lên.
+`localStorage`, khoá `ganhhang.save.v1` (trạng thái) và `ganhhang.settings.v1` (cài đặt). Tự lưu sau việc quan trọng, mỗi 45 giây và khi rời trang. `SAVE_VERSION = 6`; `migrate()` nạp được bản lưu cũ thiếu trường và loại bỏ nguyên liệu không còn tồn tại. Bản lưu trước v4 chưa có sổ `met` nên được coi như đã quen hết người đứng quầy. Bản lưu trước v5 (chưa có bệnh viện) được nâng sức khoẻ lên 45 nếu đang ở 0 — nếu không, mở lên là ngất liền — và thêm sổ đồ thất lạc rỗng. Bản lưu trước v6 được cấp `wanted = 0` và `jailUntil = 0` (chưa ai biết mặt). Cài đặt có thêm `ui` (cỡ giao diện và cách xếp nút); `cleanLayout()` làm sạch dữ liệu đọc lên.
 
 ## 7. Kiểm thử
 
@@ -198,6 +252,7 @@ Mỗi nơi có đủ mỏ neo `bed_/store_/wash_/v_` nên mọi hệ thống s�
 - `tests/settings.test.ts` — làm sạch dữ liệu bố cục nút.
 - `tests/stall.test.ts` — sạp cố định: phí chỗ theo ngày, trừ tiền đầu ngày, thiếu tiền thì đóng quầy và treo nợ, mua sạp thì lên bậc 3 và chưa có chỗ.
 - `tests/housing.test.ts` — chỗ ở: mã không trùng, thuê theo tuần thì giá cao hơn phải chứa nhiều hơn và đòi uy tín cao hơn, ba chỗ mới có đúng lô đất, chưa đủ uy tín thì không cho thuê và không trừ tiền, mã lạ thì trả về `false`, nợ hai ngày thì mất chỗ và mất tủ lạnh, chỉ nhà thuê theo tuần mới cắm được tủ lạnh.
+- `tests/health.test.ts` — bệnh viện (lô đất riêng, ba món thuốc, chỉ thuốc cảm chữa cảm), mua thuốc/khám bệnh/nằm hồi sức kể cả khi không đủ tiền, ngất thì viện phí có trần và tiền không âm, rơi đúng 40% đồ và nhận lại được trong ngày, đồ nhặt lại không vượt sức chứa, bản lưu v4 đang ở máu 0.
 - `tests/fun.test.ts` — bảng chỗ chơi (mã không trùng, có neo, có giờ hợp lệ, chơi lâu hơn thì lên tinh thần nhiều hơn) và thang mở công thức (cấp 1 mở đúng 1 món, cấp sau mở 2; luôn là món rẻ nhất còn thiếu; không vượt tay nghề; món sau không rẻ hơn món trước; cấp 10 mở đủ 60 món).
 
 Ba bài mới ở lượt 2: mỗi nhân vật phụ phải có tên, nhãn việc, câu mở đầu và ít nhất hai câu chuyện đủ dài; bảng `RUDE` chỉ được có tối đa 8 nhóm và phải có đủ lời cho cả năm kiểu (giấy, khạc nhổ, mắng, đuổi, khạc nhổ khi bị xin tiền); khách quen không được trùng id hay tên và phải có cả tên kiểu học sinh.
@@ -211,6 +266,8 @@ Người chơi đã thử bản đầu và gửi danh sách góp ý; việc đư
 **Lượt 2 — đường phố sống động hơn: đã xong** (NPC thô lỗ với tỉ lệ thấp, tên đẹp và tên kiểu học sinh, xe chạy trên đường, chim bay và tiếng chim, sáu nhân vật phụ có chuyện riêng, sáu góc phố nhỏ). Chi tiết ở mục 4.7–4.9 và mục 3.
 
 **Lượt 3 — nội dung còn thiếu so với bản mô tả đầy đủ: đã xong phần chính** (60 món và thang mở công thức, chỗ chơi lên tinh thần, khách đứng mua, việc lúc rảnh của người đi đường, nút cất gánh, chạy bàn và bốc cảng). Chi tiết ở mục 4.3, 4.10, 4.11.
+
+**Lượt 6 — sức khoẻ và bệnh viện: đã xong** (ngất vì máu 0, viện phí có trần, rơi đồ nhặt lại được trong ngày, Bệnh viện Phước An với khám bệnh – quầy thuốc – phòng hồi sức, nút đấm và nút nhảy). Chi tiết ở mục 4.14–4.15. **Lượt 7 — công an phường, tạm giữ, lao động: đã xong** (mức bị để ý, công an đi tuần gọi lại, đồn Công an phường có buồng tạm giữ, nộp phạt / cãi / bỏ chạy / theo về phường, đập đá bớt giờ, ra tù mất uy tín). Chi tiết ở mục 4.16. Các lượt còn lại (điện thoại, quán net, xe cộ 2005–2010, NPC sống động hơn) nằm ở `PLAN.md`.
 
 Còn lại:
 

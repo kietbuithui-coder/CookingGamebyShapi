@@ -98,6 +98,8 @@ export const FIXED_ROLE: Record<string, string> = {
   pawn: 'Chủ tiệm cầm đồ', bank: 'Nhân viên ngân hàng', shark: 'Gã mặt sẹo', motel: 'Chủ nhà nghỉ', tro: 'Ông chủ trọ',
   hotel: 'Lễ tân khách sạn', dock: 'Cai bốc vác', hobo: 'Ông lão lang thang',
   canho: 'Quản lý căn hộ', nharieng: 'Chủ nhà', cuahang: 'Chủ tạp hoá',
+  hospital: 'Bác sĩ trực',
+  police: 'Công an khu vực',
   tra_da: 'Cô bán trà đá', rap: 'Cậu nhóc nhảy đường phố', sua_xe: 'Thợ sửa xe vỉa hè',
   hat_rong: 'Người hát rong', danh_co: 'Ông già đánh cờ', danh_giay: 'Cậu bé đánh giày',
 };
@@ -240,6 +242,12 @@ export const LINES = {
     chase: ['Đi chỗ khác bán đi!', 'Dẹp ra khỏi đây!', 'Đừng có lảng vảng chỗ này!', 'Biến ra chỗ khác!'],
     begSpit: ['Hứ! Sức dài vai rộng mà đi xin.', 'Xin xỏ gì tầm này.', 'Nhục chưa? Đi kiếm việc đi.'],
   },
+  // ăn một cú đấm: la lên, có người quay lại đánh, có người bỏ chạy
+  hit: {
+    cry: ['Á! Đánh người ta hả?', 'Ui da! Làm gì vậy trời?', 'Đau! Mày bị gì vậy?', 'Ơ cái thằng này!', 'Đánh tao hả? Thử nữa coi!'],
+    run: ['Tao kêu công an!', 'Thằng khùng! Tao đi đây!', 'Đồ điên, tránh xa tao ra!', 'Bớ người ta, nó đánh tôi!'],
+    witness: ['Ngoài kia đánh nhau kìa!', 'Sao lại đánh người ta?', 'Tội nghiệp, chắc nó bị gì.', 'Công an đâu rồi?'],
+  },
 };
 /** Nhóm người dễ nổi nóng. Số càng lớn càng hay gây sự; nhóm không có trong bảng thì hiền, không bao giờ gây chuyện. */
 export const RUDE: Partial<Record<ArchId, number>> = { giangho: 3.4, khotinh: 2.4, hocsinh: 1.7, congnhan: 1.1, taixe: 1, shipper: 0.7, dukhach: 0.4 };
@@ -260,6 +268,8 @@ export const FIXED: Record<string, FixedNpcDef> = {
   kiosk: { id: 'kiosk', name: 'Cô Ba', face: 4, fem: true, shirt: 0xc9665a, pants: 0x2a2e3a, hair: 0x3a2a22, hat: 0, hairStyle: 2, fat: 1.2, h: 0.94 },
   wholesale: { id: 'wholesale', name: 'Chú Tám', face: 7, fem: false, shirt: 0x4a5a6a, pants: 0x4a4a42, hair: 0x1e1a18, hat: 2, hairStyle: 0, fat: 1.25, h: 1.02 },
   pharmacy: { id: 'pharmacy', name: 'Cô Hiền', face: 5, fem: true, shirt: 0xf7f7f7, pants: 0x2a2e3a, hair: 0x1e1a18, hat: 0, hairStyle: 2, fat: 0.95, h: 0.96 },
+  hospital: { id: 'hospital', name: 'Bác sĩ Hạnh', face: 5, fem: true, shirt: 0xf7f9ff, pants: 0x2a2e3a, hair: 0x1e1a18, hat: 0, hairStyle: 2, fat: 0.95, h: 1.0 },
+  police: { id: 'police', name: 'Chú Tám', face: 7, fem: false, shirt: 0x6a8a4a, pants: 0x4a6238, hair: 0x1e1a18, hat: 2, hairStyle: 0, fat: 1.08, h: 1.02 },
   equip: { id: 'equip', name: 'Chú Ba Tài', face: 7, fem: false, shirt: 0x3f6a9a, pants: 0x4a4a42, hair: 0x2a2420, hat: 0, hairStyle: 3, fat: 1.2, h: 1.0 },
   eatery: { id: 'eatery', name: 'Bà Tư', face: 4, fem: true, shirt: 0xf3f0e8, pants: 0x2a2e3a, hair: 0xbfbfbc, hat: 0, hairStyle: 2, fat: 1.15, h: 0.93 },
   scrap: { id: 'scrap', name: 'Ông Tư Rác', face: 3, fem: false, shirt: 0x7a6a58, pants: 0x4a4a42, hair: 0xbfbfbc, hat: 4, hairStyle: 3, fat: 0.95, h: 0.97 },

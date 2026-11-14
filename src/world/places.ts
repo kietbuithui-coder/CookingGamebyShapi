@@ -453,6 +453,136 @@ export function buildPlace(b: Builder, l: Lot, R: RNG) {
       b.tree(3.4, 3.0, R, 6.5, false);
       break;
     }
+    case 'police': {
+      // Công an phường: sảnh tiếp dân phía trước, buồng tạm giữ phía sau vách ngăn.
+      const di = 10.4, col = 0xe7e0cc;
+      shell(b, { w, d, di, h1: 3.3, H: 6.4, col, inner: 0xe9e4d2, floor: 'tile', opens: [{ x0: 1.0, x1: 2.6, sill: 0.9, top: 2.6 }, { x0: 3.2, x1: 5.8, top: 2.9 }, { x0: 6.6, x1: 8.4, sill: 0.9, top: 2.6 }] });
+      bigSign(b, w, 3.05, 'CÔNG AN PHƯỜNG', { bg: '#0b5ea8', fg: '#ffffff', sub: 'Trực ban 24/24 · Tiếp dân · Tạm giữ', subFg: '#ffe6a0' }, 0.9, 0.9, 92);
+      // băng đỏ - xanh kiểu bảng trụ sở
+      L.box(w / 2, 2.62, -0.06, w * 0.86, 0.1, 0.08, 0xd81e2a, 0xd81e2a, 0, true);
+      // cột cờ + hòm thư góp ý + ghế nhựa ngoài sân
+      L.box(0.5, 2.1, -1.15, 0.07, 4.2, 0.07, 0xb9c0c8, 0xd9dee2, 0, true);
+      L.box(0.92, 3.86, -1.15, 0.78, 0.5, 0.03, 0xda251d, 0xda251d, 0, true);
+      L.box(0.88, 3.86, -1.11, 0.22, 0.22, 0.03, 0xf5c531, 0xf5c531, 0, true);
+      L.box(7.6, 1.15, -0.55, 0.42, 0.5, 0.28, 0xd81e2a, 0xe8404a, 0.08); b.collide(7.35, -0.72, 7.85, -0.38);
+      U.box(7.6, 1.68, -0.55, 0.5, 0.06, 0.34, 0xd81e2a, 0xe8404a);
+      for (const [x, z] of [[7.9, -1.5], [8.5, -2.1]] as const) { U.box(x, 0.41, z, 0.44, 0.06, 0.44, 0x2f8fd5, 0x4aa8f0, 0.06); U.box(x, 0.47, z - 0.2, 0.44, 0.44, 0.05, 0x2f8fd5, 0x4aa8f0); for (const [dx, dz] of [[-0.17, -0.17], [0.17, -0.17], [-0.17, 0.17], [0.17, 0.17]] as const) U.box(x + dx, 0.13, z + dz, 0.05, 0.3, 0.05, 0x2f8fd5, 0x4aa8f0); }
+      U.box(8.2, 0.13, -1.8, 0.5, 0.5, 0.5, 0xe9eef2, 0xffffff, 0.06);
+      // sảnh tiếp dân: bàn trực ban, ghế chờ, bảng nội quy
+      counter(b, 4.9, 4.4, w - 0.4, 5.0, 0x8a6a4a, 1.02);
+      b.anchor('v_police', 6.3, 0.13, 5.7, Math.PI);
+      U.box(7.6, 1.15, 4.7, 1.0, 0.34, 0.03, 0xcfe6f2);
+      b.signAt(6.3, 2.4, 5.93, 2.0, 0.4, 'TIẾP DÂN', { bg: '#0b5ea8', fg: '#ffffff', border: '#ffffff' }, 0, -1, 56);
+      for (let i = 0; i < 3; i++) { U.box(0.95, 0.13, 1.4 + i * 0.62, 0.5, 0.4, 0.5, 0x2f8fd5, 0x4aa8f0, 0.1); b.collide(0.68, 1.15 + i * 0.62, 1.22, 1.65 + i * 0.62); }
+      b.signAt(0.24, 1.8, 3.4, 1.1, 0.66, 'NỘI QUY', { bg: '#ffffff', fg: '#0b5ea8', border: '#0b5ea8', sub: 'Giữ trật tự khu phố', subFg: '#7a0f1e' }, 1, 0, 40);
+      // ốp chân tường xanh công an + bảng tin tiếp dân
+      for (const x of [0.23, w - 0.23]) U.box(x, 0.14, 3.0, 0.04, 1.1, 5.4, 0x2f5f96, 0x3a72b0);
+      b.signAt(0.24, 2.6, 5.2, 1.5, 0.44, 'BẢNG TIN', { bg: '#ffffff', fg: '#0b5ea8', border: '#0b5ea8', sub: 'Lịch tiếp dân · Thông báo', subFg: '#7a0f1e' }, 1, 0, 40);
+      for (let i = 0; i < 4; i++) U.box(0.27, 2.05 - i * 0.26, 2.4 + (i % 2) * 0.5, 0.02, 0.22, 0.34, [0xfff6d8, 0xe9f3ff, 0xf3e6e6, 0xe9f7e9][i], 0xffffff);
+      // tủ hồ sơ + bình nước nóng lạnh + quạt trần
+      U.box(8.3, 0.13, 1.3, 0.92, 1.35, 0.52, 0x8f9aa2, 0xa9b4bc, 0.08);
+      for (let i = 0; i < 3; i++) U.box(8.3, 0.42 + i * 0.36, 1.03, 0.8, 0.26, 0.03, 0xc7cfd5, 0xdde4e9);
+      b.collide(7.8, 1.0, 8.8, 1.6);
+      U.box(8.35, 0.13, 3.1, 0.44, 0.95, 0.44, 0xeef3f6, 0xffffff, 0.06);
+      U.box(8.35, 1.13, 3.1, 0.3, 0.44, 0.3, 0x6fb8e8, 0x8fd0f4, 0.06);
+      U.box(4.6, 2.98, 2.6, 0.18, 0.16, 0.18, 0x55585e, 0x6a7078);
+      U.box(4.6, 2.86, 2.6, 1.7, 0.04, 0.16, 0x55585e, 0x6a7078);
+      U.box(4.6, 2.86, 2.6, 0.16, 0.04, 1.7, 0x55585e, 0x6a7078);
+      // đồng hồ treo tường + đèn bàn trên quầy
+      U.box(w - 0.26, 2.55, 3.5, 0.05, 0.5, 0.5, 0xf7f9f7, 0xffffff);
+      U.box(w - 0.3, 2.55, 3.55, 0.03, 0.2, 0.03, 0x1b1c1f);
+      U.box(w - 0.3, 2.6, 3.5, 0.03, 0.03, 0.16, 0x1b1c1f);
+      U.box(5.6, 1.02, 4.7, 0.18, 0.3, 0.18, 0x2a2c30, 0x3a3c40, 0.06);
+      U.box(5.6, 1.3, 4.62, 0.26, 0.1, 0.3, 0xf5d98a, 0xffe9b0, 0.05);
+      // vách ngăn + cửa buồng tạm giữ (có song sắt)
+      partition(b, 0.2, 6.0, 3.5, 6.0, 3.27, 0xd8cdb4); partition(b, 4.6, 6.0, w - 0.2, 6.0, 3.27, 0xd8cdb4);
+      lintel(b, 3.5, 6.0, 4.6, 6.0, 2.3, 3.27, 0xd8cdb4);
+      for (let i = 0; i < 5; i++) U.box(3.62 + i * 0.24, 0.13, 6.0, 0.05, 2.2, 0.05, 0x6a7078, 0x8a9098);
+      U.box(4.1, 2.33, 6.0, 1.1, 0.07, 0.07, 0x6a7078, 0x8a9098);
+      b.signAt(2.2, 2.62, 5.94, 1.7, 0.34, 'BUỒNG TẠM GIỮ', { bg: '#ffffff', fg: '#7a0f1e', border: '#7a0f1e' }, 0, -1, 40);
+      // trong buồng: giường sắt, xô nước, đống gạch để đập
+      for (const z of [7.6, 9.4]) {
+        U.box(1.7, 0.13, z, 0.95, 0.28, 1.9, 0x7a8088, 0x8a9098, 0.06);
+        U.box(1.7, 0.41, z, 0.88, 0.14, 1.82, 0xdfe6ea, 0xeef3f6, 0.05);
+        U.box(1.7, 0.55, z - 0.6, 0.62, 0.1, 0.36, 0xf7f4ea, 0xffffff, 0.04);
+        b.collide(1.22, z - 0.95, 2.18, z + 0.95);
+      }
+      b.anchor('giuong_giam', 2.9, 0.13, 8.5, -Math.PI / 2);
+      U.box(3.4, 0.13, 10.1, 0.4, 0.42, 0.4, 0x5a7a8a, 0x6a8a9a, 0.06);
+      // cửa sổ có song sắt trên vách sau + chiếu cói + vạch đếm ngày
+      U.box(2.2, 1.95, 10.16, 1.5, 0.95, 0.06, 0xbfe3f2, 0xd8f0fa);
+      for (let i = 0; i < 4; i++) U.box(1.58 + i * 0.42, 1.95, 10.12, 0.06, 0.95, 0.05, 0x55585e, 0x6a7078);
+      U.box(2.2, 1.95, 10.1, 1.6, 0.06, 0.05, 0x55585e, 0x6a7078);
+      U.box(6.4, 0.13, 6.7, 0.95, 0.16, 1.5, 0xd8cfae, 0xe6ddbe, 0.06);
+      for (let i = 0; i < 6; i++) U.box(8.3, 0.7 + i * 0.28, 7.4, 0.02, 0.18, 0.04, 0xbfb59a, 0xd4cbb0);
+      // đống gạch + búa: chỗ lao động khổ sai
+      for (let i = 0; i < 8; i++) U.box(6.2 + (i % 4) * 0.36, 0.13 + Math.floor(i / 4) * 0.2, 9.2, 0.34, 0.2, 0.3, 0xb5503c, 0xc9624a, 0.05);
+      U.box(7.8, 0.13, 8.6, 0.36, 0.5, 0.36, 0x8a6a4a, 0x9a7a5a, 0.06);
+      U.box(7.8, 0.63, 8.6, 0.2, 0.3, 0.2, 0x55585e, 0x6a7078);
+      b.collide(5.9, 8.9, 7.7, 9.5); b.collide(7.55, 8.35, 8.05, 8.85);
+      b.anchor('lao_dong', 7.0, 0.13, 8.5, 0);
+      for (const [x, z] of [[2.0, 2.6], [6.6, 2.6]]) ceilLight(b, x, 3.26, z, 1.6);
+      ceilLight(b, 4.0, 3.26, 8.6, 1.4);
+      // lối ra vào (dùng khi hết hạn tạm giữ)
+      b.anchor('cua_don', w / 2, 0.13, -1.8, 0);
+      break;
+    }
+    case 'hospital': {
+      // Bệnh viện Phước An: sảnh tiếp nhận, quầy thuốc, phòng hồi sức phía sau vách ngăn.
+      const di = 10.2, col = 0xeef3f4;
+      shell(b, { w, d, di, h1: 3.7, H: 16.5, col, inner: 0xf7f9f7, floor: 'tile', opens: [{ x0: 0.8, x1: 2.8, sill: 0.9, top: 2.8 }, { x0: 3.6, x1: 6.9, top: 3.1 }, { x0: 7.8, x1: 9.8, sill: 0.9, top: 2.8 }] });
+      bigSign(b, w, 3.4, 'BỆNH VIỆN PHƯỚC AN', { bg: '#0b5ea8', fg: '#ffffff', sub: 'Cấp cứu 24/24 · Khám bệnh · Nhà thuốc', subFg: '#d9f0ff' }, 0.95, 0.9, 104);
+      // dấu thập đỏ trên mặt tiền
+      L.box(w / 2, 5.05, -0.07, 0.62, 1.8, 0.12, 0xd81e2a, 0xd81e2a, 0, true);
+      L.box(w / 2, 5.65, -0.07, 1.8, 0.62, 0.12, 0xd81e2a, 0xd81e2a, 0, true);
+      for (let f = 0; f < 4; f++) for (let i = 0; i < 3; i++) { const x1 = w - 1.2 - i * 3.2, y = 5.0 + f * 3.2; L.box(x1 - 0.7, y - 0.12, -0.3, 1.6, 0.1, 0.5, WHITE, WHITE, 0, true); b.glow.quad(x1, y, -0.02, x1 - 1.4, y, -0.02, x1 - 1.4, y + 1.6, -0.02, x1, y + 1.6, -0.02, R.chance(0.45) ? 0xdfefff : 0x1c2530); }
+      // mái che lối vào + bảng cấp cứu cho dễ nhận ra từ ngoài đường
+      L.box(w / 2, 3.12, -0.95, 3.9, 0.14, 1.9, 0x0b5ea8, 0x0b5ea8, 0, true);
+      for (const px of [3.75, 6.75]) L.box(px, 0, -1.72, 0.12, 3.12, 0.12, 0x9aa2a8, 0xb9c0c8, 0, true);
+      U.box(w / 2, 0.0, -0.7, 3.4, 0.02, 1.5, 0xd8dee2);
+      b.signAt(3.0, 2.62, -0.14, 1.5, 0.4, 'CẤP CỨU', { bg: '#d81e2a', fg: '#ffffff', border: '#ffffff' }, 0, -1, 56);
+      // sảnh: ốp tường xanh nhạt, ghế chờ dọc tường trái
+      for (let i = 0; i < 4; i++) { U.box(1.05, 0.13, 1.3 + i * 0.62, 0.52, 0.42, 0.5, 0x2f8fd5, 0x4aa8f0, 0.1); U.box(0.72, 0.55, 1.3 + i * 0.62, 0.1, 0.5, 0.5, 0x2f8fd5, 0x4aa8f0, 0.1); b.collide(0.75, 1.05 + i * 0.62, 1.35, 1.55 + i * 0.62); }
+      // quầy thuốc + tủ thuốc bên phải
+      shelfUnit(b, w - 0.78, 4.6, w - 0.24, 8.4, 2.0, 0xdfeef0, R);
+      for (let i = 0; i < 5; i++) U.box(w - 0.52, 0.9, 5.0 + i * 0.72, 0.34, 0.26, 0.4, [0xffffff, 0xdfe9f2, 0xf3e8d2, 0xe9f3ee, 0xf7e6e6][i], 0xffffff, 0.06);
+      counter(b, w - 1.35, 8.6, w - 0.35, 9.2, 0xdfeef0, 0.95);
+      b.anchor('quay_thuoc', w - 0.95, 0.13, 7.6, Math.PI / 2);
+      b.signAt(w - 0.52, 2.35, 4.58, 1.5, 0.34, 'NHÀ THUỐC', { bg: '#ffffff', fg: '#1e7a3c', border: '#1e7a3c' }, 0, -1, 48);
+      // vách ngăn + cửa vào phòng hồi sức
+      partition(b, 0.2, 4.5, 6.2, 4.5, 3.67, 0xd8e6ea); partition(b, 7.3, 4.5, w - 0.2, 4.5, 3.67, 0xd8e6ea);
+      lintel(b, 6.2, 4.5, 7.3, 4.5, 2.3, 3.67, 0xd8e6ea);
+      b.signAt(3.2, 2.9, 4.44, 2.2, 0.4, 'PHÒNG HỒI SỨC', { bg: '#0b5ea8', fg: '#ffffff', border: '#0b5ea8', sub: 'Nằm nghỉ tính theo giờ', subFg: '#d9f0ff' }, 0, -1, 64);
+      // ốp chân tường màu xanh bệnh viện + bảng chỉ dẫn
+      for (const [x0, x1, z0, z1, dx, dz] of [[0.23, 0.23, 0.3, 4.3, 1, 0], [w - 0.23, w - 0.23, 0.3, 4.3, -1, 0]] as const) {
+        U.box(x0, 0.14, (z0 + z1) / 2, 0.04, 1.05, z1 - z0, 0x2f8fd5, 0x4aa8f0);
+        b.signAt(x0 + dx * 0.03, 1.85, (z0 + z1) / 2 + 0.4, 0.9, 0.62, 'RỬA TAY SẠCH', { bg: '#ffffff', fg: '#0b5ea8', border: '#2f8fd5', sub: 'Trước khi vào khám', subFg: '#7a3a8a' }, dx, dz, 40);
+      }
+      U.box(3.0, 0.14, 4.45, 6.0, 1.05, 0.04, 0x2f8fd5, 0x4aa8f0);
+      // quầy tiếp nhận phía sau
+      counter(b, 6.6, 9.0, w - 0.3, 9.6, 0x8fa3b0, 1.05);
+      U.box(8.3, 1.18, 9.3, 1.1, 0.36, 0.03, 0xcfe6f2);
+      b.signAt(8.3, 2.45, 8.94, 2.2, 0.44, 'TIẾP NHẬN', { bg: '#0b5ea8', fg: '#ffffff', border: '#0b5ea8', sub: 'Khám bệnh · Viện phí · Thất lạc', subFg: '#d9f0ff' }, 0, -1, 64);
+      // bảng gọi số điện tử
+      U.box(8.3, 2.95, 8.98, 1.5, 0.5, 0.08, 0x1b1c1f, 0x2a2c30, 0.05);
+      for (let i = 0; i < 3; i++) b.cur.glow.quad(7.9 + i * 0.4, 3.0, 8.93, 7.65 + i * 0.4, 3.0, 8.93, 7.65 + i * 0.4, 3.35, 8.93, 7.9 + i * 0.4, 3.35, 8.93, 0x6fd08a);
+      b.anchor('v_hospital', 8.3, 0.13, 10.0, Math.PI);
+      // hai giường bệnh, rèm trắng ngăn cách
+      for (const z of [6.6, 9.0]) {
+        U.box(2.0, 0.13, z, 1.0, 0.3, 2.0, WOODC, WOODC, 0.1);
+        U.box(2.0, 0.43, z, 0.94, 0.16, 1.94, 0xe9f4ff, 0xffffff, 0.05);
+        U.box(2.0, 0.59, z - 0.62, 0.7, 0.1, 0.4, 0xffffff, 0xffffff, 0.05);
+        b.collide(1.5, z - 1.0, 2.5, z + 1.0);
+        for (const [sx, sz] of [[-0.55, -1.05], [0.55, -1.05], [-0.55, 1.05], [0.55, 1.05]] as const) U.box(2.0 + sx, 0.13, z + sz, 0.06, 0.9, 0.06, 0x9aa2a8);
+        U.box(2.0, 1.02, z - 1.05, 1.2, 0.05, 0.05, 0x9aa2a8);
+        U.box(2.0, 0.75, z - 1.02, 1.14, 0.6, 0.03, 0xf2f7ff, 0xe6eef8, 0.02);
+      }
+      b.anchor('giuong_benhvien', 3.35, 0.13, 6.6, -Math.PI / 2);
+      U.box(3.1, 0.13, 9.6, 0.5, 0.5, 0.5, 0xdfeef0, 0xffffff, 0.1);
+      for (const [x, z] of [[4.6, 6.4], [4.6, 8.0], [8.4, 2.4]]) ceilLight(b, x, 3.66, z, 1.6);
+      ceilLight(b, 2.0, 3.66, 2.4, 1.4);
+      break;
+    }
     case 'spot': {
       // khoảng trống lùi vào để đặt quầy hàng
       const H = 7.2, col = 0xbfb6a6;

@@ -12,7 +12,7 @@ import { SHOPS } from '../data/shops';
 import { MB, MAT } from '../gfx/mb';
 import { toast } from '../core/bus';
 
-export type NState = 'walk' | 'stand' | 'sit' | 'toStall' | 'queue' | 'fixed' | 'follow' | 'actor' | 'chase' | 'gone';
+export type NState = 'walk' | 'stand' | 'sit' | 'toStall' | 'queue' | 'fixed' | 'follow' | 'actor' | 'chase' | 'cop' | 'gone';
 export interface Npc {
   id: number; rig: Rig; kind: 'ped' | 'fixed' | 'actor' | 'kid'; arch: ArchDef; fem: boolean; name: string; fixedId?: string; regular?: RegularDef;
   x: number; z: number; y: number; yaw: number; speed: number; vel: number; state: NState; pose: Pose; base: number;
@@ -20,12 +20,15 @@ export interface Npc {
   persona?: Persona; order?: Order; patience: number; waited: number; slot: number; asked: boolean; served: boolean; barkT: number;
   parent?: Npc; onArrive?: (n: Npc) => void; hidden: boolean; talkT: number; actor?: string; data?: any; home?: { x: number; z: number; yaw: number };
   /** hành động lúc rảnh (đọc báo / uống nước / tám chuyện) và người đang nói cùng */ idleT?: number; idleT2?: number; chatWith?: number;
+  /** Bị đấm mấy lần + còn giận tới lúc nào (giây ctx.time). */ hurt?: number; madUntil?: number;
   /** nhảy tại chỗ (nhân vật phụ ở góc hip hop) */ dance?: boolean;
   /** đếm ngược tới lần gây sự kế tiếp; chaseT: còn đuổi bao lâu; hit: đã xô người chơi lần này chưa */ rudeT: number; chaseT?: number; hit?: boolean;
 }
 /** Giờ mở cửa của những nơi không phải cửa hàng nguyên liệu. */
 export const PLACE_HOURS: Record<string, [number, number]> = { equip: [7, 20], bank: [8, 17], eatery: [6, 21.5], pawn: [8, 21], scrap: [6, 19], dock: [4.5, 10], motel: [0, 24], hotel: [0, 24], tro: [6, 22], shark: [9, 24], hobo: [0, 24],
   canho: [6, 22], nharieng: [6, 22], cuahang: [6, 21],
+  police: [0, 24],
+  hospital: [0, 24],
   // nhân vật phụ: mỗi người chỉ ở chỗ của mình trong một quãng giờ nhất định
   tra_da: [5.5, 22], rap: [14.5, 23], sua_xe: [7, 19], hat_rong: [9, 21], danh_co: [6.5, 18.5], danh_giay: [6, 19.5] };
 export function placeOpen(id: string): boolean {
@@ -150,6 +153,47 @@ export class Npcs {
     ctx.g.st.mood = clamp(ctx.g.st.mood - 3, 0, 100);
     toast('Ai đó khạc nhổ ngay trước mặt bạn. Chỉ còn biết lắc đầu đi tiếp.', 'warn');
   }
+  /**
+   * Ăn một cú đấm: la lên, mất uy tín, người xung quanh nhìn thấy.
+   * Người đi đường thì một nửa quay lại đánh, nửa kia bỏ chạy; người đứng bán thì giận, không nói chuyện nữa một lúc.
+   */
+  hit(n: Npc) {
+    if (ctx.mode !== 'play') return;
+    const R = this.R, g = ctx.g, L = LINES.hit;
+    ctx.sound.play('thud');
+    n.hurt = (n.hurt ?? 0) + 1;
+    this.say(n, R.pick(L.cry), 2.4, 4);
+    g.st.mood = clamp(g.st.mood + 1, 0, 100);
+    g.rep = clamp(g.rep - 3, 0, 100);
+    // người đứng gần thấy hết: mỗi hai người chứng kiến thì mất thêm uy tín
+    let seen = 0;
+    for (const o of this.list) { if (o === n || o.hidden) continue; if (dist2(o.x, o.z, n.x, n.z) < 9 && seen < 4) { seen++; if (seen <= 2) this.say(o, R.pick(L.witness), 2, 5); } }
+    if (seen >= 2) g.rep = clamp(g.rep - 1, 0, 100);
+    toast(n.hurt > 1 ? `Bạn đánh ${n.name} lần nữa. Người đi đường bắt đầu né ra xa.` : `Bạn đấm ${n.name}. Cả khúc đường quay lại nhìn.`, 'bad', 'angry');
+    if (n.state === 'fixed') { n.madUntil = ctx.time + 90; this.say(n, R.pick(L.cry), 2.4, 4); return; }
+    // khách đang chờ thì bỏ đi
+    if (n.state === 'queue' || n.state === 'toStall') { n.order = undefined; ctx.ui.unorder(n); }
+    n.path = []; n.pose = 'angry';
+    if (n.hurt >= 3 || R.chance(0.55)) this.chase(n, 3.4);
+    else { this.say(n, R.pick(L.run), 2.6, 4); this.leave(n); }
+  }
+  /** Công an phường đi tuần: gọi một chú lại gần để hỏi giấy tờ khi người chơi bị để ý. */
+  sendPolice(): Npc | null {
+    if (ctx.mode !== 'play') return null;
+    if (this.list.some((n) => n.state === 'cop')) return null;
+    const p = ctx.player;
+    // spawnPed chỉ bốc nút cách người chơi ≥16 m, mà công an phải đi bộ tới được ngay → tự bốc nút gần.
+    const ring = NAV.filter((c) => { const d = Math.sqrt(dist2(c.x, c.z, p.x, p.z)); return d >= 9 && d <= 26 && c.tag !== 'alley'; });
+    if (!ring.length) return null;
+    const c = ring[this.R.int(0, ring.length - 1)];
+    const a = ARCH.congan, fem = this.R.chance(a.fem);
+    const n = this.make('ped', a, fem, lookFromArch(a, this.R, fem), c.door ? c.door[0] : c.x, c.door ? c.door[1] : c.z, this.R.range(0, 6.28));
+    n.speed = 2.6; n.state = 'cop'; n.path = []; n.pose = 'walk'; n.hit = false; n.talkT = 0;
+    n.name = 'Công an khu vực';
+    this.say(n, this.R.pick(['Đứng lại chú em!', 'Chú em ơi, lại đây một chút.', 'Giấy tờ đâu, cho xem qua.']), 2.6);
+    ctx.sound.play('shout');
+    return n;
+  }
   /** Đuổi theo người chơi một quãng rồi bỏ đi. */
   chase(n: Npc, secs = 4.5) {
     if (ctx.mode !== 'play' || n.state === 'chase' || n.state === 'fixed') return;
@@ -214,6 +258,12 @@ export class Npcs {
         }
         this.idleOff(n); // đang đi thì không cầm báo, không cầm ly
         n.pose = n.state === 'walk' || n.vel > 0.1 ? 'walk' : n.pose;
+      } else if (n.state === 'cop') {
+        // đi thẳng tới người chơi rồi gọi lại hỏi giấy tờ
+        n.pose = 'walk';
+        const dd = Math.sqrt(pd2) || 0.001;
+        if (dd > 1.9) this.step(n, p.x, p.z, n.speed, dt, 0.9);
+        else if (!n.hit) { n.hit = true; n.state = 'stand'; n.chaseT = 0; ctx.acts.caught(n); }
       } else if (n.state === 'chase') {
         n.chaseT = (n.chaseT ?? 2) - dt; n.pose = 'angry';
         const dd = Math.sqrt(pd2) || 0.001;

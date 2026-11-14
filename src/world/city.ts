@@ -454,6 +454,7 @@ export interface City {
 
 export function buildCity(): City {
   const world = new World(), atlas = new SignAtlas(2048), b = new Builder(world, atlas), R = new RNG(77);
+  world.lots = LOTS;
   ground(b);
   for (let bz = 0; bz < 3; bz++) for (let bx = 0; bx < 3; bx++) {
     const cx = (BX[bx][0] + BX[bx][1]) / 2, cz = (BX[bz][0] + BX[bz][1]) / 2;

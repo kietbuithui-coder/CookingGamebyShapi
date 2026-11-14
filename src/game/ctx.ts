@@ -17,8 +17,8 @@ import type { Traffic } from './traffic';
 import type { Birds } from '../world/birds';
 
 /** Các nhóm nút người chơi tự xếp được: nút tương tác, nút chạy, hàng nút túi/sổ/bản đồ/cài đặt, các nút khi nấu ăn. */
-export type BtnKey = 'act' | 'run' | 'menu' | 'cook';
-export const BTN_KEYS: BtnKey[] = ['act', 'run', 'menu', 'cook'];
+export type BtnKey = 'act' | 'run' | 'menu' | 'cook' | 'hit' | 'jump';
+export const BTN_KEYS: BtnKey[] = ['act', 'run', 'menu', 'cook', 'hit', 'jump'];
 /** x, y: độ lệch so với chỗ mặc định, tính bằng phần bề ngang / bề cao màn hình (để xoay máy, đổi máy vẫn hợp lý) · s: hệ số phóng. */
 export interface BtnPlace { x: number; y: number; s: number; }
 /** scale: cỡ chữ và nút của cả giao diện · L / P: cách xếp riêng cho màn ngang và màn dọc. */

@@ -6,3 +6,4 @@ dist/
 image-search/
 /tmp-shots/
 tools/probe/out/
+tools/probe/package-lock.json

@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { MB, shade, mix } from '../gfx/mb';
 import { SignAtlas, SignStyle, GroundKind } from '../gfx/tex';
-import { Frame, toWorld } from './layout';
+import { Frame, Lot, toWorld } from './layout';
 import { RNG } from '../core/util';
 
 export interface Box2 { x0: number; z0: number; x1: number; z1: number; on?: boolean; }
@@ -20,6 +20,8 @@ export class World {
   doors: DoorDef[] = []; lamps: [number, number, number][] = []; slots: SlotDef[] = [];
   bins: Anchor[] = []; benches: Anchor[] = []; litter: [number, number][] = []; taps: Anchor[] = [];
   shutters: ShutterDef[] = []; spotsMark: Anchor[] = [];
+  /** Danh sách lô đất (kèm khung toạ độ) — dùng cho bản đồ, chỉ đường và công cụ thử nghiệm. */
+  lots: Lot[] = [];
   /** Vùng có mái che (trú mưa): hộp chữ nhật trong toạ độ thế giới. */
   roofs: Box2[] = [];
   covered(x: number, z: number) { for (const r of this.roofs) if (x > r.x0 && x < r.x1 && z > r.z0 && z < r.z1) return true; return false; }

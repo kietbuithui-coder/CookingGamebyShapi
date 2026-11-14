@@ -62,7 +62,7 @@ export const faceOutYaw = (fr: Frame) => fr.yaw + Math.PI;
 export type Style = 'office' | 'rich' | 'mid' | 'poor' | 'ware';
 export type LotKind = 'house' | 'alley' | 'minimart' | 'equip' | 'eatery' | 'bank' | 'hotel' | 'tro' | 'kiosk' | 'scrap' | 'site' | 'motel'
   | 'pawn' | 'cafe' | 'temple' | 'depot' | 'school' | 'spot' | 'pharmacy' | 'tower' | 'apartment'
-  | 'canho' | 'nharieng' | 'cuahang';
+  | 'canho' | 'nharieng' | 'cuahang' | 'hospital' | 'police';
 export interface Lot { bx: number; bz: number; face: Face; at: number; w: number; d: number; kind: LotKind; style: Style; fr: Frame; seed: number; id?: string; district: District; }
 
 interface Special { at: number; w: number; kind: LotKind; id?: string; d?: number; }
@@ -73,7 +73,7 @@ const SPECIALS: Record<string, Special[]> = {
   // Khu căn hộ (B)
   '10S': [{ at: 16, w: 10, kind: 'cafe', id: 'cafe' }, { at: 26, w: 12, kind: 'canho', id: 'canho' }],
   // Phố trung tâm (giữa)
-  '11S': [{ at: 4, w: 14, kind: 'minimart', id: 'minimart' }, { at: 18, w: 12, kind: 'cuahang', id: 'cuahang' }, { at: 30, w: 6, kind: 'pharmacy', id: 'pharmacy' }],
+  '11S': [{ at: 4, w: 14, kind: 'minimart', id: 'minimart' }, { at: 18, w: 12, kind: 'cuahang', id: 'cuahang' }, { at: 30, w: 5.5, kind: 'pharmacy', id: 'pharmacy' }, { at: 35.5, w: 10.5, kind: 'hospital', id: 'hospital' }],
   '11W': [{ at: 0, w: 10, kind: 'equip', id: 'equip' }, { at: 10, w: 2.4, kind: 'alley' }],
   '11N': [{ at: 6, w: 12, kind: 'eatery', id: 'eatery' }],
   '11E': [{ at: 11, w: 2.4, kind: 'alley' }],
@@ -90,7 +90,7 @@ const SPECIALS: Record<string, Special[]> = {
   '12N': [{ at: 5, w: 13, kind: 'motel', id: 'motel' }, { at: 30, w: 2.4, kind: 'alley' }],
   '12W': [{ at: 8, w: 8, kind: 'pawn', id: 'pawn' }],
   '12E': [{ at: 7, w: 10, kind: 'cafe', id: 'bongda' }],
-  '12S': [{ at: 21, w: 2.4, kind: 'alley' }],
+  '12S': [{ at: 4, w: 9, kind: 'police', id: 'police' }, { at: 21, w: 2.4, kind: 'alley' }],
   // Kho bãi (ĐN)
   '22N': [{ at: 6, w: 18, kind: 'temple', id: 'temple' }],
   '22W': [{ at: 5, w: 12, kind: 'depot', id: 'depot' }],

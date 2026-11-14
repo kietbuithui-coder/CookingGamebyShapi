@@ -18,6 +18,8 @@ export class Player {
   /** Khi đặt, camera trượt tới tư thế cố định (nấu ăn, ngủ, rửa chén…). */
   camTo: { pos: THREE.Vector3; look: THREE.Vector3; fov?: number } | null = null; private camK = 0; private from = new THREE.Vector3(); private fromQ = new THREE.Quaternion(); private fromFov = 68;
   frozen = false; private stepSide = 0;
+  /** Độ cao đang nhảy (mét) và vận tốc lên — chỉ để cảm giác, không đổi va chạm. */
+  jumpY = 0; private vy = 0;
   constructor() {
     const cam = ctx.camera; cam.rotation.order = 'YXZ'; cam.add(this.holder); ctx.scene.add(cam);
     const mk = (fn: (m: MB) => void) => { const m = new MB(); fn(m); const mesh = new THREE.Mesh(m.build(), MAT.lit); mesh.visible = false; this.holder.add(mesh); return mesh; };
@@ -26,6 +28,13 @@ export class Player {
     this.models.xeday = mk((m) => { m.frame(0, -1.5, Math.PI, -1.62); cartModel(m, 0, 0, 0); });
     const sack = sackMesh(); sack.position.set(0.42, 0.16, -0.42); sack.rotation.set(0.2, 0.5, 0.1); sack.visible = false; this.holder.add(sack); this.models.sack = sack;
     this.models.box = mk((m) => { m.box(0, -0.62, -0.6, 0.44, 0.3, 0.32, 0xc9a56a, 0xd9b87a, 0.08, true); m.box(0, -0.32, -0.6, 0.06, 0.004, 0.32, 0xe9d9a8); });
+  }
+  /** Còn đang trên đất thì mới nhảy được. */
+  get onGround() { return this.jumpY <= 0.001; }
+  /** Bật nhảy tại chỗ. false nếu đang ở trên không hoặc đang bị khoá điều khiển. */
+  jump(): boolean {
+    if (!this.onGround || this.frozen || this.camTo) return false;
+    this.vy = 3.4; return true;
   }
   place(x: number, z: number, yaw: number, pitch = 0) { this.x = x; this.z = z; this.yaw = yaw; this.pitch = pitch; this.y = groundY(x, z); }
   setCarry(c: Carry) { if (c === this.carry) return; this.carry = c; for (const [k, m] of Object.entries(this.models)) m!.visible = k === c; }
@@ -59,10 +68,15 @@ export class Player {
       const prev = this.phase; this.phase += dt * (wantRun ? 11.5 : 8.2) * clamp(this.speed / 3.3, 0.4, 1.4);
       if (Math.floor(prev / Math.PI) !== Math.floor(this.phase / Math.PI)) { this.stepSide ^= 1; const wet = ctx.env.wet > 0.4 || (floodPct(g) > 0.3 && floodZone(this.x, this.z)); ctx.sound.step(wet ? 'wet' : 'dry', wantRun ? 1 : 0.7); }
     }
+    // nhảy: lên rồi rơi xuống, chạm đất thì kêu một tiếng
+    if (this.vy !== 0 || this.jumpY > 0) {
+      this.jumpY += this.vy * dt; this.vy -= 12.5 * dt;
+      if (this.jumpY <= 0) { this.jumpY = 0; this.vy = 0; ctx.sound.step('dry', 1.15); }
+    }
     this.bob = damp(this.bob, this.moving ? 1 : 0, 8, dt);
     this.y = damp(this.y, groundY(this.x, this.z), 14, dt); this.eye = damp(this.eye, this.eyeTarget, 6, dt);
     const cam = ctx.camera, by = Math.sin(this.phase * 2) * 0.03 * this.bob, bx = Math.cos(this.phase) * 0.02 * this.bob;
-    const px = this.x + rx * bx, py = this.y + this.eye + by, pz = this.z + rz * bx;
+    const px = this.x + rx * bx, py = this.y + this.eye + by + this.jumpY, pz = this.z + rz * bx;
     if (this.camTo) {
       if (this.camK === 0) { this.from.copy(cam.position); this.fromQ.copy(cam.quaternion); this.fromFov = cam.fov; }
       this.camK = Math.min(1, this.camK + dt * 2.6); const t = this.camK * this.camK * (3 - 2 * this.camK);
