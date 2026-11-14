@@ -76,6 +76,8 @@ Nên **xoay ngang** điện thoại và bấm **Toàn màn hình** ở màn hìn
 - Mô hình 3D dựng bằng mã (hình khối cách điệu), không phải mô hình dựng tay chi tiết. Nội thất một số cửa hàng còn sơ sài.
 - Chưa có lưu đám mây; xoá dữ liệu trình duyệt là mất bản lưu.
 
+Danh sách đầy đủ những gì còn lại (3 bậc kinh doanh, băng nhóm, tuỳ biến ngoại hình, hiệu năng, cân chỉnh) nằm ở [`TODO.md`](TODO.md).
+
 ## Đã kiểm thử gì
 
 **Tự động:** 231 bài kiểm thử (`npm test`) cho toàn bộ luật chơi — giá cả, giá vốn, khách mua hay bỏ đi, đánh giá, hư hỏng nguyên liệu, nợ, thời tiết, sự kiện, nâng cấp bản lưu, tính nhất quán dữ liệu, và một bài mô phỏng 45 ngày liên tục.
