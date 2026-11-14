@@ -115,6 +115,7 @@ export class Acts {
   /** Nói chuyện với người đứng quầy. Lần đầu: hộp thoại còn ghi theo việc họ làm; nói xong mới biết tên. */
   talk(n: Npc) {
     if (n.madUntil && ctx.time < n.madUntil) { ctx.npcs.say(n, 'Đừng lại gần tao!', 2.2, 4); toast(`${n.name} vẫn còn giận, chưa muốn nói chuyện.`, 'warn', 'angry'); return; }
+    ctx.npcs.markMet(n);
     this.talkTo(n);
     if (n.fixedId && R.meet(this.g, n.fixedId)) { toast(`Bạn vừa làm quen với ${n.name}.`, 'info', 'heart'); bus.emit('save', 'lam quen'); }
   }

@@ -15,9 +15,9 @@ export type NetKind = 'game' | 'web' | 'film';
 export interface NetAct { name: string; mood: number; energy: number; hunger: number; thirst: number; }
 /** Hiệu ứng mỗi giờ chơi. */
 export const NET_ACTS: Record<NetKind, NetAct> = {
-  game: { name: 'Chơi game', mood: 9, energy: -4, hunger: -7, thirst: -8 },
-  web: { name: 'Lướt web', mood: 5, energy: -1, hunger: -3, thirst: -4 },
-  film: { name: 'Xem phim', mood: 13, energy: -2, hunger: -4, thirst: -5 },
+  game: { name: 'Chơi game', mood: 18, energy: -2, hunger: -3, thirst: -4 },
+  web: { name: 'Lướt web', mood: 12, energy: 0, hunger: -1, thirst: -2 },
+  film: { name: 'Xem phim', mood: 22, energy: -1, hunger: -2, thirst: -3 },
 };
 /** Các gói giờ bán ở quán (phút). */
 export const NET_PACKS = [30, 60, 120, 240];
@@ -45,9 +45,9 @@ export function plan(g: Game, kind: NetKind, minutes: number): Session {
   const a = NET_ACTS[kind], h = minutes / 60, tired = strain(g, minutes);
   return {
     kind, minutes, cost: cost(kind, minutes),
-    mood: Math.round(a.mood * h * (tired ? 0.45 : 1)),
+    mood: Math.round(a.mood * h * (tired ? 0.7 : 1)),
     energy: Math.round(a.energy * h), hunger: Math.round(a.hunger * h), thirst: Math.round(a.thirst * h),
-    health: tired ? -2 : 0, tired,
+    health: tired ? -1 : 0, tired,
   };
 }
 /** Ghi nhận đã ngồi bao nhiêu phút trong ngày (để tính mỏi mắt). */

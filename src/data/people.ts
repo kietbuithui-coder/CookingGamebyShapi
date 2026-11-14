@@ -261,6 +261,24 @@ export const LINES = {
     chase: ['Đi chỗ khác bán đi!', 'Dẹp ra khỏi đây!', 'Đừng có lảng vảng chỗ này!', 'Biến ra chỗ khác!'],
     begSpit: ['Hứ! Sức dài vai rộng mà đi xin.', 'Xin xỏ gì tầm này.', 'Nhục chưa? Đi kiếm việc đi.'],
   },
+  // ── Chào hỏi khi đi ngang (lượt 11) ──
+  // Quen mặt thì chào thân, không thì chào theo trời và theo giờ. Đủ ngắn để không thành phiền.
+  greet: {
+    known: ['Lại là {you} hả! Bữa nay bán gì ngon không?', 'Chào {you} nha, quán đông chưa?', 'Ủa, gặp hoài ta. Khoẻ không {you}?', 'Đi bán sớm dữ, {you}!'],
+    rain: ['Mưa vầy mà cũng đi, {you} siêng ghê.', 'Trời mưa, kiếm chỗ trú đi {you} ơi.', 'Ướt hết rồi kìa, coi chừng cảm.', 'Mưa này bán ế lắm, về sớm nghen.'],
+    cold: ['Trời lạnh ghê, {you} mặc thêm áo vô.', 'Gió này tê tái luôn.', 'Lạnh quá, có gì nóng nóng ăn cho ấm.'],
+    hot: ['Nắng muốn bể đầu, {you} ơi.', 'Nóng này mà đứng đường tội ghê.', 'Kiếm bóng mát mà đứng nghen {you}.'],
+    morning: ['Chào buổi sáng {you}.', 'Sớm ghê ta, chợ còn vắng.', 'Đi làm sớm dữ.', 'Chợ sáng đông chưa {you}?'],
+    noon: ['Trưa rồi, ăn gì chưa {you}?', 'Nắng trưa đứng đường mệt lắm nghen.', 'Ghé quán ăn miếng cơm đi.'],
+    evening: ['Chiều rồi, sắp tan tầm.', 'Đi về nghỉ ngơi nghen {you}.', 'Chiều mát, khách chắc đông.'],
+    night: ['Khuya rồi {you} ơi, về đi.', 'Đêm nay đường vắng.', 'Khuya vầy còn bán hả {you}?'],
+  } as Record<string, string[]>,
+  // ── Đứng xem đua xe đạp chủ nhật ──
+  cheer: {
+    watch: ['Ủa đua hả? Coi coi!', 'Đạp đi! Đạp mạnh lên!', 'Chỗ này vui nè.', 'Cổ vũ cho con Lan kìa!', 'Ba vòng lận, ráng nghen!'],
+    win: ['Đạp dữ thần!', 'Thắng rồi kìa, giỏi quá!', 'Con Lan thua rồi hả? Hê hê.', 'Phao nước tán thưởng đi bà con!'],
+    lose: ['Tiếc ghê, xém chút nữa.', 'Thua con Lan hả, bữa sau phục thù.', 'Đạp yếu quá, tập đi nghen.'],
+  },
   // ăn một cú đấm: la lên, có người quay lại đánh, có người bỏ chạy
   hit: {
     cry: ['Á! Đánh người ta hả?', 'Ui da! Làm gì vậy trời?', 'Đau! Mày bị gì vậy?', 'Ơ cái thằng này!', 'Đánh tao hả? Thử nữa coi!'],

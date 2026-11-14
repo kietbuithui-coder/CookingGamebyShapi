@@ -64,6 +64,14 @@ export class Player {
     if (this.moving) {
       let nx = this.x + vx * dt, nz = this.z + vz * dt;
       ctx.world.resolve(nx, nz, 0.3, _o); nx = clamp(_o.x, MAP.x0 + 0.5, MAP.x1 - 0.5); nz = clamp(_o.z, MAP.z0 + 0.5, MAP.z1 - 0.7);
+      // lỡ bị kẹt trong vật cản (khe hẹp, góc tường, cửa hẹp) thì bò ra chỗ trống gần nhất,
+      // nếu không camera sẽ nằm gọn trong tường và màn hình chỉ còn một màu nâu.
+      if (ctx.world.blocked(nx, nz, 0.28)) {
+        outer: for (let r = 0.25; r <= 1.75; r += 0.25) for (let i = 0; i < 16; i++) {
+          const a = (i * Math.PI) / 8, tx = nx + Math.cos(a) * r, tz = nz + Math.sin(a) * r;
+          if (!ctx.world.blocked(tx, tz, 0.28)) { nx = tx; nz = tz; break outer; }
+        }
+      }
       this.x = nx; this.z = nz;
       const prev = this.phase; this.phase += dt * (wantRun ? 11.5 : 8.2) * clamp(this.speed / 3.3, 0.4, 1.4);
       if (Math.floor(prev / Math.PI) !== Math.floor(this.phase / Math.PI)) { this.stepSide ^= 1; const wet = ctx.env.wet > 0.4 || (floodPct(g) > 0.3 && floodZone(this.x, this.z)); ctx.sound.step(wet ? 'wet' : 'dry', wantRun ? 1 : 0.7); }

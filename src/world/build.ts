@@ -125,12 +125,21 @@ export class Builder {
 
   /** Biển chữ: (x,y,z) là tâm cạnh dưới; (nx,nz) pháp tuyến cục bộ (mặc định quay ra đường). */
   signAt(x: number, y: number, z: number, w: number, h: number, text: string, st: SignStyle, nx = 0, nz = -1, px = 64, both = false) {
-    const uv = this.atlas.draw(text, w / h, st, px > 40 ? Math.round(px * 0.7) : px), rx = nz, rz = -nx, hw = w / 2;
+    const rx = nz, rz = -nx;
+    // Biển mà mép cắm vào tường nhà bên cạnh / cột điện / thùng thì teo lại cho vừa khung.
+    // Trước đây cứ vẽ đủ bề ngang nên có tấm bảng thò hẳn sang nhà kế bên, nhìn như biển nhô ra.
+    let hw = w / 2;
+    const okW = (k: number) => {
+      const [ax, az] = this.W(x - rx * hw * k, z - rz * hw * k), [bx, bz] = this.W(x + rx * hw * k, z + rz * hw * k);
+      return !this.world.blocked(ax, az, 0.02) && !this.world.blocked(bx, bz, 0.02);
+    };
+    if (!okW(1)) for (const k of [0.93, 0.86, 0.78, 0.7]) { if (okW(k)) { hw *= k; break; } }
+    const uv = this.atlas.draw(text, (hw * 2) / h, st, px > 40 ? Math.round(px * 0.7) : px);
     this.sign.quad(x - rx * hw, y, z - rz * hw, x + rx * hw, y, z + rz * hw, x + rx * hw, y + h, z + rz * hw, x - rx * hw, y + h, z - rz * hw, 0xffffff, 0, uv.u0, uv.v0, uv.u1, uv.v1);
     if (both) this.sign.quad(x + rx * hw, y, z + rz * hw, x - rx * hw, y, z - rz * hw, x - rx * hw, y + h, z - rz * hw, x + rx * hw, y + h, z + rz * hw, 0xffffff, 0, uv.u0, uv.v0, uv.u1, uv.v1);
-    if (w * h >= 0.25) {
+    if (hw * 2 * h >= 0.25) {
       const [wx, wz] = this.W(x, z), c = Math.cos(this.fr.yaw), s = Math.sin(this.fr.yaw);
-      this.signs.push({ x: wx, z: wz, y0: y, y1: y + h, w, nx: nx * c + nz * s, nz: -nx * s + nz * c });
+      this.signs.push({ x: wx, z: wz, y0: y, y1: y + h, w: hw * 2, nx: nx * c + nz * s, nz: -nx * s + nz * c });
     }
   }
   /**

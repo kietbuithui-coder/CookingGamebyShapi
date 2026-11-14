@@ -151,23 +151,30 @@ phải cắt cảnh.
 theo hạt giống, chấm điểm giữa vùng / mép / trượt, sức đối thủ, thắng–thua–hoà và tiền thưởng, chỉ chủ nhật
 và đúng khung giờ, mỗi ngày một lượt, bản lưu v8 → v9, xích đu ba mức và giờ mở cửa.
 
-## Lượt 11 — NPC sống động hơn
+## Lượt 11 — NPC sống động hơn ✅ đã xong
 
-- **Mặt & tóc**: thêm 4 kiểu tóc (tóc dài, cắt ngắn, cột, hói), thêm râu, kính, mũ bảo hiểm; mỗi nhân vật
-  cố định có ngoại hình riêng chứ không trùng.
-- **Lời thoại hai giọng**: mỗi nhóm nhân vật có câu dễ thương và câu thô tục, chọn theo tính cách và theo
-  việc người chơi vừa làm (đánh họ thì thô, giúp họ thì dễ thương).
-- **Âm thanh cảm xúc**: khi xin tiền, NPC đáp bằng tiếng "ừ" ấm hay "hứ" lạnh (WebAudio, không tải tệp).
-- **NPC tạp hoá nhỏ**: bánh mì dạo, xe nước mía, cà phê dạo, sữa đậu nành — mua tại chỗ, hồi no/khát/tinh
-  thần, rẻ hơn quán cơm.
+**Lịch sinh hoạt.** Mỗi người đi đường có kế hoạch ba chỗ theo nhóm và theo giờ (`src/sim/life.ts`): công nhân
+sáng ra chợ – tan ca ghé quán, học sinh sáng tới trường – chiều ra quán vặt và công viên, người lớn tuổi quanh
+quẩn ghế đá, vô gia cư tối về gầm cầu. Trọng số điểm đến nhân theo giờ nên chợ đông buổi sáng, quán đông buổi
+trưa, công viên đông lúc chiều tối.
 
-**Kiểm thử:** mọi NPC có ngoại hình hợp lệ, thoại không trùng, âm thanh không làm sập khi tắt tiếng.
+**Giờ cao điểm.** 6h24–8h12 và 16h18–18h18 đi nhanh 1,3 lần; sau 22h chậm 0,9 lần.
 
----
+**Chào hỏi.** Đi ngang trong 5,2 m thì chào: quen mặt (đã nói chuyện, uy tín > 6) → mưa → nóng/lạnh → buổi
+trong ngày. Nói chuyện xong thì nhớ mặt.
 
-## Nguyên tắc chung cho cả sáu lượt
+**Mưa nắng, đi cặp, ghế đá.** Mưa thì che dù; một phần ba số người đi thành cặp vừa đi vừa nói chuyện; chiều tối
+ra công viên thì tìm ghế trống ngồi, hết ghế mới đứng.
 
-- Mỗi lượt: `tsc` sạch, kiểm thử mới đi kèm, probe không lỗi console, ảnh chụp trước/sau, cập nhật README
-  và DESIGN, build `docs/`, một PR riêng.
-- Bản lưu: mọi lượt đụng vào `Game` đều phải tăng `SAVE_VERSION` và viết `migrate()` cho bản cũ.
-- Không tải tài nguyên ngoài: hình vẽ bằng hình học, tiếng động bằng WebAudio.
+**Hàng xóm xem đua.** Vào cuộc đua xe đạp có bốn người đứng xem ở vỉa hè đối diện, về đích thì cổ vũ hoặc trêu.
+
+**Cân bằng lại quán net.** Chơi game +18 tinh thần (cũ +9), −2 sức (cũ −4), −3 no (cũ −7), −4 nước (cũ −8);
+lướt web +12 / 0 / −1 / −2; xem phim +22 / −1 / −2 / −3. Mỏi mắt sau 120 phút chỉ còn 70% tinh thần và −1 sức
+khoẻ (cũ 45% và −2).
+
+**Sửa lỗi kèm theo.** Bàn cờ Ông Tư dời khỏi ghế đá (52,2, −56,9); biển hiệu tự teo lại nếu mép cắm vào
+tường/cột; người chơi tự bò ra khỏi vật cản nếu lỡ kẹt (hết cảnh camera trong tường).
+
+**Kiểm thử:** `tests/life.test.ts` 5 bài + cập nhật `tests/net.test.ts` (thêm bài cân bằng mới) — tổng 226 bài /
+15 tệp.
+

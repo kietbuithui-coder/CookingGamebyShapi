@@ -120,10 +120,12 @@ export function buildSide(b: Builder) {
     b.anchor('v_hat_rong', x, 0.13, z, Math.PI / 2);
   }
 
-  // ───────── 5. Bàn cờ tướng của Ông Tư — trong công viên, cạnh ghế đá ─────────
+  // ───────── 5. Bàn cờ tướng của Ông Tư — trong công viên, bên lối đi ngang hồ ─────────
+  // (Trước đây bàn đặt ngay trước ghế đá ở (57, −72,5) nên ghế với bàn lồng vào nhau, ông ngồi lọt thỏm
+  // giữa hai cái. Dời ra khoảng trống phía bắc lối đi, cách hồ nước và bồn hoa đủ xa.)
   b.chunk('b20', 59, -59).frame({ tx: 0, tz: 0, yaw: 0 });
   {
-    const x = 56.4, z = -71.6, d = D();
+    const x = 52.2, z = -56.9, d = D();
     b.table(x, z, 0.66, 0.66, 0.48, 0xd9d2c0, d);
     d.box(x, 0.48, z, 0.56, 0.02, 0.56, 0xe9d9a8, 0xf3e6bc, 0, true);                            // bàn cờ (nằm trên mặt bàn)
     for (let i = 1; i < 8; i++) {

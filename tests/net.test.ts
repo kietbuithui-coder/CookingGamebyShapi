@@ -38,6 +38,23 @@ describe('quán net', () => {
     expect(NET_ACTS.game.thirst).toBeLessThan(0);
   });
 
+  it('ngồi máy nhẹ bụng hơn trước: đói khát và sức hao ít, tinh thần lên nhiều', () => {
+    // lượt 11 nới tay: chơi game/xem phim không còn làm đói khát như đi làm ngoài nắng
+    for (const k of ['game', 'web', 'film'] as const) {
+      const a = NET_ACTS[k];
+      expect(a.mood).toBeGreaterThanOrEqual(12);
+      expect(Math.abs(a.hunger)).toBeLessThanOrEqual(3);
+      expect(Math.abs(a.thirst)).toBeLessThanOrEqual(4);
+      expect(a.energy).toBeGreaterThanOrEqual(-2);
+    }
+    const g = fresh();
+    const oneHour = plan(g, 'game', 60);
+    expect(oneHour.mood).toBeGreaterThan(15);          // gấp đôi bản cũ (9)
+    expect(oneHour.hunger).toBe(-3);                    // bản cũ -7
+    expect(oneHour.thirst).toBe(-4);                    // bản cũ -8
+    expect(oneHour.energy).toBe(-2);                    // bản cũ -4
+  });
+
   it('một tiếng chơi game: tính đúng tiền và hiệu ứng', () => {
     const g = fresh();
     const s = plan(g, 'game', 60);
@@ -58,7 +75,7 @@ describe('quán net', () => {
     expect(strain(g, 30)).toBe(true);
     const s2 = plan(g, 'game', 60);
     expect(s2.tired).toBe(true);
-    expect(s2.health).toBe(-2);
+    expect(s2.health).toBe(-1);
     expect(s2.mood).toBeLessThan(Math.round(NET_ACTS.game.mood * 1));
   });
 
