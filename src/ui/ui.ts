@@ -13,6 +13,7 @@ import { INGS } from '../data/ingredients';
 import { SHOPS } from '../data/shops';
 import { DISTRICT, districtAt } from '../world/layout';
 import { hourOf } from '../sim/state';
+import { jailLeft } from '../sim/police';
 import { activeEvents, totalDebt, level, tier, hasMet, fixedLabel } from '../sim/rules';
 import { stallHint } from '../game/stall';
 import { openPanel } from './panels';
@@ -74,7 +75,7 @@ export class UI {
     const R = this.root, E = this.E, add = (id: string, html = '', cls = '') => { const e = el('div', cls, html, R); e.id = id; E[id] = e; return e; };
     this.world = add('world');
     // ba chip giờ – thời tiết – chỗ đang đứng nằm chung một hàng cho gọn (hẹp quá thì tự xuống dòng)
-    add('hud-tl', `<div class="row"><span class="chip" id="clock" data-tip="Giờ trong ngày — một ngày trong game dài khoảng 24 phút thật"></span><span class="chip" id="wx" data-tip="Thời tiết hôm nay"></span><span class="chip" id="place" data-tip="Bạn đang đứng ở khu nào"></span></div><div id="stats"></div>`);
+    add('hud-tl', `<div class="row"><span class="chip" id="clock" data-tip="Giờ trong ngày — một ngày trong game dài khoảng 24 phút thật"></span><span class="chip" id="wx" data-tip="Thời tiết hôm nay"></span><span class="chip" id="place" data-tip="Bạn đang đứng ở khu nào"></span></div><div class="row"><span class="chip danger hide" id="jailclock" data-tip="Thời gian còn lại trong buồng tạm giữ"></span></div><div id="stats"></div>`);
     add('hud-tr', `<div class="row"><span class="chip" id="rep"></span><span class="chip" id="money"></span></div><div class="row" id="menub"><button class="ib hide" id="stowb" title="Cất gánh vào ba lô">${ic('box')}</button><button class="ib" data-p="bag" data-tip="Túi đồ — nguyên liệu, món ăn, đồ nghề đang mang (Tab)">${ic('bag')}<span class="dot hide" id="bagdot"></span></button><button class="ib" data-p="book" data-tip="Sổ tay — công thức, sổ sách, nợ và khách quen (B)">${ic('book')}</button><button class="ib hide" id="phoneb" data-p="phone" data-tip="Điện thoại — pin, danh bạ, tin nhắn, radio (P)">${ic('phone')}<span class="dot hide" id="phonedot"></span></button><button class="ib" data-p="map" data-tip="Bản đồ thành phố — chạm một chỗ để ghim đường đi (M)">${ic('map')}</button><button class="ib" data-p="settings" data-tip="Cài đặt — đồ hoạ, cỡ chữ, âm thanh, sắp xếp nút">${ic('gear')}</button></div><div class="row"><span class="chip hide" id="wanted" data-tip="Mức bị để ý — càng cao công an càng hay gọi lại hỏi giấy tờ"></span><span class="chip hide" id="debt" data-tip="Tổng nợ và hạn trả gần nhất"></span><span class="chip" id="fps" data-tip="Khung hình mỗi giây và số lệnh vẽ"></span></div>`);
     add('quest', '<div class="qh"><small>MỤC TIÊU</small><button class="qmin" id="qmin" data-tip="Thu gọn / mở lại ô mục tiêu">–</button></div><span></span>'); add('way', '', 'chip hide'); add('events'); add('cross'); add('focus'); add('stam', '<b></b>', 'hide');
     add('act', `<button class="alt hide"></button><button class="main dim">${ic('hand')}</button>`); add('runb', `<button class="run">${ic('run')}</button>`);
@@ -83,7 +84,7 @@ export class UI {
     add('stick', '<i></i>', 'hide'); add('cart', '', 'chip hide'); add('stallchip', '', 'chip hide'); add('toasts');
     add('cook', `<button class="btn small red quit">${ic('x')} Bỏ dở</button><div class="top"><div class="title"></div><div class="steps"></div><div class="hint"></div><div class="prog hide"><div class="meter"><div class="z"></div><div class="v"></div></div><small></small></div></div><div class="heat hide"><small>LỬA</small><div class="meter"><div class="z"></div><div class="v"></div><div class="n"></div></div></div><div class="slider hide"><i>LỬA</i></div><div class="card hide"></div><div class="custom hide"></div><div class="btns"></div>`, 'hide');
     add('grade', '', 'hide'); add('dlg', '', 'hide'); add('fade'); add('zzz', '', 'hide'); add('modal', '', 'hide'); add('menu', '', 'hide'); add('load', 'Đang dựng thành phố…<small>Gánh Hàng Đường Phố</small>'); add('rotate', 'Hãy xoay ngang điện thoại để chơi thoải mái hơn.<br><br><button class="btn" id="rotok">Cứ chơi dọc</button>', 'want');
-    for (const id of ['clock', 'wx', 'place', 'stats', 'rep', 'money', 'bagdot', 'debt', 'fps', 'stowb', 'wanted', 'phoneb', 'phonedot']) E[id] = document.getElementById(id)!;
+    for (const id of ['clock', 'wx', 'place', 'jailclock', 'stats', 'rep', 'money', 'bagdot', 'debt', 'fps', 'stowb', 'wanted', 'phoneb', 'phonedot']) E[id] = document.getElementById(id)!;
     E.stowb.onclick = () => { if (ctx.mode === 'play') ctx.stall.stow(); };
     E.stats.innerHTML = ([['dish', 'hunger', 'Độ no', 'no bụng — tụt thì đói, kiệt sức'], ['drop', 'thirst', 'Nước', 'khát — tụt thì khô cổ, dễ cảm'], ['bolt', 'energy', 'Năng lượng', 'sức lực — tụt thì đi chậm, ngất được'], ['heart', 'health', 'Sức khoẻ', 'máu — tụt vì bệnh, bị đánh, ngất'], ['sparkle', 'hygiene', 'Sạch sẽ', 'tắm rửa — bẩn thì khách chê'], ['smile', 'mood', 'Vui vẻ', 'tinh thần — thấp thì nấu kém, khách bỏ đi']] as const)
       .map(([i, k, t, note]) => `<div class="stat" data-k="${k}" data-tip="${t}: ${note}">${ic(i)}<i><b></b></i></div>`).join('');
@@ -249,6 +250,12 @@ export class UI {
     this.em = parseFloat(getComputedStyle(this.root).fontSize) || 14;
     const g = ctx.g, E = this.E, w = WEATHER[g.weather.now], p = ctx.player;
     E.clock.innerHTML = `${ic('clock')}Ngày ${g.day + 1} · <b>${hhmm(g.min)}</b>`;
+    const jailMins = Math.ceil(jailLeft(g));
+    E.jailclock.classList.toggle('hide', jailMins <= 0);
+    if (jailMins > 0) {
+      const jailHours = Math.floor(jailMins / 60), jailRemainder = jailMins % 60;
+      E.jailclock.innerHTML = `${ic('clock')}Tạm giữ còn ${jailHours} giờ ${String(jailRemainder).padStart(2, '0')} phút`;
+    }
     E.wx.innerHTML = `${ic(hourOf(g) > 18.6 || hourOf(g) < 5.4 ? (w.rain > 0 ? w.icon : 'moon') : w.icon)}${w.name}`;
     E.place.innerHTML = `${ic('pin')}${DISTRICT[districtAt(p.x, p.z)].name}`;
     if (g.cash !== this.lastCash) { this.lastCash = g.cash; E.money.innerHTML = `${ic('cash')}${money(g.cash)}`; }
