@@ -14,6 +14,7 @@ import { Interact } from './game/interact';
 import { Acts } from './game/acts';
 import { Cook } from './cook/cook';
 import { RaceSystem } from './game/race';
+import { AnimSystem } from './game/anim';
 import { Sound } from './audio/audio';
 import { Traffic } from './game/traffic';
 import { Birds } from './world/birds';
@@ -41,7 +42,7 @@ async function boot() {
   await fontsReady(); await new Promise((r) => setTimeout(r, 30));
   const city = (ctx.city = buildCity()); ctx.world = city.world; scene.add(city.root);
   ctx.env = new Env(scene, city); ctx.env.thunder = () => setTimeout(() => ctx.sound.play('thunder'), 300 + Math.random() * 1200);
-  ctx.player = new Player(); ctx.npcs = new Npcs(); ctx.stall = new StallSys(); ctx.cook = new Cook(); ctx.acts = new Acts(); ctx.interact = new Interact(); ctx.race = new RaceSystem();
+  ctx.player = new Player(); ctx.npcs = new Npcs(); ctx.stall = new StallSys(); ctx.cook = new Cook(); ctx.acts = new Acts(); ctx.interact = new Interact(); ctx.race = new RaceSystem(); ctx.anim = new AnimSystem();
   ctx.traffic = new Traffic(); ctx.birds = new Birds();
   ctx.g = newGame(1);
 
@@ -61,6 +62,7 @@ async function boot() {
   bus.on('save', () => { dirty = true; });
   const hasSave = () => { try { return !!localStorage.getItem(SAVE_KEY); } catch { return false; } };
   const start = (g: Game, fresh: boolean) => {
+    ctx.anim.stop();
     ctx.g = g; ctx.mode = 'play'; ctx.speed = MIN_PER_SEC; ctx.player.place(g.pos.x, g.pos.z, g.pos.yaw, g.pos.pitch); ctx.player.eyeTarget = 1.6; ctx.player.setCarry(''); ctx.player.applyLook();
     for (const n of ctx.npcs.list.slice()) if (n.state !== 'fixed') ctx.npcs.remove(n);
     ctx.stall.reset(); ctx.acts.cart = null; ctx.acts.job = null; ctx.acts.way = null; ctx.acts.spawnLitter(); ui.menu(null); ui.hud(true); ui.fade(false, 1.2); ctx.input.reset();
@@ -72,6 +74,7 @@ async function boot() {
   };
   ctx.newGame = (ac) => start(newGame((Math.random() * 1e9) | 0, ac), true);
   const menu = () => {
+    ctx.anim.stop();
     ctx.mode = 'menu'; ui.hud(false); ui.fade(false, 0.5);
     const m = ui.menu(`<div class="box"><h1>Gánh Hàng<br>Đường Phố<small>Từ gầm cầu tới ông chủ quán — tự tay nấu, tự tay bán</small></h1><div class="btns">${hasSave() ? '<button class="btn yellow" data-m="cont">Chơi tiếp</button>' : ''}<button class="btn ${hasSave() ? '' : 'yellow'}" data-m="new">Chơi mới</button><button class="btn small" data-m="q">Đồ hoạ: ${QUALITY[ctx.set.quality].name}</button>${canFullscreen() ? '<button class="btn small" data-m="fs">Toàn màn hình</button>' : ''}</div><div class="note">Nên xoay ngang điện thoại · Game tự lưu trên máy này</div></div>`);
     m.onclick = (e) => {
@@ -98,7 +101,7 @@ async function boot() {
     if (ctx.mode !== 'menu') {
       const paused = !!ui.modalName;
       if (!paused) advance(g, dt * ctx.speed, ctx.acts.act());
-      ctx.player.update(dt); ctx.npcs.update(dt); ctx.stall.update(dt); ctx.cook.update(dt); ctx.race.update(dt); ctx.acts.update(dt); ctx.interact.update(dt);
+      ctx.anim.update(dt); ctx.player.update(dt); ctx.npcs.update(dt); ctx.stall.update(dt); ctx.cook.update(dt); ctx.race.update(dt); ctx.acts.update(dt); ctx.interact.update(dt);
       ctx.traffic.update(dt); ctx.birds.update(dt);
       saveT += dt; if ((dirty && saveT > 2) || saveT > 45) ctx.save();
       if (ctx.mode === 'play' && !ui.modalName) { if (bankrupt) { bankrupt = false; summary = false; ui.panel('bankrupt'); } else if (summary) { summary = false; ui.panel('summary'); } }

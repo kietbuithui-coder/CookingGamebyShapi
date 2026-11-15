@@ -120,7 +120,7 @@ const EMPTY = new THREE.BufferGeometry();
 export class Rig {
   root = new THREE.Group(); inner = new THREE.Group();
   body: THREE.Mesh; face: THREE.Mesh; armL: THREE.Mesh; armR: THREE.Mesh; legL: THREE.Mesh; legR: THREE.Mesh; blob: THREE.Mesh; held: THREE.Mesh | null = null;
-  look!: Look; phase = Math.random() * 6; expr = 0; exprT = 0; blinkT = Math.random() * 4; pose: Pose = 'idle'; t = Math.random() * 10;
+  look!: Look; phase = Math.random() * 6; expr = 0; exprT = 0; blinkT = Math.random() * 4; pose: Pose = 'idle'; seated = false; t = Math.random() * 10;
   private sit = 0; private lie = 0;
   constructor() {
     this.body = new THREE.Mesh(EMPTY, MAT.lit); this.face = new THREE.Mesh(faceGeometry(), faceMaterial());
@@ -136,7 +136,7 @@ export class Rig {
     this.armL.geometry = arm; this.armR.geometry = arm; this.legL.geometry = leg; this.legR.geometry = leg;
     const sx = 0.2 * l.fat + 0.035; this.armL.position.set(-sx, SHOULDER_Y, 0); this.armR.position.set(sx, SHOULDER_Y, 0);
     this.inner.scale.setScalar(l.h); this.blob.scale.set(0.74 * l.h * l.fat, 1, 0.74 * l.h * l.fat);
-    this.expr = -1; this.setExpr(0);
+    this.seated = false; this.expr = -1; this.setExpr(0);
   }
   get headY() { return (HEAD_Y + 0.3) * this.look.h; }
   setExpr(col: number, hold = 0) {
@@ -155,7 +155,7 @@ export class Rig {
     const p = this.pose, walking = speed > 0.05 && (p === 'walk' || p === 'carry');
     if (walking) this.phase += dt * (3.2 + speed * 3.4);
     const sw = walking ? Math.sin(this.phase) * clamp(0.3 + speed * 0.3, 0, 0.85) : 0, k = Math.min(1, dt * 12);
-    const sitT = p === 'sit' || p === 'ride' ? 1 : 0, lieT = p === 'lie' ? 1 : 0;
+    const sitT = this.seated || p === 'sit' || p === 'ride' ? 1 : 0, lieT = p === 'lie' ? 1 : 0;
     this.sit = damp(this.sit, sitT, 8, dt); this.lie = damp(this.lie, lieT, 6, dt);
     let lL = sw, lR = -sw, aL = -sw * 0.8, aR = sw * 0.8, aLz = 0.06, aRz = -0.06;
     if (this.sit > 0.01) { lL = lR = -1.45 * this.sit; aL = aR = -0.5 * this.sit; }

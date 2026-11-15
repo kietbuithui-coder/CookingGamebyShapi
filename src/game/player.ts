@@ -7,13 +7,15 @@ import { moveMul, staminaMax, tier, bagWeight, carryCap, floodPct } from '../sim
 import { floodZone } from '../data/world';
 import { MB, MAT } from '../gfx/mb';
 import { ganhModel, cartModel, basketModel } from '../gfx/props';
-import { sackMesh, Rig, Look } from '../gfx/people';
+import { sackMesh, Rig, Look, Pose } from '../gfx/people';
 
 export type Carry = '' | 'ganh' | 'xeday' | 'sack' | 'box';
 const _o = { x: 0, z: 0 };
 export class Player {
-  /** Nhân vật của chính mình — chỉ hiện ở góc nhìn thứ ba (phím V hoặc trong Cài đặt). */
+  /** Nhân vật của chính mình — chỉ hiện ở góc nhìn thứ ba (phím V hoặc trong Cài đặt) hoặc trong cảnh hoạt ảnh. */
   rig = new Rig(); look: Look | null = null; private rigCarry = new THREE.Group(); private carryMesh: Partial<Record<Carry, THREE.Object3D>> = {};
+  actPose: Pose | null = null;
+  actRigPos: { x: number; y: number; z: number; yaw: number; pitch?: number } | null = null;
   private camP = new THREE.Vector3(); private camDist = 3; private camOn = false;
   x = 0; z = 0; yaw = Math.PI; pitch = 0; eye = 1.6; eyeTarget = 1.6; y = 0.12;
   stamina = 1; /** Trần sức bền hiện tại (tụt khi đói, khát). */ staminaCap = 1; tired = false; moving = false; running = false; speed = 0; phase = 0; bob = 0;
@@ -46,7 +48,10 @@ export class Player {
     if (!this.onGround || this.frozen || this.camTo) return false;
     this.vy = 3.4; return true;
   }
-  place(x: number, z: number, yaw: number, pitch = 0) { this.x = x; this.z = z; this.yaw = yaw; this.pitch = pitch; this.y = groundY(x, z); }
+  place(x: number, z: number, yaw: number, pitch = 0) {
+    if (ctx.anim?.active && !ctx.anim.placing) ctx.anim.stop();
+    this.x = x; this.z = z; this.yaw = yaw; this.pitch = pitch; this.y = groundY(x, z);
+  }
   setCarry(c: Carry) { if (c === this.carry) return; this.carry = c; for (const [k, m] of Object.entries(this.models)) m!.visible = k === c; this.syncCarry(); }
   /** Đồ mang theo: bản gắn vào camera (góc nhìn 1) và bản gắn vào nhân vật (góc nhìn 3). */
   private syncCarry() { for (const [k, m] of Object.entries(this.carryMesh)) m!.visible = k === this.carry; }
@@ -111,6 +116,14 @@ export class Player {
       cam.position.lerpVectors(this.from, this.camTo.pos, t);
       _m.lookAt(this.camTo.pos, this.camTo.look, _up); _q.setFromRotationMatrix(_m); cam.quaternion.slerpQuaternions(this.fromQ, _q, t);
       const f = this.fromFov + ((this.camTo.fov ?? baseFov(cam.aspect)) - this.fromFov) * t; if (Math.abs(f - cam.fov) > 0.01) { cam.fov = f; cam.updateProjectionMatrix(); }
+      if (this.actPose || ctx.set.cam3) {
+        const rp = this.actRigPos;
+        this.rig.root.position.set(rp ? rp.x : this.x, (rp ? rp.y : this.y) + this.jumpY, rp ? rp.z : this.z);
+        this.rig.root.rotation.y = rp ? rp.yaw : this.yaw;
+        this.rig.pose = this.actPose ?? (this.moving ? 'walk' : 'idle');
+        this.rig.update(dt, this.speed);
+        if (rp?.pitch) this.rig.inner.rotation.x += rp.pitch;
+      }
     } else {
       const bf = baseFov(cam.aspect);
       if (this.camK > 0) { // trở lại góc nhìn nhân vật
@@ -136,7 +149,7 @@ export class Player {
       }
     }
     // nép sát quá thì giấu nhân vật đi, đừng để camera chui vô trong đầu
-    this.rig.root.visible = !!ctx.set.cam3 && (this.camDist > 2.0 || !!this.camTo);
+    this.rig.root.visible = !!this.actPose || (!!ctx.set.cam3 && (this.camDist > 2.0 || !!this.camTo));
     // vật mang theo đung đưa
     this.holder.position.set(Math.cos(this.phase) * 0.012 * this.bob, Math.abs(Math.sin(this.phase)) * -0.025 * this.bob, 0);
     this.holder.rotation.x = -this.pitch * 0.55; this.holder.visible = !this.camTo && this.camK === 0 && !ctx.set.cam3;
