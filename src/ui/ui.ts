@@ -129,6 +129,12 @@ export class UI {
         else if (k >= '1' && k <= '9') (E.dlg.querySelectorAll('.btn')[+k - 1] as HTMLElement)?.click();
         return;
       }
+      if (ctx.anim?.active) {
+        if (k === ' ' || k === 'e' || k === 'enter') this.onCookBtn?.('b0', true);
+        else if (k >= '1' && k <= '9') this.onCookBtn?.('b' + (+k - 1), true);
+        else if (k === 'escape') ctx.anim.stop();
+        return;
+      }
       if (k === 'e' || k === 'enter') ctx.interact.trigger();
       else if (k === 'f') ctx.acts.punch();
       else if (k === ' ') ctx.acts.jump();
@@ -197,6 +203,7 @@ export class UI {
   }
   // ───────── hội thoại ─────────
   dialog(d: { who: string; npc?: Npc; text: string; opts: Opt[] }) {
+    if (ctx.anim?.active) ctx.anim.stop();
     const E = this.E.dlg; if (!this.dlgOpen && ctx.mode !== 'panel') this.prevMode = ctx.mode; this.dlgOpen = true; if (ctx.mode === 'play') { ctx.mode = 'panel'; ctx.input.reset(); }
     E.classList.remove('hide'); E.innerHTML = `<h3>${esc(d.who)}</h3><p>${esc(d.text)}</p><div class="opts"></div>`; const box = E.lastElementChild as HTMLElement;
     if (d.npc) d.npc.talkT = 1.5;
@@ -205,7 +212,7 @@ export class UI {
   }
   closeDialog() { if (!this.dlgOpen) return; this.dlgOpen = false; this.E.dlg.classList.add('hide'); if (ctx.mode === 'panel' && !this.modalName) ctx.mode = 'play'; }
   // ───────── bảng lớn ─────────
-  panel(name: string) { if (ctx.mode !== 'play' && ctx.mode !== 'panel') return; this.closeDialog(); this.modalName = name; ctx.mode = 'panel'; ctx.input.reset(); this.E.modal.classList.remove('hide'); openPanel(this, name); }
+  panel(name: string) { if (ctx.mode !== 'play' && ctx.mode !== 'panel') return; if (ctx.anim?.active) ctx.anim.stop(); this.closeDialog(); this.modalName = name; ctx.mode = 'panel'; ctx.input.reset(); this.E.modal.classList.remove('hide'); openPanel(this, name); }
   closePanel() { if (!this.modalName) return; this.modalName = ''; this.E.modal.classList.add('hide'); this.E.modal.innerHTML = ''; if (ctx.mode === 'panel' && !this.dlgOpen) ctx.mode = 'play'; ctx.stall.refresh(); }
   focus(f: Focus | null) {
     const E = this.E, key = f ? f.label + '|' + (f.sub ?? '') + '|' + (f.alt?.label ?? '') : '';

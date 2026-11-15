@@ -51,7 +51,7 @@ function paperProp(): THREE.Mesh {
   return new THREE.Mesh(_newsGeo, MAT.litDouble);
 }
 /** Ly nước nhựa. */
-function cupProp(): THREE.Mesh {
+export function cupProp(): THREE.Mesh {
   if (!_cupGeo) { const m = new MB(); m.cyl(0, 0, 0, 0.035, 0.1, 0xd0ecf7, 8, 0.042); m.cyl(0, 0.05, 0, 0.034, 0.05, 0x8a5a22, 8); m.cyl(0, 0.1, 0, 0.04, 0.012, 0xf7f7f7, 8); _cupGeo = m.build(); }
   return new THREE.Mesh(_cupGeo, MAT.lit);
 }
@@ -307,14 +307,15 @@ export class Npcs {
         if (this.step(n, tx, tz, sp, dt, n.pi === n.path.length - 1 ? 0.18 : 0.5)) {
           n.pi++;
           if (n.pi >= n.path.length) {
-            n.path = [];
+            n.path = []; n.vel = 0;
             if (n.onArrive) { const f = n.onArrive; n.onArrive = undefined; n.pose = 'idle'; f(n); }
             else if (n.enter) { this.remove(n); continue; }
             else this.arrive(n);
           }
+        } else {
+          this.idleOff(n); // đang đi thì không cầm báo, không cầm ly
+          n.pose = n.state === 'walk' || n.vel > 0.1 ? 'walk' : n.pose;
         }
-        this.idleOff(n); // đang đi thì không cầm báo, không cầm ly
-        n.pose = n.state === 'walk' || n.vel > 0.1 ? 'walk' : n.pose;
       } else if (n.state === 'cop') {
         // đi thẳng tới người chơi rồi gọi lại hỏi giấy tờ
         n.pose = 'walk';
@@ -427,14 +428,17 @@ export class Npcs {
       n.idleT = (n.idleT ?? this.R.range(8, 22)) - dt;
       if (n.idleT <= 0 && this.R.chance(0.4)) this.idleAct(n);
     }
-    // trời mưa thì che dù (chỉ người đang đi hoặc đứng, không che khi đang đọc báo/uống nước)
-    if (n.idleT2 === undefined) {
+    // trời mưa thì che dù (chỉ người đang đi hoặc đứng, không che khi đang đọc báo/uống nước/nhân vật sự kiện)
+    if (n.idleT2 === undefined && !n.persona) {
       const wantUmb = w.rain > 0.35 && (n.state === 'walk' || n.state === 'stand');
       if (wantUmb && !n.umb) { n.umb = true; n.rig.hold(umbrellaProp(this.R.chance(0.5) ? 0x2f6fb5 : 0xd9463c)); }
       else if (!wantUmb && n.umb) { n.umb = false; n.rig.hold(null); }
     }
-    rig.pose = n.talkT > 0 && n.pose !== 'sit' && n.pose !== 'walk' && n.pose !== 'angry' ? 'talk' : n.pose;
-    if (pd2 < 45 * 45) rig.update(dt, n.vel, n.base); 
+    rig.pose = n.talkT > 0 && n.pose !== 'sit' && n.pose !== 'walk' && n.pose !== 'angry' && n.pose !== 'read' && n.pose !== 'work' ? 'talk' : n.pose;
+    if (pd2 < 45 * 45) {
+      rig.update(dt, n.vel, n.base);
+      if (n.actor === 'rowdy' && n.pose === 'angry') rig.inner.rotation.z = Math.sin(rig.t * 4.2) * 0.14;
+    } 
     rig.shadow(QUALITY[ctx.set.quality].blob && pd2 < 26 * 26);
   }
   /** Giữ cho mỗi quán đang mở có một hai người đứng mua — phố đỡ vắng, tiệm đỡ như bỏ hoang. */
@@ -519,15 +523,18 @@ export class Npcs {
     }
   }
   private updFixed(n: Npc, pd2: number, dt: number) {
-    const open = placeOpen(n.fixedId!), vis = open && pd2 < 60 * 60;
+    const inAnim = !!(ctx.anim?.active && ctx.anim.hasNpc(n));
+    const open = placeOpen(n.fixedId!) || inAnim, vis = open && pd2 < 60 * 60;
     n.hidden = !open;
     if (n.rig.root.visible !== vis) n.rig.root.visible = vis;
     if (!vis) return;
     const p = ctx.player, hm = n.home!;
-    if (pd2 < 16 && n.pose !== 'sit') n.yaw += angDiff(n.yaw, Math.atan2(p.x - n.x, p.z - n.z)) * Math.min(1, dt * 5); else n.yaw += angDiff(n.yaw, hm.yaw) * Math.min(1, dt * 3);
+    if (!inAnim) {
+      if (pd2 < 16 && n.pose !== 'sit' && !n.rig.seated) n.yaw += angDiff(n.yaw, Math.atan2(p.x - n.x, p.z - n.z)) * Math.min(1, dt * 5); else n.yaw += angDiff(n.yaw, hm.yaw) * Math.min(1, dt * 3);
+    }
     n.rig.root.position.set(n.x, n.y, n.z); n.rig.root.rotation.y = n.yaw;
     if (n.talkT > 0) n.talkT -= dt;
-    n.rig.pose = n.pose === 'sit' ? 'sit' : n.talkT > 0 ? 'talk' : n.dance && pd2 < 26 * 26 ? 'dance' : 'idle';
+    n.rig.pose = n.pose !== 'idle' && n.pose !== 'sit' ? n.pose : n.pose === 'sit' ? 'sit' : n.talkT > 0 ? 'talk' : n.dance && pd2 < 26 * 26 ? 'dance' : 'idle';
     if (pd2 < 40 * 40) n.rig.update(dt, 0, n.base);
     n.rig.shadow(false);
   }
