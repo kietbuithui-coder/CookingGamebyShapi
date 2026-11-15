@@ -655,14 +655,15 @@ export function buildPlace(b: Builder, l: Lot, R: RNG) {
       for (let i = 0; i < 5; i++) U.box(3.62 + i * 0.24, 0.13, 6.0, 0.05, 2.2, 0.05, 0x6a7078, 0x8a9098);
       U.box(4.1, 2.33, 6.0, 1.1, 0.07, 0.07, 0x6a7078, 0x8a9098);
       b.signAt(2.2, 2.62, 5.94, 1.7, 0.34, 'BUỒNG TẠM GIỮ', { bg: '#ffffff', fg: '#7a0f1e', border: '#7a0f1e' }, 0, -1, 40);
-      // trong buồng: giường sắt, xô nước, đống gạch để đập
-      for (const z of [7.6, 9.4]) {
-        U.box(1.7, 0.13, z, 0.95, 0.28, 1.9, 0x7a8088, 0x8a9098, 0.06);
-        U.box(1.7, 0.41, z, 0.88, 0.14, 1.82, 0xdfe6ea, 0xeef3f6, 0.05);
-        U.box(1.7, 0.55, z - 0.6, 0.62, 0.1, 0.36, 0xf7f4ea, 0xffffff, 0.04);
-        b.collide(1.22, z - 0.95, 2.18, z + 0.95);
+      // Trong buồng: hai giường sắt xếp song song, kê gọn cạnh nhau; gối cùng đầu giường.
+      for (const x of [1.35, 2.55]) {
+        const z = 8.5;
+        U.box(x, 0.13, z, 0.95, 0.28, 1.9, 0x7a8088, 0x8a9098, 0.06);
+        U.box(x, 0.41, z, 0.88, 0.14, 1.82, 0xdfe6ea, 0xeef3f6, 0.05);
+        U.box(x, 0.55, z - 0.6, 0.62, 0.1, 0.36, 0xf7f4ea, 0xffffff, 0.04);
+        b.collide(x - 0.48, z - 0.95, x + 0.48, z + 0.95);
       }
-      b.anchor('giuong_giam', 2.9, 0.13, 8.5, -Math.PI / 2);
+      b.anchor('giuong_giam', 3.2, 0.13, 8.5, -Math.PI / 2);
       U.box(3.4, 0.13, 10.1, 0.4, 0.42, 0.4, 0x5a7a8a, 0x6a8a9a, 0.06);
       // cửa sổ có song sắt trên vách sau + chiếu cói + vạch đếm ngày
       U.box(2.2, 1.95, 10.16, 1.5, 0.95, 0.06, 0xbfe3f2, 0xd8f0fa);
