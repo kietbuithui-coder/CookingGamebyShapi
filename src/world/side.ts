@@ -162,19 +162,24 @@ export function buildSide(b: Builder) {
     b.anchor('v_hat_rong', x, 0.13, z, Math.PI / 2);
   }
 
-  // ───────── 5. Bàn cờ tướng của Ông Tư — trong công viên, bên lối đi ngang hồ ─────────
+  // ───────── 5. Bàn cờ của Ông Tư — trong công viên, bên lối đi ngang hồ ─────────
   // (Trước đây bàn đặt ngay trước ghế đá ở (57, −72,5) nên ghế với bàn lồng vào nhau, ông ngồi lọt thỏm
   // giữa hai cái. Dời ra khoảng trống phía bắc lối đi, cách hồ nước và bồn hoa đủ xa.)
   b.chunk('b20', 59, -59).frame({ tx: 0, tz: 0, yaw: 0 });
   {
     const x = 52.2, z = -56.9, d = D();
     b.table(x, z, 0.66, 0.66, 0.48, 0xd9d2c0, d);
-    d.box(x, 0.48, z, 0.56, 0.02, 0.56, 0xe9d9a8, 0xf3e6bc, 0, true);                            // bàn cờ (nằm trên mặt bàn)
-    for (let i = 1; i < 8; i++) {
-      d.box(x - 0.28 + i * 0.07, 0.504, z, 0.006, 0.004, 0.5, 0x8a6a4a);
-      d.box(x, 0.504, z - 0.28 + i * 0.07, 0.5, 0.004, 0.006, 0x8a6a4a);
+    d.box(x, 0.48, z, 0.56, 0.02, 0.56, 0x5c381c, 0x3d2310, 0, true);                            // khung bàn cờ gỗ
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const sqCol = (r + c) % 2 === 0 ? 0xf3e2c3 : 0xb57b48;
+        d.box(x - 0.2275 + c * 0.065, 0.501, z - 0.2275 + r * 0.065, 0.064, 0.004, 0.064, sqCol);
+      }
     }
-    for (let i = 0; i < 6; i++) { d.cyl(x - 0.22 + (i % 3) * 0.22, 0.51, z - 0.16, 0.028, 0.03, i % 2 ? 0xc8102e : 0x1b1c1f, 6); d.cyl(x - 0.22 + (i % 3) * 0.22, 0.51, z + 0.18, 0.028, 0.03, i % 2 ? 0x1b1c1f : 0xc8102e, 6); }
+    for (let i = 0; i < 6; i++) {
+      d.cyl(x - 0.195 + i * 0.078, 0.506, z - 0.195, 0.018, 0.048, 0x221d1a, 6, 0.012);
+      d.cyl(x - 0.195 + i * 0.078, 0.506, z + 0.195, 0.018, 0.048, 0xf7f2e4, 6, 0.012);
+    }
     plasticStool(d, x - 0.06, 0.13, z - 0.72, 0xd9463c, 0.4); plasticStool(d, x + 0.1, 0.13, z + 0.74, 0x2f8fd5, 0.4);
     b.collide(x - 0.34, z - 0.34, x + 0.34, z + 0.34);
     b.anchor('v_danh_co', x - 0.06, 0.13, z - 0.72, 0);                   // ngồi trên ghế nhựa (mông tự hạ xuống mặt ghế)
