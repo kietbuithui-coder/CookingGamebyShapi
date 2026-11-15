@@ -4,6 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { HAIR_STYLES, HAIR_COLORS, SHIRT_COLORS, PANTS_COLORS, SHOE_COLORS, GLASSES, defaultLook, cleanLook } from '../src/data/looks';
 import { newGame, migrate, SAVE_VERSION } from '../src/sim/state';
 import { FIXED, SIDE, FIXED_ROLE } from '../src/data/people';
+import { LOTS } from '../src/world/layout';
 import { fresh } from './helpers';
 
 describe('bảng giá ngoại hình', () => {
@@ -97,5 +98,13 @@ describe('người bán trong hai tiệm mới', () => {
     }
     expect(FIXED.hot_toc.name).toBe('Chú Bảy Kéo');
     expect(FIXED.thoi_trang.name).toBe('Cô Ngọc');
+  });
+  it('tiệm hớt tóc Bảy Kéo có lô riêng ở Khu Dân Cư thay cho tiệm cắt tóc trang trí', () => {
+    const lot = LOTS.find((l) => l.id === 'barber' && l.kind === 'barber');
+    expect(lot).toBeTruthy();
+    expect(lot!.district).toBe('dancu');
+    expect(lot!.bx).toBe(2);
+    expect(lot!.bz).toBe(1);
+    expect(lot!.face).toBe('S');
   });
 });

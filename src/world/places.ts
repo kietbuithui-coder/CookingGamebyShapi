@@ -361,6 +361,52 @@ export function buildPlace(b: Builder, l: Lot, R: RNG) {
       b.shutter(cfg.shop, 0.4, w - 0.4, 0.1, 2.6);
       break;
     }
+    case 'barber': {
+      // Tiệm hớt tóc Bảy Kéo ở Khu Dân Cư: không gian sáng sủa, ghế cắt tóc giữa tiệm, gương lớn áp tường, kệ đồ nghề và băng ghế khách chờ.
+      const di = 5.4, U = b.unlit;
+      shell(b, { w, d, di, h1: 3.1, H: 6.5, col: 0xdbe9f4, inner: 0xf6f3ea, floor: 'tile', opens: [{ x0: 0.45, x1: w - 0.45, top: 2.6 }] });
+      bigSign(b, w, 3.05, 'HỚT TÓC BẢY KÉO', { bg: '#20304a', fg: '#f7e9a0', border: '#c8102e', sub: 'Cắt tóc · Nhuộm · Tạo kiểu · 15.000₫', subFg: '#ffffff' }, 0.9, 0.92, 96);
+      b.awning(0.3, w - 0.3, 2.75, 1.15, 0x20304a, 0xf7f3e6, -0.05);
+      for (let i = 0; i < 2; i++) b.glow.quad(w - 0.8 - i * (w / 2 - 0.2), 4.2, -0.02, w - 2.2 - i * (w / 2 - 0.2), 4.2, -0.02, w - 2.2 - i * (w / 2 - 0.2), 5.6, -0.02, w - 0.8 - i * (w / 2 - 0.2), 5.6, -0.02, i ? 0xffd98a : 0x1c2530);
+      // Đèn xoay xanh-đỏ-trắng đặc trưng tiệm cắt tóc gắn trụ mặt tiền
+      U.cyl(0.23, 1.25, -0.16, 0.08, 0.05, 0xb9c0c8, 8);
+      U.cyl(0.23, 1.302, -0.16, 0.066, 0.48, 0xf7f7f2, 8);
+      U.cyl(0.23, 1.37, -0.16, 0.072, 0.1, 0xd9463c, 8);
+      U.cyl(0.23, 1.57, -0.16, 0.072, 0.1, 0x2f6fb5, 8);
+      U.cyl(0.23, 1.784, -0.16, 0.08, 0.05, 0xb9c0c8, 8);
+      // Bàn kệ đồ nghề + gương lớn phía trong (kéo, lược, tông đơ, bình xịt, thuốc nhuộm)
+      U.box(1.85, 0.13, 4.55, 1.8, 0.78, 0.46, 0x6a4a32, 0xd9d2c2, 0.08);
+      for (let i = 0; i < 3; i++) U.box(1.25 + i * 0.14, 0.915, 4.48, 0.03, 0.02, 0.18, i % 2 ? 0xc9ced4 : 0xd9463c, undefined, 0, true);
+      U.box(1.75, 0.915, 4.48, 0.07, 0.035, 0.18, 0x2a2e3a, undefined, 0, true);
+      U.cyl(2.1, 0.915, 4.48, 0.045, 0.16, 0x2f8fd5, 7);
+      U.cyl(2.26, 0.915, 4.52, 0.04, 0.14, 0xd9463c, 7);
+      U.cyl(2.42, 0.915, 4.48, 0.05, 0.18, 0x3fae5a, 7);
+      U.box(1.85, 1.05, 5.12, 1.68, 1.16, 0.04, 0x6a4a32, 0x8a6a4a, 0.04);
+      U.box(1.85, 1.11, 5.07, 1.54, 1.04, 0.02, 0xcfe0ea, 0xe8f3fa, 0.02);
+      b.collide(0.9, 4.28, 2.8, 4.85);
+      // Ghế cắt tóc ở giữa tiệm: đế sắt, trụ crôm, đệm da đỏ đô, tựa lưng có gối đầu, tay vịn
+      const cx = 1.85, cz = 2.65;
+      U.box(cx, 0.132, cz, 0.46, 0.05, 0.46, 0x3a3c42, 0x4a4c52, 0.03, true);
+      U.cyl(cx, 0.184, cz, 0.055, 0.39, 0x9aa0a6, 8);
+      U.box(cx, 0.576, cz, 0.52, 0.1, 0.48, 0x7d2f34, 0x9a3d42, 0.05);
+      U.box(cx, 0.678, cz - 0.02, 0.46, 0.018, 0.42, 0xf3f4f6, 0xffffff, 0.02);
+      U.box(cx, 0.68, cz + 0.21, 0.48, 0.44, 0.08, 0x7d2f34, 0x9a3d42, 0.04);
+      U.cyl(cx, 1.125, cz + 0.21, 0.11, 0.09, 0x5c2126, 8, 0.09);
+      for (const sx of [-0.29, 0.29]) { U.cyl(cx + sx, 0.58, cz - 0.02, 0.024, 0.24, 0x9aa0a6, 6); U.box(cx + sx, 0.822, cz - 0.02, 0.055, 0.038, 0.32, 0xb9c0c6); }
+      U.box(cx, 0.28, cz - 0.36, 0.34, 0.035, 0.2, 0x9aa0a6);
+      b.collide(cx - 0.34, cz - 0.34, cx + 0.34, cz + 0.34);
+      b.anchor('hot_toc_ghe', cx, 0.66, cz, Math.PI);
+      b.anchor('v_hot_toc', cx + 0.95, 0.13, cz + 0.05, Math.PI);
+      // Bảng giá treo tường + ghế nhựa khách ngồi chờ + tủ khăn bên phải
+      b.signAt(w - 1.45, 1.65, 5.1, 1.85, 0.56, 'BẢNG GIÁ HỚT TÓC', { bg: '#fff7d6', fg: '#20304a', border: '#c8102e', sub: 'Cắt gọn 15.000₫ · Nhuộm 10–30K', subFg: '#7a0f1e' }, 0, -1, 48);
+      for (let i = 0; i < 3; i++) plasticStool(U, w - 0.68, 0.13, 1.4 + i * 0.8, i % 2 ? 0x2f8fd5 : 0xd9463c, 0.38);
+      U.box(w - 0.75, 0.13, 4.45, 0.7, 0.85, 0.42, 0x8a6a4a, 0xa98a62, 0.08);
+      U.box(w - 0.75, 0.985, 4.45, 0.46, 0.14, 0.3, 0xf3f4f6, 0xffffff, 0.04);
+      b.collide(w - 1.15, 4.2, w - 0.35, 4.7);
+      ceilLight(b, w / 2, 3.06, 2.5, 1.6);
+      b.shutter('hot_toc', 0.45, w - 0.45, 0.1, 2.6);
+      break;
+    }
     case 'net': {
       // Quán net kiểu xóm lao động: trong tối, máy CRT sáng rực, quạt trần quay, bảng giá dán ngay cửa.
       const di = 9.4, U = b.unlit, dark = 0x2e333a;

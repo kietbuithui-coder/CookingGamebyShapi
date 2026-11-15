@@ -102,7 +102,7 @@ export const FIXED_ROLE: Record<string, string> = {
   hospital: 'Bác sĩ trực',
   police: 'Công an khu vực',
   net: 'Chủ quán net', net_bi: 'Khách chơi game', net_nhung: 'Khách lướt web',
-  dua: 'Nhóm đua xe đạp',
+  dua: 'Nhóm đua xe đạp', dua_mai: 'Nhóm đua xe đạp', dua_thao: 'Nhóm đua xe đạp',
   tra_da: 'Cô bán trà đá', rap: 'Cậu nhóc nhảy đường phố', sua_xe: 'Thợ sửa xe vỉa hè',
   hat_rong: 'Người hát rong', danh_co: 'Ông già đánh cờ', danh_giay: 'Cậu bé đánh giày',
 };
@@ -148,11 +148,11 @@ export const SIDE: Record<string, SideDef> = {
     ],
   },
   hot_toc: {
-    intro: 'Chú Bảy Kéo ngồi sau cái ghế sắt, tay lau cây kéo trong khi tấm gương nghiêng nghiêng trước mặt. “Ngồi đi con. Cắt gọn cho, mười lăm ngàn, ba chục phút là xong — mà muốn uốn xoăn với tém thì lâu hơn chút.”',
-    again: '“Lại đổi kiểu nữa hả? Ngồi xuống coi, tóc con mọc nhanh ghê.”',
+    intro: 'Chú Bảy Kéo đứng bên chiếc ghế nệm đỏ đô trong tiệm, tay lau cây kéo trước tấm gương lớn sáng bóng. “Vô đây ngồi đi con. Cắt gọn cho, mười lăm ngàn, ba chục phút là xong — mà muốn uốn xoăn với tém thì lâu hơn chút.”',
+    again: '“Lại ghé tiệm đổi kiểu nữa hả? Ngồi xuống ghế coi, tóc con mọc nhanh ghê.”',
     topics: [
-      { q: 'Chú cắt tóc ở chợ lâu chưa?', a: 'Ba chục năm rồi con. Hồi đó chú cắt cho mấy chú bộ đội trong xóm, một đồng một cái đầu. Giờ thì mười lăm ngàn, mà khách quen vẫn đông. Cắt ở chợ vui hơn mở tiệm — người ta đi chợ, gánh hàng ngang, ghé vô cắt luôn.' },
-      { q: 'Sao chú không mở tiệm cho sang?', a: 'Sang để làm gì. Mở tiệm là phải đóng thuế, mua máy lạnh, rồi ngồi chờ khách. Ở đây chú có cái ghế, tấm gương, cây kéo là đủ. Cái nghề này, khách nhớ mặt mình chứ nhớ gì cái biển hiệu.' },
+      { q: 'Chú mở tiệm ở khu này lâu chưa?', a: 'Ba chục năm rồi con. Hồi trước chú kê cái ghế cắt ngoài đầu chợ cho mấy chú bộ đội trong xóm, giờ có tuổi rồi nên dọn về căn tiệm nhỏ này ở Khu Dân Cư cho mát mẻ. Tuy vô trong nhà mà giá vẫn mười lăm ngàn, khách quen vẫn tìm tới hoài.' },
+      { q: 'Sao chú giữ giá bình dân hoài vậy?', a: 'Làm cho bà con trong xóm mà lấy mắc sao đành. Ở đây chú có cái ghế êm, tấm gương lớn, cây kéo bén là đủ sống khỏe rồi. Cái nghề này, khách quý cái tay nghề với tấm lòng mình chứ cần gì biển hiệu hào nhoáng.' },
     ],
   },
   thoi_trang: {
@@ -361,5 +361,7 @@ export const FIXED: Record<string, FixedNpcDef> = {
   net_bi: { id: 'net_bi', name: 'Thằng Bi', face: 0, fem: false, shirt: 0xdfe6ea, pants: 0x3a5a8a, hair: 0x1e1a18, hat: 2, hairStyle: 0, fat: 0.92, h: 0.86 },
   net_nhung: { id: 'net_nhung', name: 'Con Nhung', face: 4, fem: true, shirt: 0xe86f9a, pants: 0x2a2e3a, hair: 0x1e1a18, hat: 0, hairStyle: 2, fat: 0.92, h: 0.88 },
   dua: { id: 'dua', name: 'Con Lan', face: 2, fem: true, shirt: 0xe86f9a, pants: 0x2a3a6a, hair: 0x1e1a18, hat: 0, hairStyle: 2, fat: 0.9, h: 0.9 },
+  dua_mai: { id: 'dua_mai', name: 'Con Mai', face: 4, fem: true, shirt: 0x3fae5a, pants: 0x2a2e3a, hair: 0x2a201b, hat: 0, hairStyle: 1, fat: 0.88, h: 0.87 },
+  dua_thao: { id: 'dua_thao', name: 'Con Thảo', face: 1, fem: true, shirt: 0xf5c531, pants: 0x3a5a8a, hair: 0x1e1a18, hat: 0, hairStyle: 5, fat: 0.92, h: 0.89 },
   hobo: { id: 'hobo', name: 'Ông Bảy Lang Thang', face: 3, fem: false, shirt: 0x6a6258, pants: 0x4a4a42, hair: 0xbfbfbc, hat: 4, hairStyle: 1, fat: 0.9, h: 0.96 },
 };

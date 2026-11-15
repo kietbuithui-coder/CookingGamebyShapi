@@ -20,7 +20,7 @@ const TRIM = [0xffffff, 0xf7f3ea, 0xe9e2d0], SHUT = [0x3f8a6a, 0x2f6fa8, 0x8a5a3
 const AWN = [0xe2402f, 0x2f8fd5, 0x3fae5a, 0xf08a2f, 0xf5c531, 0x8a5fd0, 0x2fb5a8];
 const WARM = [0xffd98a, 0xffc86a, 0xffe9b8, 0xffd98a, 0x9fd0ff], DARKWIN = 0x1c2530;
 const BIKE = [0xd9261e, 0x2f6fb5, 0x1e1e22, 0xf3f0e8, 0x3f8a6a, 0xf08a2f];
-const SHOP_NAMES = ['Tạp Hoá Thu Hà', 'Sửa Xe Út Hậu', 'Hớt Tóc Thanh', 'Photocopy Minh Anh', 'May Đo Kim Liên', 'Internet Game', 'Điện Thoại Hoàng Phát', 'Tiệm Vàng Kim Thành', 'Giặt Ủi Sạch Thơm',
+const SHOP_NAMES = ['Tạp Hoá Thu Hà', 'Sửa Xe Út Hậu', 'Đồng Hồ Minh Quân', 'Photocopy Minh Anh', 'May Đo Kim Liên', 'Internet Game', 'Điện Thoại Hoàng Phát', 'Tiệm Vàng Kim Thành', 'Giặt Ủi Sạch Thơm',
   'Văn Phòng Phẩm Tri Thức', 'Gạo Sạch Ba Miền', 'Nha Khoa Nụ Cười', 'Hoa Tươi Lan', 'Sửa Khoá Tài', 'Điện Nước Phúc', 'Vé Số Đại Lý 9', 'Thú Cưng Miu Miu', 'Kính Mắt Sài Gòn', 'Áo Cưới Hạnh Phúc',
   'Trà Sữa Mộc', 'Nhà Sách Tuổi Thơ', 'Bánh Kẹo Ngọc Mai', 'Rửa Xe Tân Tiến', 'Spa Hồng Nhung', 'Đồ Chơi Bé Bi', 'Nước Mía 3K', 'Sinh Tố Cô Ba', 'Giày Dép Phú', 'Chụp Hình Thẻ', 'Thuốc Bắc An Hoà'];
 const OFFICE_NAMES = ['TÒA NHÀ SAO VIỆT', 'Luật An Phát', 'Phần Mềm Tre Xanh', 'Bảo Hiểm Đại Dương', 'Du Lịch Bốn Mùa', 'Kế Toán Minh Bạch', 'Bất Động Sản Phú Gia', 'Trung Tâm Anh Ngữ'];
@@ -337,19 +337,33 @@ function park(b: Builder, R: RNG) {
   L.box(72, 0.12, -44, 0.12, 2.2, 0.12, 0xe2402f); L.box(75, 0.12, -44, 0.12, 2.2, 0.12, 0xe2402f); L.box(73.5, 2.3, -44, 3.2, 0.1, 0.12, 0xe2402f, undefined, 0, true);
   for (const x of [72.9, 74.1]) { D.box(x - 0.2, 0.7, -44, 0.02, 1.6, 0.02, 0x55585e); D.box(x + 0.2, 0.7, -44, 0.02, 1.6, 0.02, 0x55585e); D.box(x, 0.66, -44, 0.5, 0.04, 0.2, 0xf5c531, undefined, 0, true); }
   L.quad(66, 0.14, -41.5, 67.2, 0.14, -41.5, 67.2, 1.7, -44.5, 66, 1.7, -44.5, 0x2f8fd5); L.box(66.6, 0.12, -45.2, 1.3, 1.6, 1.3, 0xf5c531, 0xe2402f, 0.1); b.collide(65.9, -45.9, 67.3, -41.4);
-  // ── vạch xuất phát đua xe đạp, chủ nhật, trên đường phía trước cổng công viên ──
-  for (let i = 0; i < 8; i++) for (let k = 0; k < 2; k++) {
-    const zx = -33.1 + k * 0.55;
-    L.box(41 + (i % 2) * 0.55, 0.135, zx + (Math.floor(i / 2) % 2) * 0.55, 0.52, 0.02, 0.52, (i + k) % 2 ? 0xf7f3e6 : 0xd9463c, undefined, 0, true);
+  // ── chỗ đăng ký đua xe đạp chủ nhật: gọn trên mép trong vỉa hè công viên (không bày ra lòng đường) ──
+  L.box(46.5, 0.12, -35.88, 0.1, 1.7, 0.1, 0x55585e); L.box(48.7, 0.12, -35.88, 0.1, 1.7, 0.1, 0x55585e);
+  L.box(47.6, 1.55, -35.88, 2.4, 0.62, 0.08, 0x1e7a3c, 0xf7f3e6, 0.03);
+  b.signAt(47.6, 1.55, -35.82, 2.3, 0.58, 'ĐUA XE ĐẠP', { bg: '#1e7a3c', fg: '#fff7c2', sub: 'Chủ nhật 15h · nói chuyện nhóm con Lan để đăng ký', subFg: '#d9ffe6' }, 0, 1, 64);
+  // bàn ghi tên + sổ đăng ký + chai nước + ghế nhựa và hai chiếc xe đạp của nhóm bé gái
+  plasticTable(D, 47.6, 0.13, -35.42, 0x2f8fd5);
+  D.box(47.48, 0.722, -35.42, 0.24, 0.02, 0.18, 0xf7f4ea, 0x2f6fb5, 0.02);
+  D.box(47.64, 0.722, -35.4, 0.02, 0.015, 0.14, 0xd9463c, undefined, 0, true);
+  D.cyl(47.76, 0.722, -35.48, 0.032, 0.14, 0xcfe6f2, 7, 0.028);
+  D.cyl(47.84, 0.722, -35.36, 0.032, 0.14, 0xcfe6f2, 7, 0.028);
+  plasticStool(D, 46.85, 0.13, -35.26, 0xd9463c, 0.38);
+  b.collide(47.2, -35.8, 48.0, -35.05);
+  for (const [bx2, bz2, ry, col] of [[45.95, -35.45, 0.35, 0xe86f9a], [49.25, -35.45, -0.35, 0x2f8fd5]] as const) {
+    b.sub(bx2, bz2, ry, () => {
+      for (const wz of [-0.4, 0.4]) { D.rod(0, 0.41, wz, 0.28, 0.038, 0x22252a, 0, Math.PI / 2, 10); D.rod(0, 0.41, wz, 0.05, 0.05, 0xb9c0c8, 0, Math.PI / 2, 6); }
+      b.beam(D, 0, 0.41, -0.4, 0, 0.72, -0.1, 0.02, col); b.beam(D, 0, 0.41, 0, 0, 0.72, -0.1, 0.02, col);
+      b.beam(D, 0, 0.41, 0, 0, 0.74, 0.32, 0.02, col); b.beam(D, 0, 0.72, -0.1, 0, 0.74, 0.32, 0.02, col);
+      b.beam(D, 0, 0.41, 0.4, 0, 0.86, 0.32, 0.02, col);
+      D.box(0, 0.74, -0.12, 0.13, 0.04, 0.2, 0x2b2d33, undefined, 0, true);
+      D.box(0, 0.86, 0.32, 0.38, 0.026, 0.026, 0xb9c0c8, undefined, 0, true);
+    });
+    b.circle(bx2, bz2, 0.36);
   }
-  for (const cz2 of [-32.9, -31.6, -30.3]) { L.cyl(41, 0.12, cz2, 0.16, 0.5, 0xf08a2f, 8, 0.12); L.box(41, 0.34, cz2, 0.3, 0.08, 0.3, 0xf7f3e6, 0xe2402f, 0.02); }
-  // bảng đăng ký + hai chiếc xe đạp dựng bên vỉa hè
-  L.box(41, 0.12, -34.9, 0.1, 1.7, 0.1, 0x55585e); L.box(43.2, 0.12, -34.9, 0.1, 1.7, 0.1, 0x55585e);
-  L.box(42.1, 1.55, -34.9, 2.4, 0.62, 0.08, 0x1e7a3c, 0xf7f3e6, 0.03);
-  b.signAt(42.1, 1.55, -34.84, 2.3, 0.58, 'ĐUA XE ĐẠP', { bg: '#1e7a3c', fg: '#fff7c2', sub: 'Chủ nhật 15h · đăng ký tại đây', subFg: '#d9ffe6' }, 0, 1, 64);
-  b.signAt(42.1, 1.55, -34.96, 2.3, 0.58, 'ĐUA XE ĐẠP', { bg: '#1e7a3c', fg: '#fff7c2', sub: 'Chủ nhật 15h · ba vòng quanh công viên', subFg: '#d9ffe6' }, 0, -1, 60);
-  b.anchor('dua_xe', 41, 0.13, -34.1, 0);
-  b.anchor('v_dua', 42.6, 0.13, -34.2, -0.4);
+  b.anchor('dua_xe', 47.6, 0.13, -34.95, 0);
+  b.anchor('v_dua', 47.6, 0.13, -34.95, 0);
+  b.anchor('v_dua_mai', 46.88, 0.13, -35.24, 0.35);
+  b.anchor('v_dua_thao', 48.32, 0.13, -35.02, -0.35);
   // ── xích đu ở sân chơi ──
   b.signAt(73.5, 1.28, -44.9, 1.5, 0.42, 'XÍCH ĐU', { bg: '#f5c531', fg: '#8a3410', border: '#e2402f' }, 0, 1, 48);
   b.anchor('xich_du', 73.5, 0.13, -43.2, Math.PI);
@@ -521,7 +535,7 @@ export function buildCity(): City {
   }
   const marksMat = new THREE.MeshLambertMaterial({ vertexColors: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
   mk(b.marks, marksMat, 'marks', root, 1);
-  const tileMat = new THREE.MeshBasicMaterial({ map: groundTexture('tile'), vertexColors: true });
+  const tileMat = new THREE.MeshBasicMaterial({ map: groundTexture('tile'), vertexColors: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
   const chunks: City['chunks'] = [];
   for (const c of b.chunks.values()) {
     const g = new THREE.Group(); g.name = c.id; root.add(g);

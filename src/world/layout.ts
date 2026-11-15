@@ -62,7 +62,7 @@ export const faceOutYaw = (fr: Frame) => fr.yaw + Math.PI;
 export type Style = 'office' | 'rich' | 'mid' | 'poor' | 'ware';
 export type LotKind = 'house' | 'alley' | 'minimart' | 'equip' | 'eatery' | 'bank' | 'hotel' | 'tro' | 'kiosk' | 'scrap' | 'site' | 'motel'
   | 'pawn' | 'cafe' | 'temple' | 'depot' | 'school' | 'spot' | 'pharmacy' | 'tower' | 'apartment'
-  | 'canho' | 'nharieng' | 'cuahang' | 'hospital' | 'police' | 'net';
+  | 'canho' | 'nharieng' | 'cuahang' | 'hospital' | 'police' | 'net' | 'barber';
 export interface Lot { bx: number; bz: number; face: Face; at: number; w: number; d: number; kind: LotKind; style: Style; fr: Frame; seed: number; id?: string; district: District; }
 
 interface Special { at: number; w: number; kind: LotKind; id?: string; d?: number; }
@@ -129,6 +129,9 @@ export const LOTS: Lot[] = [];
       }
     }
   }
+  // Nâng lô tiệm "Hớt Tóc Thanh" ở Khu Dân Cư (21S, cạnh Nhà số 12) thành tiệm cắt tóc thật có thể đi vào tương tác
+  const barber = LOTS.find((l) => l.bx === 2 && l.bz === 1 && l.face === 'S' && Math.abs(l.at - 24) < 0.5);
+  if (barber) { barber.kind = 'barber'; barber.id = 'barber'; }
 })();
 export const lotById = (id: string) => LOTS.find((l) => l.id === id)!;
 /** Điểm thế giới của toạ độ cục bộ trong một lô (lx tính từ mép trái lô). */

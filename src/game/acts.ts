@@ -138,7 +138,7 @@ export class Acts {
         this.D(who(n), n, 'Tiệm Ba Tài, xe đẩy bếp núc gì cũng có! Hàng bày quanh đó, ưng món nào cứ chạm vô.', [...opts, bye]); break;
       }
       case 'net': this.netMenu(n); break;
-      case 'dua': this.raceMenu(n); break;
+      case 'dua': case 'dua_mai': case 'dua_thao': this.raceMenu(n); break;
       case 'hospital': this.hospitalMenu(n); break;
       case 'police': this.policeMenu(n); break;
       case 'bank': this.bankMenu(n); break;
@@ -731,19 +731,23 @@ export class Acts {
     toast(`Cắm sạc nhờ, ngồi chờ 20 phút. Pin đầy 100%.`, 'good', 'bolt', true);
   }
   // ───────────────────────── Đua xe đạp chủ nhật & xích đu ─────────────────────────
-  /** Đăng ký đua ba vòng với nhóm con gái: chỉ chủ nhật, 15h–17h30, mỗi ngày một lượt. */
-  raceMenu(n?: Npc) {
+  /** Nói chuyện phiếm và đăng ký đua ba vòng với nhóm bé gái: chỉ chủ nhật, 15h–17h30, mỗi ngày một lượt. */
+  raceMenu(n?: Npc, text?: string) {
     const g = this.g, h = hourOf(g), opts: Opt[] = [], bye: Opt = { t: 'Thôi, đi nha.' };
     if (!RC.isRaceDay(g)) opts.push({ t: 'Hôm nay không phải chủ nhật', sub: 'Tụi tao đua chủ nhật hằng tuần, 15 giờ', off: true });
     else if (!RC.raceOpen(g, h)) opts.push({ t: 'Chưa tới giờ đăng ký', sub: 'Chủ nhật 15h–17h30, đua xong thì nghỉ', off: true });
     else if (RC.racedToday(g)) opts.push({ t: 'Hôm nay đua rồi', sub: 'Tuần sau ghé lại nghen', off: true });
     else opts.push({ t: 'Đăng ký đua ba vòng', sub: `5 phút · cần ${RC.ENTRY_ENERGY}% sức · thắng ${money(RC.PRIZE)}`, off: g.st.energy < RC.ENTRY_ENERGY, fn: () => this.startRace() });
-    const talk = (q: string, a: string) => () => this.D(n ? who(n) : 'Nhóm đua xe đạp', n, a, [bye]);
-    opts.push({ t: 'Đua ở đâu, mấy giờ?', fn: talk('o', '“Đua trên đường trước cổng công viên, ba vòng, chừng mười lăm phút. Chủ nhật ba giờ chiều tụi tao có mặt. Xe thì tao cho mượn, khỏi lo — mà đạp yếu là thua đó nghen.”') });
-    opts.push({ t: 'Thắng được gì?', fn: talk('w', '“Tụi tao góp tiền, đứa thắng lấy bốn chục. Mà vui là chính, chớ tiền đó bữa sau cũng vô quán nước hết. Mày mà thắng là cả xóm biết mặt.”') });
-    opts.push({ t: 'Sao tụi mày ham đua dữ vậy?', fn: talk('s', '“Rảnh thì đua chớ sao. Hồi nhỏ tụi tao đua vòng quanh hồ, giờ lớn rồi mà còn ham. Má tao nói con gái con lứa gì mà chạy xe như giặc. Mà kệ, vui.”') });
-    const said = (g.flags.raceWin ? `Con Lan nhớ mặt: “Đứa thắng ${g.flags.raceWin} lần rồi đó nghen.” ` : '')
-      + 'Con Lan dựng xe đạp bên vỉa hè, tay còn cầm miếng xoài. “Ủa, ghé hả? Chủ nhật này tụi tao đua ở đây, chơi không?”';
+    const talk = (a: string) => () => this.raceMenu(n, a);
+    opts.push({ t: 'Đua ở đâu, mấy giờ?', fn: talk('“Đua trên đường trước cổng công viên, ba vòng, chừng mười lăm phút. Chủ nhật ba giờ chiều tụi tao có mặt ở bàn đăng ký này. Xe thì tụi tao cho mượn, khỏi lo — mà đạp yếu là thua đó nghen.”') });
+    opts.push({ t: 'Thắng được gì?', fn: talk('“Tụi tao góp tiền, đứa thắng lấy bốn chục. Mà vui là chính, chớ tiền đó bữa sau cũng vô quán nước hết. Mày mà thắng là cả xóm biết mặt.”') });
+    opts.push({ t: 'Sao tụi mày ham đua dữ vậy?', fn: talk('“Rảnh thì đua chớ sao. Hồi nhỏ tụi tao đua vòng quanh hồ, giờ lớn rồi mà còn ham. Má tao nói con gái con lứa gì mà chạy xe như giặc. Mà kệ, vui.”') });
+    const intro = n?.fixedId === 'dua_mai'
+      ? 'Con Mai ngồi trên chiếc ghế nhựa đỏ cạnh bàn đăng ký, tay phe phẩy cuốn sổ ghi tên. “Ngồi tám chuyện chơi! Chủ nhật tụi tao có kèo đua xe đạp ba vòng đó, dám thử hông?”'
+      : n?.fixedId === 'dua_thao'
+        ? 'Con Thảo đang tựa lưng vô chiếc xe đạp bên vỉa hè công viên, cười toe toét. “Ê, lại đây nói chuyện chơi! Muốn ghi tên đua xe đạp với tụi tao thì nói nghen.”'
+        : 'Con Lan đứng bên bàn đăng ký trên vỉa hè công viên, tay còn cầm miếng xoài. “Ủa, ghé tám chuyện hả? Chủ nhật này nhóm tụi tao đua xe đạp ba vòng, chơi không?”';
+    const said = text ?? ((g.flags.raceWin ? `Nhóm con Lan nhớ mặt: “Đứa thắng ${g.flags.raceWin} lần rồi đó nghen.” ` : '') + intro);
     this.D(n ? who(n) : 'Nhóm đua xe đạp', n, said, [...opts, bye]);
   }
   /** Vào cuộc đua: mất năm phút đăng ký và một ít sức, phần còn lại do bộ điều khiển đua lo. */
@@ -995,7 +999,7 @@ export class Acts {
   places(): Way[] {
     const A = ctx.world.anchors, P = (k: string, name: string): Way | null => (A[k] ? { x: A[k].x, z: A[k].z, name } : null);
     return [P('v_equip', 'Đồ Nghề Ba Tài'), P('v_m_rau', 'Chợ Xóm Chiều'), P('v_mart', 'MiniMart 24h'), P('v_kiosk', 'Tạp hoá Cô Ba'), P('v_eatery', 'Quán cơm Bà Tư'), P('v_scrap', 'Vựa ve chai Tư Rác'), P('v_pawn', 'Cầm đồ Chú Lâm'), P('v_bank', 'Ngân hàng Sao Vàng'),
-      P('v_tro', 'Nhà trọ Bác Năm'), P('v_motel', 'Nhà nghỉ Bình Dân'), P('v_hotel', 'Khách sạn Hoa Sen'), P('v_canho', 'Căn hộ An Bình'), P('v_nharieng', 'Nhà số 12'), P('v_cuahang', 'Tạp hoá Bình An'), P('v_pharmacy', 'Nhà thuốc An Tâm'), P('v_hospital', 'Bệnh viện Phước An'), P('v_police', 'Công an phường'), P('giuong_benhvien', 'Phòng hồi sức bệnh viện'), P('v_wholesale', 'Vựa đầu mối Tám Lúa'), P('v_temple', 'Chùa Phước An'), P('wash_park', 'Nhà tắm công viên'), P('v_shark', 'Hùng Sẹo (vay nóng)'), P('bed_gamcau', 'Gầm cầu (lều của bạn)'), P('board', 'Bảng việc làm'), P('v_dock', 'Bến bốc hàng')].filter(Boolean) as Way[];
+      P('v_tro', 'Nhà trọ Bác Năm'), P('v_motel', 'Nhà nghỉ Bình Dân'), P('v_hotel', 'Khách sạn Hoa Sen'), P('v_canho', 'Căn hộ An Bình'), P('v_nharieng', 'Nhà số 12'), P('v_cuahang', 'Tạp hoá Bình An'), P('v_hot_toc', 'Tiệm hớt tóc Bảy Kéo'), P('v_pharmacy', 'Nhà thuốc An Tâm'), P('v_hospital', 'Bệnh viện Phước An'), P('v_police', 'Công an phường'), P('giuong_benhvien', 'Phòng hồi sức bệnh viện'), P('v_wholesale', 'Vựa đầu mối Tám Lúa'), P('v_temple', 'Chùa Phước An'), P('wash_park', 'Nhà tắm công viên'), P('v_shark', 'Hùng Sẹo (vay nóng)'), P('bed_gamcau', 'Gầm cầu (lều của bạn)'), P('board', 'Bảng việc làm'), P('v_dock', 'Bến bốc hàng')].filter(Boolean) as Way[];
   }
 }
 export { districtAt, weightOf };
