@@ -76,7 +76,7 @@ export function buildSide(b: Builder) {
     b.collide(x - 1.2, z - 0.22, x + 1.2, z + 0.22);
     b.collide(x + 1.24, z - 0.52, x + 2.16, z + 0.12);
     L2.quad(x - 1.2, 0.125, z + 1.2, x - 0.9, 0.125, z + 0.4, x + 1.2, 0.125, z + 0.4, x + 1.1, 0.125, z + 1.2, 0xb99a6a);
-    b.anchor('v_thoi_trang', x - 1.5, 0.13, z + 0.1, Math.PI / 2);   // cô đứng cạnh giá, mặt hướng ra lối đi
+    b.anchor('v_thoi_trang', x, 0.13, z - 1.05, 0);   // cô đứng phía trong sạp, sau giá áo và quay ra lối khách
   }
 
   // ───────── 2. Góc nhảy đường phố dưới gầm cầu vượt (chỗ Bin tập bài) ─────────
