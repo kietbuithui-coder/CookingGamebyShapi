@@ -106,9 +106,13 @@ describe('đua xe đạp chủ nhật', () => {
     expect(m.flags.raceWin).toBe(0);
     expect(racedToday(m)).toBe(false);
   });
-  it('có con Lan đứng ở vạch xuất phát', () => {
+  it('có nhóm ba bé gái (con Lan, con Mai, con Thảo) ở chỗ đăng ký công viên', () => {
     expect(FIXED.dua.name).toBe('Con Lan');
     expect(FIXED.dua.fem).toBe(true);
+    expect(FIXED.dua_mai.name).toBe('Con Mai');
+    expect(FIXED.dua_mai.fem).toBe(true);
+    expect(FIXED.dua_thao.name).toBe('Con Thảo');
+    expect(FIXED.dua_thao.fem).toBe(true);
   });
 });
 

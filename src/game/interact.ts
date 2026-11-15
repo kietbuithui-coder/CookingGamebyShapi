@@ -2,7 +2,6 @@
 // Cũng quản lý cửa phòng và cửa cuốn của các tiệm (đóng mở theo giờ).
 import * as THREE from 'three';
 import { ctx } from './ctx';
-import * as RC from '../sim/race';
 import type { Npc } from './npc';
 import { placeOpen } from './npc';
 import { who, whoIn, known } from './who';
@@ -12,7 +11,6 @@ import { GEAR_LIST, HOUSING, JUNK } from '../data/gear';
 import { RECIPES } from '../data/recipes';
 import { SPOTS, groundY } from '../world/layout';
 import * as R from '../sim/rules';
-import { hourOf } from '../sim/state';
 import { money, dist2, qty, damp, hhmm } from '../core/util';
 import { toast, sfx } from '../core/bus';
 import { MB, MAT, shade } from '../gfx/mb';
@@ -60,7 +58,7 @@ export class Interact {
     for (const t of W.taps) if (near(t.x, t.z, 2.2)) this.add('tap', t, t.x, t.y, t.z, 2.1);
     W.bins.forEach((b, i) => { if (near(b.x, b.z, 2.1)) this.add('bin', i, b.x, b.y, b.z, 2); });
     for (const l of ctx.acts.litter) if (near(l.x, l.z, 2.2)) this.add('litter', l, l.x, groundY(l.x, l.z) + 0.08, l.z, 2.2, 0.15);
-    for (const k of ['dock', 'board', 'sink', 'v_temple', 'tv_bongda', 'fire_gamcau', 'seat_eatery', 'hot_toc_ghe', 'giuong_benhvien', 'quay_thuoc', 'giuong_giam', 'lao_dong', 'may_net', 'dua_xe', 'xich_du']) { const a = A[k]; if (a && near(a.x, a.z, 2.8)) this.add('anchor', k, a.x, a.y, a.z, 2.7, k === 'dock' ? 0.2 : k === 'giuong_benhvien' || k === 'quay_thuoc' ? 0.05 : 0); }
+    for (const k of ['dock', 'board', 'sink', 'v_temple', 'tv_bongda', 'fire_gamcau', 'seat_eatery', 'hot_toc_ghe', 'giuong_benhvien', 'quay_thuoc', 'giuong_giam', 'lao_dong', 'may_net', 'xich_du']) { const a = A[k]; if (a && near(a.x, a.z, 2.8)) this.add('anchor', k, a.x, a.y, a.z, 2.7, k === 'dock' ? 0.2 : k === 'giuong_benhvien' || k === 'quay_thuoc' ? 0.05 : 0); }
     const j = ctx.acts.job; if (j?.kind === 'dock' && j.carrying) { const a = A.v_m_kho; if (a && near(a.x, a.z, 4.2)) this.add('anchor', 'dockDrop', a.x, 0.9, a.z, 4.2, 0.4); }
   }
   private atHome() { const g = ctx.g, a = ctx.world.anchors['bed_' + g.housing]; return !!a && dist2(a.x, a.z, ctx.player.x, ctx.player.z) < 36; }
@@ -105,12 +103,11 @@ export class Interact {
       case 'bin': return mk(g.wd.bins[c.ref] === g.day ? 'Thùng rác (đã bới)' : 'Bới thùng rác', () => A.rummage(c.ref));
       case 'litter': return mk(`Nhặt ${JUNK[c.ref.id].name.toLowerCase()}`, () => A.pickLitter(c.ref), `Bán được ${money(JUNK[c.ref.id].price)}`);
       case 'anchor': {
-        const k = c.ref as string, j = A.job, h = hourOf(g);
+        const k = c.ref as string, j = A.job;
         if (k === 'dock') return j?.kind === 'dock' ? (j.carrying ? null : mk('Vác một bao hàng', () => A.dockTake(), `Đã vác ${g.wd.sacks}/12 bao`)) : null;
         if (k === 'dockDrop') return mk('Đặt bao hàng xuống', () => A.dockDrop(), '+6.000₫');
         if (k === 'board') return mk('Xem bảng việc làm', () => A.board());
         if (k === 'may_net') return mk('Ngồi vào máy 04', () => A.netMenu(), `3.000₫/giờ · ${Math.round(g.st.energy)}% sức`);
-        if (k === 'dua_xe') return mk('Đăng ký đua xe đạp', () => A.raceMenu(), RC.raceOpen(g, h) ? `Chủ nhật · thắng ${money(RC.PRIZE)}` : 'Chủ nhật 15h–17h30');
         if (k === 'xich_du') return mk('Ngồi xích đu', () => A.funMenu('xich_du'), 'Đu cho nhẹ người · tinh thần lên');
         if (k === 'giuong_benhvien') return mk('Nằm phòng hồi sức', () => A.hospitalRest(), `${money(R.RECOVER_FEE)}/giờ · hồi sức khoẻ`);
         if (k === 'quay_thuoc') return mk('Quầy thuốc bệnh viện', () => A.medMenu(), 'Thuốc cảm · bông băng · thuốc bổ');

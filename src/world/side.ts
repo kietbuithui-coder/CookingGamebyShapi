@@ -41,48 +41,8 @@ export function buildSide(b: Builder) {
     b.anchor('tra_ban', x, 0.55, z, -Math.PI / 2);
   }
 
-  // ───────── 1b. Tiệm cắt tóc vỉa hè của Chú Bảy Kéo — trong sạp chợ, dãy phía bắc ─────────
-  // Chỗ này là quầy nhỏ trong lòng chợ (lối đi giữa hai dãy sạp): một cái ghế, tấm gương, hộp đồ nghề và cái bảng giá.
+  // ───────── 1c. Sạp quần áo của Cô Ngọc — trong chợ, dãy phía nam ─────────
   b.chunk('b01', -59, 0).frame({ tx: 0, tz: 0, yaw: 0 });
-  {
-    const x = -45.5, z = 8.2, d = D(), L2 = L();
-    // ghế cắt tóc: đế sắt, cột, đệm ngồi, tựa lưng có gối đầu, tay vịn mạ crôm
-    d.box(x, 0.14, z, 0.44, 0.06, 0.44, 0x3a3c42, 0x4a4c52, 0.03, true);
-    d.cyl(x, 0.34, z, 0.055, 0.36, 0x9aa0a6, 8);
-    d.box(x, 0.58, z, 0.5, 0.1, 0.46, 0x7d2f34, 0x9a3d42, 0.05, true);
-    d.box(x, 0.84, z - 0.2, 0.48, 0.44, 0.08, 0x7d2f34, 0x9a3d42, 0.04, true);
-    d.cyl(x, 1.1, z - 0.2, 0.11, 0.1, 0x5c2126, 8, 0.09);
-    for (const sx of [-0.28, 0.28]) { d.cyl(x + sx, 0.72, z + 0.04, 0.026, 0.3, 0x9aa0a6, 6); d.box(x + sx, 0.87, z + 0.04, 0.05, 0.04, 0.3, 0xb9c0c6); }
-    d.box(x, 0.36, z + 0.38, 0.34, 0.04, 0.22, 0x9aa0a6);
-    d.quad(x, 0.545, z + 0.4, x - 0.26, 0.06, z - 0.42, x + 0.26, 0.06, z - 0.42, x, 0.06, z + 0.44, 0x2c3038);   // tấm lót chân
-    // gương soi: khung gỗ + mặt kính, dựng PHÍA SAU ghế
-    for (const sx of [-0.36, 0.36]) d.box(x + sx, 0.62, z - 0.66, 0.06, 1.24, 0.05, 0x8a6a4a);
-    d.box(x, 1.22, z - 0.7, 0.94, 0.9, 0.03, 0x6a4a32, 0x8a6a4a);
-    L2.box(x, 1.22, z - 0.67, 0.84, 0.78, 0.02, 0xcfe0ea, 0xe6eef4, 0.02, true);
-    // bàn đồ nghề: kéo, lược, tông đơ, chai nước hoa
-    d.box(x - 0.86, 0.5, z + 0.34, 0.5, 0.05, 0.34, 0x9aa0a6, 0xb9c0c6, 0.02, true);
-    for (const sx of [-0.2, 0.2]) d.box(x - 0.86 + sx, 0.26, z + 0.34 + sx * 0.3, 0.04, 0.48, 0.04, 0x6a6e74);
-    for (let i = 0; i < 3; i++) d.box(x - 0.96 + i * 0.1, 0.545, z + 0.28, 0.02, 0.02, 0.16, i % 2 ? 0xc9ced4 : 0xd9463c);
-    d.cyl(x - 0.7, 0.56, z + 0.4, 0.035, 0.11, 0xdfe9f7, 7, 0.03);
-    d.cyl(x - 1.0, 0.6, z + 0.36, 0.055, 0.15, 0x2f6fb5, 8, 0.05);
-    d.box(x - 0.68, 0.53, z + 0.46, 0.16, 0.03, 0.05, 0x2a2e3a);                 // tông đơ
-    // thùng nước + khăn treo + áo choàng
-    d.cyl(x + 0.72, 0.24, z - 0.06, 0.19, 0.38, 0x2f6fb5, 10, 0.15);
-    for (let i = 0; i < 3; i++) d.rod(x + 0.72, 0.44 + i * 0.02, z - 0.06, 0.02, 0.22, 0xf3f0e8, 0, 0.2 + i * 0.25, 4);
-    d.box(x - 0.62, 1.02, z - 0.66, 0.3, 0.5, 0.03, 0xdfe9f7, 0xf3f4f6, 0.02, true);  // áo choàng trắng treo gương
-    // biển hiệu treo trên khung gương (hai dây thép buộc lên xà), bóng đèn tròn, áo choàng trải trên ghế
-    b.signAt(x - 0.02, 1.86, z - 0.5, 0.92, 0.28, 'CẮT TÓC 15.000₫', { bg: '#20304a', fg: '#f7e9a0', border: '#c8102e' }, 0, 1, 44, true);
-    for (const sx of [-0.38, 0.38]) d.rod(x + sx, 2.3, z - 0.5, 0.008, 0.44, 0x9aa0a6, 0, 0, 4);
-    L2.box(x - 0.02, 2.4, z - 0.28, 0.09, 0.09, 0.09, 0xfff2c4, 0xfff6d8, 0.5, true);
-    d.box(x, 0.635, z, 0.54, 0.02, 0.48, 0xf3f4f6);
-    b.collide(x - 0.34, z - 0.34, x + 0.34, z + 0.34);
-    b.collide(x - 0.98, z + 0.14, x - 0.46, z + 0.48);
-    b.collide(x + 0.5, z - 0.14, x + 0.86, z + 0.24);
-    b.anchor('v_hot_toc', x + 0.86, 0.13, z + 0.02, -Math.PI / 2);  // thợ đứng bên ghế, quay mặt vô ghế
-    b.anchor('hot_toc_ghe', x + 0.02, 0.66, z, 0);                   // khách ngồi lên ghế
-  }
-
-  // ───────── 1c. Sạp quần áo của Cô Ngọc — cùng dãy chợ, phía nam ─────────
   {
     const x = -45.5, z = -8.2, d = D(), L2 = L();
     // giá treo quần áo: hai cột sắt + thanh ngang 2 m, áo treo bằng móc

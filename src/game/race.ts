@@ -108,7 +108,7 @@ export class RaceSystem {
   private stop() {
     this.active = false; this.grp.visible = false;
     ctx.ui.onCookBtn = null; ctx.ui.cookHide();
-    ctx.player.place(41, -34.1, Math.PI, 0);
+    ctx.player.place(47.6, -34.0, Math.PI, 0);
     if (ctx.mode === 'cook') ctx.mode = 'play';
   }
   private finish() {
