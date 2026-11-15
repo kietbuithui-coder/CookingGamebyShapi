@@ -7,6 +7,11 @@ import { Npc, cupProp } from './npc';
 import { clamp } from '../core/util';
 import { toast } from '../core/bus';
 import { LOTS, groundY, toWorld } from '../world/layout';
+import {
+  Board, Piece, ChessMove, CHESS_PRESETS, pieceSvg,
+  boardFromRows, cloneBoard, isWhite, findKing, inCheck,
+  legalMovesAt, allLegalMoves, applyMove, pickBestMove, moveLabel, sqName,
+} from './chess';
 
 const sfx = (n: string) => ctx.sound.play(n);
 
@@ -199,6 +204,19 @@ export class AnimSystem {
   private npcSaved: { x: number; y: number; z: number; yaw: number; pose: Pose; seated: boolean; held: THREE.Mesh | null } | null = null;
   private savedPos: { x: number; z: number; yaw: number; pitch: number } | null = null;
   private meshes: THREE.Object3D[] = [];
+  // Trạng thái bàn cờ vua 8×8 với Ông Tư
+  chessPresetIdx = 0;
+  chessBoard: Board = [];
+  chessSel: [number, number] | null = null;
+  chessLegal: ChessMove[] = [];
+  chessLast: ChessMove | null = null;
+  chessHintMove: ChessMove | null = null;
+  chessTurn: 'w' | 'b' | 'end' = 'w';
+  chessAiTimer = 0;
+  chessCapW: Piece[] = [];
+  chessCapB: Piece[] = [];
+  chessLog: string[] = [];
+  chessHistory: { board: Board; last: ChessMove | null; capW: Piece[]; capB: Piece[]; log: string[] }[] = [];
 
   constructor() {
     ctx.scene.add(this.grp);
@@ -380,81 +398,338 @@ export class AnimSystem {
     ]);
   }
 
-  // ── 2. Đánh cờ tướng với Ông Tư trong công viên ────────────────────────────────────
-  startChess(n: Npc) {
-    const steps = ['Nước 1: Khai cuộc', 'Nước 2: Công sát', 'Nước 3: Chiếu tướng!'];
+  // ── 2. Đánh cờ vua 8×8 trực tiếp với Ông Tư trong công viên ─────────────────────────
+  startChess(n: Npc, presetIdx = 0) {
     this.begin(
       'danh_co',
-      'CỜ TƯỚNG CÔNG VIÊN — ÔNG TƯ',
-      steps,
-      'Ông Tư vừa bình Pháo dọa chiếu. Chọn nước đi của bạn trên bàn cờ đá!',
+      'BÀN CỜ VUA CÔNG VIÊN — ĐẤU TRÍ VỚI ÔNG TƯ',
+      CHESS_PRESETS.map((p) => p.name),
+      'Chạm vào quân Trắng rồi chạm ô chấm xanh trên bàn cờ 8×8 để đi quân!',
       52.3, 0.13, -56.16, Math.PI,
       'sit', true, null,
-      [53.48, 1.42, -56.88], [52.2, 0.56, -56.9],
-      25, n,
+      [54.55, 1.62, -56.85], [52.2, 0.78, -58.25],
+      300, n,
     );
     n.rig.seated = true;
     n.pose = 'sit';
-    this.addMesh((m) => m.cyl(0, 0, 0, 0.036, 0.018, 0xb83228, 10, 0.036, true, 0xf5d77f), 52.12, 0.515, -56.76);
-    this.addMesh((m) => m.cyl(0, 0, 0, 0.036, 0.018, 0x24282c, 10, 0.036, true, 0xd8dee6), 52.28, 0.515, -57.04);
-    this.setupChessTurn();
+    ctx.ui.cookProg(null);
+    // Hai quân cờ 3D đại diện trên mặt bàn đá dịch chuyển theo nước đi thực tế
+    this.addMesh((m) => {
+      m.cyl(0, 0, 0, 0.024, 0.055, 0xf7f2e4, 10, 0.015, true, 0xffffff);
+      m.sph(0, 0.062, 0, 0.018, 0.018, 0.018, 0xffffff, 8);
+    }, 52.2, 0.506, -56.72);
+    this.addMesh((m) => {
+      m.cyl(0, 0, 0, 0.024, 0.055, 0x221d1a, 10, 0.015, true, 0x3d3530);
+      m.sph(0, 0.062, 0, 0.018, 0.018, 0.018, 0x3d3530, 8);
+    }, 52.2, 0.506, -57.08);
+    this.initChessPreset(presetIdx);
   }
 
-  private setupChessTurn() {
-    const turns = [
-      {
-        hint: 'Nước 1/3: Ông Tư vừa bình Pháo dọa chiếu. Bạn chọn nước đi nào?',
-        opts: [
-          { label: 'Pháo 2 bình 5 (Pháo đầu)', dx: 0.08, dz: -0.10, reply: 'Ái chà, đóng Pháo đầu dữ dằn thiệt!' },
-          { label: 'Mã 8 tấn 7 (Lên Mã thủ)', dx: -0.06, dz: -0.08, reply: 'Lên Mã chắc chắn đó cháu!' },
-        ],
-      },
-      {
-        hint: 'Nước 2/3: Ông Tư thúc Tốt qua sông. Nước tiếp theo của bạn?',
-        opts: [
-          { label: 'Xe 1 bình 4 (Chiếm lộ sườn)', dx: 0.05, dz: -0.18, reply: 'Xuất Xe nhanh nhẹn lắm, Ông Tư phải coi chừng!' },
-          { label: 'Pháo 5 tấn 4 (Ăn Tốt đầu)', dx: 0.0, dz: -0.16, reply: 'Chà, nổ Pháo ăn Tốt đầu luôn hả!' },
-        ],
-      },
-      {
-        hint: 'Nước 3/3: Thế cờ đã mở toang — tung đòn quyết định!',
-        opts: [
-          { label: 'Mã 7 tấn 6 — Chiếu tướng!', dx: 0.04, dz: -0.26, reply: 'Chiếu bí đẹp quá! Bữa nay cháu cao cờ hơn ông rồi!' },
-          { label: 'Xe 4 tấn 5 — Chiếu rút!', dx: -0.04, dz: -0.25, reply: 'Nước Xe chiếu rút hiểm hóc thiệt, bái phục!' },
-        ],
-      },
-    ];
-    const cur = turns[this.step] ?? turns[0];
-    ctx.ui.cookShow('CỜ TƯỚNG CÔNG VIÊN — ÔNG TƯ', ['Nước 1', 'Nước 2', 'Nước 3'], this.step);
-    ctx.ui.cookHint(cur.hint);
-    ctx.ui.cookProg((this.step + 0.3) / 3, 0.2, 1.0, `Nước ${this.step + 1}/3`);
+  initChessPreset(idx: number) {
+    this.chessPresetIdx = ((idx % CHESS_PRESETS.length) + CHESS_PRESETS.length) % CHESS_PRESETS.length;
+    const preset = CHESS_PRESETS[this.chessPresetIdx];
+    this.chessBoard = boardFromRows(preset.rows);
+    this.chessSel = null;
+    this.chessLegal = [];
+    this.chessLast = null;
+    this.chessHintMove = null;
+    this.chessTurn = 'w';
+    this.chessAiTimer = 0;
+    this.chessCapW = [];
+    this.chessCapB = [];
+    this.chessLog = [];
+    this.chessHistory = [];
+    ctx.ui.cookShow(
+      'BÀN CỜ VUA CÔNG VIÊN — ĐẤU TRÍ VỚI ÔNG TƯ',
+      CHESS_PRESETS.map((p) => p.name),
+      this.chessPresetIdx,
+    );
+    ctx.ui.cookHint(preset.desc);
+    ctx.ui.cookProg(null);
+    this.renderChessUI();
+  }
+
+  private sqTo3D(r: number, c: number): [number, number] {
+    return [52.2 - 0.2275 + c * 0.065, -56.9 - 0.2275 + r * 0.065];
+  }
+
+  private renderChessUI() {
+    if (!this.active || this.kind !== 'danh_co') return;
+    const b = this.chessBoard;
+    const wChk = inCheck(b, true);
+    const bChk = inCheck(b, false);
+    const wKing = wChk ? findKing(b, true) : null;
+    const bKing = bChk ? findKing(b, false) : null;
+
+    let cells = '';
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const p = b[r][c];
+        const light = (r + c) % 2 === 0;
+        const isSel = this.chessSel?.[0] === r && this.chessSel?.[1] === c;
+        const isLast = (this.chessLast?.fr === r && this.chessLast?.fc === c) || (this.chessLast?.tr === r && this.chessLast?.tc === c);
+        const isHint = (this.chessHintMove?.fr === r && this.chessHintMove?.fc === c) || (this.chessHintMove?.tr === r && this.chessHintMove?.tc === c);
+        const leg = this.chessLegal.find((m) => m.tr === r && m.tc === c);
+        const isChk = (wKing?.[0] === r && wKing?.[1] === c) || (bKing?.[0] === r && bKing?.[1] === c);
+
+        const cls = [
+          'chess-sq',
+          light ? 'light' : 'dark',
+          isLast ? 'last' : '',
+          isSel ? 'sel' : '',
+          isHint ? 'hint-sq' : '',
+          isChk ? 'chk' : '',
+          leg ? (leg.cap ? 'cap' : 'move') : '',
+        ].filter(Boolean).join(' ');
+
+        const rk = c === 0 ? `<span class="chess-rk">${8 - r}</span>` : '';
+        const fl = r === 7 ? `<span class="chess-fl">${String.fromCharCode(97 + c)}</span>` : '';
+        const glyph = p ? `<span class="chess-p">${pieceSvg(p)}</span>` : '';
+        cells += `<button type="button" class="${cls}" data-r="${r}" data-c="${c}" title="Ô ${sqName(r, c)}">${rk}${glyph}${fl}</button>`;
+      }
+    }
+
+    const capWStr = this.chessCapW.map((p) => pieceSvg(p)).join('') || '<small class="muted">chưa ăn quân</small>';
+    const capBStr = this.chessCapB.map((p) => pieceSvg(p)).join('') || '<small class="muted">chưa ăn quân</small>';
+    const statusTxt =
+      this.chessTurn === 'end'
+        ? (inCheck(b, false) ? 'Bạn đã chiếu bí Ông Tư!' : inCheck(b, true) ? 'Ông Tư chiếu bí!' : 'Ván cờ hoà!')
+        : this.chessTurn === 'b'
+          ? 'Ông Tư đang suy nghĩ...'
+          : wChk
+            ? 'Vua bạn đang bị CHIẾU!'
+            : bChk
+              ? 'Bạn đang CHIẾU Vua Ông Tư!'
+              : 'Lượt bạn (Quân Trắng)';
+
+    const logHtml = this.chessLog.length
+      ? this.chessLog.slice(-5).map((l) => `<div>${l}</div>`).join('')
+      : '<div class="muted">Chạm vào 1 quân Trắng (hàng dưới) để xem các ô đi hợp lệ.</div>';
+
+    const modeBtns = CHESS_PRESETS.map(
+      (pr, i) => `<button type="button" class="chess-mode-btn${i === this.chessPresetIdx ? ' on' : ''}" data-preset="${i}">${pr.name}</button>`,
+    ).join('');
+
+    const box = ctx.ui.cookCustom(`
+      <div class="chess-wrap">
+        <div class="chess-frame">
+          <div class="chess-bar">
+            <span class="who"><i class="dot-b"></i>Ông Tư (Đen)</span>
+            <span class="caps" title="Quân Trắng Ông Tư đã ăn">${capBStr}</span>
+          </div>
+          <div class="chess-board">${cells}</div>
+          <div class="chess-bar">
+            <span class="who"><i class="dot-w"></i>Bạn (Trắng)</span>
+            <span class="caps" title="Quân Đen bạn đã ăn">${capWStr}</span>
+          </div>
+        </div>
+        <div class="chess-side">
+          <div>
+            <h4><span>BÀN CỜ VUA</span><small>${this.chessHistory.length + 1} nước</small></h4>
+            <div class="chess-status${wChk || bChk ? ' warn' : ''}">${statusTxt}</div>
+          </div>
+          <div class="chess-modes">${modeBtns}</div>
+          <div class="chess-log">${logHtml}</div>
+        </div>
+      </div>
+    `);
+
+    box.querySelector('.chess-board')?.addEventListener('pointerdown', (e) => {
+      const btn = (e.target as HTMLElement).closest('.chess-sq') as HTMLElement | null;
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      this.onChessSqClick(+btn.dataset.r!, +btn.dataset.c!);
+    });
+
+    box.querySelector('.chess-modes')?.addEventListener('pointerdown', (e) => {
+      const btn = (e.target as HTMLElement).closest('.chess-mode-btn') as HTMLElement | null;
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      sfx('ui');
+      this.initChessPreset(+btn.dataset.preset!);
+    });
+
+    const best = this.chessTurn === 'w' ? pickBestMove(b, true, 2) : null;
     this.setBtns([
-      ...cur.opts.map((o) => ({
-        label: o.label,
+      {
+        label: this.chessTurn === 'end'
+          ? 'Đánh lại ván này'
+          : best
+            ? `Đi gợi ý: ${moveLabel(best)}`
+            : 'Gợi ý nước đi',
         hot: true,
         fn: () => {
-          sfx('place');
-          this.t = 0;
-          ctx.player.actPose = 'work';
-          if (this.npc) {
-            this.npc.pose = 'work';
-            ctx.npcs.say(this.npc, o.reply, 3.0, 1);
+          if (this.chessTurn === 'end') {
+            sfx('ui');
+            this.initChessPreset(this.chessPresetIdx);
+            return;
           }
-          if (this.meshes[0]) this.meshes[0].position.set(52.12 + o.dx, 0.52, -56.76 + o.dz);
-          if (this.meshes[1]) this.meshes[1].position.set(52.28 - o.dx * 0.6, 0.52, -57.04 + (this.step + 1) * 0.05);
-          this.flt(52.2, 0.95, -56.9, `♟ ${o.label}`, 'good');
-          this.step++;
-          if (this.step >= 3) {
-            ctx.g.st.mood = clamp(ctx.g.st.mood + 2, 0, 100);
-            sfx('yay');
-            this.stop();
-          } else {
-            this.setupChessTurn();
-          }
+          if (this.chessTurn !== 'w') return;
+          const m = pickBestMove(this.chessBoard, true, 2);
+          if (m) this.execPlayerChessMove(m);
         },
-      })),
-      { label: 'Xếp bàn cờ', hot: false, fn: () => this.stop() },
+      },
+      {
+        label: 'Đi lại 1 nước',
+        hot: false,
+        fn: () => {
+          const prev = this.chessHistory.pop();
+          if (!prev) {
+            toast('Đang ở nước đầu tiên của bàn cờ!', 'info');
+            return;
+          }
+          sfx('pick');
+          this.chessBoard = prev.board;
+          this.chessLast = prev.last;
+          this.chessCapW = prev.capW;
+          this.chessCapB = prev.capB;
+          this.chessLog = prev.log;
+          this.chessSel = null;
+          this.chessLegal = [];
+          this.chessHintMove = null;
+          this.chessTurn = 'w';
+          this.chessAiTimer = 0;
+          this.renderChessUI();
+        },
+      },
+      {
+        label: 'Xếp bàn cờ',
+        hot: false,
+        fn: () => this.stop(),
+      },
     ]);
+  }
+
+  private onChessSqClick(r: number, c: number) {
+    if (this.chessTurn !== 'w') return;
+    const leg = this.chessLegal.find((m) => m.tr === r && m.tc === c);
+    if (leg) {
+      this.execPlayerChessMove(leg);
+      return;
+    }
+    const p = this.chessBoard[r][c];
+    if (p && isWhite(p)) {
+      sfx('pick');
+      this.chessSel = [r, c];
+      this.chessLegal = legalMovesAt(this.chessBoard, r, c);
+      this.chessHintMove = null;
+      this.renderChessUI();
+    } else if (this.chessSel) {
+      this.chessSel = null;
+      this.chessLegal = [];
+      this.renderChessUI();
+    }
+  }
+
+  execPlayerChessMove(m: ChessMove) {
+    this.chessHistory.push({
+      board: cloneBoard(this.chessBoard),
+      last: this.chessLast,
+      capW: this.chessCapW.slice(),
+      capB: this.chessCapB.slice(),
+      log: this.chessLog.slice(),
+    });
+    this.chessBoard = applyMove(this.chessBoard, m);
+    if (m.cap) {
+      this.chessCapW.push(m.cap);
+      sfx('chop');
+    } else {
+      sfx('place');
+    }
+    this.chessLast = m;
+    this.chessSel = null;
+    this.chessLegal = [];
+    this.chessHintMove = null;
+    const turnNo = this.chessHistory.length;
+    this.chessLog.push(`${turnNo}. Bạn: ${moveLabel(m)}`);
+
+    // Hoạt ảnh tay nhân vật vươn ra đặt quân cờ 3D trên mặt bàn đá
+    this.t = 0;
+    ctx.player.actPose = 'work';
+    const [wx, wz] = this.sqTo3D(m.tr, m.tc);
+    if (this.meshes[0]) this.meshes[0].position.set(wx, 0.506, wz);
+    this.flt(52.2, 0.95, -56.9, moveLabel(m), 'good');
+
+    const bMoves = allLegalMoves(this.chessBoard, false);
+    if (!bMoves.length) {
+      this.chessTurn = 'end';
+      if (inCheck(this.chessBoard, false)) {
+        sfx('yay');
+        ctx.g.st.mood = clamp(ctx.g.st.mood + 4, 0, 100);
+        if (this.npc) ctx.npcs.say(this.npc, 'Chiếu bí đẹp quá! Bữa nay cháu cao cờ hơn ông Tư rồi, bái phục!', 4.0, 1);
+        ctx.ui.cookGrade(1, 'CHIẾU BÍ ÔNG TƯ!');
+        ctx.ui.cookHint('Chúc mừng! Bạn đã chiếu bí Ông Tư ngay trên bàn cờ công viên!');
+      } else {
+        if (this.npc) ctx.npcs.say(this.npc, 'Thế cờ hoà pat rồi cháu ơi, ván này bất phân thắng bại!', 3.5, 1);
+        ctx.ui.cookHint('Ván cờ khép lại với thế hoà (hết nước đi hợp lệ)!');
+      }
+      this.renderChessUI();
+      return;
+    }
+
+    if (inCheck(this.chessBoard, false) && this.npc) {
+      ctx.npcs.say(this.npc, 'Ái chà, chiếu tướng ông hả! Để ông Tư đỡ nước này...', 2.8, 1);
+    }
+    this.chessTurn = 'b';
+    this.chessAiTimer = 0.38;
+    this.renderChessUI();
+  }
+
+  private execAiChessMove() {
+    if (this.chessTurn !== 'b') return;
+    const ai = pickBestMove(this.chessBoard, false, 2);
+    if (!ai) {
+      this.chessTurn = 'end';
+      this.renderChessUI();
+      return;
+    }
+    this.chessBoard = applyMove(this.chessBoard, ai);
+    if (ai.cap) {
+      this.chessCapB.push(ai.cap);
+      sfx('chop');
+    } else {
+      sfx('place');
+    }
+    this.chessLast = ai;
+    if (this.chessLog.length) {
+      this.chessLog[this.chessLog.length - 1] += ` · Ông Tư: ${moveLabel(ai)}`;
+    } else {
+      this.chessLog.push(`Ông Tư: ${moveLabel(ai)}`);
+    }
+
+    this.t = 0;
+    if (this.npc) {
+      this.npc.pose = 'work';
+      const [bx, bz] = this.sqTo3D(ai.tr, ai.tc);
+      if (this.meshes[1]) this.meshes[1].position.set(bx, 0.506, bz);
+      const wChk = inCheck(this.chessBoard, true);
+      const line = wChk
+        ? 'Chiếu tướng! Coi chừng Vua của cháu kìa!'
+        : ai.cap
+          ? `Ông Tư ăn quân ở ô ${sqName(ai.tr, ai.tc)} nhé!`
+          : [
+              'Nước cờ này của ông Tư hơi bị hiểm đó nghen!',
+              'Tới lượt cháu đó, tính kỹ kẻo sập bẫy ông Tư!',
+              'Chà, thế trận ngày càng gay cấn rồi đây!',
+            ][this.chessHistory.length % 3];
+      ctx.npcs.say(this.npc, line, 3.0, 1);
+    }
+
+    const wMoves = allLegalMoves(this.chessBoard, true);
+    if (!wMoves.length) {
+      this.chessTurn = 'end';
+      if (inCheck(this.chessBoard, true)) {
+        ctx.ui.cookHint('Ông Tư đã chiếu bí! Bấm “Đánh lại ván này” hoặc “Đi lại 1 nước” để phục thù!');
+      } else {
+        ctx.ui.cookHint('🤝 Ván cờ hoà (hết nước đi hợp lệ)!');
+      }
+    } else {
+      this.chessTurn = 'w';
+      ctx.ui.cookHint(`Ông Tư vừa đi ${moveLabel(ai)} — chạm vào quân Trắng để đáp trả!`);
+    }
+    this.renderChessUI();
   }
 
   // ── 3. Ngồi ghế cắt tóc & nhuộm tóc ở Tiệm Chú Bảy Kéo ────────────────────────────
@@ -1044,6 +1319,10 @@ export class AnimSystem {
     } else if (this.kind === 'danh_co') {
       if (this.t > 0.65 && p.actPose === 'work') p.actPose = 'sit';
       if (this.npc && this.t > 0.65 && this.npc.pose === 'work') this.npc.pose = 'sit';
+      if (this.chessTurn === 'b' && this.chessAiTimer > 0) {
+        this.chessAiTimer -= dt;
+        if (this.chessAiTimer <= 0) this.execAiChessMove();
+      }
     } else if (this.kind === 'barber') {
       const prog = clamp(this.t / this.dur, 0, 1);
       ctx.ui.cookProg(prog, 0.2, 1.0, 'đang cắt tỉa');
