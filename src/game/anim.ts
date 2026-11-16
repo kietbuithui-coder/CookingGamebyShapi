@@ -10,7 +10,8 @@ import { LOTS, groundY, toWorld } from '../world/layout';
 import {
   Board, Piece, ChessMove, CHESS_PRESETS, pieceSvg,
   boardFromRows, cloneBoard, isWhite, findKing, inCheck,
-  legalMovesAt, allLegalMoves, applyMove, pickBestMove, moveLabel, sqName, drawReason,
+  legalMovesAt, allLegalMoves, applyMove, pickBestMove, moveLabel, sqName,
+  autoDrawReason, claimableDrawReason, evaluateBoard,
 } from './chess';
 
 const sfx = (n: string) => ctx.sound.play(n);
@@ -214,6 +215,9 @@ export class AnimSystem {
   chessTurn: 'w' | 'b' | 'end' = 'w';
   chessEndReason = '';
   chessPendingPromo: ChessMove[] | null = null;
+  chessWinRewarded = false;
+  private chessBestBoard: Board | null = null;
+  private chessBestMove: ChessMove | null = null;
   chessAiTimer = 0;
   chessCapW: Piece[] = [];
   chessCapB: Piece[] = [];
@@ -438,11 +442,16 @@ export class AnimSystem {
     this.chessTurn = 'w';
     this.chessEndReason = '';
     this.chessPendingPromo = null;
+    this.chessWinRewarded = false;
+    this.chessBestBoard = null;
+    this.chessBestMove = null;
     this.chessAiTimer = 0;
     this.chessCapW = [];
     this.chessCapB = [];
     this.chessLog = [];
     this.chessHistory = [];
+    if (this.meshes[0]) this.meshes[0].position.set(52.2, 0.506, -56.72);
+    if (this.meshes[1]) this.meshes[1].position.set(52.2, 0.506, -57.08);
     ctx.ui.cookShow('ĐÁNH CỜ VỚI ÔNG TƯ', [], 0);
     ctx.ui.cookHint('');
     ctx.ui.cookProg(null);
@@ -489,8 +498,19 @@ export class AnimSystem {
       }
     }
 
-    const capWStr = this.chessCapW.map((p) => pieceSvg(p)).join('') || '<small class="muted">chưa ăn quân</small>';
-    const capBStr = this.chessCapB.map((p) => pieceSvg(p)).join('') || '<small class="muted">chưa ăn quân</small>';
+    const capWStr = this.chessCapW.map((p) => `<span class="chess-cap-p ${isWhite(p) ? 'w' : 'b'}">${pieceSvg(p)}</span>`).join('') || '<small class="muted">chưa ăn quân</small>';
+    const capBStr = this.chessCapB.map((p) => `<span class="chess-cap-p ${isWhite(p) ? 'w' : 'b'}">${pieceSvg(p)}</span>`).join('') || '<small class="muted">chưa ăn quân</small>';
+    const claimable = this.chessTurn === 'w' ? claimableDrawReason(b, true) : null;
+    if (this.chessTurn === 'w') {
+      ctx.ui.cookHint(
+        this.chessPendingPromo
+          ? 'Chọn quân muốn phong cấp cho Tốt.'
+          : claimable
+            ? `Đủ điều kiện ${claimable.toLowerCase()} — bấm “Yêu cầu hòa” hoặc đi tiếp.`
+            : '',
+      );
+    }
+
     const statusTxt =
       this.chessTurn === 'end'
         ? this.chessEndReason || (inCheck(b, false) ? 'Bạn đã chiếu bí Ông Tư!' : inCheck(b, true) ? 'Ông Tư chiếu bí!' : 'Ván cờ hoà!')
@@ -504,7 +524,7 @@ export class AnimSystem {
 
     const promoNames: Record<string, string> = { Q: 'Hậu', R: 'Xe', B: 'Tượng', N: 'Mã' };
     const promoHtml = this.chessPendingPromo
-      ? `<div class="chess-promos"><b>Chọn quân phong cấp</b>${this.chessPendingPromo.map((m, i) => `<button type="button" class="chess-promo" data-promo="${i}" aria-label="Phong ${promoNames[m.promo!.toUpperCase()]}">${pieceSvg(m.promo!)}<small>${promoNames[m.promo!.toUpperCase()]}</small></button>`).join('')}</div>`
+      ? `<div class="chess-promos"><b>Chọn quân phong cấp</b>${this.chessPendingPromo.map((m, i) => `<button type="button" class="chess-promo w" data-promo="${i}" aria-label="Phong ${promoNames[m.promo!.toUpperCase()]}">${pieceSvg(m.promo!)}<small>${promoNames[m.promo!.toUpperCase()]}</small></button>`).join('')}</div>`
       : '';
     const logHtml = this.chessLog.slice(-5).map((l) => `<div>${l}</div>`).join('');
 
@@ -549,8 +569,18 @@ export class AnimSystem {
       if (move) this.execPlayerChessMove(move);
     });
 
-    const best = this.chessTurn === 'w' ? pickBestMove(b, true, 2) : null;
-    this.setBtns([
+    if (this.chessTurn === 'w') {
+      if (this.chessBestBoard !== b) {
+        this.chessBestBoard = b;
+        this.chessBestMove = pickBestMove(b, true, 2);
+      }
+    } else {
+      this.chessBestBoard = null;
+      this.chessBestMove = null;
+    }
+    const best = this.chessBestMove;
+
+    const btns: { label: string; hot: boolean; fn: () => void }[] = [
       {
         label: this.chessTurn === 'end'
           ? 'Đánh lại ván này'
@@ -565,10 +595,30 @@ export class AnimSystem {
             return;
           }
           if (this.chessTurn !== 'w') return;
-          const m = pickBestMove(this.chessBoard, true, 2);
+          const m = this.chessBestMove ?? pickBestMove(this.chessBoard, true, 2);
           if (m) this.execPlayerChessMove(m);
         },
       },
+    ];
+    if (claimable) {
+      btns.push({
+        label: 'Yêu cầu hòa',
+        hot: false,
+        fn: () => {
+          if (this.chessTurn !== 'w') return;
+          sfx('ui');
+          this.chessTurn = 'end';
+          this.chessPendingPromo = null;
+          this.chessSel = null;
+          this.chessLegal = [];
+          this.chessEndReason = `Bạn yêu cầu ${claimable.toLowerCase()}.`;
+          if (this.npc) ctx.npcs.say(this.npc, 'Được rồi, thế này tính hòa nhé cháu!', 3.2, 1);
+          ctx.ui.cookHint(this.chessEndReason);
+          this.renderChessUI();
+        },
+      });
+    }
+    btns.push(
       {
         label: 'Đi lại 1 nước',
         hot: false,
@@ -589,8 +639,13 @@ export class AnimSystem {
           this.chessHintMove = null;
           this.chessPendingPromo = null;
           this.chessEndReason = '';
+          this.chessBestBoard = null;
+          this.chessBestMove = null;
           this.chessTurn = 'w';
           this.chessAiTimer = 0;
+          if (this.meshes[0]) this.meshes[0].position.set(52.2, 0.506, -56.72);
+          if (this.meshes[1]) this.meshes[1].position.set(52.2, 0.506, -57.08);
+          ctx.ui.cookHint('');
           this.renderChessUI();
         },
       },
@@ -599,7 +654,8 @@ export class AnimSystem {
         hot: false,
         fn: () => this.stop(),
       },
-    ]);
+    );
+    this.setBtns(btns);
   }
 
   private onChessSqClick(r: number, c: number) {
@@ -640,6 +696,8 @@ export class AnimSystem {
     this.chessBoard = applyMove(this.chessBoard, m);
     this.chessPendingPromo = null;
     this.chessEndReason = '';
+    this.chessBestBoard = null;
+    this.chessBestMove = null;
     if (m.cap) {
       this.chessCapW.push(m.cap);
       sfx('chop');
@@ -666,7 +724,10 @@ export class AnimSystem {
       if (inCheck(this.chessBoard, false)) {
         this.chessEndReason = 'Bạn đã chiếu bí Ông Tư!';
         sfx('yay');
-        ctx.g.st.mood = clamp(ctx.g.st.mood + 4, 0, 100);
+        if (!this.chessWinRewarded) {
+          this.chessWinRewarded = true;
+          ctx.g.st.mood = clamp(ctx.g.st.mood + 4, 0, 100);
+        }
         if (this.npc) ctx.npcs.say(this.npc, 'Chiếu bí đẹp quá! Bữa nay cháu cao cờ hơn ông Tư rồi, bái phục!', 4.0, 1);
         ctx.ui.cookGrade(1, 'CHIẾU BÍ ÔNG TƯ!');
         ctx.ui.cookHint('Chúc mừng! Bạn đã chiếu bí Ông Tư ngay trên bàn cờ công viên!');
@@ -678,11 +739,11 @@ export class AnimSystem {
       this.renderChessUI();
       return;
     }
-    const draw = drawReason(this.chessBoard, false);
-    if (draw) {
+    const autoDraw = autoDrawReason(this.chessBoard, false);
+    if (autoDraw) {
       this.chessTurn = 'end';
-      this.chessEndReason = draw;
-      ctx.ui.cookHint(draw);
+      this.chessEndReason = autoDraw;
+      ctx.ui.cookHint(autoDraw);
       this.renderChessUI();
       return;
     }
@@ -697,15 +758,27 @@ export class AnimSystem {
 
   private execAiChessMove() {
     if (this.chessTurn !== 'b') return;
+    const aiClaimable = claimableDrawReason(this.chessBoard, false);
+    if (aiClaimable && evaluateBoard(this.chessBoard) >= -50) {
+      this.chessTurn = 'end';
+      this.chessEndReason = `Ông Tư yêu cầu ${aiClaimable.toLowerCase()}.`;
+      if (this.npc) ctx.npcs.say(this.npc, `Thế này ${aiClaimable.toLowerCase()}, ông Tư xin hòa ván này nghen!`, 3.5, 1);
+      ctx.ui.cookHint(this.chessEndReason);
+      this.renderChessUI();
+      return;
+    }
     const ai = pickBestMove(this.chessBoard, false, 2);
     if (!ai) {
       this.chessTurn = 'end';
-      this.chessEndReason = drawReason(this.chessBoard, false) ?? (inCheck(this.chessBoard, false) ? 'Ông Tư đang bị chiếu bí!' : 'Ván cờ hòa do hết nước đi hợp lệ.');
+      this.chessEndReason = autoDrawReason(this.chessBoard, false) ?? (inCheck(this.chessBoard, false) ? 'Ông Tư đang bị chiếu bí!' : 'Ván cờ hòa do hết nước đi hợp lệ.');
+      ctx.ui.cookHint(this.chessEndReason);
       this.renderChessUI();
       return;
     }
     this.chessBoard = applyMove(this.chessBoard, ai);
     this.chessEndReason = '';
+    this.chessBestBoard = null;
+    this.chessBestMove = null;
     if (ai.cap) {
       this.chessCapB.push(ai.cap);
       sfx('chop');
@@ -748,11 +821,11 @@ export class AnimSystem {
         ctx.ui.cookHint(this.chessEndReason);
       }
     } else {
-      const draw = drawReason(this.chessBoard, true);
-      if (draw) {
+      const autoDraw = autoDrawReason(this.chessBoard, true);
+      if (autoDraw) {
         this.chessTurn = 'end';
-        this.chessEndReason = draw;
-        ctx.ui.cookHint(draw);
+        this.chessEndReason = autoDraw;
+        ctx.ui.cookHint(autoDraw);
       } else {
         this.chessTurn = 'w';
         ctx.ui.cookHint('');

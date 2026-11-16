@@ -95,18 +95,31 @@ function rawBoardFromRows(rows: string[]): Piece[][] {
   return rows.map((row) => row.split('').map((ch) => (ch === '.' ? '' : (ch as Piece))));
 }
 
+function canLegallyEnPassant(b: Piece[][], whiteToMove: boolean, targetRow: number, targetCol: number): boolean {
+  const sourceRow = whiteToMove ? targetRow + 1 : targetRow - 1;
+  if (sourceRow < 0 || sourceRow >= 8) return false;
+  const pawn: Piece = whiteToMove ? 'P' : 'p';
+  const enemyPawn: Piece = whiteToMove ? 'p' : 'P';
+  if (b[sourceRow][targetCol] !== enemyPawn || b[targetRow][targetCol] !== '') return false;
+  for (const dc of [-1, 1]) {
+    const sc = targetCol + dc;
+    if (sc < 0 || sc >= 8 || b[sourceRow][sc] !== pawn) continue;
+    const test = b.map((row) => row.slice()) as Board;
+    test[targetRow][targetCol] = pawn;
+    test[sourceRow][sc] = '';
+    test[sourceRow][targetCol] = '';
+    if (!inCheck(test, whiteToMove)) return true;
+  }
+  return false;
+}
+
 function positionKey(b: Piece[][], whiteToMove: boolean, meta: ChessMeta): string {
   const rows = b.map((row) => row.map((p) => p || '.').join('')).join('/');
   const c = meta.castling;
   const rights = `${c.wk ? 'K' : ''}${c.wq ? 'Q' : ''}${c.bk ? 'k' : ''}${c.bq ? 'q' : ''}` || '-';
   let ep = '-';
-  if (meta.enPassant) {
-    const [targetRow, targetCol] = meta.enPassant;
-    const sourceRow = whiteToMove ? targetRow + 1 : targetRow - 1;
-    const pawn = whiteToMove ? 'P' : 'p';
-    if (sourceRow >= 0 && sourceRow < 8 && [-1, 1].some((dc) => b[sourceRow]?.[targetCol + dc] === pawn)) {
-      ep = sqName(targetRow, targetCol);
-    }
+  if (meta.enPassant && canLegallyEnPassant(b, whiteToMove, meta.enPassant[0], meta.enPassant[1])) {
+    ep = sqName(meta.enPassant[0], meta.enPassant[1]);
   }
   return `${rows} ${whiteToMove ? 'w' : 'b'} ${rights} ${ep}`;
 }
@@ -354,6 +367,13 @@ export function allLegalMoves(b: Board, white: boolean): ChessMove[] {
   return moves;
 }
 
+/**
+ * Kiểm tra thế cờ chết (dead position theo FIDE — không thể chiếu bí bằng bất kỳ chuỗi nước hợp lệ nào):
+ * - Vua vs Vua
+ * - Vua + 1 Tượng hoặc 1 Mã vs Vua
+ * - Chỉ có Vua và các Tượng (hai bên) đều nằm trên cùng một màu ô
+ * Lưu ý: K+N+N vs K, K+B vs K+N, K+N vs K+N và hai Tượng khác màu ô vẫn có thể chiếu bí hợp lệ nếu đối phương đi lỗi, nên không tự xử hòa.
+ */
 export function insufficientMaterial(b: Board): boolean {
   const pieces: { p: Piece; squareColor: number }[] = [];
   for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
@@ -365,15 +385,27 @@ export function insufficientMaterial(b: Board): boolean {
   return pieces.every(({ p }) => p.toUpperCase() === 'B') && new Set(pieces.map((x) => x.squareColor)).size === 1;
 }
 
-/** Áp dụng hòa theo 50 nước/3 lần lặp (có thể yêu cầu), cùng ngưỡng tự động 75 nước/5 lần lặp. */
-export function drawReason(b: Board, whiteToMove: boolean): string | null {
+/** Hòa bắt buộc tự động (không cần yêu cầu): thiếu quân, 75 nước hoặc lặp thế cờ 5 lần. */
+export function autoDrawReason(b: Board, whiteToMove: boolean): string | null {
   const repetitions = b.meta.repetitions[positionKey(b, whiteToMove, b.meta)] ?? 0;
   if (b.meta.halfmove >= 150) return 'Hòa tự động theo luật 75 nước';
   if (repetitions >= 5) return 'Hòa tự động do lặp lại thế cờ 5 lần';
-  if (b.meta.halfmove >= 100) return 'Hòa theo luật 50 nước';
-  if (repetitions >= 3) return 'Hòa do lặp lại thế cờ';
   if (insufficientMaterial(b)) return 'Hòa do không đủ quân chiếu bí';
   return null;
+}
+
+/** Hòa theo quyền yêu cầu (FIDE): 50 nước không ăn quân/đi tốt hoặc lặp lại thế cờ 3 lần. */
+export function claimableDrawReason(b: Board, whiteToMove: boolean): string | null {
+  if (autoDrawReason(b, whiteToMove)) return null;
+  const repetitions = b.meta.repetitions[positionKey(b, whiteToMove, b.meta)] ?? 0;
+  if (b.meta.halfmove >= 100) return 'Hòa theo luật 50 nước';
+  if (repetitions >= 3) return 'Hòa do lặp lại thế cờ';
+  return null;
+}
+
+/** Lý do hòa (ưu tiên hòa tự động, sau đó đến điều kiện có thể yêu cầu hòa). */
+export function drawReason(b: Board, whiteToMove: boolean): string | null {
+  return autoDrawReason(b, whiteToMove) ?? claimableDrawReason(b, whiteToMove);
 }
 
 const VAL: Record<string, number> = { P: 100, N: 320, B: 330, R: 500, Q: 900, K: 20000 };
@@ -442,7 +474,7 @@ function minimax(b: Board, depth: number, alpha: number, beta: number, maximizin
 }
 
 export function pickBestMove(b: Board, white: boolean, depth = 2): ChessMove | null {
-  if (drawReason(b, white)) return null;
+  if (autoDrawReason(b, white)) return null;
   const moves = orderMoves(allLegalMoves(b, white));
   if (!moves.length) return null;
   let bestMove = moves[0];
@@ -495,8 +527,11 @@ export function sqName(r: number, c: number): string {
 }
 
 export function moveLabel(m: ChessMove): string {
+  if (m.castle === 'K') return 'Nhập thành cánh Vua (O-O)';
+  if (m.castle === 'Q') return 'Nhập thành cánh Hậu (O-O-O)';
   const pName = PIECE_VN[m.piece.toUpperCase()] ?? 'Quân';
   const act = m.cap ? 'ăn' : 'qua';
   const promoName = m.promo ? PIECE_VN[m.promo.toUpperCase()] : '';
-  return `${pName} ${sqName(m.fr, m.fc)} ${act} ${sqName(m.tr, m.tc)}${promoName ? ` (Phong ${promoName})` : ''}`;
+  const ep = m.enPassant ? ' (bắt tốt qua đường)' : '';
+  return `${pName} ${sqName(m.fr, m.fc)} ${act} ${sqName(m.tr, m.tc)}${promoName ? ` (Phong ${promoName})` : ''}${ep}`;
 }
