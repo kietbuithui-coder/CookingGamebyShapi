@@ -1,7 +1,15 @@
 // Động cơ Cờ Vua 8×8 (luật đi quân hợp lệ, kiểm tra chiếu/chiếu bí, thế cờ & AI Ông Tư dùng Minimax + cắt tỉa Alpha-Beta).
 
 export type Piece = 'P' | 'N' | 'B' | 'R' | 'Q' | 'K' | 'p' | 'n' | 'b' | 'r' | 'q' | 'k' | '';
-export type Board = Piece[][]; // 8 hàng (r=0 là hàng 8 của Đen, r=7 là hàng 1 của Trắng) × 8 cột (c=0..7 là a..h)
+export interface CastlingRights { wk: boolean; wq: boolean; bk: boolean; bq: boolean; }
+export interface ChessMeta {
+  castling: CastlingRights;
+  enPassant: [number, number] | null;
+  halfmove: number;
+  repetitions: Record<string, number>;
+}
+// 8 hàng (r=0 là hàng 8 của Đen, r=7 là hàng 1 của Trắng) × 8 cột (c=0..7 là a..h).
+export type Board = Piece[][] & { meta: ChessMeta };
 
 export interface ChessMove {
   fr: number;
@@ -11,6 +19,8 @@ export interface ChessMove {
   piece: Piece;
   cap: Piece;
   promo?: Piece;
+  castle?: 'K' | 'Q';
+  enPassant?: boolean;
 }
 
 export interface ChessPreset {
@@ -81,14 +91,54 @@ export function sameSide(a: Piece, b: Piece): boolean {
   return isWhite(a) === isWhite(b);
 }
 
+function rawBoardFromRows(rows: string[]): Piece[][] {
+  return rows.map((row) => row.split('').map((ch) => (ch === '.' ? '' : (ch as Piece))));
+}
+
+function positionKey(b: Piece[][], whiteToMove: boolean, meta: ChessMeta): string {
+  const rows = b.map((row) => row.map((p) => p || '.').join('')).join('/');
+  const c = meta.castling;
+  const rights = `${c.wk ? 'K' : ''}${c.wq ? 'Q' : ''}${c.bk ? 'k' : ''}${c.bq ? 'q' : ''}` || '-';
+  let ep = '-';
+  if (meta.enPassant) {
+    const [targetRow, targetCol] = meta.enPassant;
+    const sourceRow = whiteToMove ? targetRow + 1 : targetRow - 1;
+    const pawn = whiteToMove ? 'P' : 'p';
+    if (sourceRow >= 0 && sourceRow < 8 && [-1, 1].some((dc) => b[sourceRow]?.[targetCol + dc] === pawn)) {
+      ep = sqName(targetRow, targetCol);
+    }
+  }
+  return `${rows} ${whiteToMove ? 'w' : 'b'} ${rights} ${ep}`;
+}
+
 export function boardFromRows(rows: string[]): Board {
-  return rows.map((row) =>
-    row.split('').map((ch) => (ch === '.' ? '' : (ch as Piece))),
-  );
+  if (rows.length !== 8 || rows.some((row) => row.length !== 8)) throw new Error('Bàn cờ phải có đúng 8 hàng, mỗi hàng 8 ô.');
+  const b = rawBoardFromRows(rows) as Board;
+  b.meta = {
+    castling: {
+      wk: b[7][4] === 'K' && b[7][7] === 'R',
+      wq: b[7][4] === 'K' && b[7][0] === 'R',
+      bk: b[0][4] === 'k' && b[0][7] === 'r',
+      bq: b[0][4] === 'k' && b[0][0] === 'r',
+    },
+    enPassant: null,
+    halfmove: 0,
+    repetitions: {},
+  };
+  b.meta.repetitions[positionKey(b, true, b.meta)] = 1;
+  return b;
 }
 
 export function cloneBoard(b: Board): Board {
-  return b.map((r) => r.slice());
+  const copy = b.map((r) => r.slice()) as Board;
+  const meta = b.meta ?? { castling: { wk: false, wq: false, bk: false, bq: false }, enPassant: null, halfmove: 0, repetitions: {} };
+  copy.meta = {
+    castling: { ...meta.castling },
+    enPassant: meta.enPassant ? [...meta.enPassant] : null,
+    halfmove: meta.halfmove,
+    repetitions: { ...meta.repetitions },
+  };
+  return copy;
 }
 
 export function findKing(b: Board, white: boolean): [number, number] | null {
@@ -169,12 +219,16 @@ export function pseudoMovesAt(b: Board, fr: number, fc: number): ChessMove[] {
   const up = p.toUpperCase();
   const out: ChessMove[] = [];
 
-  const add = (tr: number, tc: number) => {
-    const cap = b[tr][tc];
+  const add = (tr: number, tc: number, special: Partial<ChessMove> = {}) => {
+    const cap = special.enPassant ? b[fr][tc] : b[tr][tc];
+    // Vua không bị ăn trực tiếp; ván kết thúc khi bên bị chiếu không còn nước hợp lệ.
+    if (cap && cap.toUpperCase() === 'K') return;
     if (up === 'P' && (tr === 0 || tr === 7)) {
-      out.push({ fr, fc, tr, tc, piece: p, cap, promo: w ? 'Q' : 'q' });
+      for (const promo of (w ? ['Q', 'R', 'B', 'N'] : ['q', 'r', 'b', 'n']) as Piece[]) {
+        out.push({ fr, fc, tr, tc, piece: p, cap, ...special, promo });
+      }
     } else {
-      out.push({ fr, fc, tr, tc, piece: p, cap });
+      out.push({ fr, fc, tr, tc, piece: p, cap, ...special });
     }
   };
 
@@ -190,8 +244,10 @@ export function pseudoMovesAt(b: Board, fr: number, fc: number): ChessMove[] {
       }
       for (const dc of [-1, 1]) {
         const nc = fc + dc;
-        if (nc >= 0 && nc < 8 && b[nr][nc] && !sameSide(p, b[nr][nc])) {
-          add(nr, nc);
+        if (nc < 0 || nc >= 8) continue;
+        if (b[nr][nc] && !sameSide(p, b[nr][nc])) add(nr, nc);
+        else if (b.meta?.enPassant?.[0] === nr && b.meta.enPassant[1] === nc && b[fr][nc] === (w ? 'p' : 'P')) {
+          add(nr, nc, { enPassant: true });
         }
       }
     }
@@ -211,6 +267,16 @@ export function pseudoMovesAt(b: Board, fr: number, fc: number): ChessMove[] {
         const r = fr + dr, c = fc + dc;
         if (r >= 0 && r < 8 && c >= 0 && c < 8 && !sameSide(p, b[r][c])) add(r, c);
       }
+    }
+    const home = w ? 7 : 0;
+    const rights = b.meta?.castling;
+    if (fr === home && fc === 4 && rights && !inCheck(b, w)) {
+      const enemy = !w;
+      const rook = w ? 'R' : 'r';
+      if ((w ? rights.wk : rights.bk) && b[home][7] === rook && !b[home][5] && !b[home][6]
+        && !isSquareAttacked(b, home, 5, enemy) && !isSquareAttacked(b, home, 6, enemy)) add(home, 6, { castle: 'K' });
+      if ((w ? rights.wq : rights.bq) && b[home][0] === rook && !b[home][1] && !b[home][2] && !b[home][3]
+        && !isSquareAttacked(b, home, 3, enemy) && !isSquareAttacked(b, home, 2, enemy)) add(home, 2, { castle: 'Q' });
     }
   } else {
     const dirs: [number, number][] = [];
@@ -235,8 +301,38 @@ export function pseudoMovesAt(b: Board, fr: number, fc: number): ChessMove[] {
 
 export function applyMove(b: Board, m: ChessMove): Board {
   const nb = cloneBoard(b);
-  nb[m.tr][m.tc] = m.promo ?? m.piece;
+  const moving = b[m.fr][m.fc];
+  const captured = m.cap;
+  nb[m.tr][m.tc] = m.promo ?? moving;
   nb[m.fr][m.fc] = '';
+  if (m.enPassant) nb[m.fr][m.tc] = '';
+  if (m.castle) {
+    const row = isWhite(moving) ? 7 : 0;
+    const rookFrom = m.castle === 'K' ? 7 : 0;
+    const rookTo = m.castle === 'K' ? 5 : 3;
+    nb[row][rookTo] = nb[row][rookFrom];
+    nb[row][rookFrom] = '';
+  }
+
+  const rights = nb.meta.castling;
+  if (moving === 'K') rights.wk = rights.wq = false;
+  if (moving === 'k') rights.bk = rights.bq = false;
+  if (moving === 'R' && m.fr === 7 && m.fc === 0) rights.wq = false;
+  if (moving === 'R' && m.fr === 7 && m.fc === 7) rights.wk = false;
+  if (moving === 'r' && m.fr === 0 && m.fc === 0) rights.bq = false;
+  if (moving === 'r' && m.fr === 0 && m.fc === 7) rights.bk = false;
+  if (captured === 'R' && m.tr === 7 && m.tc === 0) rights.wq = false;
+  if (captured === 'R' && m.tr === 7 && m.tc === 7) rights.wk = false;
+  if (captured === 'r' && m.tr === 0 && m.tc === 0) rights.bq = false;
+  if (captured === 'r' && m.tr === 0 && m.tc === 7) rights.bk = false;
+
+  nb.meta.enPassant = moving?.toUpperCase() === 'P' && Math.abs(m.tr - m.fr) === 2
+    ? [(m.fr + m.tr) / 2, m.fc]
+    : null;
+  nb.meta.halfmove = moving?.toUpperCase() === 'P' || captured ? 0 : nb.meta.halfmove + 1;
+  const nextWhite = !isWhite(moving);
+  const key = positionKey(nb, nextWhite, nb.meta);
+  nb.meta.repetitions[key] = (nb.meta.repetitions[key] ?? 0) + 1;
   return nb;
 }
 
@@ -252,12 +348,32 @@ export function allLegalMoves(b: Board, white: boolean): ChessMove[] {
   for (let r = 0; r < 8; r++) {
     for (let c = 0; c < 8; c++) {
       const p = b[r][c];
-      if (p && isWhite(p) === white) {
-        moves.push(...legalMovesAt(b, r, c));
-      }
+      if (p && isWhite(p) === white) moves.push(...legalMovesAt(b, r, c));
     }
   }
   return moves;
+}
+
+export function insufficientMaterial(b: Board): boolean {
+  const pieces: { p: Piece; squareColor: number }[] = [];
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const p = b[r][c];
+    if (p && p.toUpperCase() !== 'K') pieces.push({ p, squareColor: (r + c) % 2 });
+  }
+  if (!pieces.length) return true;
+  if (pieces.length === 1 && ['B', 'N'].includes(pieces[0].p.toUpperCase())) return true;
+  return pieces.every(({ p }) => p.toUpperCase() === 'B') && new Set(pieces.map((x) => x.squareColor)).size === 1;
+}
+
+/** Áp dụng hòa theo 50 nước/3 lần lặp (có thể yêu cầu), cùng ngưỡng tự động 75 nước/5 lần lặp. */
+export function drawReason(b: Board, whiteToMove: boolean): string | null {
+  const repetitions = b.meta.repetitions[positionKey(b, whiteToMove, b.meta)] ?? 0;
+  if (b.meta.halfmove >= 150) return 'Hòa tự động theo luật 75 nước';
+  if (repetitions >= 5) return 'Hòa tự động do lặp lại thế cờ 5 lần';
+  if (b.meta.halfmove >= 100) return 'Hòa theo luật 50 nước';
+  if (repetitions >= 3) return 'Hòa do lặp lại thế cờ';
+  if (insufficientMaterial(b)) return 'Hòa do không đủ quân chiếu bí';
+  return null;
 }
 
 const VAL: Record<string, number> = { P: 100, N: 320, B: 330, R: 500, Q: 900, K: 20000 };
@@ -297,11 +413,10 @@ function orderMoves(moves: ChessMove[]): ChessMove[] {
 function minimax(b: Board, depth: number, alpha: number, beta: number, maximizingWhite: boolean): number {
   const moves = allLegalMoves(b, maximizingWhite);
   if (!moves.length) {
-    if (inCheck(b, maximizingWhite)) {
-      return maximizingWhite ? -99999 - depth * 100 : 99999 + depth * 100;
-    }
+    if (inCheck(b, maximizingWhite)) return maximizingWhite ? -99999 - depth * 100 : 99999 + depth * 100;
     return 0;
   }
+  if (drawReason(b, maximizingWhite)) return 0;
   if (depth <= 0) return evaluateBoard(b);
 
   const ordered = orderMoves(moves);
@@ -327,6 +442,7 @@ function minimax(b: Board, depth: number, alpha: number, beta: number, maximizin
 }
 
 export function pickBestMove(b: Board, white: boolean, depth = 2): ChessMove | null {
+  if (drawReason(b, white)) return null;
   const moves = orderMoves(allLegalMoves(b, white));
   if (!moves.length) return null;
   let bestMove = moves[0];
@@ -371,7 +487,7 @@ export function pieceSvg(p: Piece): string {
   } else {
     shape = `<path d="M16 4.2v4.6M13.8 6.4h4.4" stroke="${stroke}" stroke-width="2.2" stroke-linecap="round"/><path d="M9.5 12.5c0-3 3-4.2 6.5-4.2s6.5 1.2 6.5 4.2l-2 10h-9z"/><rect x="8" y="23.5" width="16" height="3.2" rx="1.2"/>`;
   }
-  return `<svg class="chess-svg" viewBox="0 0 32 30" fill="${fill}" stroke="${stroke}" stroke-width="1.8" stroke-linejoin="round">${shape}</svg>`;
+  return `<svg class="chess-svg" viewBox="0 0 32 30" fill="${fill}" stroke="${stroke}" stroke-width="1.8" stroke-linejoin="round" style="color-scheme:light;forced-color-adjust:none">${shape}</svg>`;
 }
 
 export function sqName(r: number, c: number): string {
@@ -381,5 +497,6 @@ export function sqName(r: number, c: number): string {
 export function moveLabel(m: ChessMove): string {
   const pName = PIECE_VN[m.piece.toUpperCase()] ?? 'Quân';
   const act = m.cap ? 'ăn' : 'qua';
-  return `${pName} ${sqName(m.fr, m.fc)} ${act} ${sqName(m.tr, m.tc)}${m.promo ? ' (Phong Hậu)' : ''}`;
+  const promoName = m.promo ? PIECE_VN[m.promo.toUpperCase()] : '';
+  return `${pName} ${sqName(m.fr, m.fc)} ${act} ${sqName(m.tr, m.tc)}${promoName ? ` (Phong ${promoName})` : ''}`;
 }

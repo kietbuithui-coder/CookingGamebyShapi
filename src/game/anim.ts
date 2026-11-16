@@ -10,7 +10,7 @@ import { LOTS, groundY, toWorld } from '../world/layout';
 import {
   Board, Piece, ChessMove, CHESS_PRESETS, pieceSvg,
   boardFromRows, cloneBoard, isWhite, findKing, inCheck,
-  legalMovesAt, allLegalMoves, applyMove, pickBestMove, moveLabel, sqName,
+  legalMovesAt, allLegalMoves, applyMove, pickBestMove, moveLabel, sqName, drawReason,
 } from './chess';
 
 const sfx = (n: string) => ctx.sound.play(n);
@@ -206,12 +206,14 @@ export class AnimSystem {
   private meshes: THREE.Object3D[] = [];
   // Trạng thái bàn cờ vua 8×8 với Ông Tư
   chessPresetIdx = 0;
-  chessBoard: Board = [];
+  chessBoard: Board = boardFromRows(CHESS_PRESETS[0].rows);
   chessSel: [number, number] | null = null;
   chessLegal: ChessMove[] = [];
   chessLast: ChessMove | null = null;
   chessHintMove: ChessMove | null = null;
   chessTurn: 'w' | 'b' | 'end' = 'w';
+  chessEndReason = '';
+  chessPendingPromo: ChessMove[] | null = null;
   chessAiTimer = 0;
   chessCapW: Piece[] = [];
   chessCapB: Piece[] = [];
@@ -434,6 +436,8 @@ export class AnimSystem {
     this.chessLast = null;
     this.chessHintMove = null;
     this.chessTurn = 'w';
+    this.chessEndReason = '';
+    this.chessPendingPromo = null;
     this.chessAiTimer = 0;
     this.chessCapW = [];
     this.chessCapB = [];
@@ -480,7 +484,7 @@ export class AnimSystem {
 
         const rk = c === 0 ? `<span class="chess-rk">${8 - r}</span>` : '';
         const fl = r === 7 ? `<span class="chess-fl">${String.fromCharCode(97 + c)}</span>` : '';
-        const glyph = p ? `<span class="chess-p">${pieceSvg(p)}</span>` : '';
+        const glyph = p ? `<span class="chess-p ${isWhite(p) ? 'w' : 'b'}">${pieceSvg(p)}</span>` : '';
         cells += `<button type="button" class="${cls}" data-r="${r}" data-c="${c}" title="Ô ${sqName(r, c)}">${rk}${glyph}${fl}</button>`;
       }
     }
@@ -489,7 +493,7 @@ export class AnimSystem {
     const capBStr = this.chessCapB.map((p) => pieceSvg(p)).join('') || '<small class="muted">chưa ăn quân</small>';
     const statusTxt =
       this.chessTurn === 'end'
-        ? (inCheck(b, false) ? 'Bạn đã chiếu bí Ông Tư!' : inCheck(b, true) ? 'Ông Tư chiếu bí!' : 'Ván cờ hoà!')
+        ? this.chessEndReason || (inCheck(b, false) ? 'Bạn đã chiếu bí Ông Tư!' : inCheck(b, true) ? 'Ông Tư chiếu bí!' : 'Ván cờ hoà!')
         : this.chessTurn === 'b'
           ? 'Ông Tư đang suy nghĩ...'
           : wChk
@@ -498,6 +502,10 @@ export class AnimSystem {
               ? 'Bạn đang CHIẾU Vua Ông Tư!'
               : 'Lượt bạn (Quân Trắng)';
 
+    const promoNames: Record<string, string> = { Q: 'Hậu', R: 'Xe', B: 'Tượng', N: 'Mã' };
+    const promoHtml = this.chessPendingPromo
+      ? `<div class="chess-promos"><b>Chọn quân phong cấp</b>${this.chessPendingPromo.map((m, i) => `<button type="button" class="chess-promo" data-promo="${i}" aria-label="Phong ${promoNames[m.promo!.toUpperCase()]}">${pieceSvg(m.promo!)}<small>${promoNames[m.promo!.toUpperCase()]}</small></button>`).join('')}</div>`
+      : '';
     const logHtml = this.chessLog.slice(-5).map((l) => `<div>${l}</div>`).join('');
 
     const box = ctx.ui.cookCustom(`
@@ -508,6 +516,7 @@ export class AnimSystem {
             <span class="caps" title="Quân Trắng Ông Tư đã ăn">${capBStr}</span>
           </div>
           <div class="chess-board">${cells}</div>
+          ${promoHtml}
           <div class="chess-bar">
             <span class="who"><i class="dot-w"></i>Bạn (Trắng)</span>
             <span class="caps" title="Quân Đen bạn đã ăn">${capWStr}</span>
@@ -531,6 +540,14 @@ export class AnimSystem {
       this.onChessSqClick(+btn.dataset.r!, +btn.dataset.c!);
     });
 
+    box.querySelector('.chess-promos')?.addEventListener('pointerdown', (e) => {
+      const btn = (e.target as HTMLElement).closest('.chess-promo') as HTMLElement | null;
+      if (!btn || !this.chessPendingPromo) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const move = this.chessPendingPromo[+btn.dataset.promo!];
+      if (move) this.execPlayerChessMove(move);
+    });
 
     const best = this.chessTurn === 'w' ? pickBestMove(b, true, 2) : null;
     this.setBtns([
@@ -570,6 +587,8 @@ export class AnimSystem {
           this.chessSel = null;
           this.chessLegal = [];
           this.chessHintMove = null;
+          this.chessPendingPromo = null;
+          this.chessEndReason = '';
           this.chessTurn = 'w';
           this.chessAiTimer = 0;
           this.renderChessUI();
@@ -584,10 +603,16 @@ export class AnimSystem {
   }
 
   private onChessSqClick(r: number, c: number) {
-    if (this.chessTurn !== 'w') return;
-    const leg = this.chessLegal.find((m) => m.tr === r && m.tc === c);
-    if (leg) {
-      this.execPlayerChessMove(leg);
+    if (this.chessTurn !== 'w' || this.chessPendingPromo) return;
+    const moves = this.chessLegal.filter((m) => m.tr === r && m.tc === c);
+    if (moves.length) {
+      const promotions = moves.filter((m) => m.promo);
+      if (promotions.length > 1) {
+        this.chessPendingPromo = promotions;
+        this.renderChessUI();
+      } else {
+        this.execPlayerChessMove(moves[0]);
+      }
       return;
     }
     const p = this.chessBoard[r][c];
@@ -613,6 +638,8 @@ export class AnimSystem {
       log: this.chessLog.slice(),
     });
     this.chessBoard = applyMove(this.chessBoard, m);
+    this.chessPendingPromo = null;
+    this.chessEndReason = '';
     if (m.cap) {
       this.chessCapW.push(m.cap);
       sfx('chop');
@@ -637,15 +664,25 @@ export class AnimSystem {
     if (!bMoves.length) {
       this.chessTurn = 'end';
       if (inCheck(this.chessBoard, false)) {
+        this.chessEndReason = 'Bạn đã chiếu bí Ông Tư!';
         sfx('yay');
         ctx.g.st.mood = clamp(ctx.g.st.mood + 4, 0, 100);
         if (this.npc) ctx.npcs.say(this.npc, 'Chiếu bí đẹp quá! Bữa nay cháu cao cờ hơn ông Tư rồi, bái phục!', 4.0, 1);
         ctx.ui.cookGrade(1, 'CHIẾU BÍ ÔNG TƯ!');
         ctx.ui.cookHint('Chúc mừng! Bạn đã chiếu bí Ông Tư ngay trên bàn cờ công viên!');
       } else {
+        this.chessEndReason = 'Ván cờ hòa do hết nước đi hợp lệ.';
         if (this.npc) ctx.npcs.say(this.npc, 'Thế cờ hoà pat rồi cháu ơi, ván này bất phân thắng bại!', 3.5, 1);
-        ctx.ui.cookHint('Ván cờ khép lại với thế hoà (hết nước đi hợp lệ)!');
+        ctx.ui.cookHint(this.chessEndReason);
       }
+      this.renderChessUI();
+      return;
+    }
+    const draw = drawReason(this.chessBoard, false);
+    if (draw) {
+      this.chessTurn = 'end';
+      this.chessEndReason = draw;
+      ctx.ui.cookHint(draw);
       this.renderChessUI();
       return;
     }
@@ -663,10 +700,12 @@ export class AnimSystem {
     const ai = pickBestMove(this.chessBoard, false, 2);
     if (!ai) {
       this.chessTurn = 'end';
+      this.chessEndReason = drawReason(this.chessBoard, false) ?? (inCheck(this.chessBoard, false) ? 'Ông Tư đang bị chiếu bí!' : 'Ván cờ hòa do hết nước đi hợp lệ.');
       this.renderChessUI();
       return;
     }
     this.chessBoard = applyMove(this.chessBoard, ai);
+    this.chessEndReason = '';
     if (ai.cap) {
       this.chessCapB.push(ai.cap);
       sfx('chop');
@@ -702,13 +741,22 @@ export class AnimSystem {
     if (!wMoves.length) {
       this.chessTurn = 'end';
       if (inCheck(this.chessBoard, true)) {
+        this.chessEndReason = 'Ông Tư đã chiếu bí!';
         ctx.ui.cookHint('Ông Tư đã chiếu bí! Bấm “Đánh lại ván này” hoặc “Đi lại 1 nước” để phục thù!');
       } else {
-        ctx.ui.cookHint('🤝 Ván cờ hoà (hết nước đi hợp lệ)!');
+        this.chessEndReason = 'Ván cờ hòa do hết nước đi hợp lệ.';
+        ctx.ui.cookHint(this.chessEndReason);
       }
     } else {
-      this.chessTurn = 'w';
-      ctx.ui.cookHint('');
+      const draw = drawReason(this.chessBoard, true);
+      if (draw) {
+        this.chessTurn = 'end';
+        this.chessEndReason = draw;
+        ctx.ui.cookHint(draw);
+      } else {
+        this.chessTurn = 'w';
+        ctx.ui.cookHint('');
+      }
     }
     this.renderChessUI();
   }
