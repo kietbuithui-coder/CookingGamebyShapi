@@ -136,6 +136,7 @@ input[type=range] { width: 100%; accent-color: var(--red); pointer-events: auto;
 #cook .title { background: var(--red); color: #fff; border: 2px solid var(--ink); border-radius: .8em; padding: .05em .9em; font-weight: 800; }
 #cook .steps { display: flex; gap: .25em; flex-wrap: wrap; justify-content: center; } #cook .steps span { padding: 0 .6em; border-radius: .6em; background: rgba(40, 26, 16, .6); color: #fff; font-size: .85em; font-weight: 600; } #cook .steps span.on { background: var(--yellow); color: var(--ink); box-shadow: 0 0 0 2px var(--ink); } #cook .steps span.done { background: var(--green); }
 #cook .hint { background: rgba(255, 247, 228, .95); border: 2px solid var(--ink); border-radius: .7em; padding: .1em .7em; font-weight: 600; text-align: center; font-size: .95em; }
+#cook .hint:empty { display: none; }
 #cook .prog { width: min(60vw, 26em); } #cook .meter { position: relative; height: 1.1em; background: rgba(40, 26, 16, .75); border: 2px solid var(--ink); border-radius: .6em; overflow: hidden; } #cook .meter .z { position: absolute; top: 0; bottom: 0; background: rgba(63, 174, 90, .85); } #cook .meter .v { position: absolute; top: 0; bottom: 0; left: 0; background: linear-gradient(90deg, #ffd24d, #f08a2f); opacity: .9; } #cook .meter .n { position: absolute; top: -2px; bottom: -2px; width: 3px; background: #fff; box-shadow: 0 0 0 1px var(--ink); }
 #cook .prog small { display: block; text-align: center; color: #fff; text-shadow: 0 1px 3px #000; font-weight: 700; font-size: .82em; }
 #cook .heat { position: absolute; left: 1em; top: 22%; bottom: 20%; width: 1.5em; } #cook .heat .meter { height: 100%; } #cook .heat .z { left: 0; right: 0; top: auto; } #cook .heat .v { left: 0; right: 0; top: auto; bottom: 0; background: linear-gradient(0deg, #ffd24d, #e2402f); } #cook .heat .n { left: -3px; right: -3px; width: auto; height: 3px; top: auto; }
@@ -168,11 +169,12 @@ input[type=range] { width: 100%; accent-color: var(--red); pointer-events: auto;
 .chess-sq.cap::after { content: ""; position: absolute; inset: 8%; border-radius: 50%; border: 3px solid rgba(214, 38, 30, .92); pointer-events: none; z-index: 2; }
 .chess-p { position: relative; z-index: 1; width: 80%; height: 80%; display: grid; place-items: center; pointer-events: none; transition: transform .12s; filter: drop-shadow(0 1.5px 1.5px rgba(0,0,0,.38)); }
 .chess-p .chess-svg { width: 100%; height: 100%; display: block; color-scheme: light; forced-color-adjust: none; }
-.chess-p.w .chess-svg { fill: #fffdf5 !important; stroke: #22140a !important; }
-.chess-p.b .chess-svg { fill: #241e1a !important; stroke: #f7e6c4 !important; }
+.chess-p.w .chess-svg, .chess-cap-p.w .chess-svg, .chess-promo.w .chess-svg { fill: #fffdf5 !important; stroke: #22140a !important; }
+.chess-p.b .chess-svg, .chess-cap-p.b .chess-svg { fill: #241e1a !important; stroke: #f7e6c4 !important; }
+.chess-cap-p { display: inline-grid; place-items: center; }
 .chess-promos { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: .25em; padding: .3em; border-radius: .5em; background: #fff7e4; border: 1px solid var(--line); }
 .chess-promos b { width: 100%; text-align: center; font-size: .85em; }
-.chess-promo { display: grid; justify-items: center; gap: .05em; min-width: 3.3em; padding: .16em .28em; border: 1px solid var(--ink); border-radius: .35em; background: #fff; }
+.chess-promo { display: grid; justify-items: center; gap: .05em; min-width: 3.3em; padding: .16em .28em; border: 1px solid var(--ink); border-radius: .35em; background: #fff; color: var(--ink); }
 .chess-promo .chess-svg { width: 1.7em; height: 1.7em; color-scheme: light; forced-color-adjust: none; }
 .chess-sq.sel .chess-p { transform: translateY(-2px) scale(1.1); }
 .chess-rk, .chess-fl { position: absolute; font-size: 8.5px; font-weight: 800; line-height: 1; pointer-events: none; opacity: .78; }
@@ -269,4 +271,8 @@ input[type=range] { width: 100%; accent-color: var(--red); pointer-events: auto;
   #cook .card { top: auto; bottom: 1em; left: .7em; right: auto; }
   #ui.cooking #hud-tl { top: .5em; left: auto; right: .6em; }
   #ui.cooking #toasts { top: 12.5em; }
+  .chess-wrap { left: 50%; top: 46%; flex-direction: column; align-items: center; gap: .32em; max-width: 94vw; }
+  .chess-board { width: min(38vh, 72vw, 248px); height: min(38vh, 72vw, 248px); }
+  .chess-side { width: min(76vw, 21em); }
+  .chess-log { max-height: 3.6em; min-height: 2.2em; }
 }
