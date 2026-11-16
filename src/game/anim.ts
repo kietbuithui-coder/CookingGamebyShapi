@@ -402,9 +402,9 @@ export class AnimSystem {
   startChess(n: Npc, presetIdx = 0) {
     this.begin(
       'danh_co',
-      'BÀN CỜ VUA CÔNG VIÊN — ĐẤU TRÍ VỚI ÔNG TƯ',
-      CHESS_PRESETS.map((p) => p.name),
-      'Chạm vào quân Trắng rồi chạm ô chấm xanh trên bàn cờ 8×8 để đi quân!',
+      'ĐÁNH CỜ VỚI ÔNG TƯ',
+      [],
+      '',
       52.3, 0.13, -56.16, Math.PI,
       'sit', true, null,
       [54.55, 1.62, -56.85], [52.2, 0.78, -58.25],
@@ -439,12 +439,8 @@ export class AnimSystem {
     this.chessCapB = [];
     this.chessLog = [];
     this.chessHistory = [];
-    ctx.ui.cookShow(
-      'BÀN CỜ VUA CÔNG VIÊN — ĐẤU TRÍ VỚI ÔNG TƯ',
-      CHESS_PRESETS.map((p) => p.name),
-      this.chessPresetIdx,
-    );
-    ctx.ui.cookHint(preset.desc);
+    ctx.ui.cookShow('ĐÁNH CỜ VỚI ÔNG TƯ', [], 0);
+    ctx.ui.cookHint('');
     ctx.ui.cookProg(null);
     this.renderChessUI();
   }
@@ -502,13 +498,7 @@ export class AnimSystem {
               ? 'Bạn đang CHIẾU Vua Ông Tư!'
               : 'Lượt bạn (Quân Trắng)';
 
-    const logHtml = this.chessLog.length
-      ? this.chessLog.slice(-5).map((l) => `<div>${l}</div>`).join('')
-      : '<div class="muted">Chạm vào 1 quân Trắng (hàng dưới) để xem các ô đi hợp lệ.</div>';
-
-    const modeBtns = CHESS_PRESETS.map(
-      (pr, i) => `<button type="button" class="chess-mode-btn${i === this.chessPresetIdx ? ' on' : ''}" data-preset="${i}">${pr.name}</button>`,
-    ).join('');
+    const logHtml = this.chessLog.slice(-5).map((l) => `<div>${l}</div>`).join('');
 
     const box = ctx.ui.cookCustom(`
       <div class="chess-wrap">
@@ -525,11 +515,10 @@ export class AnimSystem {
         </div>
         <div class="chess-side">
           <div>
-            <h4><span>BÀN CỜ VUA</span><small>${this.chessHistory.length + 1} nước</small></h4>
+            <h4><span>CỜ VUA</span><small>${this.chessHistory.length + 1} nước</small></h4>
             <div class="chess-status${wChk || bChk ? ' warn' : ''}">${statusTxt}</div>
           </div>
-          <div class="chess-modes">${modeBtns}</div>
-          <div class="chess-log">${logHtml}</div>
+          ${logHtml ? `<div class="chess-log">${logHtml}</div>` : ''}
         </div>
       </div>
     `);
@@ -542,14 +531,6 @@ export class AnimSystem {
       this.onChessSqClick(+btn.dataset.r!, +btn.dataset.c!);
     });
 
-    box.querySelector('.chess-modes')?.addEventListener('pointerdown', (e) => {
-      const btn = (e.target as HTMLElement).closest('.chess-mode-btn') as HTMLElement | null;
-      if (!btn) return;
-      e.preventDefault();
-      e.stopPropagation();
-      sfx('ui');
-      this.initChessPreset(+btn.dataset.preset!);
-    });
 
     const best = this.chessTurn === 'w' ? pickBestMove(b, true, 2) : null;
     this.setBtns([
@@ -727,7 +708,7 @@ export class AnimSystem {
       }
     } else {
       this.chessTurn = 'w';
-      ctx.ui.cookHint(`Ông Tư vừa đi ${moveLabel(ai)} — chạm vào quân Trắng để đáp trả!`);
+      ctx.ui.cookHint('');
     }
     this.renderChessUI();
   }
