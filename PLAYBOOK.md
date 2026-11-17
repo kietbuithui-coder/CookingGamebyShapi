@@ -19,7 +19,7 @@
 | Quầy hàng & nấu ở world | `src/game/stall.ts` (1.403), `src/cook/*` |
 | Hội thoại / menu NPC | `src/game/acts.ts` (1.124) |
 | HUD / bảng | `src/ui/ui.ts` (308), `src/ui/panels.ts` (297), `src/ui/style.css` |
-| Test | `tests/*.test.ts` — **25 tệp, 347 bài**, `environment: 'node'` |
+| Test | `tests/*.test.ts` — **25 tệp, 348 bài**, `environment: 'node'` |
 | Thử giao diện thật | `tools/probe/` (34 kịch bản `.mjs` trong `steps/`, Chrome headless) |
 | Bản phát hành | `docs/` — **sinh ra bởi `build:pages`, không sửa tay** |
 
@@ -97,7 +97,7 @@ xác định luật + dữ liệu (sim/data)
 | `MAP` | x −96…96, z −96…108 | `world/layout.ts:8` |
 | `BLOCK / DEPTH / SIDEWALK / ROAD_HALF` | 46 / 11 / 3 / 3.5 | `world/layout.ts:5` |
 | Khoá localStorage | `ganhhang.save.v1`, `ganhhang.settings.v1` | `game/ctx.ts:59` |
-| `DEV_BUILD_TAG` | chuỗi phiên bản trong menu ẩn | `game/devPoints.ts:11` |
+| `DEV_BUILD_TAG` | chuỗi phiên bản + danh sách mục trong menu ẩn (bấm 7 lần chữ “Cài đặt”) | `game/devPoints.ts` |
 
 ### Số liệu nội dung (kiểm bằng `tests/data.test.ts`)
 60 công thức · 75 nguyên liệu · 12 nơi bán · 37 món đồ nghề (7 bậc quầy + 5 dụng cụ + 3 bếp + 2 kho + 14 tiện nghi + 2 đồ mang + 1 đồ nhà + 3 điện thoại) · 8 kiểu chỗ ở · 8 bậc quầy (`TIERS[0..7]`, `FUTURE_TIERS = []`) · 6 chỗ bán (`SPOTS`) · 3 chỗ mở chi nhánh (`BRANCH_SITES`) · 16 nhóm người · 43 nhân vật cố định · 11 khách quen · 5 người phụ việc · 3 phụ bếp · 3 người trông coi chi nhánh (`KEEPER_POOL`) · 22 sự kiện · 8 thời tiết.
@@ -131,7 +131,7 @@ xác định luật + dữ liệu (sim/data)
 
 ### 4.3 Sau khi sửa
 ```bash
-npm test            # 347 bài hiện tại; đếm lại nếu bạn thêm bài
+npm test            # 348 bài hiện tại; đếm lại nếu bạn thêm bài
 npm run typecheck
 npm run build
 git diff --check    # lỗi khoảng trắng / xung đột sót
@@ -240,16 +240,22 @@ Quy ước cập nhật: `README` = cái người chơi thấy & lệnh chạy *
 Trước đây tài liệu lệch mã khá nhiều; nay đã sửa xong cả 8 chỗ, các con số dưới là **đã khớp** với mã:
 
 1. `README.md` – **7/7 bậc** kinh doanh chơi được (bậc 6 `nhahang` và bậc 7 `chuoi` đã xong).
-2. `README.md` – số bài kiểm thử luôn theo mã: nay **347 bài / 25 tệp** (kèm 17 bài `tests/nhahang.test.ts`, 25 bài `tests/chuoi.test.ts`).
+2. `README.md` – số bài kiểm thử luôn theo mã: nay **348 bài / 25 tệp** (kèm 17 bài `tests/nhahang.test.ts`, 25 bài `tests/chuoi.test.ts`).
 3. `README.md` – **43** nhân vật cố định (trước ghi 34 và 38 ở hai chỗ).
 4. `README.md` – số món đồ nghề / chỗ bán luôn theo mã: nay **37** món, **6** chỗ bán (4 chỗ thường + 2 mặt bằng) và **3** chỗ mở chi nhánh.
-5. `TODO.md` – đầu tệp cập nhật theo mã: 7/7 bậc · 75 nguyên liệu · 12 nơi bán · 37 đồ nghề · 43 nhân vật · 347/25; thêm mục
+5. `TODO.md` – đầu tệp cập nhật theo mã: 7/7 bậc · 75 nguyên liệu · 12 nơi bán · 37 đồ nghề · 43 nhân vật · 348/25; thêm mục
    "bậc 6 chưa có probe giao diện"; tách khỏi mâu thuẫn "bậc 6 đã xong" ở bảng bên dưới.
-6. `DESIGN.md` – 347 bài; `SAVE_VERSION = 14` kèm nhánh v12–v14; 144 lô đất / 268 nút đường đi; 6 chỗ bán;
+6. `DESIGN.md` – 348 bài; `SAVE_VERSION = 14` kèm nhánh v12–v14; 144 lô đất / 268 nút đường đi; 6 chỗ bán;
    `FUTURE_TIERS` rỗng.
 7. `DESIGN.md` – thêm **mục 4.26** cho bậc 6 (nhà hàng bình dân, đặt bàn trước, phụ bếp, khách đoàn) + dòng mô tả
    `tests/nhahang.test.ts` trong mục 7.
 8. `PLAN.md` – thêm **lượt 17** (bậc 6) và **lượt 18** (bậc 7), sửa ghi chú "278 bài / 18 tệp" thành số hiện tại.
+
+**Quy tắc menu ẩn (`src/game/devPoints.ts`):** mỗi lượt làm xong thì **thay** nhóm “Mới nhất — …” bằng mục test của
+tính năng vừa làm (3–9 mục: dựng sẵn, tới chỗ, mở bảng, tua thời gian, dọn), **xoá** mục test của lượt cũ, và chỉ giữ
+lại nhóm thứ hai **“Địa điểm — tele nhanh”**. Cập nhật `DEV_BUILD_TAG`. `tests/devpoints.test.ts` chặn tái phạm: đúng
+2 nhóm, nhóm 2 toàn `tp_*`, và một danh sách id cũ (setup/test của lượt trước) không được xuất hiện lại. Chạy
+`tools/probe/steps/devmenu.mjs` (bấm lần lượt **mọi** mục) sau mỗi lần sửa menu ẩn.
 
 **Cách giữ cho khỏi lệch lại:** đổi nội dung ⇒ sửa luôn con số ở §0/§3 của tệp này; đổi bậc quầy ⇒ `TIERS` +
 `GEAR` + `README` §"Đã có" + `TODO` §1 + `DESIGN` (một mục 4.x) + `PLAN` (một lượt). Chạy `rg "278|292|5/7|34 nhân vật|22 món đồ nghề" *.md`

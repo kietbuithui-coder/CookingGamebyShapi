@@ -19,7 +19,7 @@ Một vòng chơi trọn vẹn và thật sự chạy được: **tay trắng �
 
 Hai nguyên tắc giữ cho mã kiểm thử được:
 
-1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 347 bài kiểm thử (25 tệp) chạy trong Node trong khoảng 7 giây.
+1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 348 bài kiểm thử (25 tệp) chạy trong Node trong khoảng 7 giây.
 2. **Mọi ngẫu nhiên trong luật chơi nhận một `RNG` có hạt giống** làm tham số cuối, nên kết quả kiểm thử lặp lại được.
 
 Vòng lặp chính (`src/main.ts`): đọc điều khiển → `advance()` cho thời gian game trôi (0,75 phút game mỗi giây thật, một ngày = 32 phút thật; khi ngủ 48 phút game mỗi giây) → cập nhật người chơi, NPC, quầy, nấu ăn, môi trường → vẽ. `dt` bị chặn ở 50 ms nên máy rất chậm thì game chạy chậm lại chứ không nhảy cóc.
@@ -594,6 +594,11 @@ nút mở sổ; menu nói chuyện với Ba Tài có mục *Nói chuyện mở c
 **Bản lưu v14.** `SAVE_VERSION = 14`; bản lưu trước v14 hoặc thiếu `branch` ⇒ `branch = null`. `cleanBranch()` kẹp lại
 dữ liệu đọc lên: `rent` vô lý về 0, bỏ phần `ready` sai hình dạng hoặc quá trần, cắt `hist` còn 8 dòng, mọi số trong
 `led`/`tot` bị NaN thì về 0.
+
+**Menu ẩn để thử.** Nhóm “Mới nhất — Bậc 7” trong menu Test & Dịch chuyển (Cài đặt, bấm 7 lần chữ “Cài đặt”) có 9 mục:
+dựng chuỗi + chi nhánh ở từng chỗ (`setup_chuoi`, `_vp`, `_cv`), tới quầy chi nhánh, đổ đầy món sang chi nhánh, tua 3
+tiếng cho người trông coi bán, mở sổ, đổi người trông coi, trả mặt bằng. Nhóm “Địa điểm — tele nhanh” chỉ giữ các mục
+dịch chuyển. Mục test của các lượt cũ đã bị xoá; `tests/devpoints.test.ts` khoá lại quy tắc này.
 
 **Kiểm thử.** `tests/chuoi.test.ts` (25 bài): dữ liệu `TIERS[7]`/`GEAR.chuoi`/`BRANCH_SITES`/`KEEPER_POOL`, chặn mở
 chi nhánh khi chưa bậc 7 hoặc thiếu tiền, mở/đóng và hoàn tiền, thuê/đuổi người trông coi, chuyển món hai chiều và
