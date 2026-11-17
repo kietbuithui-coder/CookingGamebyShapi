@@ -7,7 +7,7 @@ import { RECIPES } from '../data/recipes';
 import { SPOTS, CORR } from '../world/layout';
 import { toast } from '../core/bus';
 
-export const DEV_BUILD_TAG = 'Báo cáo sắp hết nguyên liệu của bếp trưởng · nút giao quyền tự duyệt đặt bàn cho bếp trưởng';
+export const DEV_BUILD_TAG = 'Vựa ve chai Bà Chín bên kia thành phố · bấm chuông thì cửa căn hộ mở ra';
 
 export interface DevAction {
   id: string;
@@ -66,202 +66,52 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Báo cáo sắp hết đồ & bếp trưởng tự duyệt đặt bàn (lượt 20)',
+      title: 'Mới nhất — Vựa ve chai thứ hai & bấm chuông mở cửa (lượt 21)',
       items: [
         {
-          id: 'setup_baocao',
-          label: 'Dựng nhà hàng + bếp trưởng, để kho TRỐNG rồi mở Báo cáo',
-          sub: 'Kho không còn đồ cho món đang bán → bếp trưởng báo thiếu gì, gợi ý đi chợ hết bao nhiêu',
+          id: 'setup_vua2',
+          label: 'Tới vựa ve chai Bà Chín + cho sẵn ve chai trong túi',
+          sub: 'Khu Dân Cư (đường 21E) — bấm bán xem có ra tiền như vựa Tư Rác không',
           tone: 'green',
           closePanel: false,
           run: () => {
-            setupChain('cho');
-            for (const id of ['daothot', 'bepthan', 'vi', 'noi', 'chao', 'bepgas', 'thungda', 'bien', 'den', 'ghe']) if (!R.has(ctx.g, id)) R.buyGear(ctx.g, id);
-            while (R.helperCount(ctx.g) < R.maxHelpers(ctx.g)) R.hireHelper(ctx.g);
-            while (R.sousCount(ctx.g) < R.maxSous(ctx.g)) R.hireSous(ctx.g);
-            ctx.stall.refresh();
-            ctx.ui.panel('report');
+            const g = ctx.g;
+            for (const id of ['chai', 'lon', 'bia', 'sat']) g.junk[id] = (g.junk[id] ?? 0) + 5;
+            g.min = Math.max(g.min, 8 * 60);
+            const a = ctx.world.anchors.v_scrap2;
+            if (!a) { toast('Không tìm thấy vựa Bà Chín trên bản đồ.', 'warn'); return; }
+            tpTo(a.x, a.z + 1.6, Math.PI, 'Đã tới vựa ve chai Bà Chín — chạm Bà Chín để bán.');
           },
         },
         {
-          id: 'baocao_clear',
-          label: 'Xoá sạch kho để thấy báo cáo "sắp hết" ngay',
-          sub: 'Dọn kho quầy + túi + phần sơ chế, rồi mở lại bảng Báo cáo (món đang bán giờ nấu được 0 phần)',
-          tone: 'yellow',
+          id: 'vua2_sell',
+          label: 'Bán hết ve chai đang có ở vựa gần nhất',
+          sub: 'Tính đúng giá từng loại rồi cộng tiền (chạy thẳng luật sellJunk, không cần đi tới)',
           closePanel: false,
           run: () => {
             const g = ctx.g;
-            g.stall.store = []; g.bag = []; g.stall.preps = [];
-            ctx.stall.refresh();
-            toast('Đã dọn sạch kho — mở Báo cáo xem bếp trưởng nói gì.', 'warn', 'box');
-            ctx.ui.panel('report');
+            const sum = Math.max(R.sellJunk(g, 'scrap2'), R.sellJunk(g, 'scrap'));
+            toast(sum > 0 ? `Bán ve chai được ${sum.toLocaleString('vi-VN')}₫.` : 'Túi không có ve chai nào.', sum > 0 ? 'good' : 'warn', 'coin');
           },
         },
         {
-          id: 'book_auto',
-          label: 'Bật/tắt bếp trưởng tự duyệt đặt bàn',
-          sub: 'Bật rồi tạo 1 đặt bàn mới để thấy khách được nhận luôn (không cần vào tab Nhân sự)',
-          closePanel: false,
-          run: () => {
-            const g = ctx.g;
-            if (!R.canAutoBook(g)) { toast('Cần bếp trưởng (nhà hàng bình dân) trước đã.', 'warn', 'star'); return; }
-            const on = !R.autoBookOn(g);
-            R.setAutoBook(g, on);
-            if (on) g.bookings.filter((b) => b.status === 'pending').forEach((b) => R.acceptBooking(g, b.id));
-            const b = on ? R.createBooking(g) : null;
-            toast(on ? `Đã bật tự duyệt${b ? ` — ${b.name} (${b.size} người) được nhận luôn` : ''}.` : 'Đã tắt tự duyệt — bạn tự nhận bàn.', 'good', 'star');
-          },
-        },
-        {
-          id: 'setup_dicho',
-          label: 'Dựng nhà hàng full + 3 người làm, rồi mở bảng Giao đi chợ',
-          sub: 'Lên bậc 6, thuê phụ quầy + 2 bếp trưởng; bảng chọn người và món cần mua, báo giá rồi giao',
+          id: 'bell_canho',
+          label: 'Tới cửa căn hộ An Bình rồi bấm chuông (cửa phải mở ra)',
+          sub: 'Chờ một nhịp: cánh cửa xoay mở, Cô Hạnh bước ra nói chuyện — kể cả ngoài giờ',
           tone: 'green',
           closePanel: false,
           run: () => {
-            setupChain('cho');
-            for (const id of ['daothot', 'bepthan', 'vi', 'noi', 'chao', 'bepgas', 'thungda', 'bien', 'den', 'ghe', 'wc_lavabo']) if (!R.has(ctx.g, id)) R.buyGear(ctx.g, id);
-            while (R.helperCount(ctx.g) < R.maxHelpers(ctx.g)) R.hireHelper(ctx.g);
-            while (R.sousCount(ctx.g) < R.maxSous(ctx.g)) R.hireSous(ctx.g);
-            ctx.stall.refresh();
-            toast('Đã có phụ quầy + 2 bếp trưởng. Chọn món rồi giao người đi chợ.', 'good', 'bag');
-            ctx.ui.panel('errand');
+            const a = ctx.world.anchors.bell_canho;
+            if (!a) { toast('Không tìm thấy cửa căn hộ An Bình.', 'warn'); return; }
+            tpTo(a.x + Math.sin(a.yaw) * 1.9, a.z + Math.cos(a.yaw) * 1.9, a.yaw + Math.PI, 'Đứng trước cửa căn hộ — bấm chuông đi!');
           },
         },
         {
-          id: 'dicho_send',
-          label: 'Giao ngay phụ quầy đi chợ (mua đồ cho 2 phần cơm sườn)',
-          sub: 'Tính đúng thứ còn thiếu, trừ tiền, hẹn giờ về — rồi tự chạy tới lúc hàng về kho',
-          run: () => {
-            const g = ctx.g;
-            if (!g.help) { toast('Chưa có phụ quầy — bấm mục dựng người làm trước.', 'warn'); return; }
-            if (g.errands.some((e) => e.slot === 0)) { toast('Phụ quầy đang đi chợ rồi.', 'warn'); return; }
-            const r = RECIPES.com_suon;
-            const q = R.errandQuote(g, R.errandPlanFor(g, r, 2));
-            if (!q.lines.length) { toast('Kho đã đủ đồ cho cơm sườn.', 'info'); return; }
-            const e = R.startErrand(g, 0, q.lines, q.total);
-            toast(e ? `${e.who} đi chợ: ${e.lines.length} loại · ${e.total.toLocaleString('vi-VN')}₫ · về sau ${e.legs} phút.` : 'Không giao được chuyến này.', e ? 'good' : 'warn', 'bag');
-          },
-        },
-        {
-          id: 'dicho_skip',
-          label: 'Tua cho người đi chợ về tới quầy',
-          sub: 'Đẩy hết thời gian đi đường của mọi chuyến đang chạy để xem hàng chất lên kho',
+          id: 'bell_now',
+          label: 'Bấm chuông căn hộ An Bình ngay (không cần đứng gần)',
+          sub: 'Gọi thẳng ringBell: cửa mở 16 giây, chủ nhà ra ngoài hiên nói chuyện',
           closePanel: false,
-          run: () => {
-            const g = ctx.g;
-            if (!g.errands.length) { toast('Không có ai đang đi chợ.', 'warn'); return; }
-            const legs = Math.max(...g.errands.map((e) => e.legs - e.t));
-            const done = R.errandTick(g, legs);
-            toast(done.length ? `${done.length} người đã về, hàng vào kho quầy.` : 'Chưa ai về tới.', done.length ? 'good' : 'warn', 'box');
-          },
-        },
-        {
-          id: 'dicho_keeper',
-          label: 'Giao người trông coi chi nhánh đi chợ',
-          sub: 'Người trông coi cũng đi mua nguyên liệu được (cần có chi nhánh + người trông)',
-          run: () => {
-            const g = ctx.g;
-            if (!g.branch?.keeper) { toast('Cần mở chi nhánh và thuê người trông coi trước.', 'warn'); return; }
-            if (g.errands.some((e) => e.slot === 3)) { toast('Người trông coi đang đi chợ rồi.', 'warn'); return; }
-            const r = RECIPES.tra_da;
-            const q = R.errandQuote(g, R.errandPlanFor(g, r, 4));
-            if (!q.lines.length) { toast('Kho đã đủ đồ cho trà đá.', 'info'); return; }
-            const e = R.startErrand(g, 3, q.lines, q.total);
-            toast(e ? `${e.who} (chi nhánh) đi chợ: ${e.lines.length} loại · ${e.legs} phút.` : 'Không giao được.', e ? 'good' : 'warn', 'bag');
-          },
-        },
-        {
-          id: 'setup_chuoi',
-          label: 'Dựng Chuỗi cửa hàng + chi nhánh Cổng Chợ',
-          sub: 'Cấp vốn, lên bậc 7, mở chi nhánh, thuê người trông coi, chuyển món sẵn sang',
-          tone: 'green',
-          run: () => setupChain('cho'),
-        },
-        {
-          id: 'setup_chuoi_vp',
-          label: 'Dựng chi nhánh ở Phố Văn Phòng',
-          sub: 'Như trên nhưng đặt chi nhánh ở Phố Văn Phòng (thuê 150.000₫/ngày, đông khách nhất)',
-          run: () => setupChain('vp'),
-        },
-        {
-          id: 'setup_chuoi_cv',
-          label: 'Dựng chi nhánh ở Cổng Công Viên',
-          sub: 'Như trên nhưng đặt chi nhánh ở Cổng Công Viên (thuê 90.000₫/ngày, vắng hơn)',
-          run: () => setupChain('cv'),
-        },
-        {
-          id: 'tp_chinhanh',
-          label: 'Tới quầy chi nhánh',
-          sub: 'Dịch chuyển tới quầy chi nhánh hiện tại để chạm mở sổ',
-          run: () => {
-            const sp = SPOTS.find((x) => x.id === (ctx.g.branch?.spot ?? 'cho'));
-            if (!sp) { toast('Chưa có chi nhánh nào.', 'warn'); return; }
-            const sn = Math.sin(sp.yaw), c = Math.cos(sp.yaw);
-            tpTo(sp.x + 3.0 * sn, sp.z + 3.0 * c, sp.yaw + Math.PI, 'Đã tới quầy chi nhánh — chạm vào quầy để mở sổ.');
-          },
-        },
-        {
-          id: 'branch_fill',
-          label: 'Chuyển hết món sẵn ở quầy sang chi nhánh',
-          sub: 'Đổ đầy chi nhánh (trần 6 loại món / 24 phần) để xem người trông coi bán',
-          tone: 'yellow',
-          run: () => {
-            const g = ctx.g, b = g.branch;
-            if (!b) { toast('Chưa mở chi nhánh — bấm mục dựng chi nhánh trước.', 'warn'); return; }
-            if (!b.keeper) R.hireKeeper(g);
-            let n = 0;
-            for (const r of g.stall.ready.slice()) n += R.moveToBranch(g, r.rid, r.n);
-            b.open = true; ctx.stall.refresh();
-            toast(`Đã chuyển ${n} phần sang chi nhánh (còn ${R.branchStock(g)} phần sẵn).`, n ? 'good' : 'warn', 'shop');
-          },
-        },
-        {
-          id: 'branch_skip',
-          label: 'Tua 3 tiếng cho chi nhánh bán hàng',
-          sub: 'Cho qua 180 phút bằng chính luật trong game để xem doanh thu, tip và món hết',
-          closePanel: false,
-          run: () => {
-            const g = ctx.g, b = g.branch;
-            if (!b) { toast('Chưa mở chi nhánh.', 'warn'); return; }
-            if (!b.keeper) R.hireKeeper(g);
-            b.open = true;
-            for (let i = 0; i < 180; i++) { g.min += 1; R.branchTick(g, 1); }
-            const l = b.led;
-            toast(`3 tiếng: bán ${l.sold} phần · ${l.revenue.toLocaleString('vi-VN')}₫ + tip ${l.tips.toLocaleString('vi-VN')}₫.`, 'good', 'coin');
-          },
-        },
-        {
-          id: 'branch_panel',
-          label: 'Mở sổ chi nhánh',
-          sub: 'Mở thẳng bảng Chi nhánh: doanh thu, người trông coi, món sẵn, 8 ngày lịch sử',
-          closePanel: false,
-          run: () => ctx.ui.panel('branch'),
-        },
-        {
-          id: 'branch_keeper',
-          label: 'Đổi người trông coi (cho nghỉ rồi thuê lại)',
-          sub: 'Xem danh sách ứng viên trong KEEPER_POOL đổi lương/ngoại hình',
-          closePanel: false,
-          run: () => {
-            const g = ctx.g;
-            if (!g.branch) { toast('Chưa mở chi nhánh.', 'warn'); return; }
-            if (g.branch.keeper) R.fireKeeper(g);
-            const ok = R.hireKeeper(g), k = g.branch.keeper;
-            toast(ok && k ? `${k.name} nhận trông coi (${k.wage.toLocaleString('vi-VN')}₫/ngày).` : 'Không thuê được người trông coi.', ok ? 'good' : 'warn', 'heart');
-            ctx.ui.panel('branch');
-          },
-        },
-        {
-          id: 'branch_close',
-          label: 'Trả mặt bằng chi nhánh (dọn sạch)',
-          sub: 'Đóng chi nhánh, hoàn nửa tiền thuê ngày đầu, bỏ món đang để ở đó',
-          tone: 'red',
-          run: () => {
-            if (!ctx.g.branch) { toast('Chưa có chi nhánh nào.', 'warn'); return; }
-            R.closeBranch(ctx.g); ctx.stall.refresh();
-            toast('Đã trả mặt bằng chi nhánh.', 'info', 'shop');
-          },
+          run: () => ctx.acts.ringBell('canho', ctx.world.anchors.bell_canho),
         },
       ],
     },
@@ -277,6 +127,15 @@ export function getDevSections(): DevSection[] {
         } },
         { id: 'tp_matbang_tb', label: 'Mặt bằng Phố Văn Phòng', sub: 'Chỗ dựng quán ăn nhỏ / quán có chỗ ngồi / nhà hàng', run: () => tpSpot('matbang_tb', 'Mặt bằng Phố Văn Phòng') },
         { id: 'tp_matbang_dc', label: 'Mặt bằng Khu Căn Hộ', sub: 'Chỗ dựng quán ăn nhỏ / quán có chỗ ngồi / nhà hàng', run: () => tpSpot('matbang_dc', 'Mặt bằng Khu Căn Hộ') },
+        { id: 'tp_scrap2', label: 'Vựa ve chai Bà Chín', sub: 'Khu Dân Cư — bán ve chai cho tiện, khỏi chạy về Xóm Lao Động', run: () => {
+          const g = ctx.g; g.min = Math.max(g.min, 7 * 60);
+          const a = ctx.world.anchors.v_scrap2;
+          if (a) tpTo(a.x, a.z + 1.6, Math.PI, 'Đã tới vựa ve chai Bà Chín.');
+        } },
+        { id: 'tp_canho', label: 'Cửa căn hộ An Bình', sub: 'Bấm chuông gọi Cô Hạnh ra nói chuyện thuê / mua căn hộ', run: () => {
+          const a = ctx.world.anchors.bell_canho;
+          if (a) tpTo(a.x + Math.sin(a.yaw) * 1.9, a.z + Math.cos(a.yaw) * 1.9, a.yaw + Math.PI, 'Đã tới cửa căn hộ An Bình.');
+        } },
         { id: 'tp_cho', label: 'Cổng Chợ', sub: 'Chỗ đặt sạp / quán ăn nhỏ, và là một chỗ mở chi nhánh', run: () => tpSpot('cho', 'Cổng Chợ') },
         { id: 'tp_cv', label: 'Cổng Công Viên', sub: 'Chỗ đặt quầy thường ngày, cũng mở được chi nhánh', run: () => tpSpot('cv', 'Cổng Công Viên') },
         { id: 'tp_road', label: 'Giữa đường lớn', sub: 'Làn xe chạy ở ngã tư Phố Văn Phòng — coi chừng xe tông', run: () => tpTo(CORR[1], CORR[0] + 12, 0, 'Đang đứng giữa lòng đường — coi chừng xe tông!') },

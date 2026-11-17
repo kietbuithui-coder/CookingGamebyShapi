@@ -81,7 +81,7 @@ const SPECIALS: Record<string, Special[]> = {
   '21N': [{ at: 8, w: 30, kind: 'school', id: 'school' }],
   '21W': [{ at: 6, w: 11, kind: 'tro', id: 'tro' }],
   '21S': [{ at: 12, w: 12, kind: 'nharieng', id: 'nharieng' }],
-  '21E': [{ at: 11, w: 9.5, kind: 'net', id: 'net' }],
+  '21E': [{ at: 0.5, w: 7, kind: 'scrap', id: 'scrap2' }, { at: 11, w: 9.5, kind: 'net', id: 'net' }],
   // Xóm lao động (TN)
   '02E': [{ at: 2, w: 6, kind: 'kiosk', id: 'kiosk' }, { at: 8, w: 2.4, kind: 'alley' }, { at: 14, w: 6, kind: 'spot', id: 'hem' }],
   '02S': [{ at: 14, w: 16, kind: 'scrap', id: 'scrap' }],

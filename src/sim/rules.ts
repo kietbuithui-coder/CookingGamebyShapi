@@ -5,7 +5,7 @@ import { bus, toast } from '../core/bus';
 import { INGS } from '../data/ingredients';
 import { SHOPS, ShopDef } from '../data/shops';
 import { RECIPES, RecipeDef, fuelPerPortion, toolsFor, RECIPE_LIST } from '../data/recipes';
-import { GEAR, HOUSING, LENDERS, TIERS, JUNK, BRANCH_SITES, BRANCH_WAGE, BranchSite } from '../data/gear';
+import { GEAR, HOUSING, LENDERS, TIERS, JUNK, junkAt, BRANCH_SITES, BRANCH_WAGE, BranchSite } from '../data/gear';
 import { ARCH, ArchDef, HELPER_POOL, HelperDef, SOUS_POOL, SousDef, KEEPER_POOL, LINES, FIXED, FIXED_ROLE, NAMES } from '../data/people';
 import { EVENTS, EVENT_LIST, EventDef, WEATHER, WeatherDef, WeatherId, floodZone, hourCurve } from '../data/world';
 import { EXPR } from '../data/expr';
@@ -1443,9 +1443,10 @@ export function advance(g: Game, dm: number, act: Activity, R: RNG = rnd) {
 }
 
 // ───────────────────────── Việc vặt & mua bán lặt vặt ─────────────────────────
-export function sellJunk(g: Game, where: 'scrap' | 'pawn'): number {
+export function sellJunk(g: Game, where: 'scrap' | 'scrap2' | 'pawn'): number {
   let sum = 0;
-  for (const [id, n] of Object.entries(g.junk)) { const j = JUNK[id]; if (j.where !== where || n <= 0) continue; sum += j.price * n; delete g.junk[id]; }
+  for (const [id, n] of Object.entries(g.junk)) { const j = JUNK[id]; if (!junkAt(where, j) || n <= 0) continue; sum += j.price * n; delete g.junk[id]; }
+  // `earn(..., 'side')` chỉ cộng vào thu nhập & sổ sách; `tot.scrap` là mục riêng ở bảng tổng kết.
   if (sum > 0) { earn(g, sum, 'side'); g.tot.scrap += sum; }
   return sum;
 }

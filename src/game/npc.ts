@@ -35,7 +35,7 @@ export interface Npc {
   bellOut?: { x: number; z: number; yaw: number; until: number };
 }
 /** Giờ mở cửa của những nơi không phải cửa hàng nguyên liệu. */
-export const PLACE_HOURS: Record<string, [number, number]> = { equip: [7, 20], bank: [8, 17], eatery: [6, 21.5], pawn: [8, 21], scrap: [6, 19], dock: [4.5, 10], motel: [0, 24], hotel: [0, 24], tro: [6, 22], shark: [9, 24], hobo: [0, 24],
+export const PLACE_HOURS: Record<string, [number, number]> = { equip: [7, 20], bank: [8, 17], eatery: [6, 21.5], pawn: [8, 21], scrap: [6, 19], scrap2: [6, 19], dock: [4.5, 10], motel: [0, 24], hotel: [0, 24], tro: [6, 22], shark: [9, 24], hobo: [0, 24],
   canho: [6, 22], nharieng: [6, 22], cuahang: [6, 21],
   cafe: [0, 24],
   police: [0, 24],
@@ -676,7 +676,8 @@ export class Npcs {
     const inAnim = !!(ctx.anim?.active && ctx.anim.hasNpc(n));
     const bellActive = !!(n.bellOut && ctx.time < n.bellOut.until);
     if (n.bellOut && !bellActive) n.bellOut = undefined;
-    const open = placeOpen(n.fixedId!) || inAnim || bellActive, vis = open && pd2 < 60 * 60;
+    // Bấm chuông thì chủ nhà ra mở cửa kể cả ngoài giờ (bellActive đã bao gồm điều này).
+    const open = placeOpen(n.fixedId!) || inAnim || bellActive, vis = bellActive ? pd2 < 60 * 60 : open && pd2 < 60 * 60;
     n.hidden = !open;
     if (n.rig.root.visible !== vis) n.rig.root.visible = vis;
     if (!vis) return;

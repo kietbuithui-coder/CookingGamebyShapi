@@ -103,6 +103,9 @@ export const LENDERS: Record<string, LenderDef> = {
 };
 
 /** Giá phế liệu (₫/món) tại vựa ve chai, giá đồ nhặt được tại tiệm cầm đồ. */
+/** Hai vựa thu mua ve chai ở hai bên thành phố (id chỗ bán trong `JUNK_LIST[].where`). */
+export const SCRAP_SITES = ['scrap', 'scrap2'] as const;
+export type ScrapSite = typeof SCRAP_SITES[number];
 export interface JunkDef { id: string; name: string; price: number; kg: number; where: 'scrap' | 'pawn'; c: number; shape: 'bottle' | 'can' | 'box' | 'bag' | 'gem'; }
 export const JUNK_LIST: JunkDef[] = [
   { id: 'chai', name: 'Chai nhựa', price: 1000, kg: 0.03, where: 'scrap', c: 0x9fd8ec, shape: 'bottle' },
@@ -114,3 +117,7 @@ export const JUNK_LIST: JunkDef[] = [
   { id: 'nhan', name: 'Nhẫn bạc', price: 120000, kg: 0.01, where: 'pawn', c: 0xdfe6ea, shape: 'gem' },
 ];
 export const JUNK: Record<string, JunkDef> = Object.fromEntries(JUNK_LIST.map((j) => [j.id, j]));
+/** Vựa nào (chỗ bán) thu loại ve chai nào: mọi vựa ve chai đều thu nhựa/lon/giấy/sắt, tiệm cầm đồ thu đồ giá trị. */
+export function junkAt(site: string, j: JunkDef): boolean {
+  return (SCRAP_SITES as readonly string[]).includes(site) ? j.where === 'scrap' : j.where === site;
+}

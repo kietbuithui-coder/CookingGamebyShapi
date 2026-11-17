@@ -446,3 +446,29 @@ vẫn bị trừ uy tín nếu lỡ hẹn. Cờ nằm trong `flags` nên **khôn
 390×844: dựng nhà hàng + 2 bếp + 2 phụ quầy → dọn kho → bảng báo cáo hiện 4 món sắp hết, đúng danh sách thiếu và
 163.475₫ → bấm *Giao đi chợ* ngay trong báo cáo mở đúng bảng với đúng người → bật tự duyệt thì phiếu mới `accepted`,
 tắt thì `pending` → chip HUD mở được báo cáo; **console sạch**.
+
+---
+
+## Lượt 21 — Vựa ve chai thứ hai & bấm chuông mở cửa ✅ đã xong
+
+**Vựa ve chai bên kia thành phố.** Người chơi than phải chạy về Xóm Lao Động mới bán được ve chai. Nay có thêm
+**vựa Bà Chín** ở lô `21E` đường Khu Dân Cư (ngay đoạn đi qua lại giữa khu căn hộ và khu dân cư), rộng 7 m, dựng lại mô
+hình bãi ve chai co theo bề ngang lô: bảng hiệu **VỰA VE CHAI BÀ CHÍN**, cân bàn, đống phế liệu, chủ vựa là bà Chín
+ngồi bán 6h–19h như ông Tư Rác. Bán được đúng nhựa / lon / giấy / sắt với giá y như vựa cũ — luật "ai mua gì" gói
+trong `junkAt(site, junk)` + `SCRAP_SITES` nên **không phải sửa `JUNK_LIST`** (bản lưu cũ vẫn đọc được, vẫn `SAVE_VERSION = 15`).
+Panel túi đổi câu thành "Bán ở vựa ve chai (Tư Rác hoặc Bà Chín)", bảng việc làm và mấy câu thoại cũng nhắc cả hai vựa.
+
+**Bấm chuông thì cửa mở ra.** Trước đây bấm chuông căn hộ An Bình chỉ thấy chủ nhà bước ra nói chuyện còn cánh cửa
+đứng im: `openBellDoor` lọc cửa theo `d.d.home`, nhưng `DoorDef` **không có trường đó** — nó đánh dấu căn bằng `lock`.
+Nay `Interact.doorHome(d)` trả `d.lock`, nên đúng cánh cửa của căn được đặt `want = 1` + hẹn giờ 16 giây: cửa xoay mở
+86° trong ~1 giây, va chạm tắt nên đi qua được, hết giờ tự đóng lại (trừ khi người chơi đang ở trong căn). Áp dụng cho
+cả nhà riêng và cửa hàng; bấm chuông ngoài giờ chủ nhà vẫn ra mở, gợi ý trên nút nói rõ điều đó.
+
+**Menu ẩn:** xoá hết 13 mục test của các lượt 18–20, chỉ giữ nhóm *Địa điểm — tele nhanh* (thêm **Vựa ve chai Bà Chín**
+và **Cửa căn hộ An Bình**) cùng 4 mục mới của lượt này: tới vựa Bà Chín kèm ve chai trong túi, bán hết ve chai, tới cửa
+căn hộ, và bấm chuông ngay.
+
+**Kiểm thử:** thêm `tests/vua2.test.ts` 9 bài → tổng **386 bài / 28 tệp**. Probe `tools/probe/steps/vua2.mjs` ở 390×844:
+tele tới vựa Bà Chín (neo `v_scrap2` ở `x 78,6 / z −6,6`, Bà Chín hiện ra), bán 5 chai + 5 lon + 5 bìa + 5 sắt được
+51.500₫ và `tot.scrap` cũng đúng 51.500₫ → tới cửa căn hộ bấm chuông: `want 0→1`, cửa xoay **−77°**, `box.on → false`,
+chủ nhà bước ra ngoài hiên → tua hết 16 giây thì `want 0`, cửa đóng lại, `box.on → true`; **console sạch**.

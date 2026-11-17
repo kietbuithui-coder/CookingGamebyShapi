@@ -19,7 +19,7 @@ Một vòng chơi trọn vẹn và thật sự chạy được: **tay trắng �
 
 Hai nguyên tắc giữ cho mã kiểm thử được:
 
-1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 377 bài kiểm thử (27 tệp) chạy trong Node trong khoảng 7 giây.
+1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 386 bài kiểm thử (28 tệp) chạy trong Node trong khoảng 7 giây.
 2. **Mọi ngẫu nhiên trong luật chơi nhận một `RNG` có hạt giống** làm tham số cuối, nên kết quả kiểm thử lặp lại được.
 
 Vòng lặp chính (`src/main.ts`): đọc điều khiển → `advance()` cho thời gian game trôi (0,75 phút game mỗi giây thật, một ngày = 32 phút thật; khi ngủ 48 phút game mỗi giây) → cập nhật người chơi, NPC, quầy, nấu ăn, môi trường → vẽ. `dt` bị chặn ở 50 ms nên máy rất chậm thì game chạy chậm lại chứ không nhảy cóc.
@@ -684,6 +684,33 @@ bật món thì không bịa nguyên liệu, `lowStockCount`, báo cáo không �
 không bật được, bật → phiếu `accepted` / tắt → `pending`, phiếu tự duyệt vẫn bị trừ uy tín khi lỡ hẹn, cờ nằm trong
 `flags` nên qua `migrate()` vẫn giữ.
 
+### 4.30 Vựa ve chai thứ hai & bấm chuông thì chủ nhà mở cửa
+
+**Vựa ve chai Bà Chín.** `JUNK_LIST` vẫn chỉ có 7 loại với trường `where`, nhưng `SCRAP_SITES = ['scrap','scrap2']`
+(`src/data/gear.ts`) khai báo **hai** vựa thu mua ve chai: vựa Tư Rác ở lô `02S` (Xóm Lao Động, 16 m) và vựa **Bà Chín**
+ở lô `21E` (Khu Dân Cư, 7 m) — ngay đầu đường, người chơi đi qua lại giữa khu căn hộ và khu dân cư là gặp. Hàm
+`junkAt(site, junk)` gói luật "ai mua gì": mọi vựa trong `SCRAP_SITES` thu nhựa/lon/giấy/sắt (`where === 'scrap'`),
+còn tiệm cầm đồ chỉ thu đồ giá trị. Nhờ vậy `sellJunk(g, site)` và hộp thoại `case 'scrap' | 'scrap2' | 'pawn'` dùng
+chung một luật, không phải sửa `JUNK_LIST` (bản lưu cũ vẫn đọc được). `PLACE_HOURS.scrap2 = [6,19]` như vựa cũ; chủ
+vựa là `FIXED.scrap2` — **Bà Chín Ve Chai** — với neo `v_scrap2` để bán và để tele nhanh. Lô 7 m dùng lại đúng mô
+hình bãi ve chai của lô 16 m nhưng co toạ độ theo bề ngang lô (`S()` trong `places.ts`), nên bảng hiệu, cân bàn, đống
+phế liệu không tràn sang nhà bên cạnh. `sellJunk` cộng tiền qua `earn(...,'side')` rồi tự cộng `g.tot.scrap` (mục riêng ở
+bảng tổng kết) — bài kiểm thử canh đúng hai việc đó, không cộng trùng.
+
+**Bấm chuông thì cửa mở.** Lỗi cũ: `openBellDoor` lọc `this.doors` theo `d.d.home`, nhưng `DoorDef` (`src/world/build.ts`)
+**không có trường `home`** — nó đánh dấu căn bằng `lock` (`door_canho … lock: 'canho'`). Vì thế vòng lặp không khớp
+được cánh cửa nào, `want` không được đặt, cửa đứng im dù chủ nhà vẫn bước ra nói chuyện. Nay `Interact.doorHome(d)`
+trả `d.lock`; `openBellDoor` đặt `want = 1` + `bellUntil = time + 16` cho **đúng** cửa của căn, `update()` so cũng bằng
+`doorHome` khi hết hạn (chỉ tự đóng nếu người chơi không ở trong căn đó). Cửa xoay mở 86° trong ~1 giây (đo bằng
+probe: `rotY` đổi −77°, `box.on` → `false` nên đi qua được), hết 16 giây tự đóng lại. Chủ nhà vẫn ra ngoài hiên và
+bấm chuông **ngoài giờ** vẫn mở cửa; gợi ý trên nút đổi theo giờ: "Ngoài giờ (6h–22h) nhưng bấm chuông thì chủ nhà
+vẫn ra mở cửa". Cùng cơ chế này dùng cho nhà riêng và cửa hàng.
+
+**Kiểm thử.** `tests/vua2.test.ts` (9 bài): hai vựa là hai lô `kind: 'scrap'` ở hai khu khác nhau, mỗi vựa có chủ
+riêng và cùng giờ mở cửa, ve chai không bán nhầm ở tiệm cầm đồ, bán ở vựa nào cũng ra đúng giá và `tot.scrap` chỉ
+cộng một lần, bán vựa này không mất đồ của vựa kia, cộng thêm 3 bài canh chuyện cửa: cửa căn hộ An Bình có `lock`
+là `'canho'`, `openBellDoor` so theo `lock` (không còn `d.d.home`), và chủ nhà ra mở cửa kể cả ngoài giờ.
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
@@ -732,7 +759,7 @@ Người chơi đã thử bản đầu và gửi danh sách góp ý; việc đư
 Còn lại:
 
 1. **Đã xong 3 kiểu chỗ ở mới: căn hộ, nhà riêng, cửa hàng kiêm nhà ở** (8/8) — xem mục 4.13.
-2. **Đã xong sạp cố định (bậc 3)** — mục 4.12, **quán ăn nhỏ (bậc 4)** — mục 4.22, và **quán có chỗ ngồi (bậc 5)** — mục 4.25, **nhà hàng bình dân (bậc 6)** — mục 4.26, **chuỗi cửa hàng (bậc 7)** — mục 4.27, **giao người làm đi chợ** — mục 4.28, và **báo cáo sắp hết đồ + tự duyệt đặt bàn** — mục 4.29. Nhánh kinh doanh đã đủ **7/7 bậc**; việc kế tiếp là hệ thống băng nhóm.
+2. **Đã xong sạp cố định (bậc 3)** — mục 4.12, **quán ăn nhỏ (bậc 4)** — mục 4.22, và **quán có chỗ ngồi (bậc 5)** — mục 4.25, **nhà hàng bình dân (bậc 6)** — mục 4.26, **chuỗi cửa hàng (bậc 7)** — mục 4.27, **giao người làm đi chợ** — mục 4.28, **báo cáo sắp hết đồ + tự duyệt đặt bàn** — mục 4.29, và **vựa ve chai thứ hai + bấm chuông mở cửa** — mục 4.30. Nhánh kinh doanh đã đủ **7/7 bậc**; việc kế tiếp là hệ thống băng nhóm.
 3. Hệ thống băng nhóm.
 4. Danh sách đầy đủ những gì còn lại nằm ở `TODO.md`.
 

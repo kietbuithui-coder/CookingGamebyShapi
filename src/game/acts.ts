@@ -8,7 +8,7 @@ import { who } from './who';
 import type { SlotDef } from '../world/build';
 import { SHOPS, ShopDef } from '../data/shops';
 import { INGS } from '../data/ingredients';
-import { GEAR, GEAR_LIST, HOUSING, LENDERS, JUNK, JUNK_LIST, TIERS, BRANCH_SITES } from '../data/gear';
+import { GEAR, GEAR_LIST, HOUSING, LENDERS, JUNK, JUNK_LIST, junkAt, TIERS, BRANCH_SITES } from '../data/gear';
 import { RECIPE_LIST, RECIPES, toolsFor } from '../data/recipes';
 import { FIXED, LINES, SIDE } from '../data/people';
 import { FunDef, funHoursText, funOpenAt } from '../data/fun';
@@ -33,7 +33,7 @@ export interface Way { x: number; z: number; name: string; }
 const hhmmMin = (m: number) => (m % 60 === 0 ? `${m / 60} tiếng` : `${m} phút`);
 
 const QUESTS = [
-  'Kiếm tiền (xin người qua đường, nhặt ve chai bán cho vựa Tư Rác, vác hàng ở chợ, rửa chén quán Bà Tư) rồi mua GÁNH ở tiệm Đồ Nghề Ba Tài.',
+  'Kiếm tiền (xin người qua đường, nhặt ve chai bán cho vựa Tư Rác hoặc Bà Chín, vác hàng ở chợ, rửa chén quán Bà Tư) rồi mua GÁNH ở tiệm Đồ Nghề Ba Tài.',
   'Sắm dụng cụ cho món đầu tiên: DAO THỚT để làm bánh tráng trộn, hoặc BẾP THAN + VỈ để nướng khoai (thêm dao thớt là nướng được bắp mỡ hành).',
   'Ra Chợ Xóm Chiều mua nguyên liệu cho món bạn định bán (xem công thức trong Sổ tay).',
   'Gánh hàng tới một CHỖ BÁN HÀNG (vòng sáng màu vàng) rồi đặt xuống.',
@@ -202,9 +202,9 @@ export class Acts {
           ...this.learnOpts('eatery', n)];
         this.D(who(n), n, 'Quán cơm Bà Tư đây. Ăn gì con? Hay kiếm việc?', [...opts, bye]); break;
       }
-      case 'scrap': case 'pawn': {
-        const list = JUNK_LIST.filter((j) => j.where === id && (g.junk[j.id] ?? 0) > 0), sum = list.reduce((a, j) => a + j.price * g.junk[j.id], 0);
-        this.D(who(n), n, id === 'scrap' ? (list.length ? 'Để coi… ' + list.map((j) => `${g.junk[j.id]} ${j.name.toLowerCase()}`).join(', ') + `. Tui lấy hết ${money(sum)}.` : 'Có ve chai, lon, giấy vụn, sắt thì đem lại đây tui cân. Lượm quanh công viên với mấy thùng rác á.')
+      case 'scrap': case 'scrap2': case 'pawn': {
+        const list = JUNK_LIST.filter((j) => junkAt(id, j) && (g.junk[j.id] ?? 0) > 0), sum = list.reduce((a, j) => a + j.price * g.junk[j.id], 0);
+        this.D(who(n), n, id === 'scrap' || id === 'scrap2' ? (list.length ? 'Để coi… ' + list.map((j) => `${g.junk[j.id]} ${j.name.toLowerCase()}`).join(', ') + `. Tui lấy hết ${money(sum)}.` : (id === 'scrap2' ? 'Ve chai, lon, giấy, sắt hả con? Đem lại đây bà cân cho. Bên này khu dân cư, lượm được nhiều lắm.' : 'Có ve chai, lon, giấy vụn, sắt thì đem lại đây tui cân. Lượm quanh công viên với mấy thùng rác á.'))
           : (list.length ? 'Đồ lượm được hả? ' + list.map((j) => `${j.name} ${money(j.price)}`).join(', ') + `. Tổng ${money(sum)}, bán không?` : 'Có gì đáng giá thì mang tới. Đồng hồ cũ, radio, nhẫn… tui mua hết.'),
           [{ t: `Bán hết — ${money(sum)}`, off: !list.length, fn: () => { const v = R.sellJunk(g, id); sfx('coin'); toast(`Bán được ${money(v)}.`, 'good', 'cash'); } }, bye]); break;
       }
@@ -216,7 +216,7 @@ export class Acts {
       }
       case 'hobo': {
         const first = !g.flags.hobo; g.flags.hobo = 1;
-        const tips = ['Thùng rác xanh mỗi ngày bới được một lần. Lon với chai đem ra vựa Tư Rác ở Xóm Lao Động bán.', 'Trưa 11 giờ chùa Phước An phát cơm chay. Ăn chùa mà ngon!', 'Vòi nước công viên uống đỡ khát, rửa mặt mũi cho đỡ lem luốc. Dơ quá ai mà dám mua đồ ăn của mình.',
+        const tips = ['Thùng rác xanh mỗi ngày bới được một lần. Lon với chai đem ra vựa ve chai bán — Tư Rác ở Xóm Lao Động, Bà Chín ở Khu Dân Cư.', 'Trưa 11 giờ chùa Phước An phát cơm chay. Ăn chùa mà ngon!', 'Vòi nước công viên uống đỡ khát, rửa mặt mũi cho đỡ lem luốc. Dơ quá ai mà dám mua đồ ăn của mình.',
           'Hùng Sẹo cho vay dễ lắm, mà lãi cắt cổ. Trễ hai ngày là nó siết đồ. Cẩn thận nghen con.', 'Ngủ gầm cầu coi chừng mất đồ. Có tiền thì thuê phòng trọ Bác Năm cho chắc.', 'Trời mưa bán đồ nóng, trời nắng bán đồ mát. Ông bà mình dạy vậy đó.'];
         this.D(who(n), n, first ? 'Lính mới hả? Tui là Bảy, "trưởng khu" gầm cầu này hai chục năm rồi. Nè, cầm ổ bánh mì ăn đỡ đi. Muốn sống thì nghe tui chỉ.' : 'Sao, bữa nay làm ăn được không?', [
           { t: 'Chú chỉ con cách kiếm sống đi.', fn: () => this.D(who(n), n, rnd.pick(tips), [{ t: 'Dạ, con nhớ rồi.' }]) }, bye]);
@@ -657,7 +657,7 @@ export class Acts {
       }
     }
     const h = hourOf(g);
-    this.D('Bảng việc làm hôm nay', undefined, `• Vác hàng ở bến chợ (4h30–10h): 6.000₫/bao — gặp Anh Sáu Lực cạnh xe tải.\n• Rửa chén quán cơm Bà Tư (10h–14h30, 17h30–21h): 32.000₫ + bữa cơm.\n• Thu mua ve chai: vựa Tư Rác, Xóm Lao Động.\n• Giao hàng trong khu phố (còn ${Math.max(0, 4 - g.wd.deliveries)} đơn hôm nay).` + (h < 4.5 || h > 21 ? '\nGiờ này hầu như không có việc.' : ''), [...opts, { t: 'Đóng' }]);
+    this.D('Bảng việc làm hôm nay', undefined, `• Vác hàng ở bến chợ (4h30–10h): 6.000₫/bao — gặp Anh Sáu Lực cạnh xe tải.\n• Rửa chén quán cơm Bà Tư (10h–14h30, 17h30–21h): 32.000₫ + bữa cơm.\n• Thu mua ve chai: vựa Tư Rác (Xóm Lao Động) hoặc vựa Bà Chín (Khu Dân Cư) — bên nào gần thì ghé.\n• Giao hàng trong khu phố (còn ${Math.max(0, 4 - g.wd.deliveries)} đơn hôm nay).` + (h < 4.5 || h > 21 ? '\nGiờ này hầu như không có việc.' : ''), [...opts, { t: 'Đóng' }]);
   }
   private deliveryCheck() {
     const j = this.job, g = this.g; if (j?.kind !== 'delivery') return;
@@ -1161,7 +1161,7 @@ export class Acts {
   /** Điểm tới gần nhất của một địa danh (dùng cho bản đồ). */
   places(): Way[] {
     const A = ctx.world.anchors, P = (k: string, name: string): Way | null => (A[k] ? { x: A[k].x, z: A[k].z, name } : null);
-    return [P('v_equip', 'Đồ Nghề Ba Tài'), P('v_m_rau', 'Chợ Xóm Chiều'), P('v_mart', 'MiniMart 24h'), P('v_kiosk', 'Tạp hoá Cô Ba'), P('v_eatery', 'Quán cơm Bà Tư'), P('v_cafe', 'Cà phê Sân Vườn'), P('v_scrap', 'Vựa ve chai Tư Rác'), P('v_pawn', 'Cầm đồ Chú Lâm'), P('v_bank', 'Ngân hàng Sao Vàng'),
+    return [P('v_equip', 'Đồ Nghề Ba Tài'), P('v_m_rau', 'Chợ Xóm Chiều'), P('v_mart', 'MiniMart 24h'), P('v_kiosk', 'Tạp hoá Cô Ba'), P('v_eatery', 'Quán cơm Bà Tư'), P('v_cafe', 'Cà phê Sân Vườn'), P('v_scrap', 'Vựa ve chai Tư Rác'), P('v_scrap2', 'Vựa ve chai Bà Chín'), P('v_pawn', 'Cầm đồ Chú Lâm'), P('v_bank', 'Ngân hàng Sao Vàng'),
       P('v_tro', 'Nhà trọ Bác Năm'), P('v_motel', 'Nhà nghỉ Bình Dân'), P('v_hotel', 'Khách sạn Hoa Sen'), P('v_canho', 'Căn hộ An Bình'), P('v_nharieng', 'Nhà số 12'), P('v_cuahang', 'Tạp hoá Bình An'), P('v_hot_toc', 'Tiệm hớt tóc Bảy Kéo'), P('v_pharmacy', 'Nhà thuốc An Tâm'), P('v_hospital', 'Bệnh viện Phước An'), P('v_police', 'Công an phường'), P('giuong_benhvien', 'Phòng hồi sức bệnh viện'), P('v_wholesale', 'Vựa đầu mối Tám Lúa'), P('v_temple', 'Chùa Phước An'), P('wash_park', 'Nhà tắm công viên'), P('v_shark', 'Hùng Sẹo (vay nóng)'), P('bed_gamcau', 'Gầm cầu (lều của bạn)'), P('board', 'Bảng việc làm'), P('v_dock', 'Bến bốc hàng')].filter(Boolean) as Way[];
   }
 }

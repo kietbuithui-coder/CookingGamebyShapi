@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { ctx } from './ctx';
 import type { Npc } from './npc';
-import { placeOpen } from './npc';
+import { placeOpen, PLACE_HOURS } from './npc';
 import { who, whoIn, known } from './who';
 import { SHOPS } from '../data/shops';
 import { INGS } from '../data/ingredients';
@@ -140,15 +140,22 @@ export class Interact {
         if (k === 'fire_gamcau') return R.isNight(g) ? mk('Sưởi bên thùng lửa', () => { g.weather.wet = Math.max(0, g.weather.wet - 40); g.st.mood = Math.min(STAT_MAX, g.st.mood + 3); R.advance(g, 10, A.act()); toast('Hơ tay bên đống lửa, ấm người hẳn.', 'info'); }) : null;
         if (k === 'bell_canho' || k === 'bell_nharieng' || k === 'bell_cuahang') {
           const hid = k.slice(5) as 'canho' | 'nharieng' | 'cuahang';
-          return mk('Bấm chuông cửa (đing đong)', () => A.ringBell(hid, ctx.world.anchors[k]), 'Gọi chủ nhà ra nói chuyện thuê hoặc mua nhà');
+          const hrs = PLACE_HOURS[hid];
+          const closed = hrs && !placeOpen(hid);
+          return mk('Bấm chuông cửa (đing đong)', () => A.ringBell(hid, ctx.world.anchors[k]),
+            closed ? `Ngoài giờ (${hrs[0]}h–${hrs[1]}h) nhưng bấm chuông thì chủ nhà vẫn ra mở cửa` : 'Chủ nhà ra mở cửa, nói chuyện thuê hoặc mua');
         }
         return null;
       }
     }
     return null;
   }
+  /** Cửa của một căn (canho/nharieng/cuahang…) biết chủ nhà qua `lock` của DoorDef. */
+  private doorHome(d: { lock?: string }) { return d.lock; }
   openBellDoor(homeId: string, sec = 10) {
-    for (const d of this.doors) if (d.d.home === homeId) { d.want = 1; d.bellUntil = ctx.time + sec; }
+    let n = 0;
+    for (const d of this.doors) if (this.doorHome(d.d) === homeId) { d.want = 1; d.bellUntil = ctx.time + sec; n++; }
+    return n;
   }
   trigger() { if (ctx.anim?.active) { ctx.anim.stop(); this.update(0.05); } const f = this.focus; if (f && ctx.mode === 'play') { f.act(); ctx.acts.working = 0.3; } }
   triggerAlt() { if (ctx.anim?.active) { ctx.anim.stop(); this.update(0.05); } const f = this.focus; if (f?.alt && ctx.mode === 'play') f.alt.act(); }
@@ -156,7 +163,7 @@ export class Interact {
     const g = ctx.g, cam = ctx.camera;
     // cửa phòng & cửa cuốn
     this.T -= dt; const tick = this.T <= 0; if (tick) this.T = 0.5;
-    for (const d of this.doors) { if (d.bellUntil && ctx.time >= d.bellUntil) { d.bellUntil = undefined; if (g.housing !== d.d.home) d.want = 0; } d.open = damp(d.open, d.want, 9, dt); d.m.rotation.y = -d.d.yaw - d.open * 1.5; d.d.box.on = d.open < 0.5; }
+    for (const d of this.doors) { if (d.bellUntil && ctx.time >= d.bellUntil) { d.bellUntil = undefined; if (g.housing !== this.doorHome(d.d)) d.want = 0; } d.open = damp(d.open, d.want, 9, dt); d.m.rotation.y = -d.d.yaw - d.open * 1.5; d.d.box.on = d.open < 0.5; }
     for (const s of this.shut) { if (tick) s.s.box.on = !placeOpen(s.s.shop) || (s.s.shop === 'mart' && R.eventOn(g, 'cup_dien')); const want = s.s.box.on ? 1 : 0; s.k = damp(s.k, want, 3, dt); s.m.visible = s.k > 0.02; s.m.position.y = 0.12 + (1 - s.k) * s.s.h; s.m.scale.y = Math.max(0.02, s.k); }
     if (ctx.mode !== 'play' || ctx.anim?.active) { this.focus = null; ctx.input.taps.length = 0; return; }
     this.collect();

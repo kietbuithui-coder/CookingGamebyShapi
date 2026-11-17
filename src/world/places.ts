@@ -581,20 +581,32 @@ export function buildPlace(b: Builder, l: Lot, R: RNG) {
       break;
     }
     case 'scrap': {
-      // bãi ve chai: sân trống, hàng rào tôn, kho phía sau
+      // bãi ve chai: sân trống, hàng rào tôn hai bên, kho phía sau
+      const ws = l.id === 'scrap2';                       // vựa thứ hai: lô hẹp hơn nên đồ đạc dồn về một bên
+      const S = (a: number) => (ws ? a * w / 16 : a);   // toạ độ thiết kế của lô 16m → lô thật
       b.ground.dirt.floor(0, 0, w, 7.2, 0.125, 0xffffff, 3);
-      for (const [x0, x1] of [[0, 5], [11, w]] as const) { L.box((x0 + x1) / 2, 0, 0.1, x1 - x0, 2.0, 0.08, 0x6a8a7a, 0x55706a, 0.15); b.collide(x0, 0, x1, 0.2); }
+      for (const [x0, x1] of [[0, 5], [11, w]] as const) if (x1 - x0 > 0.4) { L.box((x0 + x1) / 2, 0, 0.1, x1 - x0, 2.0, 0.08, 0x6a8a7a, 0x55706a, 0.15); b.collide(x0, 0, x1, 0.2); }
       b.wall(0.1, 0, 0.1, 7.2, 2.2, 0x8a8a84); b.wall(w - 0.1, 0, w - 0.1, 7.2, 2.2, 0x8a8a84);
-      L.box(w / 2, 0, 9.1, w - 0.04, 3.8, 3.8, 0x9a9a92, 0x7a8a96, 0.15); b.collide(0, 7.2, w, d); L.box(w / 2, 0.12, 7.19, 5, 2.6, 0.04, 0x2a2c30);
-      b.signAt(8, 2.7, -0.02, 6.2, 0.9, 'VỰA VE CHAI TƯ RÁC', { bg: '#ffffff', fg: '#0b5ea8', border: '#0b5ea8', sub: 'Thu mua nhựa · lon · giấy · sắt vụn', subFg: '#c8102e' }, 0, -1, 96);
-      for (const x of [5, 11]) L.box(x, 0, 0.1, 0.16, 3.7, 0.16, 0x55585e); L.box(8, 2.62, 0.1, 6.4, 0.08, 0.1, 0x55585e, 0x55585e, 0, true);
-      for (let i = 0; i < 5; i++) for (let j = 0; j < R.int(2, 5); j++) D.box(1.2 + i * 0.5 + R.range(-0.1, 0.1), 0.12 + j * 0.22, 5.4 + (i % 2) * 0.8, 0.9, 0.2, 0.7, mix(0xb99a6a, 0x8a7350, R.next()), undefined, 0.1);
-      b.collide(0.6, 4.9, 4.0, 6.7);
-      for (let i = 0; i < 4; i++) D.sph(13.2 + (i % 2) * 1.2, 0.6, 5.2 + Math.floor(i / 2) * 1.2, 0.65, 0.55, 0.65, [0xbfe3f2, 0xdfe6ea, 0xa8d8ec, 0xe9ecd0][i], 7); b.collide(12.6, 4.6, 15.2, 7.0);
-      for (let i = 0; i < 12; i++) D.box(13.5 + R.range(-1, 1), 0.12 + R.range(0, 0.5), 1.8 + R.range(-0.6, 0.6), R.range(0.2, 0.8), R.range(0.06, 0.3), R.range(0.2, 0.6), mix(0x7a6a62, 0x4a4a52, R.next()), undefined, 0.1, true);
-      b.collide(12.4, 1.1, 14.6, 2.5);
-      D.box(8.2, 0.12, 3.0, 0.9, 0.08, 0.7, 0x55585e, 0x8a8f96); D.box(8.2, 0.2, 3.38, 0.08, 0.9, 0.08, 0x55585e); D.cyl(8.2, 1.1, 3.38, 0.2, 0.05, 0xf7f7f2, 10);
-      b.anchor('v_scrap', 9.7, 0.12, 3.4, Math.PI); plasticStool(D, 10.5, 0.12, 3.9, 0x2f8fd5);
+      L.box(w / 2, 0, 9.1, w - 0.04, 3.8, 3.8, 0x9a9a92, 0x7a8a96, 0.15); b.collide(0, 7.2, w, d); L.box(w / 2, 0.12, 7.19, Math.min(5, w - 0.6), 2.6, 0.04, 0x2a2c30);
+      const cs = Math.min(8, w / 2);
+      b.signAt(cs, 2.7, -0.02, Math.min(6.2, w - 1.2), 0.9, ws ? 'VỰA VE CHAI BÀ CHÍN' : 'VỰA VE CHAI TƯ RÁC', { bg: '#ffffff', fg: '#0b5ea8', border: '#0b5ea8', sub: 'Thu mua nhựa · lon · giấy · sắt vụn', subFg: '#c8102e' }, 0, -1, 96);
+      for (const x of [S(5), S(11)]) L.box(x, 0, 0.1, 0.16, 3.7, 0.16, 0x55585e); L.box(cs, 2.62, 0.1, Math.min(6.4, w - 0.8), 0.08, 0.1, 0x55585e, 0x55585e, 0, true);
+      // đống phế liệu trong sân
+      const pile = S(1.2), rows = ws ? 3 : 5, span = w / rows;
+      for (let i = 0; i < rows; i++) for (let j = 0; j < R.int(2, 5); j++) D.box(pile + i * span + R.range(-0.1, 0.1), 0.12 + j * 0.22, 5.4 + (i % 2) * 0.8, Math.min(0.9, span * 0.8), 0.2, 0.7, mix(0xb99a6a, 0x8a7350, R.next()), undefined, 0.1);
+      b.collide(0.6, 4.9, S(4.0), 6.7);
+      // bao ni lông & sắt vụn dồn về góc phải lô
+      const bx0 = S(12.4), bx1 = S(14.6);
+      if (bx1 > bx0 + 0.4) {
+        for (let i = 0; i < 4; i++) D.sph(S(13.2) + (i % 2) * 0.6, 0.6, 5.2 + Math.floor(i / 2) * 1.2, 0.65, 0.55, 0.65, [0xbfe3f2, 0xdfe6ea, 0xa8d8ec, 0xe9ecd0][i], 7);
+        b.collide(bx0, 4.6, bx1, 7.0);
+        for (let i = 0; i < 12; i++) D.box(S(13.5) + R.range(-0.5, 0.5), 0.12 + R.range(0, 0.5), 1.8 + R.range(-0.6, 0.6), R.range(0.2, 0.7), R.range(0.06, 0.3), R.range(0.2, 0.5), mix(0x7a6a62, 0x4a4a52, R.next()), undefined, 0.1, true);
+        b.collide(bx0, 1.1, bx1, 2.5);
+      }
+      // Cân bàn + neo chỗ đứng của chủ vựa (vựa nào cũng vậy, chỉ khác toạ độ trong lô)
+      const cx = ws ? S(9.4) : 8.2, ax = ws ? S(11.2) : 9.7;
+      D.box(cx, 0.12, 3.0, 0.9, 0.08, 0.7, 0x55585e, 0x8a8f96); D.box(cx, 0.2, 3.38, 0.08, 0.9, 0.08, 0x55585e); D.cyl(cx, 1.1, 3.38, 0.2, 0.05, 0xf7f7f2, 10);
+      b.anchor('v_' + (l.id ?? 'scrap'), ax, 0.12, 3.4, Math.PI); plasticStool(D, cx, 0.12, 3.9, ws ? 0xd9463c : 0x2f8fd5);
       break;
     }
     case 'site': {
