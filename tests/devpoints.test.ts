@@ -3,12 +3,12 @@ import { DEV_BUILD_TAG, getDevSections } from '../src/game/devPoints';
 
 describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
   it('chỉ gồm mục của tính năng mới nhất + nhóm địa điểm tele nhanh', () => {
-    expect(DEV_BUILD_TAG).toContain('Quản lý cửa hàng');
-    expect(DEV_BUILD_TAG).toContain('bật/tắt bán');
+    expect(DEV_BUILD_TAG).toContain('Cửa hàng');
+    expect(DEV_BUILD_TAG).toContain('ân hạn');
     const sections = getDevSections();
     expect(sections.length).toBe(2);
     expect(sections[0].title).toContain('Quản lý cửa hàng');
-    expect(sections[0].title).toContain('lượt 23');
+    expect(sections[0].title).toContain('lượt 24');
     expect(sections[1].title).toContain('Địa điểm');
     const ids = new Set<string>();
     for (const sec of sections) {
@@ -22,7 +22,7 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
       }
     }
     // mục của lượt này: vựa ve chai thứ hai + bấm chuông mở cửa
-    for (const id of ['setup_shopapp', 'shopapp_open', 'shopapp_loss', 'shopapp_toggle']) expect(ids.has(id)).toBe(true);
+    for (const id of ['setup_shopapp', 'shopapp_open', 'shopapp_loss', 'shopapp_far']) expect(ids.has(id)).toBe(true);
     // tele nhanh vẫn còn, có thêm vựa mới và cửa căn hộ
     const loc = sections[1].items.map((i) => i.id);
     for (const id of ['tp_equip', 'tp_matbang_tb', 'tp_ongtu', 'tp_scrap2', 'tp_canho']) expect(loc).toContain(id);

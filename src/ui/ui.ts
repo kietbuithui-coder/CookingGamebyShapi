@@ -127,6 +127,9 @@ export class UI {
     const sl = C.querySelector('.slider') as HTMLElement, setS = (e: PointerEvent) => { const r = sl.getBoundingClientRect(), v = clamp(1 - (e.clientY - r.top) / r.height); this.sliderV = v; (sl.firstElementChild as HTMLElement).style.bottom = v * 100 + '%'; this.onCookSlide?.(v); };
     sl.addEventListener('pointerdown', (e) => { sl.setPointerCapture(e.pointerId); setS(e); }); sl.addEventListener('pointermove', (e) => { if (e.buttons || e.pointerType === 'touch') setS(e); });
     applyLayout(); window.addEventListener('resize', () => applyLayout()); window.addEventListener('orientationchange', () => setTimeout(applyLayout, 250));
+    // Luật vừa đổi trạng thái (mở/đóng bán, khách vào, chi nhánh…) → vẽ lại bảng đang mở để nút và số liệu khớp thật.
+    const live = (n: string) => { if (this.modalName === n) this.reopenPanel(n); };
+    bus.on('ui', (what?: string) => { if (what === 'stall' || what === 'branch') { live('phone'); live('stall'); live('branch'); live('report'); } });
     bus.on('toast', (t) => this.toast(t)); bus.on('cash', () => { E.money.classList.remove('bump'); void E.money.offsetWidth; E.money.classList.add('bump'); });
     ctx.input.onStick = (on, ox, oy, dx, dy) => { const s = E.stick; s.classList.toggle('hide', !on); if (on) { s.style.left = ox + 'px'; s.style.top = oy + 'px'; (s.firstElementChild as HTMLElement).style.transform = `translate(${dx}px,${dy}px)`; } };
     ctx.input.onKey = (k) => {

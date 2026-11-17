@@ -1163,19 +1163,41 @@ export function shopRows(g: Game): ShopRow[] {
   return out;
 }
 const low0Text = (kinds: number) => (kinds ? 'Đang bán — có món sắp hết, nấu thêm.' : 'Đang bán.');
-/** Bật/tắt bán một điểm (chỉ đổi cờ, không đụng tới khách đang ăn — phần đó do StallSys lo). */
-export function setShopOpen(g: Game, id: 'main' | 'branch', on: boolean): boolean {
+/** Vì sao chưa bật/tắt bán được điểm này — câu người chơi đọc được (rỗng = làm được). */
+export function shopToggleWhy(g: Game, id: 'main' | 'branch'): string {
   if (id === 'main') {
     const s = g.stall;
-    if (s.where !== 'placed' || !menuOf(g).length) return false;
-    s.open = on; bus.emit('ui', 'stall');
-  } else {
-    const b = g.branch;
-    if (!b || !b.keeper) return false;
-    b.open = on; bus.emit('ui', 'branch');
+    if (s.where !== 'placed') return 'Quầy chưa đặt ra phố — ra mặt bằng dựng quầy trước.';
+    if (!menuOf(g).length) return 'Chưa bật món nào trong thực đơn.';
+    if (s.cond < 25) return 'Quầy hư nặng quá, phải sửa ở tiệm Ba Tài.';
+    return '';
   }
+  const b = g.branch;
+  if (!b) return 'Chưa mở chi nhánh nào.';
+  if (!b.keeper) return 'Chưa có người trông coi — thuê người rồi mới mở bán được.';
+  return '';
+}
+/** Cảnh báo hiện ngay trong app: quầy đang mở nhưng không có ai đứng bán thì sẽ tự ngưng khi đi xa (sau 20 giây ân hạn). */
+export function shopStaffWarn(g: Game): string {
+  if (!g.stall.open || g.stall.where !== 'placed') return '';
+  if (g.help || g.help2) return '';
+  return 'Quầy đang mở nhưng chỉ mình bạn bán — đi xa quá 40 m mà không có khách thì khoảng 20 giây sau quầy tự ngưng. Thuê người phụ quầy để bán từ xa.';
+}
+/** Giới hạn giờ bán, đúng như luật ngoài đời trong trò chơi. */
+export const SHOP_HOURS: [number, number] = [6, 22.5];
+/**
+ * Bật/tắt bán một điểm (chỉ đổi cờ, không đụng tới khách đang ăn — phần đó do StallSys lo).
+ * Trả về `'ok'` hoặc lý do không làm được, để UI báo thẳng cho người chơi.
+ */
+export function setShopOpen(g: Game, id: 'main' | 'branch', on: boolean): 'ok' | string {
+  const why = shopToggleWhy(g, id);
+  if (why) return why;
+  const h = hourOf(g);
+  if (on && (h < SHOP_HOURS[0] || h >= SHOP_HOURS[1])) return `Ngoài giờ bán (${SHOP_HOURS[0]}h–${SHOP_HOURS[1]}h).`;
+  if (id === 'main') { g.stall.open = on; bus.emit('ui', 'stall'); }
+  else { g.branch!.open = on; bus.emit('ui', 'branch'); }
   bus.emit('save', 'mo/dong ban');
-  return true;
+  return 'ok';
 }
 /** Cảnh báo loại "bán lỗ": món nào đang bán giá thấp hơn giá vốn nguyên liệu + công. */
 export function lossDishes(g: Game): { rid: string; price: number; cost: number }[] {

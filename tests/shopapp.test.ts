@@ -1,6 +1,6 @@
 // App "Quản lý cửa hàng" trên điện thoại: xem quầy chính + chi nhánh, bật/tắt bán từ xa, cảnh báo bán lỗ.
 import { describe, it, expect } from 'vitest';
-import { shopRows, setShopOpen, lossDishes, openBranch, hireKeeper, moveToBranch, menuOf, suggestPrice } from '../src/sim/rules';
+import { shopRows, setShopOpen, shopToggleWhy, shopStaffWarn, hireHelper, SHOP_HOURS, lossDishes, openBranch, hireKeeper, moveToBranch, menuOf, suggestPrice } from '../src/sim/rules';
 import { RECIPES } from '../src/data/recipes';
 import { appsOf, PHONES, PHONE_APPS } from '../src/data/phone';
 import { fresh, give } from './helpers';
@@ -42,15 +42,18 @@ describe('app Quản lý cửa hàng trên điện thoại', () => {
 
   it('bật/tắt bán từ điện thoại: quầy chính và chi nhánh', () => {
     const g = shop();
-    expect(setShopOpen(g, 'main', true)).toBe(true);
+    expect(setShopOpen(g, 'main', true)).toBe('ok');
     expect(g.stall.open).toBe(true);
-    expect(setShopOpen(g, 'main', false)).toBe(true);
+    expect(setShopOpen(g, 'main', false)).toBe('ok');
     expect(g.stall.open).toBe(false);
 
     openBranch(g, 'cho');
-    expect(setShopOpen(g, 'branch', true)).toBe(false);   // chưa có người trông coi thì không mở được
+    // chưa có người trông coi thì không mở được — và phải NÓI RÕ lý do
+    expect(setShopOpen(g, 'branch', true)).toContain('người trông coi');
+    expect(g.branch!.open).toBe(true);                    // openBranch mở sẵn, nhưng chưa ai bán
+    g.branch!.open = false;
     hireKeeper(g);
-    expect(setShopOpen(g, 'branch', true)).toBe(true);
+    expect(setShopOpen(g, 'branch', true)).toBe('ok');
     expect(g.branch!.open).toBe(true);
     expect(shopRows(g).length).toBe(2);
     expect(shopRows(g)[1].staffed).toBe(true);
@@ -59,12 +62,29 @@ describe('app Quản lý cửa hàng trên điện thoại', () => {
   it('quầy chưa đặt ra phố hoặc chưa bật món thì không mở bán được', () => {
     const g = shop();
     g.stall.where = 'carried';
-    expect(setShopOpen(g, 'main', true)).toBe(false);
+    expect(setShopOpen(g, 'main', true)).toContain('chưa đặt ra phố');
     expect(g.stall.open).toBe(false);
     g.stall.where = 'placed';
     for (const id of Object.keys(g.rec)) g.rec[id].on = false;
-    expect(setShopOpen(g, 'main', true)).toBe(false);
+    expect(setShopOpen(g, 'main', true)).toContain('Chưa bật món');
     expect(menuOf(g).length).toBe(0);
+    // và ngoài giờ bán thì cũng phải nói rõ, không im lặng
+    const g2 = shop();
+    g2.min = 3 * 60;
+    expect(setShopOpen(g2, 'main', true)).toContain('Ngoài giờ bán');
+    expect(g2.min / 60).toBeLessThan(SHOP_HOURS[0]);
+    expect(shopToggleWhy(g2, 'main')).toBe('');
+  });
+
+  it('quầy mở mà chỉ có mình người chơi bán thì app cảnh báo sẽ tự ngưng khi đi xa; có người phụ thì hết cảnh báo', () => {
+    const g = shop();
+    expect(setShopOpen(g, 'main', true)).toBe('ok');
+    expect(shopStaffWarn(g)).toContain('tự ngưng');
+    expect(shopStaffWarn(g)).toContain('20 giây');
+    hireHelper(g);
+    expect(shopStaffWarn(g)).toBe('');
+    expect(setShopOpen(g, 'main', false)).toBe('ok');
+    expect(shopStaffWarn(g)).toBe('');
   });
 
   it('gợi ý trong app nói đúng việc cần làm (khay trống / chưa bật món / đang đóng)', () => {

@@ -9,7 +9,7 @@ import { toast } from '../core/bus';
 import * as PUI from '../ui/phoneUI';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'App Quản lý cửa hàng trên điện thoại: xem quầy chính + chi nhánh, bật/tắt bán từ xa, cảnh báo bán lỗ';
+export const DEV_BUILD_TAG = 'Công tắc bán trong app Cửa hàng: bật từ xa là mở thật (ân hạn 20 giây), không còn tự tắt im lặng; lý do không bật được thì nói thẳng';
 
 export interface DevAction {
   id: string;
@@ -68,7 +68,7 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — App Quản lý cửa hàng trên điện thoại (lượt 23)',
+      title: 'Mới nhất — Công tắc bán trong app Quản lý cửa hàng (lượt 24)',
       items: [
         {
           id: 'setup_shopapp',
@@ -124,16 +124,21 @@ export function getDevSections(): DevSection[] {
           },
         },
         {
-          id: 'shopapp_toggle',
-          label: 'Bật/tắt bán quầy chính và chi nhánh từ điện thoại',
-          sub: 'Chạy thẳng luật setShopOpen — không cần chạy ra quầy, cũng không cần đứng gần',
+          id: 'shopapp_far',
+          label: 'Thử công tắc ở xa quầy: tele ra xa 60 m rồi bật bán trên điện thoại',
+          sub: 'Quầy mở ngay, giữ 20 giây ân hạn, sau đó tự ngưng kèm lời giải thích — nút không nhảy mà không báo',
+          tone: 'yellow',
           closePanel: false,
           run: () => {
             const g = ctx.g;
-            const before = [g.stall.open, !!g.branch?.open];
-            R.setShopOpen(g, 'main', !g.stall.open);
-            if (g.branch?.keeper) R.setShopOpen(g, 'branch', !g.branch.open);
-            toast(`Quầy chính: ${g.stall.open ? 'mở' : 'đóng'} · chi nhánh: ${g.branch ? (g.branch.open ? 'mở' : 'đóng') : 'chưa có'} (trước: ${before[0] ? 'mở' : 'đóng'}/${before[1] ? 'mở' : 'đóng'}).`, 'good', 'shop');
+            g.cash = Math.max(g.cash, 3000000); g.stall.tier = 7; g.stall.where = 'placed'; g.stall.spot = 'cho';
+            for (const id of ['daothot', 'bepthan', 'vi', 'noi', 'chao', 'bepgas']) if (!R.has(g, id)) R.buyGear(g, id);
+            for (const rid of ['com_suon', 'tra_da']) { g.rec[rid].known = true; g.rec[rid].on = true; }
+            g.stall.ready = [{ rid: 'com_suon', n: 5, q: 1, at: 0, cost: 12000 }];
+            ctx.stall.refresh();
+            ctx.player.place(g.stall.x + 42, g.stall.z + 42, 0);
+            if (!g.phone) { g.gear.camung = 100; g.phone = { id: 'camung', battery: 72 }; }
+            toast('Đang đứng cách quầy khoảng 60 m. Bật bán trong app rồi xem quầy có tự ngưng không.', 'info', 'shop');
             ctx.ui.closePanel(); ctx.ui.panel('phone');
             PUIphone().phoneKey('open', 'shop');
             ctx.ui.reopenPanel('phone');

@@ -30,7 +30,7 @@ export class StallSys {
   private actorT = 0; private actorId = ''; private actorTries = 0; busy: Npc | null = null; rowdy = 0; private signAtlas = new SignAtlas(512); private signMat: THREE.Material;
   private marks: THREE.Mesh[] = []; private regT = 30;
   /** Người phụ việc đang đứng quầy + nhân vật tới xin việc + nhịp nói chuyện/lau quầy. */
-  helper: Npc | null = null; helper2: Npc | null = null; private offerNpc: Npc | null = null; private offerT = 45; private helperChat = 40; private helper2Chat = 55; private helperWipe = 50; private helperRetry = 0; private helper2Retry = 0;
+  helper: Npc | null = null; helper2: Npc | null = null; private farWarnT = 0; private openGrace = 0; private wasOpen = false; private offerNpc: Npc | null = null; private offerT = 45; private helperChat = 40; private helper2Chat = 55; private helperWipe = 50; private helperRetry = 0; private helper2Retry = 0;
   private helperTask: Record<1 | 2, { mode: 'idle' | 'toCounter' | 'toCustomer' | 'serve' | 'toWipe' | 'wipe' | 'return'; target?: Npc; holdT: number; wipeCd: number; yaw: number }> = {
     1: { mode: 'idle', holdT: 0, wipeCd: 8, yaw: 0 },
     2: { mode: 'idle', holdT: 0, wipeCd: 14, yaw: 0 },
@@ -672,7 +672,7 @@ export class StallSys {
     if (s.cond < 25) { toast('Quầy hư nặng quá, phải sửa ở tiệm Ba Tài đã.', 'bad'); return false; }
     const menu = menuOf(g); if (!menu.length) { toast('Chưa chọn món nào để bán. Bật món trong thực đơn trước.', 'warn'); return false; }
     if (!menu.some((r) => available(g, r))) { toast('Chưa có gì để bán: hãy sơ chế hoặc mua thêm nguyên liệu.', 'warn'); return false; }
-    s.open = true; this.acc = 0.6; sfx('open'); toast('Mở bán! ' + (isNight(g) && !has(g, 'den') ? 'Trời tối mà không có đèn nên khách khó thấy quầy.' : 'Chúc đắt hàng.'), 'good', 'shop'); this.builtKey = ''; bus.emit('ui', 'stall'); return true;
+    s.open = true; this.acc = 0.6; this.openGrace = 20; sfx('open'); toast('Mở bán! ' + (isNight(g) && !has(g, 'den') ? 'Trời tối mà không có đèn nên khách khó thấy quầy.' : 'Chúc đắt hàng.'), 'good', 'shop'); this.builtKey = ''; bus.emit('ui', 'stall'); return true;
   }
   close(silent = false) { const s = this.s; if (!s.open) return; s.open = false; if (!silent) { sfx('close'); toast('Đã đóng quầy.', 'info', 'shop'); } bus.emit('ui', 'stall'); }
 
@@ -1432,8 +1432,20 @@ export class StallSys {
         const ok = wantGroup ? this.sendGroup(freeN >= 4 && (naturalCap - this.customers.length) >= 4 && rnd.chance(0.45) ? 4 : 3) : !!this.send(reg);
         if (!ok) this.acc = 0.85;   // chưa có ai quanh đây để ghé → thử lại sớm, không bỏ mất lượt khách
       } else if (this.acc > 1.5) this.acc = 1.5;
-      if (away && this.customers.length === 0 && dist2(ctx.player.x, ctx.player.z, s.x, s.z) > 40 * 40) { this.close(true); toast('Bạn đi xa quá nên quầy tạm ngưng bán.', 'warn', 'shop'); }
+      // Đi xa quá mà không có ai bán → tự ngưng. NHƯNG nếu có người phụ việc / nhân viên đứng quầy thì quầy cứ bán:
+      // bật/tắt bán từ điện thoại nghĩa là ta điều khiển quầy lúc mình đang ở xa, quầy tự đóng sẽ làm công tắc "nhảy" như bị lỗi.
+      const staffed = !!this.helper || !!this.helper2 || !!g.help;   // người phụ việc / nhân viên đã thuê
+      const far = dist2(ctx.player.x, ctx.player.z, s.x, s.z) > 40 * 40;
+      // Vừa chuyển sang mở (dù bấm ở quầy hay bật từ app điện thoại) → cho 20 s ân hạn trước khi xét chuyện tự ngưng.
+      if (s.open && !this.wasOpen) this.openGrace = 20;
+      if (this.openGrace > 0) this.openGrace -= dt;
+      if (away && far && this.customers.length === 0 && this.openGrace <= 0) {
+        if (staffed) { if (this.farWarnT <= 0) { this.farWarnT = 45; toast('Bạn đang ở xa quầy, nhưng vẫn có người bán nên quầy tiếp tục mở.', 'info', 'shop'); } }
+        else { this.close(true); toast('Bạn đi xa quá mà không có ai bán nên quầy tạm ngưng bán.', 'warn', 'shop'); }
+      }
+      if (this.farWarnT > 0) this.farWarnT -= dt;
     }
+    this.wasOpen = s.open;
     if (this.rowdy > 0) this.rowdy -= dt;
     this.updateHelper(dt);
     this.updateSous(dt);

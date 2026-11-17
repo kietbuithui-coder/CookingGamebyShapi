@@ -14,6 +14,7 @@ import * as PH from '../sim/phone';
 import type { Contact } from '../sim/phone';
 import { ledgerBody } from './panels';
 import { RECIPES } from '../data/recipes';
+import { toast } from '../core/bus';
 
 export type PhoneApp = 'ledger' | 'contacts' | 'sms' | 'radio' | 'music' | 'wap' | 'battery' | 'shop';
 
@@ -93,7 +94,7 @@ export function runRow(app: PhoneApp, row: { act?: string; k?: string }) {
   const g = ctx.g;
   if (row.act === 'call' && row.k) { ctx.acts.phoneCall(row.k); return true; }
   if (row.act === 'fun' && row.k) { ctx.acts.phoneFun(row.k as 'radio' | 'music' | 'wap'); return true; }
-  if (row.act === 'shopopen' && row.k) { return R.setShopOpen(g, row.k as 'main' | 'branch', !(row.k === 'main' ? g.stall.open : !!g.branch?.open)); }
+  if (row.act === 'shopopen' && row.k) { return R.setShopOpen(g, row.k as 'main' | 'branch', !(row.k === 'main' ? g.stall.open : !!g.branch?.open)) === 'ok'; }
   if (row.act === 'charge') { ctx.ui.closePanel(); ctx.ui.panel('map'); return true; }
   void g;
   return false;
@@ -141,7 +142,8 @@ export function appScreen(g: Game, m: PhoneDef, app: PhoneApp): string {
         <s>${r.stock} phần · ${r.kinds} món${r.low ? ` · ${r.low} món sắp hết` : ''} · thuê ${money(r.rent)}/ngày</s>
         <s>Hôm nay: ${money(r.revenue)} · ${r.sold} phần · ${r.customers} khách${r.lost ? ` · mất ${r.lost} khách` : ''}</s>
         <s class="hint">${esc(r.hint)}</s></span>
-        <button class="btn small${r.open ? '' : ' green'}" data-a="phshop" data-k="${r.id}"${r.canToggle ? '' : ' disabled'}>${r.open ? 'Đóng' : 'Mở'}</button></div>`).join('')}</div>
+        <button class="btn small${r.open ? '' : ' green'}" data-a="phshop" data-i="0" data-k="${r.id}"${r.canToggle ? '' : ' disabled'}>${r.open ? 'Đóng' : 'Mở'}</button></div>`).join('')}</div>
+      ${R.shopStaffWarn(g) ? `<p class="muted warnline">⚠ ${R.shopStaffWarn(g)}</p>` : ''}
       ${R.lossDishes(g).length ? `<h4>Bán lỗ so với giá vốn</h4><div class="plist">${R.lossDishes(g).map((l) => `<div class="row"><span class="g"><b>${RECIPES[l.rid].name}</b><s>đang bán ${money(l.price)} · vốn ${money(l.cost)} — lỗ ${money(l.cost - l.price)}/phần</s></span></div>`).join('')}</div>` : ''}
       ${g.branch ? '' : '<p class="muted">Chưa có chi nhánh nào. Lên Chuỗi cửa hàng (bậc 7) rồi thuê mặt bằng thứ hai.</p>'}`;
   }
@@ -214,8 +216,10 @@ export function phoneKey(k: 'up' | 'down' | 'ok' | 'home' | 'pick' | 'open', arg
 /** Bấm nút Mở/Đóng của một điểm bán trong app Quản lý cửa hàng. */
 export function phoneToggleShop(id: 'main' | 'branch'): boolean {
   const g = ctx.g, on = id === 'main' ? !!g.stall.open : !!g.branch?.open;
-  if (!R.setShopOpen(g, id, !on)) return false;
+  const r = R.setShopOpen(g, id, !on);
+  if (r !== 'ok') { toast(r, 'warn', 'shop'); return false; }
   ctx.sound.play('ui');
+  toast(`${id === 'main' ? 'Quầy chính' : 'Chi nhánh'}: ${on ? 'đã tạm đóng' : 'mở bán'} ✓`, 'good', 'shop');
   return true;
 }
 

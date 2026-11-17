@@ -507,7 +507,34 @@ gợi ý** đúng việc cần làm. Có **nút Mở/Đóng bán ngay trên máy
 (`lossDishes`, so giá bán với `recipeCost`). Luật nằm ở `shopRows/setShopOpen/lossDishes` trong `src/sim/rules.ts`, UI
 chỉ vẽ — nên test được mà không cần DOM.
 
-**Kiểm thử:** `tests/shopapp.test.ts` 7 bài → tổng **400 bài / 30 tệp**. Probe `tools/probe/steps/shopapp.mjs` ở 390×844:
+**Kiểm thử:** `tests/shopapp.test.ts` 8 bài → tổng **401 bài / 30 tệp**. Probe `tools/probe/steps/shopapp.mjs` ở 390×844:
 máy cảm ứng có icon Cửa hàng, mở ra thấy quầy chính + chi nhánh, bấm Đóng thì `stall.open = false`, bật chi nhánh từ
 máy thì `branch.open = true`, đặt cơm sườn 2.000₫ thì hiện "lỗ 23.426₫/phần", máy cục gạch cũng có app; **console sạch**.
 Sửa thêm một lỗi nhỏ gặp trong lúc làm: `reopenPanel` từng đưa điện thoại về màn hình chính, giờ chỉ `panel()` mới reset.
+
+---
+
+## Lượt 24 — Công tắc Mở/Đóng bán "hơi có vấn đề" trên điện thoại ✅ đã xong
+
+Người chơi báo nút Mở/Đóng trong app Cửa hàng "hơi có vấn đề". Dựng lại đúng hoàn cảnh thì **quả thật có lỗi**, ba lỗi chồng nhau:
+
+1. **Bấm Mở ở xa quầy thì 2 giây sau quầy tự tắt.** `StallSys.update()` có luật "đi xa > 40 m mà không có khách thì tự ngưng" —
+   luật này ra đời từ trước khi có app, nên bật bán từ xa chỉ sống được ~2 giây rồi `close(true)`. Nút vì thế **tự nhảy về "Mở"**
+   mà không ai bấm. Nay: cho **20 giây ân hạn** mỗi lần quầy chuyển sang mở (đặt ở `update()` nên bật ở đâu cũng tính, kể cả
+   bấm ở quầy), và **nếu có người phụ việc/nhân viên (`g.help`, `g.help2`) thì quầy cứ bán** — chỉ nhắc nhẹ mỗi 45 giây.
+   Câu toast mới nói rõ ai vắng mặt: "Bạn đi xa quá **mà không có ai bán** nên quầy tạm ngưng bán."
+2. **Bấm không ăn mà không nói vì sao.** `setShopOpen` cũ chỉ trả `true/false`. Nay trả `'ok' | lý do`, thêm `shopToggleWhy()`
+   (chưa đặt quầy, chưa bật món, quầy hư nặng, chưa có người trông coi chi nhánh) và **giới hạn giờ bán `SHOP_HOURS = [6, 22.5]`**;
+   app hiện toast đúng lý do thay vì im lặng.
+3. **Bấm xong bảng không vẽ lại.** Handler `acts.a` trong `panels.ts` chỉ `render()` khi `ui.modalName === name`, còn nút trong app
+   lại đi qua `phoneToggleShop` → không có `data-i` và không ai vẽ lại; khi luật tự đổi trạng thái (quầy tự ngưng, khách vào) bảng
+   cũng đứng im. Nay thêm `data-i="0"` cho nút, và `ui.ts` nghe `bus.on('ui', 'stall'|'branch')` → `reopenPanel` bảng đang mở
+   (`phone`, `stall`, `branch`, `report`) nên **nhãn nút luôn khớp trạng thái thật**.
+
+Thêm cảnh báo ngay trong app: `shopStaffWarn(g)` — "Quầy đang mở nhưng chỉ mình bạn bán — đi xa quá 40 m… khoảng 20 giây sau quầy
+tự ngưng. Thuê người phụ quầy để bán từ xa." (mất cảnh báo khi đã có người phụ).
+
+**Kiểm thử:** `tests/shopapp.test.ts` 8 bài (thêm bài `shopStaffWarn`) → tổng **401 bài / 30 tệp**. Probe mới
+`tools/probe/steps/switchfar.mjs` (390×844) dựng đúng ca lỗi: đứng cách quầy 85 m, bấm Mở → sau 3 s `open: true, btn: "Đóng"`;
+sau ~25 giây mô phỏng → `open: false, btn: "Mở"` (tự ngưng đúng luật, có toast); gắn người phụ việc rồi mở lại → sau 25 giây
+**vẫn bán**, chỉ có câu nhắc; console sạch. Probe `steps/shopapp.mjs` vẫn xanh toàn bộ.

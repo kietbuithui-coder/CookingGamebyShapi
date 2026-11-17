@@ -19,7 +19,7 @@ Một vòng chơi trọn vẹn và thật sự chạy được: **tay trắng �
 
 Hai nguyên tắc giữ cho mã kiểm thử được:
 
-1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 400 bài kiểm thử (30 tệp) chạy trong Node trong khoảng 7 giây.
+1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 401 bài kiểm thử (30 tệp) chạy trong Node trong khoảng 7 giây.
 2. **Mọi ngẫu nhiên trong luật chơi nhận một `RNG` có hạt giống** làm tham số cuối, nên kết quả kiểm thử lặp lại được.
 
 Vòng lặp chính (`src/main.ts`): đọc điều khiển → `advance()` cho thời gian game trôi (0,75 phút game mỗi giây thật, một ngày = 32 phút thật; khi ngủ 48 phút game mỗi giây) → cập nhật người chơi, NPC, quầy, nấu ăn, môi trường → vẽ. `dt` bị chặn ở 50 ms nên máy rất chậm thì game chạy chậm lại chứ không nhảy cóc.
@@ -772,7 +772,14 @@ số phần, trạng thái, gợi ý và chuyện bật/tắt; `src/ui/phoneUI.t
 nên bấm sang tab khác rồi quay lại vẫn đứng đúng chỗ; mở lại máy từ HUD mới về màn hình chính (`ui.panel('phone')`
 reset, `reopenPanel` thì không).
 
-**Kiểm thử.** `tests/shopapp.test.ts` (7 bài): máy nào cũng có app, không chi nhánh thì một dòng kèm số phần/số món/số
+**Công tắc phải khớp trạng thái thật (lượt 24).** Ba chỗ từng làm nút "như bị lỗi": (1) `StallSys.update()` tự đóng quầy khi
+người chơi ở xa > 40 m mà không có khách — luật có từ trước khi có app, nên bật bán từ xa chỉ sống vài giây; nay **ân hạn 20 giây**
+mỗi lần quầy chuyển sang mở và **có người phụ việc (`g.help`, `g.help2`) thì quầy cứ bán** (chỉ nhắc mỗi 45 giây); (2) `setShopOpen`
+trả `'ok' | lý do` (qua `shopToggleWhy`, kèm `SHOP_HOURS = [6, 22.5]`) để app báo thẳng vì sao không bật được thay vì im lặng;
+(3) bảng đang mở tự vẽ lại khi `bus.emit('ui', 'stall' | 'branch')`, nên nút và nhãn *đang bán / tạm đóng* không bao giờ lệch với
+`s.stall.open` thật. App còn hiện `shopStaffWarn(g)` khi quầy đang mở mà chỉ có mình người chơi bán.
+
+**Kiểm thử.** `tests/shopapp.test.ts` (8 bài): máy nào cũng có app, không chi nhánh thì một dòng kèm số phần/số món/số
 món sắp hết, bật/tắt bán quầy chính và chi nhánh (chưa có người trông coi thì không mở được), quầy chưa đặt ra phố hoặc
 chưa bật món thì không mở được, câu gợi ý đúng ba tình huống (khay trống / chưa bật món / đang đóng), cảnh báo bán lỗ
 chỉ ra đúng món, và chi nhánh hiện đúng số phần sau khi chuyển món sang. Probe `tools/probe/steps/shopapp.mjs` ở
