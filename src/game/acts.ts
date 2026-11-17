@@ -8,7 +8,7 @@ import { who } from './who';
 import type { SlotDef } from '../world/build';
 import { SHOPS, ShopDef } from '../data/shops';
 import { INGS } from '../data/ingredients';
-import { GEAR, GEAR_LIST, HOUSING, LENDERS, JUNK, JUNK_LIST, TIERS } from '../data/gear';
+import { GEAR, GEAR_LIST, HOUSING, LENDERS, JUNK, JUNK_LIST, junkAt, TIERS, BRANCH_SITES } from '../data/gear';
 import { RECIPE_LIST, RECIPES, toolsFor } from '../data/recipes';
 import { FIXED, LINES, SIDE } from '../data/people';
 import { FunDef, funHoursText, funOpenAt } from '../data/fun';
@@ -22,7 +22,7 @@ import * as N from '../sim/net';
 import * as RC from '../sim/race';
 import { bus, toast, sfx } from '../core/bus';
 import { rnd, RNG, clamp, money, dist2, round1k, round500, qty, hhmm } from '../core/util';
-import { NAV, groundY, districtAt, DISTRICT } from '../world/layout';
+import { NAV, groundY, districtAt, DISTRICT, SPOTS } from '../world/layout';
 import { MB, MAT } from '../gfx/mb';
 import { ingModel } from '../gfx/props';
 
@@ -33,7 +33,7 @@ export interface Way { x: number; z: number; name: string; }
 const hhmmMin = (m: number) => (m % 60 === 0 ? `${m / 60} tiếng` : `${m} phút`);
 
 const QUESTS = [
-  'Kiếm tiền (xin người qua đường, nhặt ve chai bán cho vựa Tư Rác, vác hàng ở chợ, rửa chén quán Bà Tư) rồi mua GÁNH ở tiệm Đồ Nghề Ba Tài.',
+  'Kiếm tiền (xin người qua đường, nhặt ve chai bán cho vựa Tư Rác hoặc Bà Chín, vác hàng ở chợ, rửa chén quán Bà Tư) rồi mua GÁNH ở tiệm Đồ Nghề Ba Tài.',
   'Sắm dụng cụ cho món đầu tiên: DAO THỚT để làm bánh tráng trộn, hoặc BẾP THAN + VỈ để nướng khoai (thêm dao thớt là nướng được bắp mỡ hành).',
   'Ra Chợ Xóm Chiều mua nguyên liệu cho món bạn định bán (xem công thức trong Sổ tay).',
   'Gánh hàng tới một CHỖ BÁN HÀNG (vòng sáng màu vàng) rồi đặt xuống.',
@@ -170,6 +170,7 @@ export class Acts {
             bye,
           ]);
         } });
+        opts.push({ t: 'Nói chuyện mở CHI NHÁNH (chuỗi cửa hàng)', sub: 'Cần đã có Nhà hàng bình dân; chi nhánh là điểm bán thứ hai do người trông coi tự bán', off: g.stall.tier < 6 && !R.has(g, 'chuoi'), fn: () => this.branchTalk(n) });
         opts.push({ t: 'Bán lại đồ nghề cũ', off: !Object.keys(g.gear).length, fn: () => this.sellGearMenu(n) });
         opts.push({ t: 'Nên mua gì trước hả chú?', fn: () => this.D(who(n), n, 'Mới vô nghề thì cặp GÁNH trước đã. Rồi DAO THỚT là làm được bánh tráng trộn. Có BẾP THAN với VỈ thì nướng khoai, nướng bắp. Muốn pha trà đá thì thêm cái NỒI. Cứ đi quanh tiệm, thấy món nào thì chạm vô coi giá.', [bye]) });
         this.D(who(n), n, 'Tiệm Ba Tài, xe đẩy bếp núc gì cũng có! Hàng bày quanh đó, ưng món nào cứ chạm vô.', [...opts, bye]); break;
@@ -201,9 +202,9 @@ export class Acts {
           ...this.learnOpts('eatery', n)];
         this.D(who(n), n, 'Quán cơm Bà Tư đây. Ăn gì con? Hay kiếm việc?', [...opts, bye]); break;
       }
-      case 'scrap': case 'pawn': {
-        const list = JUNK_LIST.filter((j) => j.where === id && (g.junk[j.id] ?? 0) > 0), sum = list.reduce((a, j) => a + j.price * g.junk[j.id], 0);
-        this.D(who(n), n, id === 'scrap' ? (list.length ? 'Để coi… ' + list.map((j) => `${g.junk[j.id]} ${j.name.toLowerCase()}`).join(', ') + `. Tui lấy hết ${money(sum)}.` : 'Có ve chai, lon, giấy vụn, sắt thì đem lại đây tui cân. Lượm quanh công viên với mấy thùng rác á.')
+      case 'scrap': case 'scrap2': case 'pawn': {
+        const list = JUNK_LIST.filter((j) => junkAt(id, j) && (g.junk[j.id] ?? 0) > 0), sum = list.reduce((a, j) => a + j.price * g.junk[j.id], 0);
+        this.D(who(n), n, id === 'scrap' || id === 'scrap2' ? (list.length ? 'Để coi… ' + list.map((j) => `${g.junk[j.id]} ${j.name.toLowerCase()}`).join(', ') + `. Tui lấy hết ${money(sum)}.` : (id === 'scrap2' ? 'Ve chai, lon, giấy, sắt hả con? Đem lại đây bà cân cho. Bên này khu dân cư, lượm được nhiều lắm.' : 'Có ve chai, lon, giấy vụn, sắt thì đem lại đây tui cân. Lượm quanh công viên với mấy thùng rác á.'))
           : (list.length ? 'Đồ lượm được hả? ' + list.map((j) => `${j.name} ${money(j.price)}`).join(', ') + `. Tổng ${money(sum)}, bán không?` : 'Có gì đáng giá thì mang tới. Đồng hồ cũ, radio, nhẫn… tui mua hết.'),
           [{ t: `Bán hết — ${money(sum)}`, off: !list.length, fn: () => { const v = R.sellJunk(g, id); sfx('coin'); toast(`Bán được ${money(v)}.`, 'good', 'cash'); } }, bye]); break;
       }
@@ -215,7 +216,7 @@ export class Acts {
       }
       case 'hobo': {
         const first = !g.flags.hobo; g.flags.hobo = 1;
-        const tips = ['Thùng rác xanh mỗi ngày bới được một lần. Lon với chai đem ra vựa Tư Rác ở Xóm Lao Động bán.', 'Trưa 11 giờ chùa Phước An phát cơm chay. Ăn chùa mà ngon!', 'Vòi nước công viên uống đỡ khát, rửa mặt mũi cho đỡ lem luốc. Dơ quá ai mà dám mua đồ ăn của mình.',
+        const tips = ['Thùng rác xanh mỗi ngày bới được một lần. Lon với chai đem ra vựa ve chai bán — Tư Rác ở Xóm Lao Động, Bà Chín ở Khu Dân Cư.', 'Trưa 11 giờ chùa Phước An phát cơm chay. Ăn chùa mà ngon!', 'Vòi nước công viên uống đỡ khát, rửa mặt mũi cho đỡ lem luốc. Dơ quá ai mà dám mua đồ ăn của mình.',
           'Hùng Sẹo cho vay dễ lắm, mà lãi cắt cổ. Trễ hai ngày là nó siết đồ. Cẩn thận nghen con.', 'Ngủ gầm cầu coi chừng mất đồ. Có tiền thì thuê phòng trọ Bác Năm cho chắc.', 'Trời mưa bán đồ nóng, trời nắng bán đồ mát. Ông bà mình dạy vậy đó.'];
         this.D(who(n), n, first ? 'Lính mới hả? Tui là Bảy, "trưởng khu" gầm cầu này hai chục năm rồi. Nè, cầm ổ bánh mì ăn đỡ đi. Muốn sống thì nghe tui chỉ.' : 'Sao, bữa nay làm ăn được không?', [
           { t: 'Chú chỉ con cách kiếm sống đi.', fn: () => this.D(who(n), n, rnd.pick(tips), [{ t: 'Dạ, con nhớ rồi.' }]) }, bye]);
@@ -273,6 +274,49 @@ export class Acts {
       this.D(who(n), n, ev.length ? ev[0].text : shop.lateSale && hourOf(g) >= shop.open[1] - 2 ? 'Cuối buổi rồi, đồ tươi cô bán rẻ cho hết hàng. Lựa lẹ đi con!' : rnd.pick(['Sáng sớm hàng mới về là tươi nhất đó. Chiều thì rẻ mà hết ngon.', 'Mua quen cô bớt cho. Cứ ghé hoài là thành mối.', 'Ra đường thấy trời chuyển mưa thì bán đồ nóng, đắt như tôm tươi.', 'Vựa đầu mối Tám Lúa bên Khu Kho Bãi bán sỉ rẻ lắm, mà phải đi từ 3 giờ sáng.']), [bye]);
     } });
     this.D(who(n), n, `${shop.say} ${shop.id === 'mart' || shop.id === 'pharmacy' ? 'Anh chị cứ lấy hàng trên kệ rồi ra quầy tính tiền ạ.' : 'Lựa gì cứ bốc bỏ giỏ, xong đưa đây tính tiền.'}`, [...opts, bye]);
+  }
+  // ───────────────────────── Chuỗi cửa hàng (bậc 7): mở chi nhánh thứ hai ─────────────────────────
+  /** Nói chuyện về chi nhánh: giải thích, mở chi nhánh mới, hoặc quản lý chi nhánh đang có. */
+  branchTalk(n: Npc) {
+    const g = this.g, b = g.branch, opts: Opt[] = [];
+    if (!R.isChain(g)) {
+      opts.push({ t: `Mua bảng hiệu Chuỗi cửa hàng — ${money(GEAR.chuoi.price)}`, sub: 'Cần có Nhà hàng bình dân (bậc 6) trước', off: g.cash < GEAR.chuoi.price || g.stall.tier < 6, fn: () => this.buyGear('chuoi') });
+    }
+    if (R.isChain(g) && !b) {
+      opts.push({ t: 'Thuê chỗ mở chi nhánh', sub: 'Chọn một chỗ bán khác với quán chính — trả một ngày thuê trước', fn: () => this.branchSiteMenu(n) });
+    }
+    if (b) {
+      const sp = SPOTS.find((x) => x.id === b.spot);
+      opts.push({ t: `Chi nhánh ${sp?.name ?? ''} — xem sổ (${b.keeper ? 'có người trông' : 'chưa có người'})`, fn: () => { ctx.ui.panel('branch'); } });
+    }
+    const text = !R.isChain(g)
+      ? 'Muốn mở chi nhánh thứ hai hả? Phải có cái nhà hàng đàng hoàng trước đã, rồi chú lo cho cái bảng hiệu chuỗi với giấy thuê mặt bằng.'
+      : !b
+        ? 'Được, có chuỗi rồi thì mở thêm điểm thứ hai. Chú giới thiệu ba chỗ còn trống, mỗi chỗ một giá. Nhớ: quán chính là chỗ nào thì chi nhánh phải chỗ khác.'
+        : `Chi nhánh ${SPOTS.find((x) => x.id === b.spot)?.name ?? ''} đang ${b.keeper ? (b.open ? 'bán' : 'đóng cửa') : 'chưa có người trông'}. Mở sổ ra coi doanh thu, rồi tính chuyện thuê người hay chuyển thêm món qua.`;
+    this.D(who(n), n, text, [...opts, { t: 'Rồi, để con tính.' }]);
+  }
+  /** Chọn chỗ thuê chi nhánh. */
+  private branchSiteMenu(n: Npc) {
+    const g = this.g, opts: Opt[] = [];
+    for (const site of BRANCH_SITES) {
+      const sp = SPOTS.find((x) => x.id === site.spot);
+      if (!sp) continue;
+      const takenByStall = g.stall.spot === site.spot;
+      const gate = R.branchGate(g, site.spot, takenByStall);
+      opts.push({
+        t: `${sp.name} — thuê ${money(site.rent)}/ngày`,
+        sub: `${site.note}${gate.why ? ' · ' + gate.why : ''}`,
+        off: !gate.ok || g.cash < site.rent,
+        fn: () => {
+          const br = R.openBranch(g, site.spot, takenByStall);
+          if (!br) { toast('Không mở được chi nhánh ở chỗ này.', 'warn'); return; }
+          sfx('buy'); toast(`Đã thuê ${sp.name} làm chi nhánh! Giờ tìm người trông coi và chuyển món sẵn qua.`, 'good', 'shop', true);
+          this.branchTalk(n);
+        },
+      });
+    }
+    this.D(who(n), n, 'Ba chỗ này còn trống, chú giữ giấy cho. Chỗ đông thì thuê đắt hơn nhưng bán được nhiều hơn.', [...opts, { t: 'Để con tính lại.' }]);
   }
   private sellGearMenu(n: Npc) {
     const g = this.g, ids = Object.keys(g.gear);
@@ -491,21 +535,32 @@ export class Acts {
     ctx.sound.play('bell');
     ctx.interact.openBellDoor(hid, 16);
     if (!n) { toast('Đing đong! Nhưng không thấy ai ở nhà.', 'info'); return; }
-    const ax = bellAnchor?.x ?? p.x, az = bellAnchor?.z ?? p.z;
-    const dx = p.x - ax, dz = p.z - az, dl = Math.hypot(dx, dz) || 1;
+    let ax = bellAnchor?.x ?? p.x, az = bellAnchor?.z ?? p.z;
+    // Đi ra ĐÚNG ô cửa của căn: vị trí bản lề + nửa bề ngang cánh, đứng về phía người chơi.
+    // (Trước đây lấy neo chuông làm tâm nên với cửa lệch khỏi neo thì nhân vật hiện ra ngay giữa tường.)
+    const dr = ctx.interact.bellDoor(hid);
+    if (dr) {
+      const { x: hx, z: hz, yaw, w } = dr.d;
+      const cx = hx + Math.cos(yaw) * w * 0.5, cz = hz + Math.sin(yaw) * w * 0.5;   // giữa ô cửa
+      const nx = -Math.sin(yaw), nz = Math.cos(yaw);                                 // pháp tuyến của cánh cửa
+      const side = (p.x - cx) * nx + (p.z - cz) * nz >= 0 ? 1 : -1;                   // phía người chơi đứng = phía ngoài
+      ax = cx + nx * side * 0.15; az = cz + nz * side * 0.15;
+    }
+    const dl2 = Math.hypot(p.x - ax, p.z - az) || 1, ux = (p.x - ax) / dl2, uz = (p.z - az) / dl2;
     // Điểm đứng ngay trước cửa (ngoài hiên, đối diện người chơi) và điểm xuất phát ngay sau cánh cửa đang mở
-    const outX = ax + (dx / dl) * 0.9, outZ = az + (dz / dl) * 0.9;
-    const inX = ax - (dx / dl) * 1.45, inZ = az - (dz / dl) * 1.45;
+    const outX = ax + ux * 0.9, outZ = az + uz * 0.9;
+    const inX = ax - ux * 1.45, inZ = az - uz * 1.45;
     n.x = inX; n.z = inZ; n.hidden = false; n.rig.root.visible = true;
-    n.bellOut = { x: outX, z: outZ, yaw: Math.atan2(p.x - outX, p.z - outZ), until: ctx.time + 26 };
+    n.bellOut = { x: outX, z: outZ, yaw: Math.atan2(p.x - outX, p.z - outZ), until: ctx.time + 27 };
     toast('Đing đong! Chủ nhà đang mở cửa bước ra...', 'info', 'home');
-    ctx.npcs.say(n, 'Ai bấm chuông vậy? Chờ chút nha!', 2.2);
+    ctx.npcs.say(n, 'Ai bấm chuông vậy? Chờ chút nha!', 3.2);
+    // Chờ cửa xoay mở xong rồi mới nói chuyện (trước đây 0,62 giây, cửa chưa kịp mở đã thấy mặt).
     setTimeout(() => {
       if (ctx.mode === 'play') {
         ctx.player.face(n.x, n.z);
         this.talk(n);
       }
-    }, 620);
+    }, 1620);
   }
   beg(n: Npc) {
     const g = this.g, a = n.arch;
@@ -613,7 +668,7 @@ export class Acts {
       }
     }
     const h = hourOf(g);
-    this.D('Bảng việc làm hôm nay', undefined, `• Vác hàng ở bến chợ (4h30–10h): 6.000₫/bao — gặp Anh Sáu Lực cạnh xe tải.\n• Rửa chén quán cơm Bà Tư (10h–14h30, 17h30–21h): 32.000₫ + bữa cơm.\n• Thu mua ve chai: vựa Tư Rác, Xóm Lao Động.\n• Giao hàng trong khu phố (còn ${Math.max(0, 4 - g.wd.deliveries)} đơn hôm nay).` + (h < 4.5 || h > 21 ? '\nGiờ này hầu như không có việc.' : ''), [...opts, { t: 'Đóng' }]);
+    this.D('Bảng việc làm hôm nay', undefined, `• Vác hàng ở bến chợ (4h30–10h): 6.000₫/bao — gặp Anh Sáu Lực cạnh xe tải.\n• Rửa chén quán cơm Bà Tư (10h–14h30, 17h30–21h): 32.000₫ + bữa cơm.\n• Thu mua ve chai: vựa Tư Rác (Xóm Lao Động) hoặc vựa Bà Chín (Khu Dân Cư) — bên nào gần thì ghé.\n• Giao hàng trong khu phố (còn ${Math.max(0, 4 - g.wd.deliveries)} đơn hôm nay).` + (h < 4.5 || h > 21 ? '\nGiờ này hầu như không có việc.' : ''), [...opts, { t: 'Đóng' }]);
   }
   private deliveryCheck() {
     const j = this.job, g = this.g; if (j?.kind !== 'delivery') return;
@@ -1117,7 +1172,7 @@ export class Acts {
   /** Điểm tới gần nhất của một địa danh (dùng cho bản đồ). */
   places(): Way[] {
     const A = ctx.world.anchors, P = (k: string, name: string): Way | null => (A[k] ? { x: A[k].x, z: A[k].z, name } : null);
-    return [P('v_equip', 'Đồ Nghề Ba Tài'), P('v_m_rau', 'Chợ Xóm Chiều'), P('v_mart', 'MiniMart 24h'), P('v_kiosk', 'Tạp hoá Cô Ba'), P('v_eatery', 'Quán cơm Bà Tư'), P('v_cafe', 'Cà phê Sân Vườn'), P('v_scrap', 'Vựa ve chai Tư Rác'), P('v_pawn', 'Cầm đồ Chú Lâm'), P('v_bank', 'Ngân hàng Sao Vàng'),
+    return [P('v_equip', 'Đồ Nghề Ba Tài'), P('v_m_rau', 'Chợ Xóm Chiều'), P('v_mart', 'MiniMart 24h'), P('v_kiosk', 'Tạp hoá Cô Ba'), P('v_eatery', 'Quán cơm Bà Tư'), P('v_cafe', 'Cà phê Sân Vườn'), P('v_scrap', 'Vựa ve chai Tư Rác'), P('v_scrap2', 'Vựa ve chai Bà Chín'), P('v_pawn', 'Cầm đồ Chú Lâm'), P('v_bank', 'Ngân hàng Sao Vàng'),
       P('v_tro', 'Nhà trọ Bác Năm'), P('v_motel', 'Nhà nghỉ Bình Dân'), P('v_hotel', 'Khách sạn Hoa Sen'), P('v_canho', 'Căn hộ An Bình'), P('v_nharieng', 'Nhà số 12'), P('v_cuahang', 'Tạp hoá Bình An'), P('v_hot_toc', 'Tiệm hớt tóc Bảy Kéo'), P('v_pharmacy', 'Nhà thuốc An Tâm'), P('v_hospital', 'Bệnh viện Phước An'), P('v_police', 'Công an phường'), P('giuong_benhvien', 'Phòng hồi sức bệnh viện'), P('v_wholesale', 'Vựa đầu mối Tám Lúa'), P('v_temple', 'Chùa Phước An'), P('wash_park', 'Nhà tắm công viên'), P('v_shark', 'Hùng Sẹo (vay nóng)'), P('bed_gamcau', 'Gầm cầu (lều của bạn)'), P('board', 'Bảng việc làm'), P('v_dock', 'Bến bốc hàng')].filter(Boolean) as Way[];
   }
 }

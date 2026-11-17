@@ -94,7 +94,7 @@ export const SEEN: Record<ArchId, string> = {
 export const FIXED_ROLE: Record<string, string> = {
   m_rau: 'Người bán rau', m_cu: 'Người bán củ quả', m_thit: 'Người bán thịt', m_haisan: 'Người bán hải sản', m_kho: 'Người bán đồ khô',
   m_giavi: 'Người bán gia vị', m_trung: 'Người bán trứng', bakery: 'Thợ làm bánh', mart: 'Nhân viên siêu thị', kiosk: 'Cô bán tạp hoá',
-  wholesale: 'Chủ vựa sỉ', pharmacy: 'Dược sĩ', equip: 'Chủ tiệm đồ nghề', eatery: 'Bà chủ quán cơm', scrap: 'Chủ vựa ve chai',
+  wholesale: 'Chủ vựa sỉ', pharmacy: 'Dược sĩ', equip: 'Chủ tiệm đồ nghề', eatery: 'Bà chủ quán cơm', scrap: 'Chủ vựa ve chai', scrap2: 'Chủ vựa ve chai',
   pawn: 'Chủ tiệm cầm đồ', bank: 'Nhân viên ngân hàng', shark: 'Gã mặt sẹo', motel: 'Chủ nhà nghỉ', tro: 'Ông chủ trọ',
   hotel: 'Lễ tân khách sạn', dock: 'Cai bốc vác', hobo: 'Ông lão lang thang',
   hot_toc: 'Thợ cắt tóc', thoi_trang: 'Cô bán quần áo', cafe: 'Chủ quán cà phê',
@@ -258,7 +258,7 @@ export const LINES = {
   beg_food: ['{Self} không có tiền lẻ, cho {you} ổ bánh mì nè.', 'Ăn cái này đi cho đỡ đói.'],
   beg_refuse: ['Không có tiền lẻ.', 'Xin lỗi nha.', '…', 'Đi làm đi chứ xin gì!', 'Thanh niên sức dài vai rộng mà ngồi xin.', 'Bận lắm.'],
   beg_annoyed: ['Đừng có kéo áo tui!', 'Phiền quá nha!', 'Tui kêu công an bây giờ!', 'Tránh ra coi!'],
-  beg_chat: ['Chợ Xóm Chiều sáng sớm hay cần người bốc vác đó, {you} ra thử coi.', 'Quán cơm Bà Tư đang kiếm người rửa chén kìa.', 'Vựa ve chai Tư Rác mua lon với chai nhựa đó, lượm đem bán cũng có tiền.',
+  beg_chat: ['Chợ Xóm Chiều sáng sớm hay cần người bốc vác đó, {you} ra thử coi.', 'Quán cơm Bà Tư đang kiếm người rửa chén kìa.', 'Vựa ve chai mua lon với chai nhựa đó — Tư Rác ở Xóm Lao Động, Bà Chín ở Khu Dân Cư, lượm đem bán cũng có tiền.',
     'Hồi đó {self} cũng trắng tay. Bán gánh hàng rong mấy năm là có vốn liền.', 'Trời sắp mưa đó, kiếm chỗ trú đi {you}.', 'Ở hẻm Công Nhân bán đồ ăn sáng đắt lắm nghen.', 'Muốn buôn bán thì ghé tiệm Đồ Nghề Ba Tài mua cặp quang gánh.'],
   // lời vu vơ khi đi ngang
   bark: {
@@ -337,6 +337,13 @@ export const SOUS_POOL: SousDef[] = [
   { name: 'Thằng Dũng', fem: false, face: 0, hairStyle: 1, shirt: 0xf7f3ea, pants: 0x2d323b, hair: 0x2a1c14, skin: 0xc9936a, wage: 90000, speed: 0.95, ask: 'Con chịu khó đứng bếp cả ngày, phụ {ac} băm chặt với xào nấu nha!' },
 ];
 
+/** Người trông coi chi nhánh (bậc 7). Khác người phụ quầy: đứng bán cả ngày ở điểm thứ hai, tự bán món sẵn. */
+export const KEEPER_POOL: HelperDef[] = [
+  { name: 'Cô Thuận', fem: true, face: 4, hairStyle: 5, shirt: 0xd9463c, pants: 0x2a2e3a, hair: 0x2a2420, skin: 0xe6b88e, wage: 95000, ask: 'Cô bán quán chợ mấy chục năm rồi {ac}. Đưa cô giữ chi nhánh, sáng mở sớm, chiều dọn sạch.' },
+  { name: 'Anh Dũng Ca', fem: false, face: 1, hairStyle: 2, shirt: 0x2f8fd5, pants: 0x2f3a52, hair: 0x1e1a18, skin: 0xd49a6a, wage: 100000, ask: 'Tui rành khách phố văn phòng, bán trưa một tiếng bằng người ta cả buổi. 100 ngàn một ngày nghen.' },
+  { name: 'Má Bảy', fem: true, face: 4, hairStyle: 7, shirt: 0xb9a88a, pants: 0x3a3a42, hair: 0xd9d9d6, skin: 0xf2c9a4, wage: 88000, ask: 'Má ở nhà rảnh, ra giữ quầy phụ {ac}. Tiền lời bao nhiêu má đưa lại đủ, má chỉ lấy công.' },
+];
+
 export interface FixedNpcDef { id: string; name: string; face: number; fem: boolean; shirt: number; pants: number; hair: number; hat: number; hairStyle: number; fat: number; h: number; }
 export const FIXED: Record<string, FixedNpcDef> = {
   hot_toc: { id: 'hot_toc', name: 'Chú Bảy Kéo', face: 7, fem: false, shirt: 0xf3f0e8, pants: 0x2a2e3a, hair: 0x3a2a22, hat: 0, hairStyle: 6, fat: 1.05, h: 1 },
@@ -357,6 +364,7 @@ export const FIXED: Record<string, FixedNpcDef> = {
   police: { id: 'police', name: 'Chú Tám', face: 7, fem: false, shirt: 0x6a8a4a, pants: 0x4a6238, hair: 0x1e1a18, hat: 2, hairStyle: 0, fat: 1.08, h: 1.02 },
   equip: { id: 'equip', name: 'Chú Ba Tài', face: 7, fem: false, shirt: 0x3f6a9a, pants: 0x4a4a42, hair: 0x2a2420, hat: 0, hairStyle: 3, fat: 1.2, h: 1.0 },
   eatery: { id: 'eatery', name: 'Bà Tư', face: 4, fem: true, shirt: 0xf3f0e8, pants: 0x2a2e3a, hair: 0xbfbfbc, hat: 0, hairStyle: 2, fat: 1.15, h: 0.93 },
+  scrap2: { id: 'scrap2', name: 'Bà Chín Ve Chai', face: 4, fem: true, shirt: 0x8a7a4a, pants: 0x3a3a42, hair: 0xbfbfbc, hat: 1, hairStyle: 2, fat: 1.08, h: 0.94 },
   scrap: { id: 'scrap', name: 'Ông Tư Rác', face: 3, fem: false, shirt: 0x7a6a58, pants: 0x4a4a42, hair: 0xbfbfbc, hat: 4, hairStyle: 3, fat: 0.95, h: 0.97 },
   pawn: { id: 'pawn', name: 'Chú Lâm', face: 5, fem: false, shirt: 0x6a1e2e, pants: 0x2a2e3a, hair: 0x1e1a18, hat: 0, hairStyle: 0, fat: 1.1, h: 1.0 },
   bank: { id: 'bank', name: 'Chị Thu', face: 5, fem: true, shirt: 0x2f3a52, pants: 0x2a2e3a, hair: 0x1e1a18, hat: 0, hairStyle: 2, fat: 0.92, h: 0.97 },

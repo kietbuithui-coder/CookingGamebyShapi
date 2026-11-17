@@ -52,13 +52,16 @@ function house(b: Builder, l: Lot, R: RNG) {
   L.box(w / 2, 0.12, alc / 2, w - 0.7, 0.04, alc, 0xb9b3a6, 0xc9c3b6);                          // bậc thềm
   // tầng trệt
   const kind = rich ? R.pick(['home', 'home', 'garage']) : R.pick(['shop', 'shop', 'shop', 'closed', 'home', 'home']);
-  let shop: { name: string; st2: SignStyle; blade: number } | null = null, bal1 = false;
+  let shop: { name: string; st2: SignStyle } | null = null, bal1 = false;
   if (kind === 'shop') {
     for (const y of [0.9, 1.5, 2.1]) { L.box(w / 2, y, alc - 0.16, w - 1.0, 0.04, 0.3, 0x8a6a4a, undefined, 0, true); for (let x = 0.7; x < w - 0.7; x += 0.34) if (R.chance(0.8)) D.box(x, y + 0.04, alc - 0.16, 0.24, R.range(0.12, 0.3), 0.2, R.pick(AWN), undefined, 0.15); }
     D.box(w / 2 + R.range(-0.5, 0.5), 0.16, alc - 0.75, Math.min(2.2, w - 1.6), 0.85, 0.5, R.pick([0x8a6a4a, 0xb9c0c8, 0xd9d2c0]), undefined, 0.15);
     const name = R.pick(SHOP_NAMES), st2 = R.pick(SIGN_ST);
     if (R.chance(0.6)) b.awning(0.3, w - 0.3, gh - 0.5, R.range(1.0, 1.5), R.pick(AWN), R.chance(0.6) ? 0xf7f3e6 : R.pick(AWN), -0.1);
-    shop = { name, st2, blade: R.chance(0.3) ? (R.chance(0.5) ? 0.12 : w - 0.12) : 0 };
+    // (trước đây có biển dọc chìa ra đường — bỏ vì nó che mất biển của tiệm bên cạnh; vẫn giữ hai lần gọi RNG
+    //  để cách bốc ngẫu nhiên của cả khu phố không đổi.)
+    if (R.chance(0.3)) R.chance(0.5);
+    shop = { name, st2 };
   } else if (kind === 'closed') {
     const c = R.pick([0x8a9aa8, 0x6a8a9a, 0x9a9a92, 0x5a7a6a]);
     L.box(w / 2, 0.12, 0.42, w - 0.74, 2.75, 0.06, c, c, 0.1); for (let y = 0.4; y < 2.8; y += 0.28) L.box(w / 2, y, 0.38, w - 0.76, 0.03, 0.03, shade(c, 0.8), shade(c, 1.2), 0, true);
@@ -101,14 +104,6 @@ function house(b: Builder, l: Lot, R: RNG) {
     const zf = bal1 ? -0.86 : -0.02, dep = bal1 ? 0.08 : 0.34, yb = bal1 ? gh - 0.14 : gh - 0.42;
     L.box(w / 2, yb, zf - dep / 2, w - 0.5, 0.78, dep, 0x2a2c30, 0x2a2c30, 0, true);
     b.signAt(w / 2, yb + 0.04, zf - dep - 0.012, w - 0.62, 0.7, shop.name, shop.st2, 0, -1, 64);
-    if (shop.blade) {
-      // biển dọc chìa ra đường: phải vượt qua ban công nhà mình lẫn nhà bên cạnh thì đi dọc phố mới đọc được
-      const sx = shop.blade, zc = -1.32, txt = shop.name.split(' ').slice(0, 3).join(' ');
-      L.box(sx, gh + 0.4, zc, 0.08, 2.2, 0.7, 0x2a2c30, 0x2a2c30, 0, true);
-      for (const by of [gh + 0.75, gh + 2.2]) L.box(sx, by, -0.48, 0.04, 0.04, 0.98, 0x3a3d42, undefined, 0, true);
-      b.signAt(sx - 0.052, gh + 0.45, zc, 0.62, 2.1, txt, { ...shop.st2, vertical: true }, -1, 0, 64, false);
-      b.signAt(sx + 0.052, gh + 0.45, zc, 0.62, 2.1, txt, { ...shop.st2, vertical: true }, 1, 0, 64, false);
-    }
   }
   // mái
   if (poor && R.chance(0.6)) { L.quad(w, H, -0.3, 0, H, -0.3, 0, H + 1.1, d / 2, w, H + 1.1, d / 2, 0xb5553a); L.quad(0, H, d, w, H, d, w, H + 1.1, d / 2, 0, H + 1.1, d / 2, 0xa24a32); }

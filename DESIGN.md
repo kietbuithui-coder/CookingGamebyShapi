@@ -19,16 +19,16 @@ Một vòng chơi trọn vẹn và thật sự chạy được: **tay trắng �
 
 Hai nguyên tắc giữ cho mã kiểm thử được:
 
-1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 278 bài kiểm thử chạy trong Node trong chưa tới 3 giây.
+1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 388 bài kiểm thử (28 tệp) chạy trong Node trong khoảng 7 giây.
 2. **Mọi ngẫu nhiên trong luật chơi nhận một `RNG` có hạt giống** làm tham số cuối, nên kết quả kiểm thử lặp lại được.
 
 Vòng lặp chính (`src/main.ts`): đọc điều khiển → `advance()` cho thời gian game trôi (0,75 phút game mỗi giây thật, một ngày = 32 phút thật; khi ngủ 48 phút game mỗi giây) → cập nhật người chơi, NPC, quầy, nấu ăn, môi trường → vẽ. `dt` bị chặn ở 50 ms nên máy rất chậm thì game chạy chậm lại chứ không nhảy cóc.
 
 ## 3. Thế giới
 
-- 3×3 ô phố, mỗi ô 46 m, đường rộng 7 m, vỉa hè 3 m; thêm dải gầm cầu vượt phía nam. 146 lô đất, 270 nút đường đi (ba công trình mới rộng hơn nên thay chỗ của ba nhà ống).
+- 3×3 ô phố, mỗi ô 46 m, đường rộng 7 m, vỉa hè 3 m; thêm dải gầm cầu vượt phía nam. 144 lô đất (121 ô đất phân biệt — vài lô bị thay khi dựng tiệm cắt tóc, tiệm thời trang và các mặt bằng lớn), 268 nút đường đi.
 - 10 khu với độ giàu và độ an toàn khác nhau; lượng người theo giờ lấy từ `hourCurve(giờ, khu)`.
-- 4 chỗ bán: Hẻm Công Nhân (miễn phí, ×0,85 người qua lại), Cổng Công Viên (20.000₫, ×1,05), Cổng Chợ (30.000₫, ×1,35), Phố Văn Phòng (60.000₫, ×1,25, cần xe đẩy).
+- 6 chỗ bán: Hẻm Công Nhân (miễn phí, ×0,85 người qua lại), Cổng Công Viên (20.000₫, ×1,05), Cổng Chợ (30.000₫, ×1,35), Phố Văn Phòng (60.000₫, ×1,25, cần xe đẩy), và hai **mặt bằng có sân** cho quán ăn nhỏ trở lên: Mặt bằng Phố Văn Phòng (160.000₫, ×1,45, cần bậc 4) và Mặt bằng Khu Căn Hộ (120.000₫, ×1,30, cần bậc 4).
 - Hình học tĩnh được gộp sẵn theo từng khu thành vài lưới lớn; biển hiệu vẽ chung vào một tấm atlas. Nhân vật là khung khối hộp có khuôn mặt vẽ từ atlas.
 - **Không để hai mặt trùng phẳng.** Hai mặt cùng hướng nằm đúng một mặt phẳng sẽ tranh nhau hiển thị (nhấp nháy). Vỏ nhà (`shell`) bỏ mặt trong của tường bao vì lớp lót nội thất đã phủ đúng chỗ đó (`MB.box(..., skip)` với các hằng `FACE`); thứ gì dán lên tường thì nhô ra ít nhất 1–2 cm; vật liệu biển hiệu dùng `polygonOffset` để thắng tấm nền khi nhìn từ xa. `tools/probe/steps/audit.mjs` dò lại toàn thành phố.
 - **Biển hiệu phải đọc được từ dưới đường.** `Builder.signAt` ghi mọi biển đủ lớn vào `Builder.signs`. Biển cửa hàng treo ở mặt trước ban công tầng 1 (nếu có) hoặc là hộp đèn nhô khỏi mép mái; biển dọc chìa ra ngoài tầm ban công. Cây vỉa hè hỏi `signTopBehind()`: sau cây có biển thì trồng dáng thân cao (tán trên 4,8 m), biển cao quá 4,78 m thì để trống chỗ đó. Cây bị bỏ vẫn tiêu đúng số lần gọi ngẫu nhiên nên phần còn lại của thành phố không đổi.
@@ -470,8 +470,7 @@ người bán. Bấm V khi chưa bật góc nhìn thứ ba thì toast nhắc —
 
 `TIERS[5]` (`src/data/gear.ts`): chứa 200 kg, giữ lạnh 70 kg, hàng đợi 12, bày 20 món, 40 khay, độ hiện 1,6.
 Đồ nghề `quanngoi` giá 58.000.000₫ ở tiệm Đồ Nghề Ba Tài, đòi có **quán ăn nhỏ (bậc 4)** trước. Dựng tại hai mặt
-bằng có sân (`matbang_tb` Phố Văn Phòng 160.000₫/ngày, `matbang_dc` Khu Căn Hộ 120.000₫/ngày). `FUTURE_TIERS`
-nay chỉ còn hai bậc (`Nhà hàng bình dân`, `Chuỗi cửa hàng`).
+bằng có sân (`matbang_tb` Phố Văn Phòng 160.000₫/ngày, `matbang_dc` Khu Căn Hộ 120.000₫/ngày). Bậc 6 xem mục 4.26, bậc 7 (chuỗi cửa hàng) xem mục 4.27 — `FUTURE_TIERS` nay rỗng.
 
 **Mô hình** (`StallSys.rebuild`): quầy gỗ dài 5,6 m mặt đá + yếm đỏ, hiên mái tôn xanh 6,9 × 5,9 m có diềm vàng,
 hai vách thấp hai bên, hai bồn cây phía trước chừa lối vào rộng ở giữa, nền gạch bông ca-rô đỏ–kem, quầy thu ngân
@@ -499,6 +498,233 @@ kiên nhẫn ×1,8 × `helperPatience`, câu thoại lấy từ `LINES.order_mor
 bán thêm phần tráng miệng đi!"*…). Khi giao món đầu mà khách gọi thêm thì khách **vẫn ngồi tại ghế** chờ món thứ hai;
 ăn xong món thứ hai mới đứng dậy ra về.
 
+### 4.26 Bậc 6 — nhà hàng bình dân, đặt bàn trước, phụ bếp và khách đoàn
+
+`TIERS[6]` (`src/data/gear.ts`): chứa 280 kg, giữ lạnh 100 kg, hàng đợi 16, bày 26 món, 56 khay, độ hiện 1,85.
+Đồ nghề `nhahang` giá 145.000.000₫ ở tiệm Đồ Nghề Ba Tài, đòi có **quán có chỗ ngồi (bậc 5)** trước. Dựng ở hai
+**mặt bằng** có sân như bậc 4–5 (`matbang_tb` 160.000₫/ngày, `matbang_dc` 120.000₫/ngày). Bậc cuối (chuỗi cửa
+hàng) xem mục 4.27 — `FUTURE_TIERS` nay rỗng.
+
+**Trong nhà kín.** `isRestaurant(g)` = `tier >= 6` là cờ duy nhất cho cả cụm tính năng dưới đây — đừng so sánh
+`tier === 6` rải rác. Nhờ `isRestaurant`, ban đêm không có đèn chỉ còn ×0,72 sức hút (bậc ≤ 5 là ×0,3) và trời mưa
+**không mất khách** (`stallAppeal`: `wx.rain > 0,3` ⇒ ×1,0 thay vì ×0,45); `dieu_hoa` cộng thêm ×1,18 và `wc_lavabo`
+cộng điểm hài lòng cho nhóm khó tính. `seatCount(g)` trả **8** (4 bàn), `dineIn(g)` vẫn `true` nên khách ăn tại chỗ,
+ngồi lâu ×1,9 và vẫn gọi thêm nước/tráng miệng như mục 4.25.
+
+**Nhân sự (tối đa 4 người).** `maxHelpers = 2` (phục vụ) và `maxSous = 2` (phụ bếp) khi là nhà hàng, mỗi slot lưu
+riêng (`help`/`help2`, `sous`/`sous2` trong `Game`; slot 2 chỉ có hiệu lực khi `isRestaurant`). `helperPatience`
+cộng ×0,28 khi có người phụ quầy thứ hai và ×0,22 khi có `dieu_hoa`. `sousGate(g)` chặn thuê phụ bếp dưới bậc 6 với
+lý do hiện cho người chơi; `hireSous` trừ **một ngày lương** ngay (95.000–110.000₫ tuỳ người trong `SOUS_POOL`),
+`fireSous(g, slot)` cho nghỉ sạch. Sang ngày, `newDay` trừ lương phụ bếp; thiếu tiền thì người đó nghỉ và có toast.
+
+**Phụ bếp tự làm (`sousWork`).** Gọi mỗi ~18–22 giây khi quầy đang mở: (1) ưu tiên **sơ chế** một món trong thực đơn
+có bước sơ chế mà lượng sơ chế sẵn còn dưới 2 phần, (2) nếu không thì **ra sẵn 1 phần** cho món còn dưới 2 phần trên
+khay và khay còn chỗ. Cả hai đều kiểm **nhiên liệu trước khi tiêu** (`hasFuelFor`) nên không bao giờ rò nguyên liệu
+khi hết gas/than; chất lượng do phụ bếp làm thấp hơn tay người chơi (≈0,76–0,93 nhân dần theo cấp tay nghề).
+
+**Đặt bàn trước (`createBooking`, `acceptBooking`, `rejectBooking`, `dueBooking`, `reservedSeats`, `expireBookings`).**
+Chỉ khi `isRestaurant`. Khách vãng lai gọi `createBooking` mỗi 85–135 giây nếu đang có dưới 2 phiếu; mỗi phiếu có
+tên, giới, nhóm người (văn phòng/phụ huynh/nhà giàu/du khách/công nhân), **cỡ 2–4 người**, ngày + giờ hẹn (làm tròn
+nửa giờ, trong khoảng 8h–21h), món dự kiến và **tiền cọc 12.000₫/người** (làm tròn nghìn). Trần `BOOKING_MAX = 4`
+phiếu đang mở. Người chơi **nhận** (giữ chỗ) hay **từ chối** trong Quầy › Nhân sự & Đặt bàn. `reservedSeats` trừ số
+ghế đã giữ khỏi chỗ trống khi đón khách thường, nên bàn đặt trước không bị người khác ngồi mất. Đến giờ hẹn ±(15
+phút trước, 60 phút sau) thì khách tới và được xếp vào đúng số ghế; quá hẹn mà chưa đón ⇒ `expireBookings` trả về
+phiếu lỡ, người chơi **mất 0,5 uy tín** kèm toast cảnh báo.
+
+**Khách đoàn (`decideGroup`).** Ở bậc 6, mỗi lượt sinh khách có 24% là **đoàn 3–4 người** (4 người nếu còn đủ 4 ghế
+trống và đủ hàng chờ, xác suất 45%) — nhưng chỉ khi còn ≥ 3 ghế trống sau khi trừ `reservedSeats`. Cả đoàn **gọi
+chung một lượt**: `Order.group = size`, `Order.n` = số phần gọi (kẹp theo lượng sẵn có và ngân sách nhóm
+`budget × size`), câu gọi có nhắc số người. Món nào còn đủ cho cả đoàn được nhân ưu tiên ×1,6 nên khách đoàn ít khi
+gọi món chỉ còn 1–2 phần.
+
+### 4.27 Bậc 7 — chuỗi cửa hàng: điểm bán thứ hai, người trông coi và sổ từng điểm
+
+`TIERS[7]` (`chuoi`, `src/data/gear.ts`): chứa 320 kg, giữ lạnh 120 kg, hàng đợi 18, bày 30 món, 64 khay, độ hiện 2,0.
+Đồ nghề `chuoi` giá **320.000.000₫** ở tiệm Đồ Nghề Ba Tài, đòi **nhà hàng bình dân (bậc 6)** trước. Đây là bậc cuối:
+`FUTURE_TIERS` nay là mảng rỗng. `isChain(g)` = `tier >= 7` là cờ duy nhất cho cụm tính năng dưới đây.
+
+**Chi nhánh là gì.** `Game.branch` (`Branch`, `src/sim/state.ts`) là **một** điểm bán thứ hai, **không** phải quầy thứ
+hai có khách 3D: người chơi vẫn bán ở quầy chính, còn chi nhánh do **người trông coi** bán hộ các món đã nấu sẵn ở
+quầy chính (chuyển sang theo từng món). Nhờ vậy toàn bộ luồng khách, hàng đợi, chỗ ngồi hiện có **không phải sửa** —
+chi nhánh chỉ có một vòng tính theo phút.
+
+**Chỗ đặt (`BRANCH_SITES`).** Ba điểm cố định trong thành phố, khác nhau về tiền thuê và sức hút:
+
+| id | Tên | Thuê/ngày | Sức hút |
+|---|---|---|---|
+| `cho` | Sát cổng chợ | 120.000₫ | 1,15 |
+| `vp` | Phố văn phòng | 150.000₫ | 1,25 |
+| `cv` | Cổng công viên | 90.000₫ | 0,95 |
+
+`branchGate(g)` kiểm: đã bậc 7, chưa có chi nhánh, đủ tiền **thuê ngày đầu**; `openBranch(g, site)` trừ tiền thuê ngày
+đầu rồi tạo `Branch { spot, rent, open: true, keeper: null, ready: [], led, tot, hist }`. `closeBranch(g)` dọn chi
+nhánh, trả lại **một nửa** tiền thuê ngày đầu và bỏ toàn bộ món đang để ở đó (món đã nấu thì không mang về được).
+
+**Người trông coi (`KEEPER_POOL`, `src/data/people.ts`).** Ba ứng viên cố định có tên – giới – ngoại hình – lương
+riêng (88.000–100.000₫/ngày). `hireKeeper` / `fireKeeper`; `keeper.wage` trả mỗi đầu ngày cùng tiền thuê. Không có
+người trông coi thì chi nhánh **không bán** (`branchSelling(g)` = `false`) — món để đó vẫn hao tươi theo ngày.
+
+**Chuyển món (`moveToBranch` / `moveFromBranch`).** Chỉ chuyển **món đã nấu sẵn** (`stall.ready`), theo từng phần,
+không chuyển nguyên liệu. Trần `BRANCH_TRAY_CAP = 6` loại món và `BRANCH_READY_CAP = 24` phần ở chi nhánh; chuyển
+ngược lại thì bị chặn bởi trần khay của quầy chính. Mỗi phần giữ nguyên `q` (độ tươi) và `cost` để tính lãi.
+
+**Bán hàng (`branchTick`).** Gọi từ `advance()` (mỗi phút một bước, `steps = clamp(round(dm), 1, 720)` nên ngủ dài hay
+tua nhanh vẫn không mất doanh thu) và **không** gọi trong `StallSys.update` (thời gian đã trôi qua `advance`).
+Mỗi phút: `p = base × hourCurve(h) × site.pull × (open ? 1 : 0)`, bán 1 phần nếu `chance(p)`, giá = giá bán đang đặt
+của món × hệ số tươi, cộng **tip 16%** khi `q ≥ 0,8`. Doanh thu vào `b.led.revenue`, tip vào `b.led.tips`; sổ của
+người chơi (`g.led.revenue`) **không** cộng vì đây là tiền của điểm thứ hai — chỉ tổng kết cuối ngày mới nhập vào
+`g.hist` qua tiền mặt. Món hết hoặc `q` cạn thì thôi bán.
+
+**Đầu ngày (`branchNewDay`).** Chạy trong `newDay()` **trước** `g.hist.push(g.led)` để sổ ngày vừa khoá còn nguyên số:
+ghi một dòng `b.hist` (tối đa 8 ngày: doanh thu, tip, số phần bán, số món), cộng dồn `b.tot`, trừ **tiền thuê + lương**
+vào tiền mặt, bỏ món ế (`ready` về rỗng — món để qua đêm hỏng), rồi mở lại `b.led` từ 0 và `open = true`.
+
+**Nhìn thấy trong thành phố.** `StallSys.rebuildBranch()` dựng ở toạ độ `BRANCH_SITES[i].spot` một quầy gỗ nhỏ 1,9 m
+có yếm đỏ, mái hiên sọc xanh–trắng, bảng hiệu đỏ *CHI NHÁNH · ĐANG BÁN* (hoặc *· ĐÓNG*), khay món xếp dần theo lượng
+sẵn, thùng đá và ghế nhựa; cả cụm **ẩn khi người chơi ở xa hơn 90 m**. `StallSys.updateKeeper()` cho **một NPC** mang
+tên người trông coi đứng sau quầy ở `pose = 'serve'`, tự biến mất khi chi nhánh đóng / mất người / bị dẹp.
+
+**Chạm để mở sổ.** `interact.ts` thêm `Kind 'branch'` với bán kính 3,9 m quanh `StallSys.branchAnchor()`; nhãn hiện
+*Chi nhánh · đang bán / tạm đóng / chưa có người trông* kèm số phần sẵn. Chạm mở bảng `'branch'` (`src/ui/panels.ts`):
+sổ hôm nay (doanh thu, đã bán, tip, mất khách, chi hôm nay, tổng dồn), nút **thuê / cho nghỉ** người trông coi, nút
+**tạm đóng / mở lại**, danh sách món ở chi nhánh kèm nút *← về quầy*, danh sách món sẵn ở quầy chính kèm nút
+*1 về quầy* chuyển sang, 8 ngày lịch sử và nút **trả mặt bằng**. Tab Nhân sự ở quầy chính cũng có khối Chi nhánh và
+nút mở sổ; menu nói chuyện với Ba Tài có mục *Nói chuyện mở chi nhánh* / *Xem sổ chi nhánh*.
+
+**Bản lưu v14.** `SAVE_VERSION = 14`; bản lưu trước v14 hoặc thiếu `branch` ⇒ `branch = null`. `cleanBranch()` kẹp lại
+dữ liệu đọc lên: `rent` vô lý về 0, bỏ phần `ready` sai hình dạng hoặc quá trần, cắt `hist` còn 8 dòng, mọi số trong
+`led`/`tot` bị NaN thì về 0.
+
+**Menu ẩn để thử.** Nhóm “Mới nhất — Bậc 7” trong menu Test & Dịch chuyển (Cài đặt, bấm 7 lần chữ “Cài đặt”) có 9 mục:
+dựng chuỗi + chi nhánh ở từng chỗ (`setup_chuoi`, `_vp`, `_cv`), tới quầy chi nhánh, đổ đầy món sang chi nhánh, tua 3
+tiếng cho người trông coi bán, mở sổ, đổi người trông coi, trả mặt bằng. Nhóm “Địa điểm — tele nhanh” chỉ giữ các mục
+dịch chuyển. Mục test của các lượt cũ đã bị xoá; `tests/devpoints.test.ts` khoá lại quy tắc này.
+
+**Kiểm thử.** `tests/chuoi.test.ts` (25 bài): dữ liệu `TIERS[7]`/`GEAR.chuoi`/`BRANCH_SITES`/`KEEPER_POOL`, chặn mở
+chi nhánh khi chưa bậc 7 hoặc thiếu tiền, mở/đóng và hoàn tiền, thuê/đuổi người trông coi, chuyển món hai chiều và
+trần khay, `branchTick` bán đúng phần – đúng giá – có tip, `branchNewDay` ghi lịch sử + trừ tiền thuê/lương + bỏ món ế,
+nâng cấp bản lưu v13 → v14 cùng `cleanBranch`, và một lượt chạy bất biến (tiền mặt không âm, tồn kho không âm).
+
+### 4.28 Giao người làm đi chợ mua nguyên liệu (phụ quầy · bếp trưởng · người trông coi)
+
+Trước đây muốn có nguyên liệu thì **chỉ người chơi** tự ra sạp lấy từng món. Từ bản lưu v15, ba loại người làm đi
+chợ thay được: **phụ quầy** (`Game.help`), **bếp trưởng / bếp phó** (`Game.sous`, `Game.sous2`) và **người trông coi
+chi nhánh** (`Game.branch.keeper`). Dữ liệu nằm ở `Game.errands: Errand[]` (`src/sim/state.ts`), luật ở
+`src/sim/rules.ts` mục *Giao người làm đi chợ*.
+
+**Bốn slot cố định.** `slot` 0 = phụ quầy, 1–2 = bếp trưởng thứ nhất/thứ hai, 3 = người trông coi chi nhánh.
+`errandWho(g, slot)` trả về tên + chức danh, `canErrand(g, slot)` chặn khi chưa thuê người hoặc **người đó đang đi
+chuyến khác** (mỗi người một chuyến, tối đa 4 chuyến cùng lúc).
+
+**Báo giá trước, trả tiền trước.** Người chơi chọn *món cần nấu* (một món, hoặc "đủ nguyên liệu 6 món đang bán") chứ
+không tự chọn từng món hàng: `errandPlanFor(g, r, portions)` / `errandPlanForAll(g, recipes)` tính **đúng phần còn
+thiếu** so với kho quầy + túi, rồi `errandQuote(g, plan)` tìm cho mỗi nguyên liệu **cửa hàng đang mở bán món đó và rẻ
+nhất** (`errandShopFor`, dùng lại `shopOpen` / `shopPrice` / `shopFresh` / `shopHas` nên vẫn ăn theo giờ mở cửa, xả
+hàng cuối buổi, sự kiện tăng giá, hàng hết trong ngày). Nguyên liệu nào giờ này không đâu bán thì vào `missing` và
+**không** tính tiền. Chuyến bị chặn ở `ERRAND_MAX = 2.000.000₫` để không mang cả gia tài ra chợ.
+
+**Đi và về theo thời gian thật.** `errandLegs(đường chim bay tới cổng chợ)` → 12–68 phút khứ hồi; `errandTick(g, dm)`
+được gọi trong `advance()` nên ngủ trưa, ngồi quán net hay tua nhanh đều đẩy chuyến đi đúng như thời gian thật. Hết
+nửa đường (`back = true`) là đã mua xong; về tới nơi thì hàng được `addStack` vào **kho quầy** (giữ nguyên độ tươi và
+giá vốn đã trả), có toast + `bus.emit('save')`. Người trông coi chi nhánh cũng chất hàng về kho quầy chứ không để ở
+chi nhánh, vì chi nhánh chỉ nhận món đã nấu và không có tủ lạnh.
+
+**Trong lúc đi thì không đứng quầy.** `StallSys.errandHide(slot)` làm `updateHelper` / `updateSous` / `updateKeeper`
+coi như người đó vắng mặt, nên NPC biến khỏi quầy (và Má Bảy rời quầy chi nhánh) cho tới khi về. Người đi chợ vẫn
+dùng `errandSpot(g, e)` để biết đang ở đâu trên đường (dùng cho hiệu ứng/toast, không spawn thêm NPC).
+
+**Tiền và huỷ.** Trả trước toàn bộ khi giao (`spend(..., 'cogs')`), nên sổ thu chi thấy ngay khoản giá vốn. `cancelErrand`
+giữa đường hoàn **85%** (đi đường rồi), `errandsNewDay` trong `newDay()` huỷ mọi chuyến còn dở và hoàn 85% — không để
+chuyến treo qua đêm.
+
+**Giao diện.** Bảng `'errand'` (`src/ui/panels.ts`) có 4 nút chọn người, dãy nút chọn món, danh sách hàng kèm sạp + độ
+tươi + đơn giá, cảnh báo món không đâu bán, tổng tiền và nút giao. Vào từ 3 chỗ: tab **Nhân sự** của quầy (khối "Đi
+chợ mua nguyên liệu"), hội thoại **phụ quầy** (`talkHelper`) và **phụ bếp** (`talkSous`) — cả hai qua
+`StallSys.errandOpt(slot)`; nói chuyện với người đang đi chợ thì mở bảng kèm số phút còn lại. `UI.panel(name, arg)` nay
+nhận tham số phụ và `UI.reopenPanel` vẽ lại bảng giữ nguyên lựa chọn (`modalArg`), nhờ vậy đổi người / đổi món không
+đóng bảng.
+
+**Sửa kèm: người trông coi chi nhánh đứng lọt trong quầy.** Toạ độ cũ đặt Má Bảy ở `lz = -0.95` với quầy sâu 0.8 m nên
+thân người nằm trong khối gỗ. Nay đứng ở `lz = -1.25` (sau quầy) và **quay mặt ra phía khách** (cùng hướng với quầy,
+trước đây quay vào trong). Probe `tools/probe/steps/dicho.mjs` đo lại `localZ = -1.25` và lệch hướng < 0.35 rad.
+
+**Kiểm thử.** `tests/dicho.test.ts` (17 bài): ai đi được theo từng slot, một người một chuyến, báo giá chỉ tính phần
+thiếu + đúng sạp đang mở, kho đã đủ thì không mua, giờ không đâu bán thì báo thiếu, gộp nhiều món không trùng nguyên
+liệu, trả tiền trước + hàng về kho + hết chuyến, thiếu tiền không trừ đồng nào, huỷ hoàn 85%, `errandsNewDay`, `advance`
+đẩy chuyến, toạ độ `errandSpot` chạy ra chợ rồi về, `cleanErrands` kẹp dữ liệu hỏng, và một lượt 5 ngày liên tục.
+
+### 4.29 Báo cáo sắp hết nguyên liệu của người làm & quyền tự duyệt đặt bàn
+
+**Báo cáo (`staffReport`).** Người làm tự canh kho thay người chơi. `staffReport(g, slot)` đọc **thực đơn đang bán**
+(`menuOf`) và với mỗi món tính `finishPossible` — nấu thêm được bao nhiêu phần; món nào ≤ 1 phần thì vào danh sách
+`dishes`, kèm các nguyên liệu còn thiếu (`INGS` + số còn lại / số cần cho 2 phần, tối đa 6 dòng). Tiền đi chợ lấy từ
+chính `errandPlanForAll` + `errandQuote` của mục 4.28, nên con số trong báo cáo **đúng bằng** con số trên nút giao chợ.
+`urgent` bật khi có ≥ 2 món sắp hết hoặc có nguyên liệu đã về 0. Báo cáo **chỉ đọc**: không trừ tiền, không đụng kho.
+`staffReports(g)` gom phụ quầy + bếp trưởng + bếp phó + người trông coi chi nhánh (bỏ người đang đi chợ), xếp bếp
+trưởng lên trước vì đó là người lo bếp. `lowStockCount(g)` đếm số món đang bán sắp hết — dùng cho chip trên HUD.
+
+**Nhắc tự động.** `StallSys.staffReportTick` chạy mỗi 25 giây khi quầy đã dựng và thực đơn có món: nếu số món sắp hết
+đổi (khoá `low|giờ/2`) thì người làm nói một câu tại chỗ (`ctx.npcs.say`) và hiện toast kèm câu gợi ý đi chợ. Quầy
+**tạm đóng vẫn báo** — vì đó là lúc cần đi mua nhất.
+
+**Bảng `'report'`.** "Báo cáo & gợi ý của người làm": mỗi người một thẻ gồm câu nói, danh sách món sắp hết (kèm số
+phần còn nấu được), danh sách nguyên liệu (còn/cần), và nút **Giao … đi chợ — số tiền** mở thẳng bảng `'errand'` với
+đúng người và đúng món; cuối bảng là danh sách cả thực đơn kèm nhãn `sắp hết / ít / ok`. Vào từ 3 chỗ: chip
+**“Sắp hết đồ N món · xem báo cáo”** trên HUD (dải sự kiện), nút **Mở báo cáo** trong tab Nhân sự, và menu ẩn.
+
+**Quyền tự duyệt đặt bàn.** `setAutoBook(g, on)` ghi `g.flags.autoBook` (dùng `flags` nên **không cần đổi bản lưu**),
+`autoBookOn(g)` chỉ trả `true` khi đã có bếp trưởng (`canAutoBook`). Khi bật, `createBooking` tạo phiếu ở trạng thái
+`accepted` luôn thay vì `pending`; bật giữa lúc đang có phiếu chờ thì các phiếu đó được nhận luôn. Bàn tự duyệt vẫn
+giữ chỗ như bàn nhận tay và **vẫn bị trừ 0,5 uy tín nếu lỡ hẹn** (`expireBookings`) — quyền tự duyệt không miễn trách
+nhiệm. Nút bật/tắt có ở tab **Nhân sự** và trong bảng Báo cáo; toast tạo phiếu đổi câu thành "… đã tự nhận bàn".
+
+**Kiểm thử.** `tests/baocao.test.ts` (12 bài): kho đầy thì báo "đủ đồ", thiếu thì chỉ đúng món + nguyên liệu + tiền,
+chức danh theo slot và người chưa thuê thì không báo, người đang đi chợ không báo, thứ tự bếp trước phụ quầy, chưa
+bật món thì không bịa nguyên liệu, `lowStockCount`, báo cáo không đổi tiền/kho, và phần tự duyệt: chưa có bếp thì
+không bật được, bật → phiếu `accepted` / tắt → `pending`, phiếu tự duyệt vẫn bị trừ uy tín khi lỡ hẹn, cờ nằm trong
+`flags` nên qua `migrate()` vẫn giữ.
+
+### 4.30 Vựa ve chai thứ hai & bấm chuông thì chủ nhà mở cửa
+
+**Vựa ve chai Bà Chín.** `JUNK_LIST` vẫn chỉ có 7 loại với trường `where`, nhưng `SCRAP_SITES = ['scrap','scrap2']`
+(`src/data/gear.ts`) khai báo **hai** vựa thu mua ve chai: vựa Tư Rác ở lô `02S` (Xóm Lao Động, 16 m) và vựa **Bà Chín**
+ở lô `21E` (Khu Dân Cư, 7 m) — ngay đầu đường, người chơi đi qua lại giữa khu căn hộ và khu dân cư là gặp. Hàm
+`junkAt(site, junk)` gói luật "ai mua gì": mọi vựa trong `SCRAP_SITES` thu nhựa/lon/giấy/sắt (`where === 'scrap'`),
+còn tiệm cầm đồ chỉ thu đồ giá trị. Nhờ vậy `sellJunk(g, site)` và hộp thoại `case 'scrap' | 'scrap2' | 'pawn'` dùng
+chung một luật, không phải sửa `JUNK_LIST` (bản lưu cũ vẫn đọc được). `PLACE_HOURS.scrap2 = [6,19]` như vựa cũ; chủ
+vựa là `FIXED.scrap2` — **Bà Chín Ve Chai** — với neo `v_scrap2` để bán và để tele nhanh. Lô 7 m dùng lại đúng mô
+hình bãi ve chai của lô 16 m nhưng co toạ độ theo bề ngang lô (`S()` trong `places.ts`), nên bảng hiệu, cân bàn, đống
+phế liệu không tràn sang nhà bên cạnh. `sellJunk` cộng tiền qua `earn(...,'side')` rồi tự cộng `g.tot.scrap` (mục riêng ở
+bảng tổng kết) — bài kiểm thử canh đúng hai việc đó, không cộng trùng.
+
+**Bấm chuông thì cửa mở.** Lỗi cũ: `openBellDoor` lọc `this.doors` theo `d.d.home`, nhưng `DoorDef` (`src/world/build.ts`)
+**không có trường `home`** — nó đánh dấu căn bằng `lock` (`door_canho … lock: 'canho'`). Vì thế vòng lặp không khớp
+được cánh cửa nào, `want` không được đặt, cửa đứng im dù chủ nhà vẫn bước ra nói chuyện. Nay `Interact.doorHome(d)`
+trả `d.lock`; `openBellDoor` đặt `want = 1` + `bellUntil = time + 16` cho **đúng** cửa của căn, `update()` so cũng bằng
+`doorHome` khi hết hạn (chỉ tự đóng nếu người chơi không ở trong căn đó). Cửa xoay mở 86° trong ~1 giây (đo bằng
+probe: `rotY` đổi −77°, `box.on` → `false` nên đi qua được), hết 16 giây tự đóng lại. Chủ nhà vẫn ra ngoài hiên và
+bấm chuông **ngoài giờ** vẫn mở cửa; gợi ý trên nút đổi theo giờ: "Ngoài giờ (6h–22h) nhưng bấm chuông thì chủ nhà
+vẫn ra mở cửa". Cùng cơ chế này dùng cho nhà riêng và cửa hàng.
+
+**Chủ nhà bước ra đúng ô cửa.** Trước đây `ringBell` lấy **neo chuông** làm tâm rồi đẩy nhân vật ra theo hướng người chơi,
+nên với cửa lệch khỏi neo (căn hộ An Bình: cửa `(6,2 … 8,0)` còn neo `bell_canho` ở `x 5,05`) chủ nhà hiện ra **xuyên
+tường**, chỗ tấm biển “CĂN 102”, chứ không qua cánh cửa. Nay `Interact.bellDoor(homeId)` trả cánh cửa của căn đang mở to
+nhất; `ringBell` lấy **tâm ô cửa** (`bản lề + yaw * w/2`) và **pháp tuyến của cánh cửa**, tự chọn phía người chơi đang đứng
+làm phía ngoài, rồi mới đặt điểm đi ra (+0,9 m) và điểm xuất phát (−1,45 m). Nhân vật vì thế **đi qua ô cửa**: probe đo
+được lúc đầu ở phía trong (cách mặt cửa −1,3 m), sau 1,3 giây đã ở phía ngoài, lệch dọc theo ô cửa **0 m**. Đồng thời
+chờ **1,62 giây** (trước 0,62) mới mở lời thoại để cửa kịp xoay mở, và lời nhắc tại chỗ dài 3,2 giây.
+
+**Bỏ biển dọc chìa ra đường.** Mỗi tiệm ở dãy phố sinh ngẫu nhiên có 30% gắn thêm biển dọc “Tiệm Vàng Kim” chìa ra
+lòng đường (`shop.blade`, `src/world/city.ts`). Nó vượt qua ban công nhà mình nhưng lại **che mất biển ngang của tiệm bên
+cạnh** và che cả mặt tiền — người chơi phản ánh. Nay bỏ hẳn; hai lần gọi `R.chance` vẫn giữ để cách bốc ngẫu nhiên của
+cả khu phố không đổi (không xáo tung toàn bộ thành phố đã quen mắt).
+
+**Kiểm thử.** `tests/vua2.test.ts` (11 bài): hai vựa là hai lô `kind: 'scrap'` ở hai khu khác nhau, mỗi vựa có chủ
+riêng và cùng giờ mở cửa, ve chai không bán nhầm ở tiệm cầm đồ, bán ở vựa nào cũng ra đúng giá và `tot.scrap` chỉ
+cộng một lần, bán vựa này không mất đồ của vựa kia, cộng thêm 3 bài canh chuyện cửa: cửa căn hộ An Bình có `lock`
+là `'canho'`, `openBellDoor` so theo `lock` (không còn `d.d.home`), chủ nhà ra mở cửa kể cả ngoài giờ, chủ nhà đi ra đúng ô cửa (so tâm cửa + pháp tuyến, chờ ≥ 1,2 giây mới nói), và
+không còn biển dọc chìa ra đường.
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
@@ -509,7 +735,7 @@ bán thêm phần tráng miệng đi!"*…). Khi giao món đầu mà khách g�
 
 ## 6. Lưu game
 
-`localStorage`, khoá `ganhhang.save.v1` (trạng thái) và `ganhhang.settings.v1` (cài đặt). Tự lưu sau việc quan trọng, mỗi 45 giây và khi rời trang. `SAVE_VERSION = 11`; `migrate()` nạp được bản lưu cũ thiếu trường và loại bỏ nguyên liệu không còn tồn tại. Bản lưu trước v4 chưa có sổ `met` nên được coi như đã quen hết người đứng quầy. Bản lưu trước v5 (chưa có bệnh viện) được nâng sức khoẻ lên 45 nếu đang ở 0 — nếu không, mở lên là ngất liền — và thêm sổ đồ thất lạc rỗng. Bản lưu trước v6 được cấp `wanted = 0` và `jailUntil = 0` (chưa ai biết mặt). Bản lưu trước v7 chưa có điện thoại (`phone = null`). Bản lưu trước v8 chưa có sổ phút ngồi quán net (`netDay = -1`, `netMin = 0`). Bản lưu trước v9 chưa có sổ ngày đua xe đạp (`raceDay = -1`, `raceWin = 0`). Bản lưu trước v10 chưa có người phụ việc (`help = null`); dữ liệu `help` hỏng cũng bị bỏ, và bản lưu cũ đã từng bán được hàng thì được ghi mốc `firstSale = 0`. Bản lưu trước v11 chưa có ngoại hình người chơi (`Game.look`): `migrate()` cấp `defaultLook()` theo giới tính của ván, còn `look` hỏng thì `cleanLook()` kẹp lại từng trường. Cài đặt có thêm `ui` (cỡ giao diện và cách xếp nút) và `cam3` (góc nhìn thứ ba); `cleanLayout()` làm sạch dữ liệu đọc lên.
+`localStorage`, khoá `ganhhang.save.v1` (trạng thái) và `ganhhang.settings.v1` (cài đặt). Tự lưu sau việc quan trọng, mỗi 45 giây và khi rời trang. `SAVE_VERSION = 15`; `migrate()` nạp được bản lưu cũ thiếu trường và loại bỏ nguyên liệu không còn tồn tại. Bản lưu trước v4 chưa có sổ `met` nên được coi như đã quen hết người đứng quầy. Bản lưu trước v5 (chưa có bệnh viện) được nâng sức khoẻ lên 45 nếu đang ở 0 — nếu không, mở lên là ngất liền — và thêm sổ đồ thất lạc rỗng. Bản lưu trước v6 được cấp `wanted = 0` và `jailUntil = 0` (chưa ai biết mặt). Bản lưu trước v7 chưa có điện thoại (`phone = null`). Bản lưu trước v8 chưa có sổ phút ngồi quán net (`netDay = -1`, `netMin = 0`). Bản lưu trước v9 chưa có sổ ngày đua xe đạp (`raceDay = -1`, `raceWin = 0`). Bản lưu trước v10 chưa có người phụ việc (`help = null`); dữ liệu `help` hỏng cũng bị bỏ, và bản lưu cũ đã từng bán được hàng thì được ghi mốc `firstSale = 0`. Bản lưu trước v11 chưa có ngoại hình người chơi (`Game.look`): `migrate()` cấp `defaultLook()` theo giới tính của ván, còn `look` hỏng thì `cleanLook()` kẹp lại từng trường. Bản lưu trước v12 chưa có nhà hàng bình dân (`sous = null`, `bookings = []`, `bookSeq = 1`); bản lưu trước v13 chưa có slot nhân sự thứ hai (`help2 = null`, `sous2 = null`). Bản lưu trước v14 chưa có chi nhánh (`branch = null`) — mở bậc 7 rồi mới mở được chi nhánh, và `cleanBranch()` kẹp lại dữ liệu chi nhánh đọc lên. Bản lưu trước v15 chưa có chuyến đi chợ (`errands = []`); `cleanErrands()` bỏ chuyến sai hình dạng và kẹp số phần/thời gian. Cài đặt có thêm `ui` (cỡ giao diện và cách xếp nút) và `cam3` (góc nhìn thứ ba); `cleanLayout()` làm sạch dữ liệu đọc lên.
 
 ## 7. Kiểm thử
 
@@ -527,6 +753,7 @@ bán thêm phần tráng miệng đi!"*…). Khi giao món đầu mà khách g�
 - `tests/net.test.ts` — quán net: giá theo phút và phụ thu phim, bốn gói giờ, hiệu ứng từng kiểu chơi, mỏi mắt sau 120 phút (tinh thần còn 45%, mất 2 sức khoẻ) và tính lại khi sang ngày, ngồi máy làm đói khát tụt sức, tinh thần không vượt 100, giờ mở cửa và số máy, sạc nhờ/nước ngọt, lô đất và ba nhân vật của quán, bản lưu v7 lên v8.
 - `tests/look.test.ts` — ngoại hình: 8 kiểu tóc liền id và giá tăng theo độ cầu kỳ, mọi bảng màu có giá dương và không trùng màu, giá trong tầm một buổi bán, `defaultLook` khác nhau nam/nữ, `cleanLook` chặn dữ liệu rác (kiểu tóc ngoài phạm vi, màu lẫn alpha, dáng người vô lý), bản lưu v10 lên v11, và hai người bán mới có đủ tên – nghề – lời thoại.
 - `tests/quanngoi.test.ts` — 18 bài về bậc 5 quán có chỗ ngồi: chỉ số `TIERS[5]` lớn hơn bậc 4, `FUTURE_TIERS` còn 2 bậc, mua chuỗi sạp → quán ăn nhỏ → quán có chỗ ngồi, dựng ở hai mặt bằng có sân, 6 ghế ăn tại chỗ (`seatCount` = 6, `dineIn` = true), bốn buổi trong ngày (`mealSlot`, `periodName`, `fitsPeriod`, `periodMenu`), khách ưu tiên món hợp buổi hơn ở bậc 5 mà vẫn giữ đa dạng thực đơn, gọi thêm nước/tráng miệng (`secondOrder`: chỉ khi ngồi ghế bậc 5, hài lòng ≥ 3,8★, đúng nhóm `drink`/`sweet`, không gọi lần 3, không áp cho nhân vật sự kiện), và nâng cấp bản lưu giữ nguyên bậc 5.
+- `tests/nhahang.test.ts` — 17 bài về bậc 6 nhà hàng bình dân: `TIERS[6]` rộng hơn bậc 5 về sức chứa/giữ lạnh/thực đơn/hàng chờ/độ hiện, `GEAR.nhahang` là đồ nghề bậc 6 đắt hơn quán có chỗ ngồi, 8 ghế (4 bàn) và cờ `isRestaurant`/`dineIn`, trong nhà kín không mất khách vì mưa và sáng hơn ban đêm, `sousGate` chỉ mở từ bậc 6, `hireSous` trừ ngày lương đầu và `fireSous` cho nghỉ sạch, `sousWork` tự sơ chế/ra món phụ và không rò nguyên liệu khi hết nhiên liệu, sang ngày trừ lương phụ bếp (thiếu tiền thì nghỉ), `createBooking`/`acceptBooking`/`reservedSeats`/`rejectBooking` và trần `BOOKING_MAX`, `decideGroup` cho đoàn 3–4 người (kể cả khi món còn ít hơn cỡ đoàn), và bản lưu v11 lên v13.
 - `tests/fun.test.ts` — bảng chỗ chơi (mã không trùng, có neo, có giờ hợp lệ, chơi lâu hơn thì lên tinh thần nhiều hơn) và thang mở công thức (cấp 1 mở đúng 1 món, cấp sau mở 2; luôn là món rẻ nhất còn thiếu; không vượt tay nghề; món sau không rẻ hơn món trước; cấp 10 mở đủ 60 món).
 
 Ba bài mới ở lượt 2: mỗi nhân vật phụ phải có tên, nhãn việc, câu mở đầu và ít nhất hai câu chuyện đủ dài; bảng `RUDE` chỉ được có tối đa 8 nhóm và phải có đủ lời cho cả năm kiểu (giấy, khạc nhổ, mắng, đuổi, khạc nhổ khi bị xin tiền); khách quen không được trùng id hay tên và phải có cả tên kiểu học sinh.
@@ -546,7 +773,7 @@ Người chơi đã thử bản đầu và gửi danh sách góp ý; việc đư
 Còn lại:
 
 1. **Đã xong 3 kiểu chỗ ở mới: căn hộ, nhà riêng, cửa hàng kiêm nhà ở** (8/8) — xem mục 4.13.
-2. **Đã xong sạp cố định (bậc 3)** — mục 4.12, **quán ăn nhỏ (bậc 4)** — mục 4.22, và **quán có chỗ ngồi (bậc 5)** — mục 4.25. Việc kế tiếp của nhánh này: nhà hàng bình dân (bậc 6), chuỗi cửa hàng (bậc 7) trong `FUTURE_TIERS`.
+2. **Đã xong sạp cố định (bậc 3)** — mục 4.12, **quán ăn nhỏ (bậc 4)** — mục 4.22, và **quán có chỗ ngồi (bậc 5)** — mục 4.25, **nhà hàng bình dân (bậc 6)** — mục 4.26, **chuỗi cửa hàng (bậc 7)** — mục 4.27, **giao người làm đi chợ** — mục 4.28, **báo cáo sắp hết đồ + tự duyệt đặt bàn** — mục 4.29, và **vựa ve chai thứ hai + bấm chuông mở cửa** — mục 4.30. Nhánh kinh doanh đã đủ **7/7 bậc**; việc kế tiếp là hệ thống băng nhóm.
 3. Hệ thống băng nhóm.
 4. Danh sách đầy đủ những gì còn lại nằm ở `TODO.md`.
 

@@ -336,7 +336,8 @@ kính đen, và ngoại hình vào bản lưu v11 — chạy cả desktop 1500×
 ## Lượt 16 — Bậc 5: quán có chỗ ngồi, thực đơn theo buổi, gọi thêm món ✅ đã xong
 
 Tiếp nhánh kinh doanh sau bậc 4 (quán ăn nhỏ): mở **bậc 5 — Quán có chỗ ngồi** (`quanngoi`, 58.000.000₫ ở tiệm
-Đồ Nghề Ba Tài, cần có quán ăn nhỏ trước). `FUTURE_TIERS` còn lại 2 bậc (`Nhà hàng bình dân`, `Chuỗi cửa hàng`).
+Đồ Nghề Ba Tài, cần có quán ăn nhỏ trước). Lúc làm lượt này `FUTURE_TIERS` còn 2 bậc; hiện chỉ còn `Chuỗi cửa hàng`
+(bậc 6 đã xong trong mã, xem mục 4.26 của `DESIGN.md`).
 
 **Chỉ số và mặt bằng.** Chứa 200 kg, giữ lạnh 70 kg, bày **20 món**, 12 khách cùng lúc, 40 khay, độ thu hút 1,6.
 Dựng tại hai mặt bằng có sân (`matbang_tb` Phố Văn Phòng 160.000₫/ngày, `matbang_dc` Khu Căn Hộ 120.000₫/ngày).
@@ -361,8 +362,118 @@ có 32–54% cơ hội ngồi lại gọi thêm một món **nước uống** ho
 nguyên liệu (`o.more = true`, kiên nhẫn ×1,8 × `helperPatience`, câu thoại riêng trong `LINES.order_more`). Giao
 xong món thứ hai khách mới đứng dậy về.
 
-**Kiểm thử:** `tests/quanngoi.test.ts` 18 bài — tổng **278 bài / 18 tệp**. Probe `tools/probe/steps/quanngoi.mjs`:
+**Kiểm thử:** `tests/quanngoi.test.ts` 18 bài — lúc đó tổng **278 bài / 18 tệp**; hiện là **377 bài / 27 tệp**. Probe `tools/probe/steps/quanngoi.mjs`:
 mua `sap → quanan → quanngoi` ở tiệm Ba Tài → dựng ở Mặt bằng Khu Căn Hộ → mở bán, 6 khách ngồi vào 3 bàn gỗ trên
 nền gạch bông ca-rô → giao món cho 4 khách, khách ngồi lại gọi thêm trà đá (`more: true`) → bảng quầy hiện nhãn
 `hợp buổi này` / `ngoài buổi` → đóng quán, kiểm bản lưu v11 giữ nguyên bậc 5 và 6 ghế.
 
+---
+
+## Lượt 17 — Bậc 6: nhà hàng bình dân (mã đã xong, ghi chép bổ sung sau)
+
+Bậc 6 (`nhahang`, 145.000.000₫ ở tiệm Đồ Nghề Ba Tài, cần quán có chỗ ngồi trước) đã nằm trong mã cùng 17 bài
+kiểm thử của `tests/nhahang.test.ts`, nhưng chưa có mục kế hoạch riêng. Tài liệu chi tiết nay ở **`DESIGN.md` mục 4.26**:
+chứa 280 kg · giữ lạnh 100 kg · 26 món · 16 khách · 56 khay, 8 ghế trong nhà kín, không mất khách vì mưa/tối,
+tối đa 2 phục vụ + 2 phụ bếp, phụ bếp tự sơ chế/ra món phụ, đặt bàn trước (cọc 12.000₫/người, trần 4 phiếu, lỡ hẹn
+−0,5 uy tín) và khách đoàn 3–4 người gọi chung một lượt.
+
+**Còn lại của bậc 6:** chạy probe giao diện thật (`tools/probe/steps/nhahang.mjs`) ở cả 844×390 và 390×844 — hiện mới
+có test luật.
+
+---
+
+## Lượt 18 — Bậc 7: chuỗi cửa hàng, điểm bán thứ hai & người trông coi ✅ đã xong
+
+Bậc cuối của nhánh kinh doanh (`chuoi`, 320.000.000₫ ở tiệm Đồ Nghề Ba Tài, cần nhà hàng bình dân trước) — sau lượt
+này `FUTURE_TIERS` **rỗng** và nhánh kinh doanh đủ **7/7 bậc**. Tài liệu chi tiết ở **`DESIGN.md` mục 4.27**.
+
+**Một chi nhánh, không phải quầy thứ hai.** `Game.branch` mở ở một trong ba `BRANCH_SITES` (Sát cổng chợ 120.000₫/ngày
+· Phố văn phòng 150.000₫ · Cổng công viên 90.000₫), thuê theo ngày, trả cùng lương người trông coi đầu mỗi ngày.
+Người chơi vẫn bán ở quầy chính; chi nhánh bán hộ những **món đã nấu sẵn** được chuyển sang (`moveToBranch`, trần 6
+loại món / 24 phần). Nhờ vậy không phải nhân đôi vòng khách 3D — toàn bộ sửa đổi nằm gọn trong một vòng tính theo phút
+(`branchTick`, gọi từ `advance()` với `steps = clamp(round(dm), 1, 720)` nên ngủ dài/tua nhanh không mất doanh thu).
+
+**Người trông coi.** `KEEPER_POOL` 3 ứng viên (lương 88.000–100.000₫/ngày). Không thuê thì chi nhánh không bán; món để
+đó vẫn hao tươi. Trong thành phố có một NPC đứng sau quầy chi nhánh (`StallSys.updateKeeper`), quầy gỗ nhỏ + mái hiên
+sọc + bảng hiệu đỏ *CHI NHÁNH · ĐANG BÁN* và khay món xếp theo lượng sẵn, tự ẩn khi người chơi ở xa hơn 90 m.
+
+**Sổ từng điểm.** Chạm quầy chi nhánh (hoặc mở từ tab Nhân sự) ra bảng `'branch'`: doanh thu – đã bán – tip – mất khách
+của hôm nay, tổng dồn nhiều ngày, thuê/cho nghỉ người trông coi, tạm đóng/mở lại, chuyển món hai chiều, 8 ngày lịch sử
+và nút trả mặt bằng (hoàn nửa tiền thuê ngày đầu, bỏ món đang để đó).
+
+**Kiểm thử:** `tests/chuoi.test.ts` 24 bài + 1 bài sửa cho `tests/devpoints.test.ts` — tổng **348 bài / 25 tệp** (lượt 19 thêm 17 bài → 365/26);
+`npx tsc --noEmit`, `npm run build`, `npm run build:pages` sạch. Probe `tools/probe/steps/chuoi.mjs` chạy ở 844×390 và
+390×844: lên bậc 7 → mở chi nhánh Cổng Chợ → thuê người trông coi → chuyển 14 phần sang → chạm đúng quầy để mở sổ →
+tua 3 tiếng thấy bán hết 14 phần (280.000₫ + tip) → trả mặt bằng; không lỗi console. Menu ẩn (Cài đặt → bấm 7 lần chữ “Cài đặt”) được dọn lại: xoá hết mục test của lượt 14–17, thêm 9 mục cho bậc 7
+(dựng chi nhánh ở 3 chỗ, tới quầy, đổ món, tua 3 tiếng, mở sổ, đổi người trông, trả mặt bằng) và **chỉ giữ** nhóm
+“Địa điểm — tele nhanh”; probe `tools/probe/steps/devmenu.mjs` bấm lần lượt 17 mục, không lỗi.
+
+---
+
+## Lượt 19 — Giao người làm đi chợ mua nguyên liệu ✅ đã xong
+
+Người chơi không còn phải tự ra từng sạp: **phụ quầy, bếp trưởng/bếp phó và người trông coi chi nhánh** đi chợ thay.
+Chi tiết ở **`DESIGN.md` mục 4.28**.
+
+**Cách dùng.** Chọn *món cần nấu* (một món, hoặc "đủ nguyên liệu 6 món đang bán") → game tính đúng phần còn thiếu →
+tự tìm **sạp đang mở bán và rẻ nhất** cho từng nguyên liệu → trả tiền trước → người đó xách giỏ đi, **biến khỏi quầy**
+12–68 phút tuỳ quãng đường → về chất hàng lên kho quầy với đúng độ tươi. Huỷ giữa đường hoàn 85%; qua ngày mới thì
+chuyến dở tự huỷ. Vào bảng từ tab **Nhân sự**, hoặc nói chuyện với phụ quầy / phụ bếp.
+
+**Sửa kèm lỗi bạn báo:** Má Bảy (người trông coi chi nhánh) hết đứng lọt trong quầy — nay đứng sau quầy 1,25 m và
+quay mặt ra phía khách.
+
+**Kiểm thử:** `tests/dicho.test.ts` 17 bài (tổng 365 bài / 26 tệp lúc đó; lượt 20 thêm 12 bài → 377/27); bản lưu nâng lên **v15** (`Game.errands`).
+Probe `tools/probe/steps/dicho.mjs` ở 390×844: đo lại vị trí Má Bảy (`localZ = −1,25`, quay ra khách), mở bảng giao
+chợ, chọn cơm sườn rồi bấm giao trên UI thật (9 loại, 109.801₫, về sau 12 phút), tua cho về thấy kho có 9 loại hàng,
+người phụ quầy biến khỏi quầy trong lúc đi, giao người trông coi chi nhánh thì Má Bảy rời quầy; **console sạch**.
+
+---
+
+## Lượt 20 — Báo cáo sắp hết nguyên liệu & bếp trưởng tự duyệt đặt bàn ✅ đã xong
+
+**Người làm tự canh kho.** Bếp trưởng / bếp phó / phụ quầy / người trông coi chi nhánh báo mỗi khi món đang bán còn
+nấu được ≤ 1 phần: thiếu nguyên liệu gì, còn bao nhiêu, và **giao họ đi chợ thì hết bao nhiêu tiền** (dùng lại đúng
+báo giá của mục 4.28). Bảng "Báo cáo & gợi ý của người làm" mở từ chip **“Sắp hết đồ N món”** trên HUD, từ tab Nhân
+sự, hoặc menu ẩn; mỗi món có nút *Giao đi chợ* riêng. Tự nhắc bằng thoại + toast mỗi 25 giây khi tình hình đổi (quầy
+tạm đóng vẫn nhắc).
+
+**Quyền tự duyệt đặt bàn.** Nút **“Bếp trưởng tự duyệt đặt bàn”** (tab Nhân sự và trong bảng Báo cáo): bật thì khách
+gọi đặt bàn được nhận luôn, không phải vào duyệt tay; bật giữa chừng thì nhận luôn các phiếu đang chờ. Vẫn giữ chỗ và
+vẫn bị trừ uy tín nếu lỡ hẹn. Cờ nằm trong `flags` nên **không phải đổi bản lưu** (vẫn v15).
+
+**Kiểm thử:** `tests/baocao.test.ts` 12 bài → tổng **377 bài / 27 tệp**. Probe `tools/probe/steps/baocao.mjs` ở
+390×844: dựng nhà hàng + 2 bếp + 2 phụ quầy → dọn kho → bảng báo cáo hiện 4 món sắp hết, đúng danh sách thiếu và
+163.475₫ → bấm *Giao đi chợ* ngay trong báo cáo mở đúng bảng với đúng người → bật tự duyệt thì phiếu mới `accepted`,
+tắt thì `pending` → chip HUD mở được báo cáo; **console sạch**.
+
+---
+
+## Lượt 21 — Vựa ve chai thứ hai & bấm chuông mở cửa ✅ đã xong
+
+**Vựa ve chai bên kia thành phố.** Người chơi than phải chạy về Xóm Lao Động mới bán được ve chai. Nay có thêm
+**vựa Bà Chín** ở lô `21E` đường Khu Dân Cư (ngay đoạn đi qua lại giữa khu căn hộ và khu dân cư), rộng 7 m, dựng lại mô
+hình bãi ve chai co theo bề ngang lô: bảng hiệu **VỰA VE CHAI BÀ CHÍN**, cân bàn, đống phế liệu, chủ vựa là bà Chín
+ngồi bán 6h–19h như ông Tư Rác. Bán được đúng nhựa / lon / giấy / sắt với giá y như vựa cũ — luật "ai mua gì" gói
+trong `junkAt(site, junk)` + `SCRAP_SITES` nên **không phải sửa `JUNK_LIST`** (bản lưu cũ vẫn đọc được, vẫn `SAVE_VERSION = 15`).
+Panel túi đổi câu thành "Bán ở vựa ve chai (Tư Rác hoặc Bà Chín)", bảng việc làm và mấy câu thoại cũng nhắc cả hai vựa.
+
+**Bấm chuông thì cửa mở ra.** Trước đây bấm chuông căn hộ An Bình chỉ thấy chủ nhà bước ra nói chuyện còn cánh cửa
+đứng im: `openBellDoor` lọc cửa theo `d.d.home`, nhưng `DoorDef` **không có trường đó** — nó đánh dấu căn bằng `lock`.
+Nay `Interact.doorHome(d)` trả `d.lock`, nên đúng cánh cửa của căn được đặt `want = 1` + hẹn giờ 16 giây: cửa xoay mở
+86° trong ~1 giây, va chạm tắt nên đi qua được, hết giờ tự đóng lại (trừ khi người chơi đang ở trong căn). Áp dụng cho
+cả nhà riêng và cửa hàng; bấm chuông ngoài giờ chủ nhà vẫn ra mở, gợi ý trên nút nói rõ điều đó.
+
+**Menu ẩn:** xoá hết 13 mục test của các lượt 18–20, chỉ giữ nhóm *Địa điểm — tele nhanh* (thêm **Vựa ve chai Bà Chín**
+và **Cửa căn hộ An Bình**) cùng 4 mục mới của lượt này: tới vựa Bà Chín kèm ve chai trong túi, bán hết ve chai, tới cửa
+căn hộ, và bấm chuông ngay.
+
+**Kiểm thử:** thêm `tests/vua2.test.ts` 11 bài → tổng **388 bài / 28 tệp**. Probe `tools/probe/steps/vua2.mjs` ở 390×844:
+tele tới vựa Bà Chín (neo `v_scrap2` ở `x 78,6 / z −6,6`, Bà Chín hiện ra), bán 5 chai + 5 lon + 5 bìa + 5 sắt được
+51.500₫ và `tot.scrap` cũng đúng 51.500₫ → tới cửa căn hộ bấm chuông: `want 0→1`, cửa xoay **−77°**, `box.on → false`,
+chủ nhà bước ra ngoài hiên → tua hết 16 giây thì `want 0`, cửa đóng lại, `box.on → true`; **console sạch**.
+
+**Vá sau khi chơi thử:** bỏ biển dọc chìa ra đường (nó che biển tiệm bên cạnh và che cả mặt tiền — ảnh người chơi gửi),
+và sửa chuyện chủ nhà hiện ra **xuyên tường**: `ringBell` nay lấy tâm ô cửa + pháp tuyến của cánh cửa (qua
+`Interact.bellDoor`) thay vì lấy neo chuông làm tâm, nên Cô Hạnh **đi ra qua đúng ô cửa**; thời gian chờ trước khi mở
+lời thoại tăng 0,62 → 1,62 giây cho cửa kịp xoay mở.

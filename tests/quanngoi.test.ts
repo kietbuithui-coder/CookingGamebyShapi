@@ -40,11 +40,12 @@ describe('dữ liệu bậc 5', () => {
     expect(d.price).toBeGreaterThan(GEAR.quanan.price);
     expect(d.desc).toContain('Sáu chỗ ngồi');
   });
-  it('danh sách bậc tương lai chỉ còn bậc 7 (Chuỗi cửa hàng)', () => {
-    expect(FUTURE_TIERS).toEqual(['Chuỗi cửa hàng']);
+  it('tới bậc 5 thì bậc 7 (Chuỗi cửa hàng) vẫn còn ở dạng dữ liệu, không còn trong FUTURE_TIERS', () => {
+    expect(FUTURE_TIERS).toEqual([]);
+    expect(TIERS.some((t) => t.id === 'chuoi')).toBe(true);
   });
-  it('các bậc đánh số liên tiếp từ 0 tới 6', () => {
-    expect(TIERS[TIERS.length - 1].tier).toBe(6);
+  it('các bậc đánh số liên tiếp từ 0 tới 7', () => {
+    expect(TIERS[TIERS.length - 1].tier).toBe(7);
     expect(TIERS.every((t, i) => t.tier === i)).toBe(true);
   });
 });

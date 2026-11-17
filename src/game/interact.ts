@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { ctx } from './ctx';
 import type { Npc } from './npc';
-import { placeOpen } from './npc';
+import { placeOpen, PLACE_HOURS } from './npc';
 import { who, whoIn, known } from './who';
 import { SHOPS } from '../data/shops';
 import { INGS } from '../data/ingredients';
@@ -16,7 +16,7 @@ import { money, dist2, qty, damp, hhmm } from '../core/util';
 import { toast, sfx } from '../core/bus';
 import { MB, MAT, shade } from '../gfx/mb';
 
-type Kind = 'slot' | 'npc' | 'stall' | 'spot' | 'door' | 'bed' | 'store' | 'wash' | 'tap' | 'bin' | 'litter' | 'anchor' | 'homeStall' | 'bench';
+type Kind = 'slot' | 'npc' | 'stall' | 'spot' | 'door' | 'bed' | 'store' | 'wash' | 'tap' | 'bin' | 'litter' | 'anchor' | 'homeStall' | 'bench' | 'branch';
 interface Cand { kind: Kind; ref: any; x: number; y: number; z: number; r: number; prio: number; }
 export interface Focus { label: string; sub?: string; act: () => void; alt?: { label: string; act: () => void }; x: number; y: number; z: number; }
 const _v = new THREE.Vector3(), _f = new THREE.Vector3();
@@ -46,6 +46,9 @@ export class Interact {
       if (near(wx, wz, 2.2)) this.add('wash', 'sink', wx, groundY(wx, wz) + 0.85, wz, 2.1, 0.15);
     }
     if (s.where === 'carried') for (const sp of SPOTS) if (near(sp.x, sp.z, 4.2)) this.add('spot', sp, sp.x, 0.4, sp.z, 4.2, 0.3);
+    // Quầy chi nhánh (bậc 7): chạm vào để mở sổ chi nhánh.
+    const ba = ctx.stall.branchAnchor();
+    if (ba && near(ba.x, ba.z, 4.0)) this.add('branch', null, ba.x, ba.y, ba.z, 3.9, 0.15);
     for (const d of this.doors) if (near(d.d.x, d.d.z, 2.6)) this.add('door', d, d.d.x + Math.cos(d.d.yaw) * d.d.w * 0.5, 1.1, d.d.z + Math.sin(d.d.yaw) * d.d.w * 0.5, 2.4);
     for (const k of Object.keys(HOUSING)) {
       const b = A['bed_' + k]; if (b && near(b.x, b.z, 2.6)) this.add('bed', k, b.x, b.y, b.z, 2.5);
@@ -93,6 +96,11 @@ export class Interact {
       }
       case 'stall': return mk(g.stall.open ? (R.isRestaurant(g) ? 'Nhà hàng (đang mở)' : 'Quầy hàng (đang mở bán)') : (R.isRestaurant(g) ? 'Nhà hàng bình dân' : 'Quầy hàng'), () => ctx.ui.panel('stall'), R.isRestaurant(g) ? 'Thực đơn · Sơ chế · Nhân sự & Đặt bàn · Kho' : 'Thực đơn · Sơ chế · Kho quầy');
       case 'homeStall': return mk('Mang quầy đi', () => { ctx.stall.pickUp(); }, 'Chạm để gánh lên vai', { label: 'Kho', act: () => ctx.ui.panel('stall') });
+      case 'branch': {
+        const b = g.branch!;
+        const state = !b.keeper ? 'chưa có người trông' : b.open ? 'đang bán' : 'tạm đóng';
+        return mk(`Chi nhánh · ${state}`, () => ctx.ui.panel('branch'), `${R.branchStock(g)} phần sẵn · ${b.keeper ? b.keeper.name : 'cần thuê người trông coi'}`);
+      }
       case 'spot': {
         const sp = c.ref, sap = g.stall.tier >= 3, quan = g.stall.tier >= 4, nh = g.stall.tier >= 6;
         return mk(`${nh ? 'Mở nhà hàng' : quan ? 'Dựng quán' : sap ? 'Dựng sạp' : 'Đặt quầy'} tại ${sp.name}`, () => ctx.stall.placeAt(sp),
@@ -132,15 +140,28 @@ export class Interact {
         if (k === 'fire_gamcau') return R.isNight(g) ? mk('Sưởi bên thùng lửa', () => { g.weather.wet = Math.max(0, g.weather.wet - 40); g.st.mood = Math.min(STAT_MAX, g.st.mood + 3); R.advance(g, 10, A.act()); toast('Hơ tay bên đống lửa, ấm người hẳn.', 'info'); }) : null;
         if (k === 'bell_canho' || k === 'bell_nharieng' || k === 'bell_cuahang') {
           const hid = k.slice(5) as 'canho' | 'nharieng' | 'cuahang';
-          return mk('Bấm chuông cửa (đing đong)', () => A.ringBell(hid, ctx.world.anchors[k]), 'Gọi chủ nhà ra nói chuyện thuê hoặc mua nhà');
+          const hrs = PLACE_HOURS[hid];
+          const closed = hrs && !placeOpen(hid);
+          return mk('Bấm chuông cửa (đing đong)', () => A.ringBell(hid, ctx.world.anchors[k]),
+            closed ? `Ngoài giờ (${hrs[0]}h–${hrs[1]}h) nhưng bấm chuông thì chủ nhà vẫn ra mở cửa` : 'Chủ nhà ra mở cửa, nói chuyện thuê hoặc mua');
         }
         return null;
       }
     }
     return null;
   }
+  /** Cửa của một căn (canho/nharieng/cuahang…) biết chủ nhà qua `lock` của DoorDef. */
+  private doorHome(d: { lock?: string }) { return d.lock; }
+  /** Cửa nào của căn đó đang mở to nhất (để chủ nhà bước ra đúng ô cửa, không xuyên tường). */
+  bellDoor(homeId: string) {
+    let best: { d: any; m: THREE.Mesh; open: number; want: number } | null = null;
+    for (const d of this.doors) if (this.doorHome(d.d) === homeId && (!best || d.open > best.open)) best = d;
+    return best;
+  }
   openBellDoor(homeId: string, sec = 10) {
-    for (const d of this.doors) if (d.d.home === homeId) { d.want = 1; d.bellUntil = ctx.time + sec; }
+    let n = 0;
+    for (const d of this.doors) if (this.doorHome(d.d) === homeId) { d.want = 1; d.bellUntil = ctx.time + sec; n++; }
+    return n;
   }
   trigger() { if (ctx.anim?.active) { ctx.anim.stop(); this.update(0.05); } const f = this.focus; if (f && ctx.mode === 'play') { f.act(); ctx.acts.working = 0.3; } }
   triggerAlt() { if (ctx.anim?.active) { ctx.anim.stop(); this.update(0.05); } const f = this.focus; if (f?.alt && ctx.mode === 'play') f.alt.act(); }
@@ -148,7 +169,7 @@ export class Interact {
     const g = ctx.g, cam = ctx.camera;
     // cửa phòng & cửa cuốn
     this.T -= dt; const tick = this.T <= 0; if (tick) this.T = 0.5;
-    for (const d of this.doors) { if (d.bellUntil && ctx.time >= d.bellUntil) { d.bellUntil = undefined; if (g.housing !== d.d.home) d.want = 0; } d.open = damp(d.open, d.want, 9, dt); d.m.rotation.y = -d.d.yaw - d.open * 1.5; d.d.box.on = d.open < 0.5; }
+    for (const d of this.doors) { if (d.bellUntil && ctx.time >= d.bellUntil) { d.bellUntil = undefined; if (g.housing !== this.doorHome(d.d)) d.want = 0; } d.open = damp(d.open, d.want, 9, dt); d.m.rotation.y = -d.d.yaw - d.open * 1.5; d.d.box.on = d.open < 0.5; }
     for (const s of this.shut) { if (tick) s.s.box.on = !placeOpen(s.s.shop) || (s.s.shop === 'mart' && R.eventOn(g, 'cup_dien')); const want = s.s.box.on ? 1 : 0; s.k = damp(s.k, want, 3, dt); s.m.visible = s.k > 0.02; s.m.position.y = 0.12 + (1 - s.k) * s.s.h; s.m.scale.y = Math.max(0.02, s.k); }
     if (ctx.mode !== 'play' || ctx.anim?.active) { this.focus = null; ctx.input.taps.length = 0; return; }
     this.collect();
