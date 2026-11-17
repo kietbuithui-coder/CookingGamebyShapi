@@ -3,12 +3,12 @@ import { DEV_BUILD_TAG, getDevSections } from '../src/game/devPoints';
 
 describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
   it('chỉ gồm mục của tính năng mới nhất + nhóm địa điểm tele nhanh', () => {
-    expect(DEV_BUILD_TAG).toContain('Bà Chín');
-    expect(DEV_BUILD_TAG).toContain('chuông');
+    expect(DEV_BUILD_TAG).toContain('cục gạch');
+    expect(DEV_BUILD_TAG).toContain('cảm ứng');
     const sections = getDevSections();
     expect(sections.length).toBe(2);
-    expect(sections[0].title).toContain('Vựa ve chai');
-    expect(sections[0].title).toContain('lượt 21');
+    expect(sections[0].title).toContain('điện thoại');
+    expect(sections[0].title).toContain('lượt 22');
     expect(sections[1].title).toContain('Địa điểm');
     const ids = new Set<string>();
     for (const sec of sections) {
@@ -22,7 +22,7 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
       }
     }
     // mục của lượt này: vựa ve chai thứ hai + bấm chuông mở cửa
-    for (const id of ['setup_vua2', 'vua2_sell', 'bell_canho', 'bell_now']) expect(ids.has(id)).toBe(true);
+    for (const id of ['phone_cucgach', 'phone_napgap', 'phone_camung', 'phone_unread']) expect(ids.has(id)).toBe(true);
     // tele nhanh vẫn còn, có thêm vựa mới và cửa căn hộ
     const loc = sections[1].items.map((i) => i.id);
     for (const id of ['tp_equip', 'tp_matbang_tb', 'tp_ongtu', 'tp_scrap2', 'tp_canho']) expect(loc).toContain(id);
@@ -36,6 +36,8 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
       // lượt 18–20
       'setup_chuoi', 'setup_chuoi_vp', 'setup_chuoi_cv', 'tp_chinhanh', 'branch_fill', 'branch_skip', 'branch_panel', 'branch_keeper', 'branch_close',
       'setup_dicho', 'dicho_send', 'dicho_skip', 'dicho_keeper',
-      'setup_baocao', 'baocao_clear', 'book_auto']) expect(ids).not.toContain(old);
+      'setup_baocao', 'baocao_clear', 'book_auto',
+      // lượt 21 (vựa ve chai + bấm chuông)
+      'setup_vua2', 'vua2_sell', 'bell_canho', 'bell_now']) expect(ids).not.toContain(old);
   });
 });

@@ -34,3 +34,18 @@ export const PHONES: Record<string, PhoneDef> = Object.fromEntries(PHONE_LIST.ma
 export const FEAT_LABEL: Record<PhoneFeat, string> = {
   ledger: 'Sổ thu chi', contacts: 'Danh bạ', sms: 'Tin nhắn', radio: 'Radio FM', music: 'Nghe nhạc', wap: 'Lướt web',
 };
+
+/** Danh mục app trên máy — dùng cho cả ba giao diện (cục gạch, nắp gập, cảm ứng). */
+export type AppId = PhoneFeat | 'battery';
+export interface AppDef { id: AppId; name: string; short: string; }
+export const PHONE_APPS: AppDef[] = [
+  { id: 'ledger', name: 'Sổ thu chi', short: 'Sổ sách' },
+  { id: 'contacts', name: 'Danh bạ', short: 'Danh bạ' },
+  { id: 'sms', name: 'Tin nhắn', short: 'Tin nhắn' },
+  { id: 'radio', name: 'Radio FM', short: 'Radio' },
+  { id: 'music', name: 'Nghe nhạc', short: 'Nhạc' },
+  { id: 'wap', name: 'Lướt web', short: 'WAP' },
+  { id: 'battery', name: 'Pin & sạc', short: 'Pin' },
+];
+/** Máy này mở được app nào: theo `feats` của máy, riêng mục Pin thì máy nào cũng có. */
+export const appsOf = (m: PhoneDef): AppDef[] => PHONE_APPS.filter((a) => a.id === 'battery' || m.feats.includes(a.id as PhoneFeat));

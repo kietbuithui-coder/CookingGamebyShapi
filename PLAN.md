@@ -477,3 +477,22 @@ chủ nhà bước ra ngoài hiên → tua hết 16 giây thì `want 0`, cửa �
 và sửa chuyện chủ nhà hiện ra **xuyên tường**: `ringBell` nay lấy tâm ô cửa + pháp tuyến của cánh cửa (qua
 `Interact.bellDoor`) thay vì lấy neo chuông làm tâm, nên Cô Hạnh **đi ra qua đúng ô cửa**; thời gian chờ trước khi mở
 lời thoại tăng 0,62 → 1,62 giây cho cửa kịp xoay mở.
+
+---
+
+## Lượt 22 — Ba giao diện điện thoại ✅ đã xong
+
+Trước đây cả ba mẫu máy dùng chung một bảng tab. Nay **mỗi máy một giao diện thật** (`src/ui/phoneUI.ts`), mở lên là thấy
+đúng cái máy đó và bấm theo đúng kiểu máy đó:
+
+- **Cục gạch** (180.000₫): màn xanh xám chữ mono, danh sách dòng `▸`, phím cứng **▲ OK ▼**; chỉ có Sổ thu chi, Danh bạ, Tin nhắn, Pin.
+- **Nắp gập** (520.000₫): màn màu nhỏ xoay vòng 8 icon + ô giữa là app đang chọn, **TÁCH** để mở; thêm Radio FM, Nghe nhạc.
+- **Cảm ứng** (1.450.000₫): lưới icon 3 cột, **bấm thẳng** icon, nút **●** về màn hình chính; thêm Lướt web WAP.
+
+Bàn phím máy tính cũng dùng được như phím cứng (↑ ↓ chọn, Enter mở, Esc lùi một màn). Cột bên phải hiện pin, giờ máy,
+tiền mặt, tin chưa đọc. Sửa luôn lỗi bố cục gặp trong lúc làm: khung màn hình giờ bọc **mọi** màn, không chỉ màn hình
+chính (trước đó mở app thì chữ hoà vào nền giấy).
+
+**Kiểm thử:** `tests/phone3.test.ts` 5 bài → tổng **393 bài / 29 tệp**. Probe `tools/probe/steps/phone3.mjs` ở 390×844 mở
+lần lượt cả ba máy: cục gạch bấm ▼ + OK mở Danh bạ, nắp gập TÁCH mở Sổ thu chi, cảm ứng bấm icon mở Tin nhắn rồi Sổ thu
+chi; **console sạch**.

@@ -7,7 +7,7 @@ import { RECIPES } from '../data/recipes';
 import { SPOTS, CORR } from '../world/layout';
 import { toast } from '../core/bus';
 
-export const DEV_BUILD_TAG = 'Vựa ve chai Bà Chín bên kia thành phố · bấm chuông thì cửa căn hộ mở ra';
+export const DEV_BUILD_TAG = 'Ba giao diện điện thoại riêng: cục gạch phím cứng · nắp gập xoay vòng · cảm ứng lưới icon';
 
 export interface DevAction {
   id: string;
@@ -66,52 +66,44 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Vựa ve chai thứ hai & bấm chuông mở cửa (lượt 21)',
+      title: 'Mới nhất — Giao diện 3 mẫu điện thoại (lượt 22)',
       items: [
         {
-          id: 'setup_vua2',
-          label: 'Tới vựa ve chai Bà Chín + cho sẵn ve chai trong túi',
-          sub: 'Khu Dân Cư (đường 21E) — bấm bán xem có ra tiền như vựa Tư Rác không',
+          id: 'phone_cucgach',
+          label: 'Mở máy CỤC GẠCH (màn đen trắng + phím cứng ▲ OK ▼)',
+          sub: 'Máy rẻ nhất: chỉ Sổ thu chi, Danh bạ, Tin nhắn. Dùng ▲▼ chọn, OK để mở — như Nokia 1110i',
           tone: 'green',
+          closePanel: false,
+          run: () => { const g = ctx.g; g.gear.cucgach = 100; g.phone = { id: 'cucgach', battery: 82 }; ctx.ui.closePanel(); ctx.ui.panel('phone'); },
+        },
+        {
+          id: 'phone_napgap',
+          label: 'Mở máy NẮP GẬP (xoay vòng icon, phím TÁCH)',
+          sub: 'Màn hình màu nhỏ: thêm Radio FM và Nghe nhạc. ▲▼ xoay vòng, TÁCH để mở app đang chọn',
+          closePanel: false,
+          run: () => { const g = ctx.g; g.gear.napgap = 100; g.phone = { id: 'napgap', battery: 66 }; ctx.ui.closePanel(); ctx.ui.panel('phone'); },
+        },
+        {
+          id: 'phone_camung',
+          label: 'Mở máy CẢM ỨNG (lưới icon, bấm thẳng)',
+          sub: 'Máy xịn nhất: đủ 6 app gồm Lướt web WAP; bấm thẳng vào icon để mở, nút ● để về màn hình chính',
+          tone: 'green',
+          closePanel: false,
+          run: () => { const g = ctx.g; g.gear.camung = 100; g.phone = { id: 'camung', battery: 45 }; ctx.ui.closePanel(); ctx.ui.panel('phone'); },
+        },
+        {
+          id: 'phone_unread',
+          label: 'Đẩy pin xuống 8% + tạo tin nhắn chưa đọc để thử máy',
+          sub: 'Xem cảnh báo pin đỏ trên cả ba máy và chấm đỏ ở icon Tin nhắn trên màn hình chính',
           closePanel: false,
           run: () => {
             const g = ctx.g;
-            for (const id of ['chai', 'lon', 'bia', 'sat']) g.junk[id] = (g.junk[id] ?? 0) + 5;
-            g.min = Math.max(g.min, 8 * 60);
-            const a = ctx.world.anchors.v_scrap2;
-            if (!a) { toast('Không tìm thấy vựa Bà Chín trên bản đồ.', 'warn'); return; }
-            tpTo(a.x, a.z + 1.6, Math.PI, 'Đã tới vựa ve chai Bà Chín — chạm Bà Chín để bán.');
+            if (!g.phone) { toast('Chưa có máy nào — bấm một trong ba mục phía trên trước.', 'warn'); return; }
+            g.phone.battery = 8;
+            delete g.flags.smsSeen;
+            toast('Pin còn 8% và có tin mới — mở máy xem cảnh báo.', 'info', 'bolt');
+            ctx.ui.reopenPanel('phone');
           },
-        },
-        {
-          id: 'vua2_sell',
-          label: 'Bán hết ve chai đang có ở vựa gần nhất',
-          sub: 'Tính đúng giá từng loại rồi cộng tiền (chạy thẳng luật sellJunk, không cần đi tới)',
-          closePanel: false,
-          run: () => {
-            const g = ctx.g;
-            const sum = Math.max(R.sellJunk(g, 'scrap2'), R.sellJunk(g, 'scrap'));
-            toast(sum > 0 ? `Bán ve chai được ${sum.toLocaleString('vi-VN')}₫.` : 'Túi không có ve chai nào.', sum > 0 ? 'good' : 'warn', 'coin');
-          },
-        },
-        {
-          id: 'bell_canho',
-          label: 'Tới cửa căn hộ An Bình rồi bấm chuông (cửa phải mở ra)',
-          sub: 'Chờ một nhịp: cánh cửa xoay mở, Cô Hạnh bước ra nói chuyện — kể cả ngoài giờ',
-          tone: 'green',
-          closePanel: false,
-          run: () => {
-            const a = ctx.world.anchors.bell_canho;
-            if (!a) { toast('Không tìm thấy cửa căn hộ An Bình.', 'warn'); return; }
-            tpTo(a.x + Math.sin(a.yaw) * 1.9, a.z + Math.cos(a.yaw) * 1.9, a.yaw + Math.PI, 'Đứng trước cửa căn hộ — bấm chuông đi!');
-          },
-        },
-        {
-          id: 'bell_now',
-          label: 'Bấm chuông căn hộ An Bình ngay (không cần đứng gần)',
-          sub: 'Gọi thẳng ringBell: cửa mở 16 giây, chủ nhà ra ngoài hiên nói chuyện',
-          closePanel: false,
-          run: () => ctx.acts.ringBell('canho', ctx.world.anchors.bell_canho),
         },
       ],
     },

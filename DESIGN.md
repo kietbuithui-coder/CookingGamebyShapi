@@ -19,7 +19,7 @@ Một vòng chơi trọn vẹn và thật sự chạy được: **tay trắng �
 
 Hai nguyên tắc giữ cho mã kiểm thử được:
 
-1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 388 bài kiểm thử (28 tệp) chạy trong Node trong khoảng 7 giây.
+1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 393 bài kiểm thử (29 tệp) chạy trong Node trong khoảng 7 giây.
 2. **Mọi ngẫu nhiên trong luật chơi nhận một `RNG` có hạt giống** làm tham số cuối, nên kết quả kiểm thử lặp lại được.
 
 Vòng lặp chính (`src/main.ts`): đọc điều khiển → `advance()` cho thời gian game trôi (0,75 phút game mỗi giây thật, một ngày = 32 phút thật; khi ngủ 48 phút game mỗi giây) → cập nhật người chơi, NPC, quầy, nấu ăn, môi trường → vẽ. `dt` bị chặn ở 50 ms nên máy rất chậm thì game chạy chậm lại chứ không nhảy cóc.
@@ -725,6 +725,33 @@ cộng một lần, bán vựa này không mất đồ của vựa kia, cộng t
 là `'canho'`, `openBellDoor` so theo `lock` (không còn `d.d.home`), chủ nhà ra mở cửa kể cả ngoài giờ, chủ nhà đi ra đúng ô cửa (so tâm cửa + pháp tuyến, chờ ≥ 1,2 giây mới nói), và
 không còn biển dọc chìa ra đường.
 
+### 4.31 Ba giao diện điện thoại — mỗi mẫu máy một kiểu
+
+Điện thoại trước đây dùng chung một bảng tab cho cả ba máy. Nay mỗi mẫu **mở lên là thấy đúng cái máy đó**
+(`src/ui/phoneUI.ts`), cả về hình thức lẫn cách bấm:
+
+| Máy | Màn hình chính | Cách mở app | App có trên máy |
+|---|---|---|---|
+| **Cục gạch** (Nokia 1110i, 180.000₫) | nền xanh xám, chữ đơn cách mono, danh sách dòng có dấu `▸` | phím cứng **▲ OK ▼** hoặc bấm vào dòng | Sổ thu chi · Danh bạ · Tin nhắn · Pin |
+| **Nắp gập** (Samsung E250, 520.000₫) | màn màu nhỏ, xoay vòng 4 icon trên + 4 dưới, ô giữa là app đang chọn | **▲ ▼** xoay vòng, **TÁCH** để mở, hai phím mềm Quay lại/Chọn | thêm Radio FM · Nghe nhạc |
+| **Cảm ứng** (O2 Xphone, 1.450.000₫) | lưới icon 3 cột trên nền sáng, thanh trạng thái đen | **bấm thẳng icon**, nút **●** về màn hình chính | thêm Lướt web WAP |
+
+**Dùng chung một chỗ.** Danh mục app nằm trong `src/data/phone.ts` (`PHONE_APPS`, `appsOf(m)`) nên `tests/phone3.test.ts`
+kiểm được "máy nào có app nào" mà không cần DOM. Phần hiển thị giữ trạng thái `{ app, idx, sel }` trong `phoneView()`;
+`phoneKey()` xử lý phím cứng, `phoneRow()` xử lý bấm dòng. Bàn phím máy tính cũng là phím cứng của máy: **↑ ↓** chọn,
+**Enter** mở/làm, **Esc** lùi một màn rồi mới đóng. Bấm ✕ hoặc phím **● / Quay lại** ở màn hình chính mới đóng máy.
+Cột bên phải mỗi máy hiện pin, giờ máy, tiền mặt, số tin chưa đọc và mô tả máy — thay cho tab "Máy" cũ.
+
+**Bố cục.** Khung màn hình (`.ph`) bọc **mọi** màn hình chứ không chỉ màn hình chính (lỗi đã sửa trong lúc làm: mở app
+thì mất nền màn hình, chữ hoà vào giấy). Ba máy ăn theo tỉ lệ chữ của game nên `min(15em, 68vw) … min(21em, 86vw)`
+vẫn vừa màn dọc 390 px mà không phải cuộn ngang.
+
+**Kiểm thử.** `tests/phone3.test.ts` (5 bài): ba mẫu máy khác tên/hãng, app đúng theo chức năng (cục gạch chỉ 4 mục,
+nắp gập 6, cảm ứng 7), tên app đủ ngắn để vừa lưới 3 cột và danh sách máy phím, không app nào bị bỏ quên, và máy
+chưa mua thì không có gì để mở. Probe `tools/probe/steps/phone3.mjs` ở 390×844: mở lần lượt ba máy — cục gạch
+4 dòng + 3 phím, bấm ▼ rồi OK mở đúng **Danh bạ**; nắp gập 8 icon + ô giữa, TÁCH mở **Sổ thu chi**; cảm ứng 7 icon,
+bấm icon mở **Tin nhắn** (2 tin) rồi mở **Sổ thu chi** — console sạch.
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
@@ -773,7 +800,7 @@ Người chơi đã thử bản đầu và gửi danh sách góp ý; việc đư
 Còn lại:
 
 1. **Đã xong 3 kiểu chỗ ở mới: căn hộ, nhà riêng, cửa hàng kiêm nhà ở** (8/8) — xem mục 4.13.
-2. **Đã xong sạp cố định (bậc 3)** — mục 4.12, **quán ăn nhỏ (bậc 4)** — mục 4.22, và **quán có chỗ ngồi (bậc 5)** — mục 4.25, **nhà hàng bình dân (bậc 6)** — mục 4.26, **chuỗi cửa hàng (bậc 7)** — mục 4.27, **giao người làm đi chợ** — mục 4.28, **báo cáo sắp hết đồ + tự duyệt đặt bàn** — mục 4.29, và **vựa ve chai thứ hai + bấm chuông mở cửa** — mục 4.30. Nhánh kinh doanh đã đủ **7/7 bậc**; việc kế tiếp là hệ thống băng nhóm.
+2. **Đã xong sạp cố định (bậc 3)** — mục 4.12, **quán ăn nhỏ (bậc 4)** — mục 4.22, và **quán có chỗ ngồi (bậc 5)** — mục 4.25, **nhà hàng bình dân (bậc 6)** — mục 4.26, **chuỗi cửa hàng (bậc 7)** — mục 4.27, **giao người làm đi chợ** — mục 4.28, **báo cáo sắp hết đồ + tự duyệt đặt bàn** — mục 4.29, **vựa ve chai thứ hai + bấm chuông mở cửa** — mục 4.30, và **ba giao diện điện thoại** — mục 4.31. Nhánh kinh doanh đã đủ **7/7 bậc**; việc kế tiếp là hệ thống băng nhóm.
 3. Hệ thống băng nhóm.
 4. Danh sách đầy đủ những gì còn lại nằm ở `TODO.md`.
 

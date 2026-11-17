@@ -19,6 +19,7 @@ import { stallHint } from '../game/stall';
 import { openPanel } from './panels';
 import * as PH from '../sim/phone';
 import { applyLayout, editLayout } from './layout';
+import * as PUI from './phoneUI';
 
 const IC: Record<string, string> = {
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/>',
@@ -139,6 +140,15 @@ export class UI {
         if (k === ' ' || k === 'e' || k === 'enter') this.onCookBtn?.('b0', true);
         else if (k >= '1' && k <= '9') this.onCookBtn?.('b' + (+k - 1), true);
         else if (k === 'escape') ctx.anim.stop();
+        return;
+      }
+      // Đang mở điện thoại: phím cứng của máy dùng luôn bàn phím (▲▼ chọn, Enter mở, Esc lùi).
+      if (this.modalName === 'phone' && ['arrowup', 'arrowdown', 'w', 's', 'enter', 'escape', 'e'].includes(k)) {
+        const P = PUI.phoneView();
+        if (k === 'escape') { if (P.app === 'home') this.closePanel(); else { PUI.phoneKey('home'); this.reopenPanel('phone'); } }
+        else if (k === 'arrowup' || k === 'w') { PUI.phoneKey('up'); this.reopenPanel('phone'); }
+        else if (k === 'arrowdown' || k === 's') { PUI.phoneKey('down'); this.reopenPanel('phone'); }
+        else { PUI.phoneKey('ok'); this.reopenPanel('phone'); }
         return;
       }
       if (k === 'e' || k === 'enter') ctx.interact.trigger();

@@ -12,6 +12,7 @@ import { WEATHER } from '../data/world';
 import { Game, Stack, LedgerDay, STAT_MAX, weightOf, moveStack, junkWeight, hourOf, purge, isSpoiled } from '../sim/state';
 import * as R from '../sim/rules';
 import * as PH from '../sim/phone';
+import * as PUI from './phoneUI';
 import { FEAT_LABEL } from '../data/phone';
 import { money, qty, clamp, round1k, dist2, hhmm } from '../core/util';
 import { toast, sfx, bus } from '../core/bus';
@@ -54,7 +55,7 @@ function errandBlock(g: Game): string {
 
 export function openPanel(ui: UI, name: string) {
   const M = ui.$('modal'), g = ctx.g;
-  let devTaps = 0, devOpen = false;
+  let devTaps = 0, devOpen = false, phoneOpened = false;
   const draw = (title: string, tabs: [string, string][], body: string, foot = '') => {
     M.innerHTML = `<div class="panel"><header><h2>${title}</h2><div class="tabs">${tabs.map(([id, t]) => `<button class="tab${id === tab ? ' on' : ''}" data-tab="${id}">${t}</button>`).join('')}</div><button class="x" data-a="close">${ic('x')}</button></header><div class="body">${body}</div>${foot ? `<div class="foot">${foot}</div>` : ''}</div>`;
   };
@@ -321,51 +322,23 @@ export function openPanel(ui: UI, name: string) {
         draw(`${ic('shop')} Chi nhánh · ${sp?.name ?? ''}`, [['info', 'Sổ & khay']], body);
       }
     } else if (name === 'phone') {
+      // Giao diện riêng cho từng mẫu máy — xem src/ui/phoneUI.ts
       const m = PH.phone(g);
       if (!m) {
         draw(`${ic('info')} Chưa có điện thoại`, [], `<p class="muted">Trong túi chưa có máy nào. Tiệm Đồ Nghề Ba Tài ở Phố Trung Tâm bán ba mẫu: cục gạch (180.000₫), nắp gập (520.000₫) và cảm ứng (1.450.000₫).</p>`);
         return;
       }
-      const pin = Math.round(PH.battery(g)), on = PH.isOn(g);
-      const tabs: [string, string][] = [['home', 'Máy']];
-      if (m.feats.includes('ledger')) tabs.push(['led', 'Sổ thu chi']);
-      if (m.feats.includes('contacts')) tabs.push(['book', 'Danh bạ']);
-      if (m.feats.includes('sms')) tabs.push(['sms', 'Tin nhắn']);
-      if (m.feats.includes('radio') || m.feats.includes('music')) tabs.push(['fun', 'Giải trí']);
-      tabs.push(['pin', 'Pin & sạc']);
-      if (!tabs.some(([id]) => id === tab)) tab = 'home';
-      const dead = on ? '' : `<p class="neg">Máy hết pin. Ngủ ở chỗ trọ trở lên cho đầy pin, hoặc trả 5.000₫ sạc nhờ ở tạp hoá Cô Ba / MiniMart.</p>`;
-      let body = '';
-      if (tab === 'home') {
-        const un = PH.unread(g);
-        body = `<div class="grid2"><div><p style="font-family:'Patrick Hand';font-size:1.35em;margin:.2em 0">${m.name} <span class="muted">${m.brand}</span></p>
-          <div class="kv"><span>Giờ trên máy</span><b>${hhmm(g.min)} · ngày ${g.day + 1}</b></div>
-          <div class="kv"><span>Pin</span><b class="${pin < 20 ? 'neg' : 'pos'}">${pin}%</b></div>
-          <div class="kv"><span>Tiền mặt đang có</span><b>${money(g.cash)}</b></div>
-          <div class="kv"><span>Tin chưa đọc</span><b class="${un ? 'pos' : ''}">${un}</b></div>
-          <p class="muted">${m.desc}</p></div>
-          <div><h4>Chức năng</h4><div class="list">${m.feats.map((f) => `<div class="item"><div class="grow"><b>${FEAT_LABEL[f]}</b></div><button class="btn small" data-tab="${f === 'ledger' ? 'led' : f === 'contacts' ? 'book' : f === 'sms' ? 'sms' : 'fun'}">Mở</button></div>`).join('')}</div></div></div>`;
-      } else if (tab === 'led') {
-        body = ledgerBody(g);
-      } else if (tab === 'book') {
-        const list = PH.contacts(g);
-        acts.call = (i) => { const c = list[i]; if (c) ctx.acts.phoneCall(c.id); };
-        body = dead + (list.length ? `<div class="list">${list.map((c, i) => `<div class="item"><div class="grow"><b>${esc(c.name)}</b><small>${esc(c.where)}${c.regular && g.flags['call_' + c.id] === g.day ? ' · hôm nay gọi rồi' : ''}</small></div>${c.regular ? `<button class="btn small${g.cash < PH.CALL_FEE || !on ? ' off' : ''}" data-a="call" data-i="${i}">Gọi 1.000₫</button>` : ''}</div>`).join('')}</div>` : '<p class="muted">Danh bạ trống. Đi chào hỏi trong xóm rồi mở lại.</p>');
-      } else if (tab === 'sms') {
-        const seen = g.flags.smsSeen ?? 0, list = PH.smsList(g);
-        if (on) PH.markSeen(g);
-        body = dead + (list.length ? `<div class="list">${list.map((sm) => `<div class="item"><div class="grow"><b>${esc(sm.from)}${sm.at > seen ? ' <span class="tag bad">mới</span>' : ''}</b><small>${esc(sm.text)}</small><small class="muted">${hhmm(sm.at % 1440)} · ngày ${Math.floor(sm.at / 1440) + 1}</small></div></div>`).join('')}</div>` : '<p class="muted">Hộp thư trống trơn.</p>');
-      } else if (tab === 'fun') {
-        acts.fun = (i) => { ctx.acts.phoneFun((['radio', 'music', 'wap'] as const)[i]); };
-        body = dead + `<div class="list">${(['radio', 'music', 'wap'] as const).map((f, i) => { const ok = m.feats.includes(f), c = PH.FUN[f]; return `<div class="item${ok ? '' : ' off'}"><div class="grow"><b>${FEAT_LABEL[f]}</b><small>${ok ? `${c.min} phút · tinh thần +${c.mood} · pin −${c.pin}%` : 'Máy này không có chức năng này'}</small></div>${ok ? `<button class="btn small${on ? '' : ' off'}" data-a="fun" data-i="${i}">Mở</button>` : ''}</div>`; }).join('')}</div>`;
-      } else {
-        const hours = PH.battery(g) / PH.DRAIN_PER_HOUR;
-        body = `<p>Pin còn <b>${pin}%</b> · để trong túi thì dùng được khoảng <b>${hours.toFixed(1).replace('.', ',')} giờ</b> nữa. Mở radio, nhạc hay web thì tốn nhanh hơn.</p>
-          <div class="bar"><b style="width:${pin}%;background:${pin < 20 ? 'var(--red)' : pin < 50 ? '#d9a441' : 'var(--green)'}"></b></div>
-          <p class="muted">Sạc: ngủ ở phòng trọ, nhà nghỉ, căn hộ, nhà riêng, cửa hàng (có ổ điện) là đầy pin sáng hôm sau. Ở gầm cầu hay ghế đá công viên thì không có điện. Hoặc trả 5.000₫ sạc nhờ ở tạp hoá Cô Ba / MiniMart 24h.</p>
-          <p class="muted">Máy này nghe được ${m.feats.map((f) => FEAT_LABEL[f].toLowerCase()).join(', ')}.</p>`;
-      }
-      draw(`${ic('phone')} ${m.name} <span class="muted">· pin ${pin}%</span>`, tabs, body);
+      // chỉ đưa về màn hình chính khi MỞ máy, không phải mỗi lần vẽ lại
+      if (!phoneOpened) { phoneOpened = true; PUI.resetPhoneView(); }
+      acts.phonehome = () => { if (PUI.phoneView().app === 'home') ui.closePanel(); else PUI.phoneKey('home'); };
+      acts.phoneup = () => PUI.phoneKey('up');
+      acts.phonedown = () => PUI.phoneKey('down');
+      acts.phoneok = () => PUI.phoneKey('ok');
+      acts.phonepick = (i) => PUI.phoneKey('pick', i);
+      acts.phoneopen = (_i, e) => PUI.phoneKey('open', e.dataset.k!);
+      acts.phonerow = (i) => PUI.phoneRow(i);
+      const sh = PUI.phoneShell(g, m);
+      draw(sh.title, [], sh.html, sh.foot);
     } else if (name === 'map') {
       const places = ctx.acts.places(); acts.go = (i) => { ctx.acts.way = places[i]; ui.closePanel(); toast(`Đã ghim: ${places[i].name}. Đi theo mũi tên và cột sáng vàng.`, 'info', 'pin'); }; acts.clear = () => { ctx.acts.way = null; };
       draw(`${ic('map')} Bản đồ khu phố`, [], `<div class="grid2"><canvas id="map" width="640" height="610"></canvas><div><p class="muted">Chạm một địa điểm để ghim đường đi.</p><div class="list">${places.map((p, i) => `<button class="btn small" style="justify-content:flex-start" data-a="go" data-i="${i}">${ic('pin')} ${p.name} <span class="muted">· ${Math.round(Math.hypot(p.x - ctx.player.x, p.z - ctx.player.z))} m</span></button>`).join('')}</div></div></div>`, ctx.acts.way ? `<button class="btn" data-a="clear">Bỏ ghim “${esc(ctx.acts.way.name)}”</button>` : '');
