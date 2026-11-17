@@ -71,6 +71,27 @@ function setupFullRestaurant(openIt = true) {
   toast('Đã dựng Nhà hàng bình dân full 13 nâng cấp + 2 phụ bếp + 2 phục vụ.', 'good', 'shop');
 }
 
+/** Dựng sẵn Chuỗi cửa hàng (bậc 7) + một chi nhánh có người trông coi và món sẵn để thử. */
+function setupChain() {
+  const g = ctx.g, S = ctx.stall;
+  g.cash = Math.max(g.cash, 400000000);
+  for (const id of ['ganh', 'xeday', 'sap', 'quanan', 'quanngoi', 'nhahang', 'chuoi', 'daothot', 'bepthan', 'vi', 'noi', 'chao', 'ghe', 'bien', 'den']) {
+    if (!R.has(g, id)) R.buyGear(g, id);
+  }
+  const sp = SPOTS.find((s) => s.id === 'matbang_tb') ?? SPOTS[0];
+  if (g.stall.where !== 'placed' || g.stall.spot !== sp.id) S.placeAt(sp);
+  g.stall.cond = 100; g.stall.dirt = 0; g.min = 10 * 60;
+  for (const rid of ['com_suon', 'banh_mi_trung', 'tra_da', 'pho_bo']) if (g.rec[rid]) { g.rec[rid].known = true; g.rec[rid].on = true; }
+  if (!g.stall.ready.length) g.stall.ready.push({ rid: 'tra_da', n: 8, q: 0.92, cost: 3000, at: g.min });
+  if (!g.branch) R.openBranch(g, 'cho');
+  if (!g.branch?.keeper) R.hireKeeper(g);
+  for (const r of g.stall.ready.slice()) R.moveToBranch(g, r.rid, Math.min(r.n, 8));
+  if (!g.stall.ready.length) { g.stall.ready.push({ rid: 'tra_da', n: 6, q: 0.9, cost: 3000, at: g.min }); R.moveToBranch(g, 'tra_da', 4); }
+  if (!g.stall.open) S.open();
+  S.refresh();
+  toast('Đã dựng Chuỗi cửa hàng + chi nhánh ở Cổng Chợ có người trông coi. Chạm quầy chi nhánh để xem sổ.', 'good', 'shop', true);
+}
+
 function testVehicleHit(kind: VehicleKind, speed: number, grazing: boolean) {
   const p = ctx.player, g = ctx.g;
   const spec = classifyVehicleHit(kind, speed, grazing);
@@ -88,6 +109,28 @@ function testVehicleHit(kind: VehicleKind, speed: number, grazing: boolean) {
 export function getDevSections(): DevSection[] {
   const g = ctx.g;
   return [
+    {
+      title: 'Bậc 7 — Chuỗi cửa hàng & chi nhánh',
+      items: [
+        {
+          id: 'setup_chuoi',
+          label: 'Dựng Chuỗi cửa hàng + chi nhánh Cổng Chợ',
+          sub: 'Cấp vốn, lên bậc 7, thuê chi nhánh + người trông coi, chuyển món sẵn sang',
+          tone: 'green',
+          run: () => setupChain(),
+        },
+        {
+          id: 'tp_chinhanh',
+          label: 'Tới chi nhánh Cổng Chợ',
+          sub: 'Dịch chuyển tới quầy chi nhánh để chạm mở sổ',
+          run: () => {
+            const sp = SPOTS.find((x) => x.id === (ctx.g.branch?.spot ?? 'cho'))!;
+            const sn = Math.sin(sp.yaw), c = Math.cos(sp.yaw);
+            tpTo(sp.x + 3.2 * sn, sp.z + 3.2 * c, sp.yaw + Math.PI, 'Đã tới quầy chi nhánh.');
+          },
+        },
+      ],
+    },
     {
       title: 'Bậc 6 — Nhà hàng bình dân & 13 Nâng cấp',
       items: [

@@ -8,7 +8,7 @@ import { who } from './who';
 import type { SlotDef } from '../world/build';
 import { SHOPS, ShopDef } from '../data/shops';
 import { INGS } from '../data/ingredients';
-import { GEAR, GEAR_LIST, HOUSING, LENDERS, JUNK, JUNK_LIST, TIERS } from '../data/gear';
+import { GEAR, GEAR_LIST, HOUSING, LENDERS, JUNK, JUNK_LIST, TIERS, BRANCH_SITES } from '../data/gear';
 import { RECIPE_LIST, RECIPES, toolsFor } from '../data/recipes';
 import { FIXED, LINES, SIDE } from '../data/people';
 import { FunDef, funHoursText, funOpenAt } from '../data/fun';
@@ -22,7 +22,7 @@ import * as N from '../sim/net';
 import * as RC from '../sim/race';
 import { bus, toast, sfx } from '../core/bus';
 import { rnd, RNG, clamp, money, dist2, round1k, round500, qty, hhmm } from '../core/util';
-import { NAV, groundY, districtAt, DISTRICT } from '../world/layout';
+import { NAV, groundY, districtAt, DISTRICT, SPOTS } from '../world/layout';
 import { MB, MAT } from '../gfx/mb';
 import { ingModel } from '../gfx/props';
 
@@ -170,6 +170,7 @@ export class Acts {
             bye,
           ]);
         } });
+        opts.push({ t: 'Nói chuyện mở CHI NHÁNH (chuỗi cửa hàng)', sub: 'Cần đã có Nhà hàng bình dân; chi nhánh là điểm bán thứ hai do người trông coi tự bán', off: g.stall.tier < 6 && !R.has(g, 'chuoi'), fn: () => this.branchTalk(n) });
         opts.push({ t: 'Bán lại đồ nghề cũ', off: !Object.keys(g.gear).length, fn: () => this.sellGearMenu(n) });
         opts.push({ t: 'Nên mua gì trước hả chú?', fn: () => this.D(who(n), n, 'Mới vô nghề thì cặp GÁNH trước đã. Rồi DAO THỚT là làm được bánh tráng trộn. Có BẾP THAN với VỈ thì nướng khoai, nướng bắp. Muốn pha trà đá thì thêm cái NỒI. Cứ đi quanh tiệm, thấy món nào thì chạm vô coi giá.', [bye]) });
         this.D(who(n), n, 'Tiệm Ba Tài, xe đẩy bếp núc gì cũng có! Hàng bày quanh đó, ưng món nào cứ chạm vô.', [...opts, bye]); break;
@@ -273,6 +274,49 @@ export class Acts {
       this.D(who(n), n, ev.length ? ev[0].text : shop.lateSale && hourOf(g) >= shop.open[1] - 2 ? 'Cuối buổi rồi, đồ tươi cô bán rẻ cho hết hàng. Lựa lẹ đi con!' : rnd.pick(['Sáng sớm hàng mới về là tươi nhất đó. Chiều thì rẻ mà hết ngon.', 'Mua quen cô bớt cho. Cứ ghé hoài là thành mối.', 'Ra đường thấy trời chuyển mưa thì bán đồ nóng, đắt như tôm tươi.', 'Vựa đầu mối Tám Lúa bên Khu Kho Bãi bán sỉ rẻ lắm, mà phải đi từ 3 giờ sáng.']), [bye]);
     } });
     this.D(who(n), n, `${shop.say} ${shop.id === 'mart' || shop.id === 'pharmacy' ? 'Anh chị cứ lấy hàng trên kệ rồi ra quầy tính tiền ạ.' : 'Lựa gì cứ bốc bỏ giỏ, xong đưa đây tính tiền.'}`, [...opts, bye]);
+  }
+  // ───────────────────────── Chuỗi cửa hàng (bậc 7): mở chi nhánh thứ hai ─────────────────────────
+  /** Nói chuyện về chi nhánh: giải thích, mở chi nhánh mới, hoặc quản lý chi nhánh đang có. */
+  branchTalk(n: Npc) {
+    const g = this.g, b = g.branch, opts: Opt[] = [];
+    if (!R.isChain(g)) {
+      opts.push({ t: `Mua bảng hiệu Chuỗi cửa hàng — ${money(GEAR.chuoi.price)}`, sub: 'Cần có Nhà hàng bình dân (bậc 6) trước', off: g.cash < GEAR.chuoi.price || g.stall.tier < 6, fn: () => this.buyGear('chuoi') });
+    }
+    if (R.isChain(g) && !b) {
+      opts.push({ t: 'Thuê chỗ mở chi nhánh', sub: 'Chọn một chỗ bán khác với quán chính — trả một ngày thuê trước', fn: () => this.branchSiteMenu(n) });
+    }
+    if (b) {
+      const sp = SPOTS.find((x) => x.id === b.spot);
+      opts.push({ t: `Chi nhánh ${sp?.name ?? ''} — xem sổ (${b.keeper ? 'có người trông' : 'chưa có người'})`, fn: () => { ctx.ui.panel('branch'); } });
+    }
+    const text = !R.isChain(g)
+      ? 'Muốn mở chi nhánh thứ hai hả? Phải có cái nhà hàng đàng hoàng trước đã, rồi chú lo cho cái bảng hiệu chuỗi với giấy thuê mặt bằng.'
+      : !b
+        ? 'Được, có chuỗi rồi thì mở thêm điểm thứ hai. Chú giới thiệu ba chỗ còn trống, mỗi chỗ một giá. Nhớ: quán chính là chỗ nào thì chi nhánh phải chỗ khác.'
+        : `Chi nhánh ${SPOTS.find((x) => x.id === b.spot)?.name ?? ''} đang ${b.keeper ? (b.open ? 'bán' : 'đóng cửa') : 'chưa có người trông'}. Mở sổ ra coi doanh thu, rồi tính chuyện thuê người hay chuyển thêm món qua.`;
+    this.D(who(n), n, text, [...opts, { t: 'Rồi, để con tính.' }]);
+  }
+  /** Chọn chỗ thuê chi nhánh. */
+  private branchSiteMenu(n: Npc) {
+    const g = this.g, opts: Opt[] = [];
+    for (const site of BRANCH_SITES) {
+      const sp = SPOTS.find((x) => x.id === site.spot);
+      if (!sp) continue;
+      const takenByStall = g.stall.spot === site.spot;
+      const gate = R.branchGate(g, site.spot, takenByStall);
+      opts.push({
+        t: `${sp.name} — thuê ${money(site.rent)}/ngày`,
+        sub: `${site.note}${gate.why ? ' · ' + gate.why : ''}`,
+        off: !gate.ok || g.cash < site.rent,
+        fn: () => {
+          const br = R.openBranch(g, site.spot, takenByStall);
+          if (!br) { toast('Không mở được chi nhánh ở chỗ này.', 'warn'); return; }
+          sfx('buy'); toast(`Đã thuê ${sp.name} làm chi nhánh! Giờ tìm người trông coi và chuyển món sẵn qua.`, 'good', 'shop', true);
+          this.branchTalk(n);
+        },
+      });
+    }
+    this.D(who(n), n, 'Ba chỗ này còn trống, chú giữ giấy cho. Chỗ đông thì thuê đắt hơn nhưng bán được nhiều hơn.', [...opts, { t: 'Để con tính lại.' }]);
   }
   private sellGearMenu(n: Npc) {
     const g = this.g, ids = Object.keys(g.gear);

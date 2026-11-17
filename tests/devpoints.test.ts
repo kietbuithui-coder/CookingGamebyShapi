@@ -5,7 +5,7 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
   it('có đầy đủ danh sách mục test & dịch chuyển không trùng id', () => {
     expect(DEV_BUILD_TAG.length).toBeGreaterThan(10);
     const sections = getDevSections();
-    expect(sections.length).toBe(3);
+    expect(sections.length).toBe(4);
     const ids = new Set<string>();
     for (const sec of sections) {
       expect(sec.items.length).toBeGreaterThan(0);
@@ -16,6 +16,8 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
       }
     }
     expect(ids.has('setup_nhahang_full')).toBe(true);
+    expect(ids.has('setup_chuoi')).toBe(true);
+    expect(ids.has('tp_chinhanh')).toBe(true);
     expect(ids.has('hit_heavy')).toBe(true);
     expect(ids.has('play_chess_std')).toBe(true);
     expect(ids.has('stats_full_125')).toBe(true);

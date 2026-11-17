@@ -5,12 +5,12 @@ import { bus, toast } from '../core/bus';
 import { INGS } from '../data/ingredients';
 import { SHOPS, ShopDef } from '../data/shops';
 import { RECIPES, RecipeDef, fuelPerPortion, toolsFor, RECIPE_LIST } from '../data/recipes';
-import { GEAR, HOUSING, LENDERS, TIERS, JUNK } from '../data/gear';
-import { ARCH, ArchDef, HELPER_POOL, HelperDef, SOUS_POOL, SousDef, LINES, FIXED, FIXED_ROLE, NAMES } from '../data/people';
+import { GEAR, HOUSING, LENDERS, TIERS, JUNK, BRANCH_SITES, BRANCH_WAGE, BranchSite } from '../data/gear';
+import { ARCH, ArchDef, HELPER_POOL, HelperDef, SOUS_POOL, SousDef, KEEPER_POOL, LINES, FIXED, FIXED_ROLE, NAMES } from '../data/people';
 import { EVENTS, EVENT_LIST, EventDef, WEATHER, WeatherDef, WeatherId, floodZone, hourCurve } from '../data/world';
 import { EXPR } from '../data/expr';
 import { District, DISTRICT, SPOTS, districtAt, spotById } from '../world/layout';
-import { Game, Stack, Helper, Booking, STAT_MAX, absMin, addStack, countOf, hourOf, newLedger, purge, spoil, takeFrom, weightOf, junkWeight, emptyStall, Debt, coldWeightOf } from './state';
+import { Game, Stack, Helper, Booking, Branch, Ready, STAT_MAX, absMin, addStack, countOf, hourOf, newLedger, purge, spoil, takeFrom, weightOf, junkWeight, emptyStall, Debt, coldWeightOf } from './state';
 import * as PH from './phone';
 
 export { STAT_MAX };
@@ -895,6 +895,197 @@ export function sousWork(g: Game, nowMin = absMin(g)): SousWorkResult | null {
   return null;
 }
 
+
+// ───────────────────────── Chuỗi cửa hàng (bậc 7) — chi nhánh & người trông coi ─────────────────────────
+/** Đã lên Chuỗi cửa hàng (bậc 7) chưa: chỉ bậc này mới mở được chi nhánh thứ hai. */
+export const isChain = (g: Game) => g.stall.tier >= 7;
+/** Đã mở chi nhánh nào chưa. */
+export const hasBranch = (g: Game) => !!g.branch;
+/** Chỗ bán còn trống cho chi nhánh: bỏ chỗ của quán chính, hai mặt bằng có sân, hẻm (thuê được nhưng vắng). */
+export const branchSite = (id: string | null | undefined): BranchSite | undefined => BRANCH_SITES.find((s) => s.spot === id);
+/** Chi nhánh đang thật sự bán được: có người trông coi, đang mở, và còn món sẵn trên khay. */
+export const branchSelling = (g: Game): boolean => !!g.branch && g.branch.open && !!g.branch.keeper && g.branch.ready.some((r) => r.n > 0);
+/** Tổng số phần sẵn có ở chi nhánh. */
+export const branchStock = (g: Game) => (g.branch ? g.branch.ready.reduce((a, r) => a + r.n, 0) : 0);
+/** Số món khác nhau đang bày ở chi nhánh (tối đa 6 — quầy nhỏ). */
+export const BRANCH_TRAY_CAP = 6;
+/** Số phần tối đa chi nhánh giữ được. */
+export const BRANCH_READY_CAP = 24;
+/** Ứng viên người trông coi: xoay theo hạt giống và ngày để mỗi ngày một người khác nhau. */
+export function keeperCandidate(g: Game): HelperDef {
+  const start = (Math.abs(g.seed) + g.day * 7) % KEEPER_POOL.length;
+  for (let i = 0; i < KEEPER_POOL.length; i++) {
+    const c = KEEPER_POOL[(start + i) % KEEPER_POOL.length];
+    if (c.name !== g.branch?.keeper?.name) return c;
+  }
+  return KEEPER_POOL[start];
+}
+export interface BranchGate { ok: boolean; tier: boolean; site: boolean; why: string; }
+/** Vì sao chưa mở được chi nhánh — dùng cho UI và test (luôn kèm lý do người chơi đọc được). */
+export function branchGate(g: Game, spot: string, takenByStall = false): BranchGate {
+  const tier = isChain(g);
+  const site = !!branchSite(spot);
+  const ok = tier && site && !takenByStall && !g.branch;
+  const why = !tier ? `Cần mở Chuỗi cửa hàng (bậc 7) mới thuê được chi nhánh`
+    : g.branch ? 'Đã có một chi nhánh — bán tốt rồi hẵng tính điểm thứ ba'
+    : takenByStall ? 'Chỗ này đang là quán chính của bạn'
+    : !site ? 'Chỗ này không cho thuê chi nhánh'
+    : '';
+  return { ok, tier, site, why };
+}
+/** Thuê chỗ và mở chi nhánh (chưa có người trông coi thì chưa bán). Trả về chi nhánh vừa mở, hoặc null. */
+export function openBranch(g: Game, spot: string, takenByStall = false): Branch | null {
+  if (!branchGate(g, spot, takenByStall).ok) return null;
+  const site = branchSite(spot)!;
+  // đặt cọc một ngày thuê — nói trước, trừ trước, đúng kiểu chợ.
+  if (!spend(g, site.rent, 'fees')) return null;
+  g.branch = {
+    spot, since: g.day, rent: site.rent, keeper: null, ready: [], open: true,
+    led: { revenue: 0, tips: 0, sold: 0, customers: 0, lost: 0, fees: 0, wage: 0, loss: 0 },
+    tot: { revenue: 0, tips: 0, sold: 0, days: 0 }, hist: [],
+  };
+  bus.emit('save', 'mo chi nhanh');
+  return g.branch;
+}
+/** Đóng chi nhánh (trả lại mặt bằng): mất món sẵn còn trên khay, không hoàn tiền thuê. */
+export function closeBranch(g: Game): boolean {
+  if (!g.branch) return false;
+  g.branch = null;
+  bus.emit('save', 'dong chi nhanh');
+  return true;
+}
+/** Thuê người trông coi: trả trước một ngày lương như thuê phụ quầy. */
+export function hireKeeper(g: Game, d: HelperDef = keeperCandidate(g)): boolean {
+  const b = g.branch;
+  if (!b || b.keeper) return false;
+  if (!spend(g, d.wage, 'fees')) return false;
+  b.keeper = { name: d.name, fem: d.fem, face: d.face, hairStyle: d.hairStyle, shirt: d.shirt, pants: d.pants, hair: d.hair, skin: d.skin, wage: d.wage, since: g.day, paid: g.day, hired: true };
+  bus.emit('save', 'thue trong coi');
+  return true;
+}
+/** Cho người trông coi nghỉ việc: chi nhánh đóng cửa nhưng vẫn giữ mặt bằng. */
+export function fireKeeper(g: Game): Helper | null {
+  const k = g.branch?.keeper ?? null;
+  if (g.branch) g.branch.keeper = null;
+  return k;
+}
+/** Chuyển món đã làm sẵn từ quầy chính sang chi nhánh. Trả về số phần chuyển được. */
+export function moveToBranch(g: Game, rid: string, n: number): number {
+  const b = g.branch;
+  if (!b || n <= 0) return 0;
+  const src = g.stall.ready.filter((r) => r.rid === rid && r.n > 0).sort((a, x) => a.at - x.at);
+  if (!src.length) return 0;
+  const roomN = Math.max(0, BRANCH_READY_CAP - branchStock(g));
+  const kinds = new Set(b.ready.map((r) => r.rid));
+  const kindRoom = kinds.has(rid) || kinds.size < BRANCH_TRAY_CAP ? roomN : 0;
+  let left = Math.min(n, kindRoom);
+  let moved = 0;
+  while (left > 0 && src.length) {
+    const s = src[0];
+    const take = Math.min(left, s.n);
+    const dst = b.ready.find((r) => r.rid === rid);
+    if (dst) { const total = dst.n + take; dst.q = (dst.q * dst.n + s.q * take) / total; dst.n = total; dst.cost = (dst.cost * (total - take) + s.cost * take) / total; }
+    else b.ready.push({ rid, n: take, q: s.q, at: absMin(g), cost: s.cost });
+    s.n -= take; left -= take; moved += take;
+    if (s.n <= 0) src.shift();
+  }
+  g.stall.ready = g.stall.ready.filter((r) => r.n > 0);
+  return moved;
+}
+/** Lấy món từ chi nhánh về quầy chính (bán không hết thì mang về). */
+export function moveFromBranch(g: Game, rid: string, n: number): number {
+  const b = g.branch;
+  if (!b || n <= 0) return 0;
+  const src = b.ready.filter((r) => r.rid === rid && r.n > 0);
+  if (!src.length) return 0;
+  const trayCap = stallTrayCap(g);
+  const roomN = Math.max(0, trayCap - g.stall.ready.reduce((a, r) => a + r.n, 0));
+  let left = Math.min(n, roomN), moved = 0;
+  while (left > 0 && src.length) {
+    const s = src[0]; const take = Math.min(left, s.n);
+    const dst = g.stall.ready.find((r) => r.rid === rid);
+    if (dst) { const total = dst.n + take; dst.q = (dst.q * dst.n + s.q * take) / total; dst.n = total; dst.cost = (dst.cost * (total - take) + s.cost * take) / total; }
+    else g.stall.ready.push({ rid, n: take, q: s.q, at: absMin(g), cost: s.cost });
+    s.n -= take; left -= take; moved += take;
+    if (s.n <= 0) src.shift();
+  }
+  b.ready = b.ready.filter((r) => r.n > 0);
+  return moved;
+}
+export interface BranchTick { sold: number; revenue: number; tips: number; lost: number; waste: number; }
+/**
+ * Một phút bán hàng ở chi nhánh: người trông coi bán món sẵn cho khách của khu đó.
+ * Đơn giá lấy theo giá người chơi đặt ở quầy chính (không tự đổi giá), tiền boa nhỏ hơn quầy chính
+ * vì người trông coi chỉ bán, không nêm nếm theo ý khách. Luật thuần, RNG truyền vào để test.
+ */
+export function branchTick(g: Game, dm: number, R: RNG = rnd): BranchTick {
+  const b = g.branch, out: BranchTick = { sold: 0, revenue: 0, tips: 0, lost: 0, waste: 0 };
+  if (!b || !b.open || !b.keeper) return out;
+  const sp = spotById(b.spot);
+  const steps = Math.max(1, Math.min(720, Math.round(dm)));
+  for (let step = 0; step < steps; step++) {
+  const inDay = hourOf(g) >= 6 && hourOf(g) < 22.5;
+  if (inDay) {
+    const d = sp?.district ?? 'cho';
+    const h = hourOf(g), w = wx(g);
+    // khách tới: đường cong giờ của khu × độ hút của chỗ × thời tiết × tay nghề người trông coi
+    const rate = hourCurve(h, d) * (sp?.traffic ?? 1) * (w.rain > 0.3 ? 0.55 : 1) * (h > 19 ? 0.7 : 1);
+    const perMin = rate * 0.11 * (b.keeper.wage >= 95000 ? 1.06 : 1);
+    const n = R.chance(Math.min(0.9, perMin)) ? 1 : 0;
+    if (n > 0) {
+      const kinds = b.ready.filter((r) => r.n > 0 && RECIPES[r.rid]);
+      if (!kinds.length) out.lost += 1;
+      else {
+        // ưu tiên món hợp buổi và món đắt lời, nhưng vẫn ngẫu nhiên để không bán cứng một món
+        const slot = mealSlot(h);
+        const weights = kinds.map((r) => (0.4 + RECIPES[r.rid].meal[slot]) * (1 + R.range(0, 0.5)));
+        const sum = weights.reduce((a, x) => a + x, 0);
+        let roll = R.range(0, sum), pick = kinds[kinds.length - 1];
+        for (let i = 0; i < kinds.length; i++) { roll -= weights[i]; if (roll <= 0) { pick = kinds[i]; break; } }
+        const price = Math.max(1000, g.rec[pick.rid].price);
+        const nPort = Math.min(pick.n, 1 + (R.chance(0.18) ? 1 : 0));
+        const revenue = price * nPort;
+        const tip = R.chance(0.16) ? round500(price * R.range(0.03, 0.1)) : 0;
+        pick.n -= nPort;
+        earn(g, revenue, null); g.led.revenue += revenue; g.led.sold += nPort; g.led.customers += 1; g.led.tips += tip;
+        b.led.revenue += revenue; b.led.tips += tip; b.led.sold += nPort; b.led.customers += 1;
+        b.tot.revenue += revenue; b.tot.tips += tip; b.tot.sold += nPort;
+        if (tip) earn(g, tip, null);
+        out.sold += nPort; out.revenue += revenue; out.tips += tip;
+      }
+    }
+  }
+  }
+  // món để lâu vẫn nguội dần giống quầy chính
+  for (const rd of b.ready) if (absMin(g) - rd.at > 120) rd.q = Math.max(0.15, rd.q - 0.04);
+  b.ready = b.ready.filter((r) => r.n > 1e-6);
+  return out;
+}
+/** Khoá sổ ngày của chi nhánh (đầu ngày): ghi lịch sử, trả lương người trông coi, thu tiền thuê chỗ. */
+export function branchNewDay(g: Game): void {
+  const b = g.branch;
+  if (!b) return;
+  // món ế qua đêm thì bỏ
+  let waste = 0;
+  for (const r of b.ready) waste += r.n * r.cost;
+  b.ready = [];
+  b.led.loss += waste;
+  b.hist.push({ day: g.day, revenue: b.led.revenue, tips: b.led.tips, sold: b.led.sold, lost: b.led.lost });
+  if (b.hist.length > 8) b.hist.shift();
+  b.tot.days += 1;
+  if (b.led.revenue > 0) toast(`Chi nhánh ${spotById(b.spot)?.name ?? ''}: hôm qua bán được ${money(b.led.revenue + b.led.tips)}.`, 'good', 'shop');
+  if (waste > 500) toast(`Chi nhánh bỏ món ế: mất ${money(waste)}.`, 'warn', 'box');
+  // tiền thuê chỗ: luôn phải đóng, thiếu thì đóng cửa chi nhánh
+  if (spend(g, b.rent, 'fees')) { b.led.fees += b.rent; if (!b.open) toast(`Đã đóng tiền thuê chi nhánh ${money(b.rent)} — mở lại được rồi.`, 'info', 'cash'); b.open = true; }
+  else { b.open = false; toast(`Không đủ ${money(b.rent)} thuê chi nhánh — chi nhánh đóng cửa hôm nay.`, 'bad', 'cash', true); }
+  // lương người trông coi
+  if (b.keeper) {
+    if (spend(g, b.keeper.wage, 'fees')) { b.keeper.paid = g.day; b.led.wage += b.keeper.wage; }
+    else { const n = b.keeper.name; b.keeper = null; b.open = false; toast(`${n} nghỉ vì chưa có lương — chi nhánh đóng cửa.`, 'bad', 'heart', true); }
+  }
+  b.led = { revenue: 0, tips: 0, sold: 0, customers: 0, lost: 0, fees: 0, wage: 0, loss: 0 };
+}
+
 // ───────────────────────── Đặt bàn trước (Bậc 6) ─────────────────────────
 export const BOOKING_MAX = 4;
 const BOOKABLE_ARCHES = ['vanphong', 'phuhuynh', 'nhagiau', 'dukhach', 'congnhan'] as const;
@@ -982,6 +1173,7 @@ function newDay(g: Game, R: RNG) {
   for (const p of s.preps.slice()) { const r = RECIPES[p.rid]; if (absMin(g) - p.at > Math.max(r.hold, 300)) { waste += p.n * p.cost; s.preps.splice(s.preps.indexOf(p), 1); } }
   for (const l of [g.bag, s.store, g.home]) waste += purge(l).lost;
   g.led.loss += waste;
+  branchNewDay(g);
   g.hist.push(g.led); if (g.hist.length > 30) g.hist.shift();
   g.tot.best = Math.max(g.tot.best, g.led.revenue);
   g.day++; g.min -= 1440; g.led = newLedger(g.day);
@@ -1027,6 +1219,7 @@ export function advance(g: Game, dm: number, act: Activity, R: RNG = rnd) {
   g.min += dm;
   PH.tick(g, dm);
   tickStats(g, dm, act);
+  branchTick(g, dm, R);
   if (g.min >= 1440) newDay(g, R);
   const h1 = Math.floor(absMin(g) / 60);
   for (let h = h0; h < h1; h++) hourly(g, R);

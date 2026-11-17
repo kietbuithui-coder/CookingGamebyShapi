@@ -8,6 +8,7 @@ export const GEAR_LIST: GearDef[] = [
   { id: 'quanan', name: 'Quán ăn nhỏ', price: 24000000, kind: 'stall', tier: 4, desc: 'Mặt bằng có mái, bốn chỗ ngồi ăn tại chỗ, bày được 16 món.' },
   { id: 'quanngoi', name: 'Quán có chỗ ngồi', price: 58000000, kind: 'stall', tier: 5, desc: 'Sáu chỗ ngồi bàn gỗ kê trong nhà, bày 20 món, 12 khách một lúc; khách ăn xong còn gọi thêm tráng miệng.' },
   { id: 'nhahang', name: 'Nhà hàng bình dân', price: 145000000, kind: 'stall', tier: 6, desc: 'Không gian trong nhà kín gồm 4 bàn (8 ghế) và phòng bếp riêng; bày 26 món, 16 khách một lúc, có đặt bàn trước, thuê nhiều phụ bếp & phục vụ, đón khách đoàn.' },
+  { id: 'chuoi', name: 'Mở chuỗi cửa hàng', price: 320000000, kind: 'stall', tier: 7, desc: 'Bảng hiệu đỏ, sổ sách riêng và một suất thuê CHI NHÁNH ở chỗ bán khác: thuê người trông coi, chuyển món sẵn qua, họ bán cả ngày và bạn chỉ việc về đếm tiền.' },
   { id: 'daothot', name: 'Dao & thớt', price: 45000, kind: 'tool', desc: 'Để cắt thái mọi thứ.', wear: 0.25 },
   { id: 'bepthan', name: 'Bếp than', price: 60000, kind: 'stove', desc: 'Rẻ, nướng thơm. Phải quạt, sợ mưa.', wear: 0.5 },
   { id: 'bepgas', name: 'Bếp gas mini', price: 280000, kind: 'stove', desc: 'Chỉnh lửa chính xác, dùng bình gas.', wear: 0.4 },
@@ -54,9 +55,23 @@ export const TIERS: TierDef[] = [
   { tier: 5, id: 'quanngoi', name: 'Quán có chỗ ngồi', cap: 200, coldCap: 70, queue: 12, speed: 0, menu: 20, visible: 1.6, trays: 40 },
   // Bậc 6: nhà hàng bình dân — nội thất trong nhà kín, phòng bếp riêng, 4 bàn 8 ghế, đặt bàn trước, phụ bếp, khách đoàn.
   { tier: 6, id: 'nhahang', name: 'Nhà hàng bình dân', cap: 280, coldCap: 100, queue: 16, speed: 0, menu: 26, visible: 1.85, trays: 56 },
+  // Bậc 7: chuỗi cửa hàng — quán chính rộng nhất, cộng thêm một CHI NHÁNH do người trông coi bán tự động.
+  //           Không mang đi được (speed 0), không kê thêm ghế: chi nhánh nằm ở chỗ bán khác.
+  { tier: 7, id: 'chuoi', name: 'Chuỗi cửa hàng', cap: 320, coldCap: 120, queue: 18, speed: 0, menu: 30, visible: 2.0, trays: 64 },
 ];
 /** Các bậc kinh doanh tiếp theo (đã lên kế hoạch, chưa mở trong bản chơi đầu). */
-export const FUTURE_TIERS = ['Chuỗi cửa hàng'];
+export const FUTURE_TIERS: string[] = [];
+
+// ───────────────────────── Chi nhánh (bậc 7) ─────────────────────────
+/** Một chỗ trông coi chi nhánh: chỗ bán (SPOTS) + giá thuê mỗi ngày. Chỉ mở khi đã có Chuỗi cửa hàng. */
+export interface BranchSite { spot: string; rent: number; note: string; }
+export const BRANCH_SITES: BranchSite[] = [
+  { spot: 'cho', rent: 120000, note: 'Sát cổng chợ, khách đi chợ sáng đông — hàng bán chạy nhất.' },
+  { spot: 'vp', rent: 150000, note: 'Phố văn phòng, khách chịu chi nhưng đòi món đúng buổi trưa.' },
+  { spot: 'cv', rent: 90000, note: 'Cổng công viên, buổi chiều và tối đông gia đình, sinh viên.' },
+];
+/** Lương cơ bản của người trông coi chi nhánh (mỗi ngày) — lương thật lệch theo ứng viên. */
+export const BRANCH_WAGE = 90000;
 
 export interface HousingDef {
   id: string; name: string; rent: number; per: 'đêm' | 'tuần' | ''; buy?: number; safety: number; sleep: number; storage: number; cold: boolean; shower: boolean;

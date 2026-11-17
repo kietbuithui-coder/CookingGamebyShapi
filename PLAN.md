@@ -362,7 +362,7 @@ có 32–54% cơ hội ngồi lại gọi thêm một món **nước uống** ho
 nguyên liệu (`o.more = true`, kiên nhẫn ×1,8 × `helperPatience`, câu thoại riêng trong `LINES.order_more`). Giao
 xong món thứ hai khách mới đứng dậy về.
 
-**Kiểm thử:** `tests/quanngoi.test.ts` 18 bài — lúc đó tổng **278 bài / 18 tệp**; hiện là **322 bài / 24 tệp**. Probe `tools/probe/steps/quanngoi.mjs`:
+**Kiểm thử:** `tests/quanngoi.test.ts` 18 bài — lúc đó tổng **278 bài / 18 tệp**; hiện là **347 bài / 25 tệp**. Probe `tools/probe/steps/quanngoi.mjs`:
 mua `sap → quanan → quanngoi` ở tiệm Ba Tài → dựng ở Mặt bằng Khu Căn Hộ → mở bán, 6 khách ngồi vào 3 bàn gỗ trên
 nền gạch bông ca-rô → giao món cho 4 khách, khách ngồi lại gọi thêm trà đá (`more: true`) → bảng quầy hiện nhãn
 `hợp buổi này` / `ngoài buổi` → đóng quán, kiểm bản lưu v11 giữ nguyên bậc 5 và 6 ghế.
@@ -378,5 +378,30 @@ tối đa 2 phục vụ + 2 phụ bếp, phụ bếp tự sơ chế/ra món ph�
 −0,5 uy tín) và khách đoàn 3–4 người gọi chung một lượt.
 
 **Còn lại của bậc 6:** chạy probe giao diện thật (`tools/probe/steps/nhahang.mjs`) ở cả 844×390 và 390×844 — hiện mới
-có test luật. **Lượt kế tiếp của nhánh kinh doanh:** bậc 7 `Chuỗi cửa hàng` (điểm bán thứ hai, sổ sách từng điểm,
-người trông coi) — bậc duy nhất còn trong `FUTURE_TIERS`.
+có test luật.
+
+---
+
+## Lượt 18 — Bậc 7: chuỗi cửa hàng, điểm bán thứ hai & người trông coi ✅ đã xong
+
+Bậc cuối của nhánh kinh doanh (`chuoi`, 320.000.000₫ ở tiệm Đồ Nghề Ba Tài, cần nhà hàng bình dân trước) — sau lượt
+này `FUTURE_TIERS` **rỗng** và nhánh kinh doanh đủ **7/7 bậc**. Tài liệu chi tiết ở **`DESIGN.md` mục 4.27**.
+
+**Một chi nhánh, không phải quầy thứ hai.** `Game.branch` mở ở một trong ba `BRANCH_SITES` (Sát cổng chợ 120.000₫/ngày
+· Phố văn phòng 150.000₫ · Cổng công viên 90.000₫), thuê theo ngày, trả cùng lương người trông coi đầu mỗi ngày.
+Người chơi vẫn bán ở quầy chính; chi nhánh bán hộ những **món đã nấu sẵn** được chuyển sang (`moveToBranch`, trần 6
+loại món / 24 phần). Nhờ vậy không phải nhân đôi vòng khách 3D — toàn bộ sửa đổi nằm gọn trong một vòng tính theo phút
+(`branchTick`, gọi từ `advance()` với `steps = clamp(round(dm), 1, 720)` nên ngủ dài/tua nhanh không mất doanh thu).
+
+**Người trông coi.** `KEEPER_POOL` 3 ứng viên (lương 88.000–100.000₫/ngày). Không thuê thì chi nhánh không bán; món để
+đó vẫn hao tươi. Trong thành phố có một NPC đứng sau quầy chi nhánh (`StallSys.updateKeeper`), quầy gỗ nhỏ + mái hiên
+sọc + bảng hiệu đỏ *CHI NHÁNH · ĐANG BÁN* và khay món xếp theo lượng sẵn, tự ẩn khi người chơi ở xa hơn 90 m.
+
+**Sổ từng điểm.** Chạm quầy chi nhánh (hoặc mở từ tab Nhân sự) ra bảng `'branch'`: doanh thu – đã bán – tip – mất khách
+của hôm nay, tổng dồn nhiều ngày, thuê/cho nghỉ người trông coi, tạm đóng/mở lại, chuyển món hai chiều, 8 ngày lịch sử
+và nút trả mặt bằng (hoàn nửa tiền thuê ngày đầu, bỏ món đang để đó).
+
+**Kiểm thử:** `tests/chuoi.test.ts` 24 bài + 1 bài sửa cho `tests/devpoints.test.ts` — tổng **347 bài / 25 tệp**;
+`npx tsc --noEmit`, `npm run build`, `npm run build:pages` sạch. Probe `tools/probe/steps/chuoi.mjs` chạy ở 844×390 và
+390×844: lên bậc 7 → mở chi nhánh Cổng Chợ → thuê người trông coi → chuyển 14 phần sang → chạm đúng quầy để mở sổ →
+tua 3 tiếng thấy bán hết 14 phần (280.000₫ + tip) → trả mặt bằng; không lỗi console.

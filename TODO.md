@@ -1,24 +1,24 @@
 # Việc còn lại
 
 Danh sách những gì **chưa làm**, rà theo mã ngày 2026-11-17 (`main` = `ca6c3d6`). Đã xong: 60/60 món · 8/8 kiểu chỗ ở ·
-6/7 bậc kinh doanh · 8 thời tiết · 22 sự kiện · 75 nguyên liệu · 12 nơi bán · 36 món đồ nghề · 16 nhóm người ·
+7/7 bậc kinh doanh · 8 thời tiết · 22 sự kiện · 75 nguyên liệu · 12 nơi bán · 37 món đồ nghề · 16 nhóm người ·
 11 khách quen · 43 nhân vật cố định · chuỗi 11 mục tiêu hướng dẫn · điện thoại · quán net · công an · bệnh viện ·
 đua xe đạp · NPC sinh hoạt theo giờ · giao diện dễ đọc · 16 biểu cảm · 8 kiểu tóc · người phụ việc ·
 ngoại hình người chơi (góc nhìn thứ ba, cắt tóc, thời trang) · quán có chỗ ngồi (sáu ghế bàn gỗ, thực đơn theo buổi, gọi thêm) ·
 nhà hàng bình dân (8 ghế trong nhà kín, đặt bàn trước, phụ bếp, khách đoàn) ·
-322 bài kiểm thử / 24 tệp.
+chuỗi cửa hàng (chi nhánh thứ hai, người trông coi, sổ từng điểm) · 347 bài kiểm thử / 25 tệp.
 
 ---
 
-## 1. Nhánh kinh doanh — còn 1 bậc (Chuỗi cửa hàng)
+## 1. Nhánh kinh doanh — đã đủ 7/7 bậc
 
 | Bậc | Tên | Cần gì để làm |
 |---|---|---|
 | ✅ 5 | Quán có chỗ ngồi | **Đã xong (lượt 16):** 58.000.000₫, 200 kg, 20 món, 12 khách, hiên mái tôn + nền gạch bông + 3 bàn gỗ 6 ghế tựa lưng, thực đơn theo buổi (sáng/trưa/chiều/khuya, `fitsPeriod` ×1,35), khách ăn tại chỗ kiên nhẫn ×1,9 và gọi thêm món tráng miệng/nước (`secondOrder`) |
 | ✅ 6 | Nhà hàng bình dân | **Đã xong:** 145.000.000₫, 280 kg, 26 món, 16 khách, nội thất trong nhà kín (4 bàn 8 ghế, phòng bếp riêng có vách ngăn & cửa bếp, không ngại mưa/tối), đặt bàn trước (nhận/từ chối/giữ chỗ/tiền cọc), nhân viên phụ bếp (`sous` tự sơ chế & nấu phụ), khách đoàn 3–4 người (`decideGroup`) |
-| 7 | Chuỗi cửa hàng | Mở điểm bán thứ hai cùng lúc, quản lý từ xa (sổ sách từng điểm), thuê người trông coi |
+| ✅ 7 | Chuỗi cửa hàng | **Đã xong (lượt 18):** 320.000.000₫, 320 kg, 30 món, 18 khách, 64 khay; chi nhánh thứ hai ở 3 chỗ đặt (120.000/150.000/90.000₫ mỗi ngày), thuê người trông coi bán hộ món nấu sẵn (trần 6 món / 24 phần), sổ từng điểm + 8 ngày lịch sử, quầy nhỏ & NPC trông coi dựng thật ngoài phố |
 
-Hiện `FUTURE_TIERS` trong `src/data/gear.ts` còn đúng 1 bậc (`Chuỗi cửa hàng`); chưa có dữ liệu, mô hình, luật mở điểm bán thứ hai và kiểm thử.
+`FUTURE_TIERS` trong `src/data/gear.ts` nay là mảng rỗng — nhánh kinh doanh hết bậc. Còn thiếu của bậc 7: **nhiều chi nhánh cùng lúc** (hiện đúng 1), nâng cấp riêng cho chi nhánh (máy tính tiền, tủ lạnh, bảng menu), và **quản lý qua điện thoại** thay vì phải chạy tới quầy.
 
 ## 2. Băng nhóm
 

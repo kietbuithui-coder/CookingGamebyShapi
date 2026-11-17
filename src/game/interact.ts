@@ -16,7 +16,7 @@ import { money, dist2, qty, damp, hhmm } from '../core/util';
 import { toast, sfx } from '../core/bus';
 import { MB, MAT, shade } from '../gfx/mb';
 
-type Kind = 'slot' | 'npc' | 'stall' | 'spot' | 'door' | 'bed' | 'store' | 'wash' | 'tap' | 'bin' | 'litter' | 'anchor' | 'homeStall' | 'bench';
+type Kind = 'slot' | 'npc' | 'stall' | 'spot' | 'door' | 'bed' | 'store' | 'wash' | 'tap' | 'bin' | 'litter' | 'anchor' | 'homeStall' | 'bench' | 'branch';
 interface Cand { kind: Kind; ref: any; x: number; y: number; z: number; r: number; prio: number; }
 export interface Focus { label: string; sub?: string; act: () => void; alt?: { label: string; act: () => void }; x: number; y: number; z: number; }
 const _v = new THREE.Vector3(), _f = new THREE.Vector3();
@@ -46,6 +46,9 @@ export class Interact {
       if (near(wx, wz, 2.2)) this.add('wash', 'sink', wx, groundY(wx, wz) + 0.85, wz, 2.1, 0.15);
     }
     if (s.where === 'carried') for (const sp of SPOTS) if (near(sp.x, sp.z, 4.2)) this.add('spot', sp, sp.x, 0.4, sp.z, 4.2, 0.3);
+    // Quầy chi nhánh (bậc 7): chạm vào để mở sổ chi nhánh.
+    const ba = ctx.stall.branchAnchor();
+    if (ba && near(ba.x, ba.z, 4.0)) this.add('branch', null, ba.x, ba.y, ba.z, 3.9, 0.15);
     for (const d of this.doors) if (near(d.d.x, d.d.z, 2.6)) this.add('door', d, d.d.x + Math.cos(d.d.yaw) * d.d.w * 0.5, 1.1, d.d.z + Math.sin(d.d.yaw) * d.d.w * 0.5, 2.4);
     for (const k of Object.keys(HOUSING)) {
       const b = A['bed_' + k]; if (b && near(b.x, b.z, 2.6)) this.add('bed', k, b.x, b.y, b.z, 2.5);
@@ -93,6 +96,11 @@ export class Interact {
       }
       case 'stall': return mk(g.stall.open ? (R.isRestaurant(g) ? 'Nhà hàng (đang mở)' : 'Quầy hàng (đang mở bán)') : (R.isRestaurant(g) ? 'Nhà hàng bình dân' : 'Quầy hàng'), () => ctx.ui.panel('stall'), R.isRestaurant(g) ? 'Thực đơn · Sơ chế · Nhân sự & Đặt bàn · Kho' : 'Thực đơn · Sơ chế · Kho quầy');
       case 'homeStall': return mk('Mang quầy đi', () => { ctx.stall.pickUp(); }, 'Chạm để gánh lên vai', { label: 'Kho', act: () => ctx.ui.panel('stall') });
+      case 'branch': {
+        const b = g.branch!;
+        const state = !b.keeper ? 'chưa có người trông' : b.open ? 'đang bán' : 'tạm đóng';
+        return mk(`Chi nhánh · ${state}`, () => ctx.ui.panel('branch'), `${R.branchStock(g)} phần sẵn · ${b.keeper ? b.keeper.name : 'cần thuê người trông coi'}`);
+      }
       case 'spot': {
         const sp = c.ref, sap = g.stall.tier >= 3, quan = g.stall.tier >= 4, nh = g.stall.tier >= 6;
         return mk(`${nh ? 'Mở nhà hàng' : quan ? 'Dựng quán' : sap ? 'Dựng sạp' : 'Đặt quầy'} tại ${sp.name}`, () => ctx.stall.placeAt(sp),

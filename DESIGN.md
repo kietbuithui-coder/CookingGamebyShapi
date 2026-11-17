@@ -19,7 +19,7 @@ Một vòng chơi trọn vẹn và thật sự chạy được: **tay trắng �
 
 Hai nguyên tắc giữ cho mã kiểm thử được:
 
-1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 322 bài kiểm thử (24 tệp) chạy trong Node trong khoảng 7 giây.
+1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 347 bài kiểm thử (25 tệp) chạy trong Node trong khoảng 7 giây.
 2. **Mọi ngẫu nhiên trong luật chơi nhận một `RNG` có hạt giống** làm tham số cuối, nên kết quả kiểm thử lặp lại được.
 
 Vòng lặp chính (`src/main.ts`): đọc điều khiển → `advance()` cho thời gian game trôi (0,75 phút game mỗi giây thật, một ngày = 32 phút thật; khi ngủ 48 phút game mỗi giây) → cập nhật người chơi, NPC, quầy, nấu ăn, môi trường → vẽ. `dt` bị chặn ở 50 ms nên máy rất chậm thì game chạy chậm lại chứ không nhảy cóc.
@@ -470,8 +470,7 @@ người bán. Bấm V khi chưa bật góc nhìn thứ ba thì toast nhắc —
 
 `TIERS[5]` (`src/data/gear.ts`): chứa 200 kg, giữ lạnh 70 kg, hàng đợi 12, bày 20 món, 40 khay, độ hiện 1,6.
 Đồ nghề `quanngoi` giá 58.000.000₫ ở tiệm Đồ Nghề Ba Tài, đòi có **quán ăn nhỏ (bậc 4)** trước. Dựng tại hai mặt
-bằng có sân (`matbang_tb` Phố Văn Phòng 160.000₫/ngày, `matbang_dc` Khu Căn Hộ 120.000₫/ngày). `FUTURE_TIERS`
-nay chỉ còn một bậc (`Chuỗi cửa hàng`) — bậc 6 đã xong, xem mục 4.26.
+bằng có sân (`matbang_tb` Phố Văn Phòng 160.000₫/ngày, `matbang_dc` Khu Căn Hộ 120.000₫/ngày). Bậc 6 xem mục 4.26, bậc 7 (chuỗi cửa hàng) xem mục 4.27 — `FUTURE_TIERS` nay rỗng.
 
 **Mô hình** (`StallSys.rebuild`): quầy gỗ dài 5,6 m mặt đá + yếm đỏ, hiên mái tôn xanh 6,9 × 5,9 m có diềm vàng,
 hai vách thấp hai bên, hai bồn cây phía trước chừa lối vào rộng ở giữa, nền gạch bông ca-rô đỏ–kem, quầy thu ngân
@@ -503,8 +502,8 @@ bán thêm phần tráng miệng đi!"*…). Khi giao món đầu mà khách g�
 
 `TIERS[6]` (`src/data/gear.ts`): chứa 280 kg, giữ lạnh 100 kg, hàng đợi 16, bày 26 món, 56 khay, độ hiện 1,85.
 Đồ nghề `nhahang` giá 145.000.000₫ ở tiệm Đồ Nghề Ba Tài, đòi có **quán có chỗ ngồi (bậc 5)** trước. Dựng ở hai
-**mặt bằng** có sân như bậc 4–5 (`matbang_tb` 160.000₫/ngày, `matbang_dc` 120.000₫/ngày). `FUTURE_TIERS` còn đúng
-một bậc (`Chuỗi cửa hàng`).
+**mặt bằng** có sân như bậc 4–5 (`matbang_tb` 160.000₫/ngày, `matbang_dc` 120.000₫/ngày). Bậc cuối (chuỗi cửa
+hàng) xem mục 4.27 — `FUTURE_TIERS` nay rỗng.
 
 **Trong nhà kín.** `isRestaurant(g)` = `tier >= 6` là cờ duy nhất cho cả cụm tính năng dưới đây — đừng so sánh
 `tier === 6` rải rác. Nhờ `isRestaurant`, ban đêm không có đèn chỉ còn ×0,72 sức hút (bậc ≤ 5 là ×0,3) và trời mưa
@@ -538,6 +537,69 @@ chung một lượt**: `Order.group = size`, `Order.n` = số phần gọi (kẹ
 `budget × size`), câu gọi có nhắc số người. Món nào còn đủ cho cả đoàn được nhân ưu tiên ×1,6 nên khách đoàn ít khi
 gọi món chỉ còn 1–2 phần.
 
+### 4.27 Bậc 7 — chuỗi cửa hàng: điểm bán thứ hai, người trông coi và sổ từng điểm
+
+`TIERS[7]` (`chuoi`, `src/data/gear.ts`): chứa 320 kg, giữ lạnh 120 kg, hàng đợi 18, bày 30 món, 64 khay, độ hiện 2,0.
+Đồ nghề `chuoi` giá **320.000.000₫** ở tiệm Đồ Nghề Ba Tài, đòi **nhà hàng bình dân (bậc 6)** trước. Đây là bậc cuối:
+`FUTURE_TIERS` nay là mảng rỗng. `isChain(g)` = `tier >= 7` là cờ duy nhất cho cụm tính năng dưới đây.
+
+**Chi nhánh là gì.** `Game.branch` (`Branch`, `src/sim/state.ts`) là **một** điểm bán thứ hai, **không** phải quầy thứ
+hai có khách 3D: người chơi vẫn bán ở quầy chính, còn chi nhánh do **người trông coi** bán hộ các món đã nấu sẵn ở
+quầy chính (chuyển sang theo từng món). Nhờ vậy toàn bộ luồng khách, hàng đợi, chỗ ngồi hiện có **không phải sửa** —
+chi nhánh chỉ có một vòng tính theo phút.
+
+**Chỗ đặt (`BRANCH_SITES`).** Ba điểm cố định trong thành phố, khác nhau về tiền thuê và sức hút:
+
+| id | Tên | Thuê/ngày | Sức hút |
+|---|---|---|---|
+| `cho` | Sát cổng chợ | 120.000₫ | 1,15 |
+| `vp` | Phố văn phòng | 150.000₫ | 1,25 |
+| `cv` | Cổng công viên | 90.000₫ | 0,95 |
+
+`branchGate(g)` kiểm: đã bậc 7, chưa có chi nhánh, đủ tiền **thuê ngày đầu**; `openBranch(g, site)` trừ tiền thuê ngày
+đầu rồi tạo `Branch { spot, rent, open: true, keeper: null, ready: [], led, tot, hist }`. `closeBranch(g)` dọn chi
+nhánh, trả lại **một nửa** tiền thuê ngày đầu và bỏ toàn bộ món đang để ở đó (món đã nấu thì không mang về được).
+
+**Người trông coi (`KEEPER_POOL`, `src/data/people.ts`).** Ba ứng viên cố định có tên – giới – ngoại hình – lương
+riêng (88.000–100.000₫/ngày). `hireKeeper` / `fireKeeper`; `keeper.wage` trả mỗi đầu ngày cùng tiền thuê. Không có
+người trông coi thì chi nhánh **không bán** (`branchSelling(g)` = `false`) — món để đó vẫn hao tươi theo ngày.
+
+**Chuyển món (`moveToBranch` / `moveFromBranch`).** Chỉ chuyển **món đã nấu sẵn** (`stall.ready`), theo từng phần,
+không chuyển nguyên liệu. Trần `BRANCH_TRAY_CAP = 6` loại món và `BRANCH_READY_CAP = 24` phần ở chi nhánh; chuyển
+ngược lại thì bị chặn bởi trần khay của quầy chính. Mỗi phần giữ nguyên `q` (độ tươi) và `cost` để tính lãi.
+
+**Bán hàng (`branchTick`).** Gọi từ `advance()` (mỗi phút một bước, `steps = clamp(round(dm), 1, 720)` nên ngủ dài hay
+tua nhanh vẫn không mất doanh thu) và **không** gọi trong `StallSys.update` (thời gian đã trôi qua `advance`).
+Mỗi phút: `p = base × hourCurve(h) × site.pull × (open ? 1 : 0)`, bán 1 phần nếu `chance(p)`, giá = giá bán đang đặt
+của món × hệ số tươi, cộng **tip 16%** khi `q ≥ 0,8`. Doanh thu vào `b.led.revenue`, tip vào `b.led.tips`; sổ của
+người chơi (`g.led.revenue`) **không** cộng vì đây là tiền của điểm thứ hai — chỉ tổng kết cuối ngày mới nhập vào
+`g.hist` qua tiền mặt. Món hết hoặc `q` cạn thì thôi bán.
+
+**Đầu ngày (`branchNewDay`).** Chạy trong `newDay()` **trước** `g.hist.push(g.led)` để sổ ngày vừa khoá còn nguyên số:
+ghi một dòng `b.hist` (tối đa 8 ngày: doanh thu, tip, số phần bán, số món), cộng dồn `b.tot`, trừ **tiền thuê + lương**
+vào tiền mặt, bỏ món ế (`ready` về rỗng — món để qua đêm hỏng), rồi mở lại `b.led` từ 0 và `open = true`.
+
+**Nhìn thấy trong thành phố.** `StallSys.rebuildBranch()` dựng ở toạ độ `BRANCH_SITES[i].spot` một quầy gỗ nhỏ 1,9 m
+có yếm đỏ, mái hiên sọc xanh–trắng, bảng hiệu đỏ *CHI NHÁNH · ĐANG BÁN* (hoặc *· ĐÓNG*), khay món xếp dần theo lượng
+sẵn, thùng đá và ghế nhựa; cả cụm **ẩn khi người chơi ở xa hơn 90 m**. `StallSys.updateKeeper()` cho **một NPC** mang
+tên người trông coi đứng sau quầy ở `pose = 'serve'`, tự biến mất khi chi nhánh đóng / mất người / bị dẹp.
+
+**Chạm để mở sổ.** `interact.ts` thêm `Kind 'branch'` với bán kính 3,9 m quanh `StallSys.branchAnchor()`; nhãn hiện
+*Chi nhánh · đang bán / tạm đóng / chưa có người trông* kèm số phần sẵn. Chạm mở bảng `'branch'` (`src/ui/panels.ts`):
+sổ hôm nay (doanh thu, đã bán, tip, mất khách, chi hôm nay, tổng dồn), nút **thuê / cho nghỉ** người trông coi, nút
+**tạm đóng / mở lại**, danh sách món ở chi nhánh kèm nút *← về quầy*, danh sách món sẵn ở quầy chính kèm nút
+*1 về quầy* chuyển sang, 8 ngày lịch sử và nút **trả mặt bằng**. Tab Nhân sự ở quầy chính cũng có khối Chi nhánh và
+nút mở sổ; menu nói chuyện với Ba Tài có mục *Nói chuyện mở chi nhánh* / *Xem sổ chi nhánh*.
+
+**Bản lưu v14.** `SAVE_VERSION = 14`; bản lưu trước v14 hoặc thiếu `branch` ⇒ `branch = null`. `cleanBranch()` kẹp lại
+dữ liệu đọc lên: `rent` vô lý về 0, bỏ phần `ready` sai hình dạng hoặc quá trần, cắt `hist` còn 8 dòng, mọi số trong
+`led`/`tot` bị NaN thì về 0.
+
+**Kiểm thử.** `tests/chuoi.test.ts` (25 bài): dữ liệu `TIERS[7]`/`GEAR.chuoi`/`BRANCH_SITES`/`KEEPER_POOL`, chặn mở
+chi nhánh khi chưa bậc 7 hoặc thiếu tiền, mở/đóng và hoàn tiền, thuê/đuổi người trông coi, chuyển món hai chiều và
+trần khay, `branchTick` bán đúng phần – đúng giá – có tip, `branchNewDay` ghi lịch sử + trừ tiền thuê/lương + bỏ món ế,
+nâng cấp bản lưu v13 → v14 cùng `cleanBranch`, và một lượt chạy bất biến (tiền mặt không âm, tồn kho không âm).
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
@@ -548,7 +610,7 @@ gọi món chỉ còn 1–2 phần.
 
 ## 6. Lưu game
 
-`localStorage`, khoá `ganhhang.save.v1` (trạng thái) và `ganhhang.settings.v1` (cài đặt). Tự lưu sau việc quan trọng, mỗi 45 giây và khi rời trang. `SAVE_VERSION = 13`; `migrate()` nạp được bản lưu cũ thiếu trường và loại bỏ nguyên liệu không còn tồn tại. Bản lưu trước v4 chưa có sổ `met` nên được coi như đã quen hết người đứng quầy. Bản lưu trước v5 (chưa có bệnh viện) được nâng sức khoẻ lên 45 nếu đang ở 0 — nếu không, mở lên là ngất liền — và thêm sổ đồ thất lạc rỗng. Bản lưu trước v6 được cấp `wanted = 0` và `jailUntil = 0` (chưa ai biết mặt). Bản lưu trước v7 chưa có điện thoại (`phone = null`). Bản lưu trước v8 chưa có sổ phút ngồi quán net (`netDay = -1`, `netMin = 0`). Bản lưu trước v9 chưa có sổ ngày đua xe đạp (`raceDay = -1`, `raceWin = 0`). Bản lưu trước v10 chưa có người phụ việc (`help = null`); dữ liệu `help` hỏng cũng bị bỏ, và bản lưu cũ đã từng bán được hàng thì được ghi mốc `firstSale = 0`. Bản lưu trước v11 chưa có ngoại hình người chơi (`Game.look`): `migrate()` cấp `defaultLook()` theo giới tính của ván, còn `look` hỏng thì `cleanLook()` kẹp lại từng trường. Bản lưu trước v12 chưa có nhà hàng bình dân (`sous = null`, `bookings = []`, `bookSeq = 1`); bản lưu trước v13 chưa có slot nhân sự thứ hai (`help2 = null`, `sous2 = null`). Cài đặt có thêm `ui` (cỡ giao diện và cách xếp nút) và `cam3` (góc nhìn thứ ba); `cleanLayout()` làm sạch dữ liệu đọc lên.
+`localStorage`, khoá `ganhhang.save.v1` (trạng thái) và `ganhhang.settings.v1` (cài đặt). Tự lưu sau việc quan trọng, mỗi 45 giây và khi rời trang. `SAVE_VERSION = 14`; `migrate()` nạp được bản lưu cũ thiếu trường và loại bỏ nguyên liệu không còn tồn tại. Bản lưu trước v4 chưa có sổ `met` nên được coi như đã quen hết người đứng quầy. Bản lưu trước v5 (chưa có bệnh viện) được nâng sức khoẻ lên 45 nếu đang ở 0 — nếu không, mở lên là ngất liền — và thêm sổ đồ thất lạc rỗng. Bản lưu trước v6 được cấp `wanted = 0` và `jailUntil = 0` (chưa ai biết mặt). Bản lưu trước v7 chưa có điện thoại (`phone = null`). Bản lưu trước v8 chưa có sổ phút ngồi quán net (`netDay = -1`, `netMin = 0`). Bản lưu trước v9 chưa có sổ ngày đua xe đạp (`raceDay = -1`, `raceWin = 0`). Bản lưu trước v10 chưa có người phụ việc (`help = null`); dữ liệu `help` hỏng cũng bị bỏ, và bản lưu cũ đã từng bán được hàng thì được ghi mốc `firstSale = 0`. Bản lưu trước v11 chưa có ngoại hình người chơi (`Game.look`): `migrate()` cấp `defaultLook()` theo giới tính của ván, còn `look` hỏng thì `cleanLook()` kẹp lại từng trường. Bản lưu trước v12 chưa có nhà hàng bình dân (`sous = null`, `bookings = []`, `bookSeq = 1`); bản lưu trước v13 chưa có slot nhân sự thứ hai (`help2 = null`, `sous2 = null`). Bản lưu trước v14 chưa có chi nhánh (`branch = null`) — mở bậc 7 rồi mới mở được chi nhánh, và `cleanBranch()` kẹp lại dữ liệu chi nhánh đọc lên. Cài đặt có thêm `ui` (cỡ giao diện và cách xếp nút) và `cam3` (góc nhìn thứ ba); `cleanLayout()` làm sạch dữ liệu đọc lên.
 
 ## 7. Kiểm thử
 
@@ -586,7 +648,7 @@ Người chơi đã thử bản đầu và gửi danh sách góp ý; việc đư
 Còn lại:
 
 1. **Đã xong 3 kiểu chỗ ở mới: căn hộ, nhà riêng, cửa hàng kiêm nhà ở** (8/8) — xem mục 4.13.
-2. **Đã xong sạp cố định (bậc 3)** — mục 4.12, **quán ăn nhỏ (bậc 4)** — mục 4.22, và **quán có chỗ ngồi (bậc 5)** — mục 4.25, và **nhà hàng bình dân (bậc 6)** — mục 4.26. Việc kế tiếp của nhánh này: chuỗi cửa hàng (bậc 7), bậc duy nhất còn trong `FUTURE_TIERS`.
+2. **Đã xong sạp cố định (bậc 3)** — mục 4.12, **quán ăn nhỏ (bậc 4)** — mục 4.22, và **quán có chỗ ngồi (bậc 5)** — mục 4.25, **nhà hàng bình dân (bậc 6)** — mục 4.26, và **chuỗi cửa hàng (bậc 7)** — mục 4.27. Nhánh kinh doanh đã đủ **7/7 bậc**; việc kế tiếp là hệ thống băng nhóm.
 3. Hệ thống băng nhóm.
 4. Danh sách đầy đủ những gì còn lại nằm ở `TODO.md`.
 

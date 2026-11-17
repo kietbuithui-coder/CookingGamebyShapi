@@ -93,6 +93,12 @@ export function openPanel(ui: UI, name: string) {
       acts.fireHelp = (i) => { const old = R.fireHelper(g, i === 2 ? 2 : 1); if (old) toast(`Đã cho nhân viên phục vụ ${old.name} nghỉ việc.`, 'info', 'heart'); };
       acts.accBook = (_i, e) => { const b = R.acceptBooking(g, +e.dataset.k!); if (b) { sfx('coin'); toast(`Đã nhận đặt bàn của ${b.name} (${b.size} người).`, 'good', 'star'); } };
       acts.rejBook = (_i, e) => { R.rejectBooking(g, +e.dataset.k!); sfx('ui'); toast('Đã huỷ / từ chối đặt bàn.', 'info'); };
+      acts.hireKeeper = () => { const c = R.keeperCandidate(g); if (!R.hireKeeper(g, c)) { toast(`Không đủ ${money(c.wage)} trả ngày lương đầu cho ${c.name}.`, 'bad', 'cash'); return; } sfx('coin'); toast(`Đã thuê ${c.name} trông coi chi nhánh (${money(c.wage)}/ngày).`, 'good', 'heart'); };
+      acts.fireKeeper = () => { const old = R.fireKeeper(g); if (old) toast(`Đã cho ${old.name} nghỉ — chi nhánh tạm đóng cửa.`, 'info', 'heart'); };
+      acts.toBranch = (_i, e) => { const rid = e.dataset.k!, n = +(e.dataset.n ?? 1); const k = R.moveToBranch(g, rid, n); if (!k) { toast('Chi nhánh hết khay trống hoặc chỉ để được 6 món — lấy bớt về trước.', 'warn'); return; } sfx('pick'); toast(`Chuyển ${k} phần ${RECIPES[rid].short.toLowerCase()} sang chi nhánh.`, 'info', 'shop'); };
+      acts.fromBranch = (_i, e) => { const rid = e.dataset.k!, n = +(e.dataset.n ?? 1); const k = R.moveFromBranch(g, rid, n); if (!k) { toast('Khay quầy chính đầy rồi.', 'warn'); return; } sfx('pick'); toast(`Mang ${k} phần ${RECIPES[rid].short.toLowerCase()} về quầy.`, 'info', 'shop'); };
+      acts.toggleBranch = () => { if (!g.branch) return; g.branch.open = !g.branch.open; sfx('ui'); toast(g.branch.open ? 'Chi nhánh mở bán lại.' : 'Đã tạm đóng chi nhánh (vẫn phải đóng tiền thuê).', 'info', 'shop'); };
+      acts.closeBranch = () => { if (!g.branch) return; if (g.branch.ready.length && !confirm('Trả mặt bằng sẽ bỏ hết món sẵn ở chi nhánh. Chắc chắn?')) return; R.closeBranch(g); toast('Đã trả mặt bằng chi nhánh.', 'info'); };
       acts.findBook = () => { const b = R.createBooking(g); if (!b) { toast('Lịch đặt bàn đã kín (tối đa 4 bàn).', 'warn'); return; } sfx('order'); toast(`Có khách mới đặt bàn: ${b.name} (${b.size} người).`, 'good', 'star'); };
       let body = '';
       if (tab === 'menu') {
@@ -136,7 +142,10 @@ export function openPanel(ui: UI, name: string) {
               : b.status === 'accepted' ? `<span class="tag good">đã nhận</span><button class="btn small" data-a="rejBook" data-k="${b.id}">Huỷ</button>`
               : `<span class="tag warn">đang ngồi</span>`) + `</div>`).join('')}</div>`
             : '<p class="muted">Chưa có bàn đặt trước nào. Khách quen hoặc dân văn phòng sẽ gửi yêu cầu khi nhà hàng hoạt động.</p>') +
-          `<div style="margin-top:.5em"><button class="btn small${activeBooks.length >= R.BOOKING_MAX ? ' off' : ''}" data-a="findBook">Nhận thêm khách đặt bàn</button></div></div></div>`;
+          `<div style="margin-top:.5em"><button class="btn small${activeBooks.length >= R.BOOKING_MAX ? ' off' : ''}" data-a="findBook">Nhận thêm khách đặt bàn</button></div>` +
+          (R.isChain(g) ? `<h4 style="margin-top:.8em">Chi nhánh (chuỗi cửa hàng)</h4>` + (g.branch
+            ? `<div class="item"><div class="grow"><b>${SPOTS.find((x) => x.id === g.branch!.spot)?.name ?? ''}</b><small>${g.branch.keeper ? g.branch.keeper.name + ' trông coi · ' + (g.branch.open ? 'đang bán' : 'đang đóng cửa') : 'Chưa có người trông coi'} · ${R.branchStock(g)} phần sẵn</small></div><button class="btn small" data-tab="branch">Mở sổ</button></div>`
+            : `<p class="muted">Đã có bảng hiệu chuỗi nhưng chưa thuê chi nhánh. Ghé tiệm Ba Tài mở thêm điểm bán thứ hai.</p>`) + `</div></div>` : `</div></div>`);
       } else {
         const sp = ctx.stall.spot(), rate = R.arrivalRate(g);
         const seatLabel = R.isRestaurant(g) ? `${R.seatCount(g)} ghế trong nhà kín (4 bàn · phòng bếp riêng)` : `${R.seatCount(g)} ghế${R.dineIn(g) ? ' trong nhà' : ' nhựa ngoài sân'}`;
@@ -177,6 +186,36 @@ export function openPanel(ui: UI, name: string) {
           <h4>Khách quen</h4><div class="list">${REGULARS.map((r) => { const rel = R.hasMet(g, r.id) ? g.rel[r.id] : undefined; return `<div class="item${rel?.n ? '' : ' off'}"><div class="grow"><b>${rel?.n ? r.name : '???'}</b><small>${rel?.n ? r.note + ' Thường ghé lúc ' + hhmm(r.hour * 60) + '. Thích: ' + r.likes.map((c) => CAT_LABEL[c].toLowerCase()).join(', ') + '.' : 'Chưa quen ai ở giờ này.'}</small></div><span class="tag ${(rel?.v ?? 0) > 20 ? 'good' : ''}">${rel?.n ? 'thân ' + Math.round(rel.v) : '—'}</span></div>`; }).join('')}</div>`;
       }
       draw(`${ic('book')} Sổ tay`, [['rec', 'Công thức'], ['led', 'Sổ sách'], ['debt', 'Nợ & khách quen']], body);
+    } else if (name === 'branch') {
+      const b = g.branch;
+      if (!b) { draw(`${ic('shop')} Chi nhánh`, [], '<p class="muted">Chưa mở chi nhánh nào. Cần bậc 7 (Chuỗi cửa hàng) rồi ghé tiệm Đồ Nghề Ba Tài.</p>'); return; }
+      const sp = SPOTS.find((x) => x.id === b.spot);
+      const cand = R.keeperCandidate(g);
+      {
+        const body = `<div class="grid2"><div>
+          <p class="muted">${sp ? sp.name : b.spot} · thuê ${money(b.rent)}/ngày · mở từ ngày ${b.since + 1}. ${R.branchSelling(g) ? 'Người trông coi đang bán.' : b.keeper ? (b.open ? 'Có người trông nhưng khay trống — chuyển món sẵn qua.' : 'Chi nhánh đang đóng cửa.') : 'Chưa có người trông coi.'}</p>
+          <div class="kv"><span>Doanh thu hôm nay</span><b class="pos">${money(b.led.revenue + b.led.tips)}</b></div>
+          <div class="kv"><span>Đã bán</span><b>${b.led.sold} phần · ${b.led.customers} khách</b></div>
+          <div class="kv"><span>Mất khách (hết món)</span><b class="${b.led.lost ? 'neg' : ''}">${b.led.lost}</b></div>
+          <div class="kv"><span>Chi hôm nay</span><b class="neg">thuê ${money(b.led.fees)} · lương ${money(b.led.wage)} · bỏ món ế ${money(b.led.loss)}</b></div>
+          <div class="kv"><span>Tổng cộng dồn</span><b>${money(b.tot.revenue + b.tot.tips)} · ${b.tot.sold} phần / ${b.tot.days} ngày</b></div>
+          <h4>Người trông coi</h4>
+          ${b.keeper ? `<div class="item"><div class="grow"><b>${b.keeper.name}</b><small>Tự bán món sẵn theo giá bạn đặt · lương ${money(b.keeper.wage)}/ngày</small></div><button class="btn small" data-a="fireKeeper">Cho nghỉ</button></div>`
+            : `<div class="item"><div class="grow"><b>${cand.name}</b><small>${cand.ask.replace('{ac}', g.ac)}</small></div><button class="btn small green${g.cash < cand.wage ? ' off' : ''}" data-a="hireKeeper">Thuê — ${money(cand.wage)}/ngày</button></div>`}
+          <div style="display:flex;gap:.4em;flex-wrap:wrap;margin-top:.5em">
+            <button class="btn small" data-a="toggleBranch">${b.open ? 'Tạm đóng chi nhánh' : 'Mở lại chi nhánh'}</button>
+            <button class="btn small" data-a="closeBranch">Trả mặt bằng</button>
+          </div></div><div>
+          <h4>Khay ở chi nhánh (${R.branchStock(g)}/${R.BRANCH_READY_CAP} phần · tối đa ${R.BRANCH_TRAY_CAP} món)</h4>
+          ${b.ready.length ? `<div class="list">${b.ready.map((r) => `<div class="item"><div class="grow"><b>${RECIPES[r.rid].name}</b><small>${r.n} phần · ${Math.round(r.q * 100)} điểm · bán ${money(g.rec[r.rid].price)}</small></div><button class="btn small" data-a="fromBranch" data-k="${r.rid}" data-n="1">‹ 1 về quầy</button></div>`).join('')}</div>`
+            : '<p class="muted">Khay trống. Chuyển món đã làm sẵn từ quầy chính sang bên dưới.</p>'}
+          <h4>Món sẵn ở quầy chính chuyển được</h4>
+          ${g.stall.ready.length ? `<div class="list">${g.stall.ready.map((r) => `<div class="item"><div class="grow"><b>${RECIPES[r.rid].name}</b><small>${r.n} phần sẵn · ${Math.round(r.q * 100)} điểm</small></div><button class="btn small green" data-a="toBranch" data-k="${r.rid}" data-n="${r.n}">Chuyển hết ›</button></div>`).join('')}</div>`
+            : '<p class="muted">Chưa có món nào làm sẵn ở quầy chính. Làm trước rồi chuyển sang.</p>'}
+          ${b.hist.length ? `<h4>Sổ những ngày qua</h4>${b.hist.slice().reverse().map((h) => `<div class="kv"><span>Ngày ${h.day + 1} · ${h.sold} phần${h.lost ? ' · mất ' + h.lost + ' khách' : ''}</span><b class="pos">${money(h.revenue + h.tips)}</b></div>`).join('')}` : ''}
+          </div></div>`;
+        draw(`${ic('shop')} Chi nhánh · ${sp?.name ?? ''}`, [['info', 'Sổ & khay']], body);
+      }
     } else if (name === 'phone') {
       const m = PH.phone(g);
       if (!m) {

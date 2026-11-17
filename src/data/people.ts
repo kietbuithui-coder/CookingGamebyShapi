@@ -337,6 +337,13 @@ export const SOUS_POOL: SousDef[] = [
   { name: 'Thằng Dũng', fem: false, face: 0, hairStyle: 1, shirt: 0xf7f3ea, pants: 0x2d323b, hair: 0x2a1c14, skin: 0xc9936a, wage: 90000, speed: 0.95, ask: 'Con chịu khó đứng bếp cả ngày, phụ {ac} băm chặt với xào nấu nha!' },
 ];
 
+/** Người trông coi chi nhánh (bậc 7). Khác người phụ quầy: đứng bán cả ngày ở điểm thứ hai, tự bán món sẵn. */
+export const KEEPER_POOL: HelperDef[] = [
+  { name: 'Cô Thuận', fem: true, face: 4, hairStyle: 5, shirt: 0xd9463c, pants: 0x2a2e3a, hair: 0x2a2420, skin: 0xe6b88e, wage: 95000, ask: 'Cô bán quán chợ mấy chục năm rồi {ac}. Đưa cô giữ chi nhánh, sáng mở sớm, chiều dọn sạch.' },
+  { name: 'Anh Dũng Ca', fem: false, face: 1, hairStyle: 2, shirt: 0x2f8fd5, pants: 0x2f3a52, hair: 0x1e1a18, skin: 0xd49a6a, wage: 100000, ask: 'Tui rành khách phố văn phòng, bán trưa một tiếng bằng người ta cả buổi. 100 ngàn một ngày nghen.' },
+  { name: 'Má Bảy', fem: true, face: 4, hairStyle: 7, shirt: 0xb9a88a, pants: 0x3a3a42, hair: 0xd9d9d6, skin: 0xf2c9a4, wage: 88000, ask: 'Má ở nhà rảnh, ra giữ quầy phụ {ac}. Tiền lời bao nhiêu má đưa lại đủ, má chỉ lấy công.' },
+];
+
 export interface FixedNpcDef { id: string; name: string; face: number; fem: boolean; shirt: number; pants: number; hair: number; hat: number; hairStyle: number; fat: number; h: number; }
 export const FIXED: Record<string, FixedNpcDef> = {
   hot_toc: { id: 'hot_toc', name: 'Chú Bảy Kéo', face: 7, fem: false, shirt: 0xf3f0e8, pants: 0x2a2e3a, hair: 0x3a2a22, hat: 0, hairStyle: 6, fat: 1.05, h: 1 },

@@ -6,7 +6,7 @@ import { ganhModel, cartModel, charcoalStove, gasStove, boardModel, knifeModel, 
 import { takeawayBag, servingTray, Look } from '../gfx/people';
 import { SPOTS, Spot, spotById, groundY, NAV_BLOCK, CORNER, edgeKey } from '../world/layout';
 import { Game, Helper, Booking, STAT_MAX, absMin, hourOf, addStack } from '../sim/state';
-import { arrivalRate, has, tier, menuOf, available, decide, decideGroup, review, settleSale, lostCustomer, readyCount, finishPossible, spend, earn, stove, changeRel, meet, wx, eventOn, Persona, addXp, canSell, missingFor, hasPrep, stallRoom, stallQueueCap, isNight, level, stallRent, payStallRent, helperGate, hireHelper, fireHelper, helperCandidate, helperPatience, sousCandidate, sousWork, createBooking, dueBooking, reservedSeats, expireBookings, seatCount, dineIn, isRestaurant, secondOrder, periodName, PATIENCE_RANGE } from '../sim/rules';
+import { branchTick, arrivalRate, has, tier, menuOf, available, decide, decideGroup, review, settleSale, lostCustomer, readyCount, finishPossible, spend, earn, stove, changeRel, meet, wx, eventOn, Persona, addXp, canSell, missingFor, hasPrep, stallRoom, stallQueueCap, isNight, level, stallRent, payStallRent, helperGate, hireHelper, fireHelper, helperCandidate, helperPatience, sousCandidate, sousWork, createBooking, dueBooking, reservedSeats, expireBookings, seatCount, dineIn, isRestaurant, secondOrder, periodName, PATIENCE_RANGE } from '../sim/rules';
 import { RECIPES, RecipeDef } from '../data/recipes';
 import { INGS } from '../data/ingredients';
 import { ARCH, HelperDef, LINES, REGULARS, RegularDef } from '../data/people';
@@ -24,6 +24,8 @@ import { EXPR } from '../data/expr';
 export interface Station { x: number; y: number; z: number; yaw: number; cam: THREE.Vector3; look: THREE.Vector3; }
 export class StallSys {
   group = new THREE.Group(); body: THREE.Mesh | null = null; stock: THREE.Mesh | null = null; tools = new THREE.Group(); sign: THREE.Mesh | null = null;
+  /** Quầy chi nhánh (bậc 7) dựng ở chỗ bán thứ hai — chỉ để nhìn thấy và chạm vào mở sổ. */
+  branchGroup = new THREE.Group(); private branchBody: THREE.Mesh | null = null; private branchSign: THREE.Mesh | null = null; private branchKey = '';
   customers: Npc[] = []; private acc = 0; private builtKey = ''; private stockKey = ''; private stockT = 0; private cols: (Box2 | Circ)[] = [];
   private actorT = 0; private actorId = ''; private actorTries = 0; busy: Npc | null = null; rowdy = 0; private signAtlas = new SignAtlas(512); private signMat: THREE.Material;
   private marks: THREE.Mesh[] = []; private regT = 30;
@@ -34,11 +36,14 @@ export class StallSys {
     2: { mode: 'idle', holdT: 0, wipeCd: 14, yaw: 0 },
   };
   /** Nhân viên phụ bếp (bậc 6) đứng phòng bếp riêng + đặt bàn trước + khách đoàn. */
+  /** Người trông coi chi nhánh (bậc 7) — đứng bán ở quầy thứ hai. */
+  keeper: Npc | null = null; private keeperRetry = 0;
   sous: Npc | null = null; sous2: Npc | null = null; private sousT = 18; private sous2T = 22; private sousWorkAnim = 0; private sous2WorkAnim = 0; private sousRetry = 0; private sous2Retry = 0;
   private sousPhase: Record<1 | 2, { idx: number; moveCd: number }> = { 1: { idx: 0, moveCd: 7 }, 2: { idx: 0, moveCd: 9 } };
   private bookT = 45; private expireT = 12; private groupSeq = 1;
   constructor() {
     ctx.scene.add(this.group); this.group.add(this.tools); this.group.visible = false;
+    ctx.scene.add(this.branchGroup); this.branchGroup.visible = false;
     this.signMat = new THREE.MeshBasicMaterial({ map: this.signAtlas.texture });
     for (let i = 0; i < 44; i++) { const b: Circ = { x: 0, z: 0, r: 0.3, on: false }; this.cols.push(b); ctx.world.dyn.push(b); }
     // mũi tên phát sáng trên các chỗ bán còn trống
@@ -1047,6 +1052,41 @@ export class StallSys {
     stepHelper(2, !!g.help2 && isRestaurant(g) && s.open);
     if (this.offerNpc && (!s.open || this.offerNpc.state === 'gone')) this.offerNpc = null;
     this.offerHelper(dt);
+    this.updateKeeper(dt);
+  }
+  /** Người trông coi chi nhánh: đứng sau quầy ở chỗ bán thứ hai khi chi nhánh đang mở. */
+  private updateKeeper(dt: number) {
+    const g = ctx.g, b = g.branch, N = ctx.npcs, k = b?.keeper;
+    const want = !!k && !!b && b.open;
+    const sp = b ? SPOTS.find((x) => x.id === b.spot) : undefined;
+    if (this.keeper && (!want || this.keeper.state === 'gone' || !sp)) {
+      const cur = this.keeper; this.keeper = null;
+      if (cur.state !== 'gone') { cur.rig.hold(null); N.leave(cur); }
+      return;
+    }
+    if (!want || !sp || !k) return;
+    if (!this.keeper) {
+      this.keeperRetry -= dt; if (this.keeperRetry > 0) return; this.keeperRetry = 3;
+      const c = Math.cos(sp.yaw), sn = Math.sin(sp.yaw);
+      const x = sp.x - 0.15 * sn - 0.95 * c, z = sp.z - 0.15 * c + 0.95 * sn;
+      const n = N.spawnPed(sp.x, sp.z, 12, 26, ARCH.hangrong); if (!n) return;
+      n.kind = 'actor'; n.actor = 'keeper'; n.name = k.name; n.fem = k.fem;
+      n.rig.setLook({ face: k.face, fem: k.fem, shirt: 0xe8e4d8, pants: 0x3b4048, hair: k.hair, hat: 0, hairStyle: k.hairStyle, fat: 1.02, h: 0.97, skin: k.skin, bag: 0, hatCol: 0x2f6fb5, long: false, apron: 0xc9473f, shoe: 0x2a2a2e });
+      n.rig.hold(null); n.path = []; n.pi = 0; n.vel = 0; n.onArrive = undefined;
+      n.state = 'actor'; n.pose = 'serve'; n.timer = 1e9; n.plan = []; n.base = EXPR.normal; n.greetT = 9999;
+      n.x = x; n.z = z; n.y = groundY(x, z); n.yaw = sp.yaw + Math.PI; n.rig.root.position.set(x, n.y, z); n.rig.root.rotation.y = n.yaw;
+      this.keeper = n;
+      this.sayLine(n, rnd.pick([`Dạ quầy ${sp.name} mở rồi ${g.ac} ơi.`, 'Dạ con trông quầy đây.']), 3, EXPR.smile);
+      return;
+    }
+    const n = this.keeper;
+    n.state = 'actor'; n.timer = 1e9; n.pose = b!.ready.length ? 'serve' : 'idle'; n.base = EXPR.smile;
+    if (dist2(n.x, n.z, sp.x, sp.z) > 9) {
+      const c = Math.cos(sp.yaw), sn = Math.sin(sp.yaw);
+      const x = sp.x - 0.15 * sn - 0.95 * c, z = sp.z - 0.15 * c + 0.95 * sn;
+      n.x = x; n.z = z; n.y = groundY(x, z); n.yaw = sp.yaw + Math.PI;
+      n.rig.root.position.set(x, n.y, z); n.rig.root.rotation.y = n.yaw;
+    }
   }
   private spawnHelper(slot: 1 | 2 = 1) {
     const g = ctx.g, h = slot === 2 ? g.help2 : g.help; if (!h) return;
@@ -1330,7 +1370,7 @@ export class StallSys {
 
   update(dt: number) {
     const g = ctx.g, s = g.stall, N = ctx.npcs;
-    this.rebuild(); this.stockT -= dt; if (this.stockT <= 0) { this.stockT = 0.5; this.rebuildStock(); }
+    this.rebuild(); this.rebuildBranch(); this.stockT -= dt; if (this.stockT <= 0) { this.stockT = 0.5; this.rebuildStock(); }
     // vòng đánh dấu chỗ bán khi đang mang quầy
     const carrying = s.where === 'carried'; this.marks.forEach((m, i) => { m.visible = carrying && dist2(SPOTS[i].x, SPOTS[i].z, ctx.player.x, ctx.player.z) < 60 * 60; if (m.visible) m.scale.setScalar(1 + Math.sin(ctx.time * 3) * 0.05); });
     if (s.where !== 'placed') { if (this.customers.length) for (const n of this.customers.slice()) this.dismiss(n, false); return; }
@@ -1383,6 +1423,9 @@ export class StallSys {
     if (this.actorId) { this.actorT -= dt; if (this.actorT <= 0) this.spawnActor(); }
     // khách quen trả nợ
     this.regT -= dt; if (this.regT <= 0) { this.regT = 20; for (const r of REGULARS) { const due = g.flags['owe_' + r.id], rel = g.rel[r.id]; if (due !== undefined && g.day >= due && rel?.owe && s.open) { delete g.flags['owe_' + r.id]; if (rnd.chance(0.75)) { const pay = round1k(rel.owe * rnd.range(1, 1.6)); earn(g, pay, 'revenue'); toast(`${r.name} ghé trả ${money(pay)} tiền ăn chịu hôm trước. "Cảm ơn ${g.ac} đã thương!"`, 'good', 'heart', true); changeRel(g, r.id, 5); } else toast(`Nghe nói ${r.name} đã chuyển đi nơi khác… khoản ăn chịu coi như mất.`, 'bad', 'heart'); rel.owe = 0; } } }
+    // Chuỗi cửa hàng (bậc 7): người trông coi bán ở chi nhánh, hoà vào cùng nhịp cập nhật này.
+    // Không tick ở đây: thời gian game đã trôi qua R.advance (main loop) nên branchTick(dm) đã lo phần bán hàng.
+    // Chỉ giữ chỗ này cho trạng thái nhìn thấy được (người trông coi, khay hàng) ở bước dựng hình.
     // sự kiên nhẫn của khách đang chờ
     for (const n of this.customers.slice()) {
       if (n.state !== 'queue' || !n.order) continue;
@@ -1392,9 +1435,62 @@ export class StallSys {
       if (f >= 1 && this.busy !== n) { const a = n.arch, line = rnd.pick(LINES.leave_wait).replace('{self}', a.self[n.fem ? 1 : 0]); N.say(n, line, 2.6, 4); sfx('boo'); lostCustomer(g, 'wait'); if (n.regular) changeRel(g, n.regular.id, -4); this.dismiss(n, false); n.base = 4; }
     }
   }
+  /**
+   * Dựng quầy chi nhánh (bậc 7) ở chỗ bán thứ hai: quầy gỗ nhỏ, mái tôn, bảng hiệu đỏ ghi tên chi nhánh
+   * và giỏ món sẵn. Chỉ hiện khi đã có chi nhánh; ẩn khi người chơi đứng quá xa (> 90 m) cho nhẹ máy.
+   */
+  private rebuildBranch() {
+    const g = ctx.g, b = g.branch;
+    const key = b ? [b.spot, b.keeper ? 1 : 0, b.open ? 1 : 0, b.ready.length].join('|') : '';
+    const sp = b ? SPOTS.find((x) => x.id === b.spot) : undefined;
+    const show = !!b && !!sp && dist2(sp.x, sp.z, ctx.player.x, ctx.player.z) < 90 * 90;
+    this.branchGroup.visible = show;
+    if (!b || !sp || key === this.branchKey) return;
+    this.branchKey = key;
+    if (this.branchBody) { this.branchGroup.remove(this.branchBody); this.branchBody.geometry.dispose(); this.branchBody = null; }
+    if (this.branchSign) { this.branchGroup.remove(this.branchSign); this.branchSign.geometry.dispose(); this.branchSign = null; }
+    const m = new MB();
+    // quầy gỗ nhỏ 1,9 m + mái tôn xanh + hai cột sắt
+    m.box(0, 0, 0.1, 1.9, 0.86, 0.8, 0x8a6a4a, 0xd9c8a8, 0.1);
+    m.box(0, 0.3, 0.502, 1.8, 0.4, 0.004, 0xd9463c);
+    m.box(0, 0.86, 0.1, 2.0, 0.035, 0.88, 0xe9e2d0, 0xf3efe6, 0, true);
+    for (const sx of [-0.88, 0.88]) for (const sz of [-0.28, 0.48]) m.box(sx, 0.86, sz, 0.05, 1.4, 0.05, 0x8a8f96);
+    // mái hiên sọc xanh–trắng cho ra dáng quán ăn vỉa hè
+    for (let i = 0; i < 8; i++) m.box(-1.05 + i * 0.3 + 0.15, 2.3, 0.1, 0.3, 0.06, 1.3, i % 2 ? 0xf3f0e8 : 0x2f6fb5, 0xf3f0e8, 0, true);
+    m.box(0, 2.06, 0.72, 2.3, 0.22, 0.02, 0xf5c531, 0xf5c531, 0, true);
+    // giỏ món sẵn: mỗi món một khay nhỏ, xếp dần trên mặt quầy
+    const n = Math.min(6, g.branch!.ready.length);
+    for (let i = 0; i < n; i++) {
+      const x = -0.66 + i * 0.27;
+      m.box(x, 0.885, 0.16, 0.22, 0.035, 0.2, 0xe0e0d8, 0xffffff);
+      m.box(x, 0.915, 0.16, 0.16, 0.05, 0.14, i % 2 ? 0xd9a441 : 0xc0562f);
+    }
+    // thùng đá nhỏ + ghế người trông coi
+    m.box(-1.16, 0, -0.1, 0.5, 0.5, 0.5, 0xdfe7ea, 0xf3f7f8);
+    if (g.branch!.keeper) { plasticStool(m, 0.2, 0, -1.02, 0x2f8fd5, 0.2); }
+    const body = new THREE.Mesh(m.build(), MAT.lit);
+    this.branchBody = body; this.branchGroup.add(body);
+    // bảng hiệu đỏ treo trên mái
+    const uv = this.signAtlas.draw(g.branch!.keeper ? 'CHI NHÁNH · ĐANG BÁN' : 'CHI NHÁNH · ĐÓNG', 1.9 / 0.6, { bg: '#c9302c', fg: '#fff7e0', font: 'display', sub: SPOTS.find((x) => x.id === g.branch!.spot)?.name, subFg: '#ffd24d' }, 96);
+    const sg = new THREE.PlaneGeometry(1.9, 0.6);
+    sg.setAttribute('uv', new THREE.Float32BufferAttribute([uv.u0, uv.v1, uv.u1, uv.v1, uv.u0, uv.v0, uv.u1, uv.v0], 2));
+    const sign = new THREE.Mesh(sg, this.signMat); sign.position.set(0, 2.62, 0.72);
+    this.branchSign = sign; this.branchGroup.add(sign);
+    this.branchGroup.position.set(sp.x, groundY(sp.x, sp.z), sp.z);
+    this.branchGroup.rotation.y = sp.yaw;
+  }
+  /** Chỗ người chơi chạm vào để mở sổ chi nhánh (toạ độ + bán kính), null khi chưa có chi nhánh. */
+  branchAnchor(): { x: number; z: number; y: number } | null {
+    const b = ctx.g.branch; if (!b) return null;
+    const sp = SPOTS.find((x) => x.id === b.spot); if (!sp) return null;
+    return { x: sp.x, z: sp.z, y: groundY(sp.x, sp.z) + 0.95 };
+  }
+
   /** Nạp lại sau khi tải save. */
-  reset() { for (const n of this.customers.slice()) this.dismiss(n, false); this.builtKey = ''; this.stockKey = ''; this.busy = null; this.actorId = ''; this.rowdy = 0; this.helper = null; this.helper2 = null; this.helperTask = { 1: { mode: 'idle', holdT: 0, wipeCd: 8, yaw: 0 }, 2: { mode: 'idle', holdT: 0, wipeCd: 14, yaw: 0 } }; this.sous = null; this.sous2 = null; this.sousPhase = { 1: { idx: 0, moveCd: 7 }, 2: { idx: 0, moveCd: 9 } }; this.offerNpc = null; this.offerT = 45; this.sousT = 18; this.sous2T = 22; this.bookT = 45; ctx.city.roadblock.visible = eventOn(ctx.g, 'cam_duong'); NAV_BLOCK.clear(); if (eventOn(ctx.g, 'cam_duong')) this.onEvent('cam_duong', true); }
-  refresh() { this.builtKey = ''; this.stockKey = ''; }
+  reset() { for (const n of this.customers.slice()) this.dismiss(n, false); this.builtKey = ''; this.stockKey = ''; this.busy = null; this.actorId = ''; this.rowdy = 0; this.helper = null; this.helper2 = null;
+    if (this.keeper && this.keeper.state !== 'gone') ctx.npcs.leave(this.keeper);
+    this.keeper = null; this.keeperRetry = 0; this.helperTask = { 1: { mode: 'idle', holdT: 0, wipeCd: 8, yaw: 0 }, 2: { mode: 'idle', holdT: 0, wipeCd: 14, yaw: 0 } }; this.sous = null; this.sous2 = null; this.sousPhase = { 1: { idx: 0, moveCd: 7 }, 2: { idx: 0, moveCd: 9 } }; this.offerNpc = null; this.offerT = 45; this.sousT = 18; this.sous2T = 22; this.bookT = 45; ctx.city.roadblock.visible = eventOn(ctx.g, 'cam_duong'); NAV_BLOCK.clear(); if (eventOn(ctx.g, 'cam_duong')) this.onEvent('cam_duong', true); }
+  refresh() { this.builtKey = ''; this.stockKey = ''; this.branchKey = ''; }
 }
 export function stallHint(g: Game, stowed = false): string {
   const s = g.stall; if (s.tier === 0) return 'Chưa có quầy';

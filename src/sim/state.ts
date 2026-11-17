@@ -7,7 +7,7 @@ import type { WeatherId } from '../data/world';
 import { PLACES } from '../world/layout';
 import { PlayerLookData, defaultLook, cleanLook } from '../data/looks';
 
-export const SAVE_VERSION = 13;
+export const SAVE_VERSION = 14;
 /** Một lô nguyên liệu. fresh 0–100, q chất lượng 0–1, cost giá vốn mỗi đơn vị. */
 export interface Stack { id: string; n: number; fresh: number; q: number; cost: number; }
 /** Mẻ sơ chế sẵn ("cốt" món). */
@@ -35,6 +35,27 @@ export interface Helper {
   /** Lương mỗi ngày (trừ vào sáng hôm sau) và ngày bắt đầu làm, ngày đã trả lương gần nhất. */
   wage: number; since: number; paid: number; hired: boolean;
 }
+/** Chi nhánh thứ hai của Chuỗi cửa hàng (bậc 7): một điểm bán khác, người trông coi tự bán món sẵn. */
+export interface Branch {
+  /** Chỗ bán (id trong SPOTS) — nơi dựng quầy chi nhánh. */
+  spot: string;
+  /** Ngày mở chi nhánh. */
+  since: number;
+  /** Tiền thuê chỗ mỗi ngày (khác với phí chỗ của quầy chính). */
+  rent: number;
+  /** Người trông coi (null = chưa thuê, chi nhánh đóng cửa). */
+  keeper: Helper | null;
+  /** Món sẵn đã chuyển sang chi nhánh (bán hết thì thôi, người trông coi không tự nấu). */
+  ready: Ready[];
+  /** Sổ riêng của chi nhánh: doanh thu, tiền boa, số phần, khách, phí, lương, hao hụt. */
+  led: { revenue: number; tips: number; sold: number; customers: number; lost: number; fees: number; wage: number; loss: number };
+  /** Tổng cộng dồn và doanh thu từng ngày (8 ngày gần nhất) để hiện trong sổ sách. */
+  tot: { revenue: number; tips: number; sold: number; days: number };
+  hist: { day: number; revenue: number; tips: number; sold: number; lost: number }[];
+  /** Chi nhánh đang mở bán hay tạm đóng (đóng thì không bán, không thu tiền thuê? vẫn thu). */
+  open: boolean;
+}
+
 /** Đặt bàn trước của khách tại Nhà hàng bình dân (bậc 6). */
 export interface Booking {
   id: number; name: string; fem: boolean; arch: string; size: number;
@@ -67,6 +88,9 @@ export interface Game {
   sous: Helper | null;
   /** Nhân viên phụ bếp thứ 2 trong phòng bếp riêng (bậc 6). */
   sous2: Helper | null;
+  /** Chi nhánh thứ hai của Chuỗi cửa hàng (bậc 7), null = chưa mở chi nhánh. */
+  branch: Branch | null;
+  /** Tổng doanh thu của chi nhánh qua các ngày (để tính thành tích). */
   /** Danh sách đặt bàn trước (bậc 6). */
   bookings: Booking[];
   bookSeq: number;
@@ -101,12 +125,31 @@ export function newGame(seed = (Math.random() * 1e9) | 0, ac: 'anh' | 'chị' = 
     st: { hunger: 58, thirst: 55, energy: 82, health: 92, hygiene: 42, mood: 45 }, rep: 0, xp: 0,
     pos: { x: PLACES.camp.x, z: PLACES.camp.z - 1.2, yaw: Math.PI, pitch: 0 },
     bag: [], junk: {}, meals: [], lostBag: [], lostDay: -1, wanted: 0, jailUntil: 0, gear: {}, phone: null, housing: 'gamcau', paidUntil: 0, home: [],
-    stall: emptyStall(), help: null, help2: null, sous: null, sous2: null, bookings: [], bookSeq: 1, rec, debts: [], debtSeq: 1, credit: 0,
+    stall: emptyStall(), help: null, help2: null, sous: null, sous2: null, branch: null, bookings: [], bookSeq: 1, rec, debts: [], debtSeq: 1, credit: 0,
     led: newLedger(0), hist: [], rel: {}, met: {}, flags: {},
     weather: { now: 'nang', until: 6 * 60 + 10 + 420, next: 'nang', flood: 0, wet: 0 },
     ev: { active: [], last: {}, check: 9 * 60, lastStart: -999 },
     wd: { litterDay: -1, picked: [], bins: {}, sacks: 0, plates: 0, deliveries: 0, begTired: 0, outOf: [], haggled: {}, job: null },
     tot: { served: 0, earned: 0, begged: 0, scrap: 0, best: 0, bankrupt: 0 }, quest: 0,
+  };
+}
+
+/** Làm sạch dữ liệu chi nhánh đọc từ bản lưu (có thể thiếu trường, hỏng, hoặc chỗ bán không còn). */
+export function cleanBranch(raw: any): Branch | null {
+  if (!raw || typeof raw !== 'object' || typeof raw.spot !== 'string') return null;
+  const safe = (v: unknown, lo = 0, hi = Number.MAX_SAFE_INTEGER) => (typeof v === 'number' && isFinite(v) ? Math.max(lo, Math.min(hi, v)) : lo);
+  const keeperRaw = raw.keeper;
+  const keeper: Helper | null = keeperRaw && typeof keeperRaw.name === 'string' && typeof keeperRaw.wage === 'number'
+    ? { name: keeperRaw.name, fem: !!keeperRaw.fem, face: safe(keeperRaw.face, 0, 15), hairStyle: safe(keeperRaw.hairStyle, 0, 7), shirt: safe(keeperRaw.shirt), pants: safe(keeperRaw.pants), hair: safe(keeperRaw.hair), skin: safe(keeperRaw.skin), wage: Math.max(1000, keeperRaw.wage), since: safe(keeperRaw.since), paid: safe(keeperRaw.paid), hired: true }
+    : null;
+  const ready: Ready[] = Array.isArray(raw.ready) ? raw.ready.filter((r: any) => r && typeof r.rid === 'string' && r.n > 0).map((r: any) => ({ rid: r.rid, n: safe(r.n), q: safe(r.q, 0, 1), at: safe(r.at), cost: safe(r.cost) })) : [];
+  const led = raw.led ?? {}, tot = raw.tot ?? {};
+  return {
+    spot: raw.spot, since: safe(raw.since), rent: safe(raw.rent), keeper, ready,
+    led: { revenue: safe(led.revenue), tips: safe(led.tips), sold: safe(led.sold), customers: safe(led.customers), lost: safe(led.lost), fees: safe(led.fees), wage: safe(led.wage), loss: safe(led.loss) },
+    tot: { revenue: safe(tot.revenue), tips: safe(tot.tips), sold: safe(tot.sold), days: safe(tot.days) },
+    hist: Array.isArray(raw.hist) ? raw.hist.filter((h: any) => h && typeof h.day === 'number').slice(-8).map((h: any) => ({ day: h.day, revenue: safe(h.revenue), tips: safe(h.tips), sold: safe(h.sold), lost: safe(h.lost) })) : [],
+    open: raw.open !== false,
   };
 }
 
@@ -169,6 +212,9 @@ export function migrate(raw: any): Game | null {
     if (!g.help2 || typeof g.help2 !== 'object') g.help2 = null;
     if (!g.sous2 || typeof g.sous2 !== 'object') g.sous2 = null;
   }
+  // v14: chi nhánh của Chuỗi cửa hàng (bậc 7). Bản lưu cũ chưa có chi nhánh nào.
+  if ((raw.v ?? 0) < 14 || !raw.branch) g.branch = null;
+  else g.branch = cleanBranch(raw.branch);
   if (typeof g.flags.firstSale !== 'number' && (g.hist.some((h) => h.revenue > 0) || g.led.revenue > 0)) g.flags.firstSale = 0;
   for (const k of Object.keys(g.st) as (keyof Stats)[]) g.st[k] = Math.min(STAT_MAX, Math.max(0, Number.isFinite(g.st[k]) ? g.st[k] : base.st[k]));
   g.v = SAVE_VERSION;

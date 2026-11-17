@@ -43,12 +43,13 @@ describe('dữ liệu bậc 6 — Nhà hàng bình dân', () => {
     expect(t6.trays).toBeGreaterThan(t5.trays);
   });
 
-  it('GEAR.nhahang hợp lệ và FUTURE_TIERS chỉ còn Chuỗi cửa hàng', () => {
+  it('GEAR.nhahang hợp lệ; bậc 7 có dữ liệu nên FUTURE_TIERS rỗng', () => {
     const d = GEAR.nhahang;
     expect(d.kind).toBe('stall');
     expect(d.tier).toBe(6);
     expect(d.price).toBeGreaterThan(GEAR.quanngoi.price);
-    expect(FUTURE_TIERS).toEqual(['Chuỗi cửa hàng']);
+    expect(FUTURE_TIERS).toEqual([]);
+    expect(GEAR.chuoi.tier).toBe(7);
   });
 });
 
