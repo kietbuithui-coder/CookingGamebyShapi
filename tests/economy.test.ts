@@ -67,6 +67,15 @@ describe('giá ở chợ và cửa hàng', () => {
     g.min = (shop.open[0] - 1) * 60; expect(R.shopOpen(g, shop)).toBe(false);
     g.min = (shop.open[0] + 1) * 60; expect(R.shopOpen(g, shop)).toBe(true);
   });
+  it('MiniMart 24h mở cửa 24/7 suốt ngày đêm (trừ khi cúp điện)', () => {
+    const g = fresh();
+    for (const h of [0, 2.5, 6, 12, 22.5, 23.9]) {
+      g.min = h * 60;
+      expect(R.shopOpen(g, SHOPS.mart)).toBe(true);
+    }
+    g.ev.active.push({ id: 'cup_dien', until: g.day * 1440 + g.min + 120 });
+    expect(R.shopOpen(g, SHOPS.mart)).toBe(false);
+  });
 });
 
 describe('mặc cả', () => {

@@ -1,10 +1,11 @@
 // CÁC BẢNG LỚN: túi đồ, quầy hàng (thực đơn – giá – sơ chế – kho), chỗ cất đồ, sổ tay (công thức, sổ sách, nợ), bản đồ, cài đặt.
 import { ctx, QUALITY, saveSettings, canFullscreen, toggleFullscreen, UI_SCALE } from '../game/ctx';
+import { DEV_BUILD_TAG, getDevSections } from '../game/devPoints';
 import type { UI } from './ui';
 import { ic, el, esc, dishIcon } from './ui';
 import { INGS } from '../data/ingredients';
 import { RECIPE_LIST, RECIPES, CAT_LABEL, STEP_NAME, toolsFor, RecipeDef } from '../data/recipes';
-import { GEAR, HOUSING, LENDERS, JUNK, TIERS } from '../data/gear';
+import { GEAR, GEAR_LIST, HOUSING, LENDERS, JUNK, TIERS } from '../data/gear';
 import { SHOPS } from '../data/shops';
 import { REGULARS, FIXED } from '../data/people';
 import { WEATHER } from '../data/world';
@@ -32,6 +33,7 @@ export function ledgerBody(g: Game): string {
 
 export function openPanel(ui: UI, name: string) {
   const M = ui.$('modal'), g = ctx.g;
+  let devTaps = 0, devOpen = false;
   const draw = (title: string, tabs: [string, string][], body: string, foot = '') => {
     M.innerHTML = `<div class="panel"><header><h2>${title}</h2><div class="tabs">${tabs.map(([id, t]) => `<button class="tab${id === tab ? ' on' : ''}" data-tab="${id}">${t}</button>`).join('')}</div><button class="x" data-a="close">${ic('x')}</button></header><div class="body">${body}</div>${foot ? `<div class="foot">${foot}</div>` : ''}</div>`;
   };
@@ -39,6 +41,11 @@ export function openPanel(ui: UI, name: string) {
   const render = () => { const sc = (M.querySelector('.body') as HTMLElement | null)?.scrollTop ?? 0; build(); const b = M.querySelector('.body') as HTMLElement | null; if (b) b.scrollTop = sc; };
   M.onclick = (e) => {
     const t = e.target as HTMLElement; if (t === M) { ui.closePanel(); return; }
+    if (name === 'settings' && !devOpen && t.closest('#dev-unlock')) {
+      devTaps++;
+      if (devTaps >= 7) { devOpen = true; sfx('coin'); toast('Đã mở bảng Test & Dịch chuyển ẩn!', 'good', 'bolt'); render(); }
+      return;
+    }
     const tb = t.closest('[data-tab]') as HTMLElement | null; if (tb) { tab = tb.dataset.tab!; sfx('ui'); render(); return; }
     const a = t.closest('[data-a]') as HTMLElement | null; if (a && !a.classList.contains('off')) { const f = acts[a.dataset.a!]; if (f) { f(+(a.dataset.i ?? 0), a); if (ui.modalName === name) render(); } }
   };
@@ -64,7 +71,9 @@ export function openPanel(ui: UI, name: string) {
       }
       draw(`${ic('bag')} Túi đồ`, [['bag', 'Nguyên liệu'], ['gear', 'Dụng cụ']], body, `<span class="muted">Tiền mặt ${money(g.cash)}${g.bank ? ' · ngân hàng ' + money(g.bank) : ''}</span>`);
     } else if (name === 'stall') {
-      if (!['menu', 'store', 'info'].includes(tab)) tab = 'menu';
+      const rest = R.isRestaurant(g);
+      const validTabs = rest ? ['menu', 'store', 'staff', 'info'] : ['menu', 'store', 'info'];
+      if (!validTabs.includes(tab)) tab = 'menu';
       const placed = s.where === 'placed';
       acts.sw = (_i, e) => { const rs = g.rec[e.dataset.k!], on = R.menuOf(g).length; if (!rs.on && on >= T.menu) { toast(`${T.name} chỉ bán được tối đa ${T.menu} món cùng lúc.`, 'warn'); return; } rs.on = !rs.on; sfx('ui'); };
       acts.pm = (_i, e) => { const rs = g.rec[e.dataset.k!]; rs.price = clamp(rs.price + +e.dataset.d!, 1000, 500000); };
@@ -76,8 +85,15 @@ export function openPanel(ui: UI, name: string) {
       acts.toStall = (i) => { const k = moveStack(g.bag, s.store, i, 1e9, R.stallRoom(g)); if (!k) toast('Quầy đầy rồi.', 'warn'); else sfx('pick'); };
       acts.open = () => { if (s.open) ctx.stall.close(); else if (ctx.stall.open()) ui.closePanel(); };
       acts.pack = () => { if (ctx.stall.pickUp()) ui.closePanel(); };
-      acts.clean = () => { R.advance(g, 12, ctx.acts.act()); s.dirt = 0; g.st.hygiene = clamp(g.st.hygiene - 1.5, 0, STAT_MAX); sfx('splash'); toast('Lau dọn quầy sạch bong.', 'good'); };
+      acts.clean = () => { ctx.player.gesture('work', 0.9); R.advance(g, 12, ctx.acts.act()); s.dirt = 0; g.st.hygiene = clamp(g.st.hygiene - 1.5, 0, STAT_MAX); sfx('splash'); toast('Lau dọn quầy sạch bong.', 'good'); };
       acts.dump = () => { const lost = s.ready.reduce((a, x) => a + x.n * x.cost, 0) + purge(s.store).lost; s.ready = []; g.led.loss += lost; toast(`Đổ bỏ đồ ế và đồ hỏng (${money(lost)}).`, 'info'); };
+      acts.hireSous = () => { const c = R.sousCandidate(g); if (!R.hireSous(g, c)) { toast(`Không đủ ${money(c.wage)} trả ngày lương đầu cho ${c.name}.`, 'bad', 'cash'); return; } sfx('coin'); toast(`Đã thuê phụ bếp ${c.name} (${money(c.wage)}/ngày).`, 'good', 'heart'); };
+      acts.fireSous = (i) => { const old = R.fireSous(g, i === 2 ? 2 : 1); if (old) toast(`Đã cho phụ bếp ${old.name} nghỉ việc.`, 'info', 'heart'); };
+      acts.hireHelp = () => { const c = R.helperCandidate(g); if (!R.hireHelper(g, c)) { toast(`Không đủ ${money(c.wage)} trả ngày lương đầu cho ${c.name}.`, 'bad', 'cash'); return; } sfx('coin'); toast(`Đã thuê phục vụ ${c.name} (${money(c.wage)}/ngày).`, 'good', 'heart'); };
+      acts.fireHelp = (i) => { const old = R.fireHelper(g, i === 2 ? 2 : 1); if (old) toast(`Đã cho nhân viên phục vụ ${old.name} nghỉ việc.`, 'info', 'heart'); };
+      acts.accBook = (_i, e) => { const b = R.acceptBooking(g, +e.dataset.k!); if (b) { sfx('coin'); toast(`Đã nhận đặt bàn của ${b.name} (${b.size} người).`, 'good', 'star'); } };
+      acts.rejBook = (_i, e) => { R.rejectBooking(g, +e.dataset.k!); sfx('ui'); toast('Đã huỷ / từ chối đặt bàn.', 'info'); };
+      acts.findBook = () => { const b = R.createBooking(g); if (!b) { toast('Lịch đặt bàn đã kín (tối đa 4 bàn).', 'warn'); return; } sfx('order'); toast(`Có khách mới đặt bàn: ${b.name} (${b.size} người).`, 'good', 'star'); };
       let body = '';
       if (tab === 'menu') {
         const known = RECIPE_LIST.filter((r) => g.rec[r.id].known);
@@ -94,15 +110,45 @@ export function openPanel(ui: UI, name: string) {
         }).join('') + '</div>' + (placed ? '' : '<p class="muted">Quầy chưa đặt ở chỗ bán nên chưa nấu được — hãy gánh tới một vòng sáng vàng.</p>');
       } else if (tab === 'store') {
         const chilled = R.stallChilled(g);
-        body = `<div class="grid2"><div><h4>Trong quầy (${weightOf(s.store).toFixed(1).replace('.', ',')}/${T.cap} kg)${chilled ? ' · đang ướp đá' : ''}</h4>${stackList(s.store, (_s, i) => `<button class="btn small" data-a="toBag" data-i="${i}">› Túi</button>`, 'Quầy chưa có nguyên liệu.')}</div><div><h4>Trong túi (${R.bagWeight(g).toFixed(1).replace('.', ',')}/${R.carryCap(g)} kg)</h4>${stackList(g.bag, (_s, i) => `<button class="btn small" data-a="toStall" data-i="${i}">› Quầy</button>`, 'Túi trống.')}</div></div>` +
+        const chillTag = R.has(g, 'tu_dong') ? ' · tủ đông công nghiệp' : chilled ? ' · đang ướp đá' : '';
+        body = `<div class="grid2"><div><h4>Trong quầy (${weightOf(s.store).toFixed(1).replace('.', ',')}/${R.stallCap(g)} kg)${chillTag}</h4>${stackList(s.store, (_s, i) => `<button class="btn small" data-a="toBag" data-i="${i}">› Túi</button>`, 'Quầy chưa có nguyên liệu.')}</div><div><h4>Trong túi (${R.bagWeight(g).toFixed(1).replace('.', ',')}/${R.carryCap(g)} kg)</h4>${stackList(g.bag, (_s, i) => `<button class="btn small" data-a="toStall" data-i="${i}">› Quầy</button>`, 'Túi trống.')}</div></div>` +
           (s.preps.length ? `<h4>Đã sơ chế</h4>${s.preps.map((p) => `<span class="tag ${R.holdFactor(g, RECIPES[p.rid], p.at) < 1 ? 'warn' : 'good'}">${RECIPES[p.rid].short}: ${p.n} phần · ${Math.round(p.q * 100)}đ${R.holdFactor(g, RECIPES[p.rid], p.at) < 1 ? ' · để lâu, kém ngon' : ''}</span>`).join('')}` : '') +
-          (R.has(g, 'thungda') && !chilled ? '<p class="muted">Có thùng đá nhưng chưa có đá viên — mua đá ở tạp hoá Cô Ba để giữ lạnh thịt cá.</p>' : !R.has(g, 'thungda') ? '<p class="muted">Chưa có thùng đá: thịt cá để ngoài trời nóng rất mau hỏng.</p>' : '');
+          (R.has(g, 'tu_dong') ? '<p class="muted">Tủ đông công nghiệp đang giữ lạnh tự động (+80 kg sức chứa, không cần mua đá viên).</p>' : R.has(g, 'thungda') && !chilled ? '<p class="muted">Có thùng đá nhưng chưa có đá viên — mua đá ở tạp hoá Cô Ba để giữ lạnh thịt cá.</p>' : !R.has(g, 'thungda') ? '<p class="muted">Chưa có thùng đá: thịt cá để ngoài trời nóng rất mau hỏng.</p>' : '');
+      } else if (tab === 'staff') {
+        const cand = R.sousCandidate(g), hCand = R.helperCandidate(g);
+        const sousList = [g.sous, g.sous2].map((x, idx) => x ? { slot: idx + 1, h: x } : null).filter(Boolean) as { slot: number; h: NonNullable<typeof g.sous> }[];
+        const helpList = [g.help, g.help2].map((x, idx) => x ? { slot: idx + 1, h: x } : null).filter(Boolean) as { slot: number; h: NonNullable<typeof g.help> }[];
+        const activeBooks = g.bookings.filter((b) => b.status === 'pending' || b.status === 'accepted' || b.status === 'seated');
+        const fmtHour = (h: number) => `${Math.floor(h)}h${Math.round((h - Math.floor(h)) * 60) ? String(Math.round((h - Math.floor(h)) * 60)).padStart(2, '0') : '00'}`;
+        body = `<div class="grid2"><div><h4>Nhân viên phụ bếp (${R.sousCount(g)}/${R.maxSous(g)})</h4>` +
+          sousList.map(({ slot, h }) => `<div class="item"><div class="grow"><b>${h.name}</b><small>Đứng phòng bếp riêng, tự sơ chế & nấu sẵn món thiếu · lương ${money(h.wage)}/ngày</small></div><span class="tag good">bếp ${slot}</span><button class="btn small" data-a="fireSous" data-i="${slot}">Cho nghỉ</button></div>`).join('') +
+          (R.sousCount(g) < R.maxSous(g)
+            ? `<div class="item"><div class="grow"><b>${cand.name}</b><small>${cand.ask.replace('{ac}', g.ac)} · tốc độ ×${cand.speed.toFixed(2).replace('.', ',')}</small></div><button class="btn small green${g.cash < cand.wage ? ' off' : ''}" data-a="hireSous">Thuê — ${money(cand.wage)}/ngày</button></div>`
+            : '') +
+          `<h4>Nhân viên phục vụ (${R.helperCount(g)}/${R.maxHelpers(g)})</h4>` +
+          helpList.map(({ slot, h }) => `<div class="item"><div class="grow"><b>${h.name}</b><small>Tiếp khách, lau bàn, dỗ khách chờ · lương ${money(h.wage)}/ngày</small></div><span class="tag good">bàn ${slot}</span><button class="btn small" data-a="fireHelp" data-i="${slot}">Cho nghỉ</button></div>`).join('') +
+          (R.helperCount(g) < R.maxHelpers(g)
+            ? `<div class="item"><div class="grow"><b>${hCand.name}</b><small>${hCand.ask.replace('{ac}', g.ac)}</small></div><button class="btn small green${g.cash < hCand.wage ? ' off' : ''}" data-a="hireHelp">Thuê — ${money(hCand.wage)}/ngày</button></div>`
+            : '') +
+          `</div><div><h4>Đặt bàn trước (${activeBooks.length}/${R.BOOKING_MAX})</h4>` +
+          (activeBooks.length ? `<div class="list">${activeBooks.map((b) => `<div class="item"><div class="grow"><b>${b.name} · ${b.size} người</b><small>${b.day > g.day ? 'Ngày mai ' : 'Hôm nay '}${fmtHour(b.hour)} · cọc ${money(b.deposit)}${b.dish && RECIPES[b.dish] ? ' · thích ' + RECIPES[b.dish].short.toLowerCase() : ''}</small></div>` +
+            (b.status === 'pending' ? `<button class="btn small green" data-a="accBook" data-k="${b.id}">Nhận bàn</button><button class="btn small" data-a="rejBook" data-k="${b.id}">Từ chối</button>`
+              : b.status === 'accepted' ? `<span class="tag good">đã nhận</span><button class="btn small" data-a="rejBook" data-k="${b.id}">Huỷ</button>`
+              : `<span class="tag warn">đang ngồi</span>`) + `</div>`).join('')}</div>`
+            : '<p class="muted">Chưa có bàn đặt trước nào. Khách quen hoặc dân văn phòng sẽ gửi yêu cầu khi nhà hàng hoạt động.</p>') +
+          `<div style="margin-top:.5em"><button class="btn small${activeBooks.length >= R.BOOKING_MAX ? ' off' : ''}" data-a="findBook">Nhận thêm khách đặt bàn</button></div></div></div>`;
       } else {
         const sp = ctx.stall.spot(), rate = R.arrivalRate(g);
-        body = `<div class="grid2"><div><div class="kv"><span>Loại quầy</span><b>${T.name}</b></div><div class="kv"><span>Vị trí</span><b>${sp ? sp.name : s.where === 'home' ? 'Ở chỗ ở' : '—'}</b></div><div class="kv"><span>Phí chỗ</span><b>${sp ? (sp.fee ? money(sp.fee) + '/ngày' : 'miễn phí') : '—'}</b></div><div class="kv"><span>Tình trạng</span><b class="${s.cond < 40 ? 'neg' : ''}">${Math.round(s.cond)}%</b></div><div class="kv"><span>Độ bẩn</span><b class="${s.dirt > 40 ? 'neg' : ''}">${Math.round(s.dirt)}%</b></div><div class="kv"><span>Độ thu hút</span><b>${Math.round(R.stallAppeal(g) * 100)}%</b></div><div class="kv"><span>Ước lượng khách</span><b>${s.open ? '~' + rate.toFixed(1).replace('.', ',') + ' người/giờ' : 'chưa mở'}</b></div>${R.seatCount(g) ? `<div class="kv"><span>Chỗ ngồi</span><b>${R.seatCount(g)} ghế${R.dineIn(g) ? ' trong nhà' : ' nhựa ngoài sân'}</b></div>` : ''}<div class="kv"><span>Buổi bán</span><b>${R.periodName(g)}</b></div>${R.dineIn(g) ? `<div class="kv"><span>Hợp buổi</span><b>${R.periodMenu(g).length} món</b></div>` : ''}</div>
-          <div><p class="muted">${sp ? sp.note : 'Gánh quầy tới một chỗ bán (vòng vàng) để bày hàng.'} Bảng hiệu, ô dù, đèn, bàn ghế đều làm quầy hút khách hơn. Quầy bẩn hoặc người bán lem luốc sẽ bị chê và dễ bị phạt khi kiểm tra.</p>' + (T.tier >= 3 && g.flags.sapNo ? '<p class="neg">Đang nợ phí chỗ — mở bán sẽ trừ tiền trước.</p>' : '') + '<div style="display:flex;gap:.4em;flex-wrap:wrap"><button class="btn${s.dirt < 3 ? ' off' : ''}" data-a="clean">Lau dọn quầy (12 phút)</button><button class="btn${s.ready.length || s.store.some(isSpoiled) ? '' : ' off'}" data-a="dump">Đổ bỏ đồ ế, đồ hỏng</button></div></div></div>`;
+        const seatLabel = R.isRestaurant(g) ? `${R.seatCount(g)} ghế trong nhà kín (4 bàn · phòng bếp riêng)` : `${R.seatCount(g)} ghế${R.dineIn(g) ? ' trong nhà' : ' nhựa ngoài sân'}`;
+        const upgList = GEAR_LIST.filter((x) => (x.minTier ?? 0) >= 1 && (x.minTier ?? 0) <= T.tier);
+        const ownedUpg = upgList.filter((x) => R.has(g, x.id));
+        body = `<div class="grid2"><div><div class="kv"><span>Loại quầy</span><b>${T.name}</b></div><div class="kv"><span>Vị trí</span><b>${sp ? sp.name : s.where === 'home' ? 'Ở chỗ ở' : '—'}</b></div><div class="kv"><span>Phí chỗ</span><b>${sp ? (sp.fee ? money(sp.fee) + '/ngày' : 'miễn phí') : '—'}</b></div><div class="kv"><span>Tình trạng</span><b class="${s.cond < 40 ? 'neg' : ''}">${Math.round(s.cond)}%</b></div><div class="kv"><span>Độ bẩn</span><b class="${s.dirt > 40 ? 'neg' : ''}">${Math.round(s.dirt)}%</b></div><div class="kv"><span>Độ thu hút</span><b>${Math.round(R.stallAppeal(g) * 100)}%</b></div><div class="kv"><span>Ước lượng khách</span><b>${s.open ? '~' + rate.toFixed(1).replace('.', ',') + ' người/giờ' : 'chưa mở'}</b></div>${R.seatCount(g) ? `<div class="kv"><span>Chỗ ngồi</span><b>${seatLabel}</b></div>` : ''}<div class="kv"><span>Buổi bán</span><b>${R.periodName(g)}</b></div>${R.dineIn(g) ? `<div class="kv"><span>Hợp buổi</span><b>${R.periodMenu(g).length} món</b></div>` : ''}${rest ? `<div class="kv"><span>Nhân sự</span><b>${R.sousCount(g)} phụ bếp · ${R.helperCount(g)} phục vụ</b></div><div class="kv"><span>Đặt bàn</span><b>${g.bookings.filter((b) => b.status === 'accepted').length} bàn đã nhận</b></div>` : ''}</div>
+          <div><p class="muted">${sp ? sp.note : 'Gánh quầy tới một chỗ bán (vòng vàng) để bày hàng.'} Mua thêm đồ tiện lợi & thiết bị ở tiệm Đồ Nghề Ba Tài (Phố Trung Tâm) để hút khách và phục vụ nhanh hơn.</p>` +
+          (ownedUpg.length ? `<h4>Tiện nghi & thiết bị đã lắp (${ownedUpg.length}/${upgList.length})</h4><p>${ownedUpg.map((x) => `<span class="tag good">${x.name}</span>`).join(' ')}</p>` : `<p class="muted">Chưa lắp thêm tiện nghi nâng cấp nào (${upgList.length} món có thể mua ở tiệm Ba Tài).</p>`) +
+          (T.tier >= 3 && g.flags.sapNo ? '<p class="neg">Đang nợ phí chỗ — mở bán sẽ trừ tiền trước.</p>' : '') + `<div style="display:flex;gap:.4em;flex-wrap:wrap"><button class="btn${s.dirt < 3 ? ' off' : ''}" data-a="clean">Lau dọn quầy (12 phút)</button><button class="btn${s.ready.length || s.store.some(isSpoiled) ? '' : ' off'}" data-a="dump">Đổ bỏ đồ ế, đồ hỏng</button></div></div></div>`;
       }
-      draw(`${ic('shop')} ${T.name}`, [['menu', 'Thực đơn'], ['store', 'Kho quầy'], ['info', 'Quầy']], body, placed ? `<button class="btn ${s.open ? 'red' : 'green'}" data-a="open">${s.open ? 'Đóng quầy' : 'MỞ BÁN'}</button>${T.tier < 3 ? `<button class="btn" data-a="pack">Dọn hàng, mang đi</button>` : ''}<span class="muted">Hôm nay: ${g.led.sold} phần · ${money(g.led.revenue + g.led.tips)}</span>` : T.tier < 3 ? `<button class="btn" data-a="pack">Mang quầy đi</button>` : `<span class="muted">Chạm vào vòng sáng vàng ngoài phố để đặt sạp.</span>`);
+      const stallTabs: [string, string][] = rest ? [['menu', 'Thực đơn'], ['store', 'Kho quầy'], ['staff', 'Nhân sự & Đặt bàn'], ['info', 'Quầy']] : [['menu', 'Thực đơn'], ['store', 'Kho quầy'], ['info', 'Quầy']];
+      draw(`${ic('shop')} ${T.name}`, stallTabs, body, placed ? `<button class="btn ${s.open ? 'red' : 'green'}" data-a="open">${s.open ? 'Đóng quầy' : 'MỞ BÁN'}</button>${T.tier < 3 ? `<button class="btn" data-a="pack">Dọn hàng, mang đi</button>` : ''}<span class="muted">Hôm nay: ${g.led.sold} phần · ${money(g.led.revenue + g.led.tips)}</span>` : T.tier < 3 ? `<button class="btn" data-a="pack">Mang quầy đi</button>` : `<span class="muted">Chạm vào vòng sáng vàng ngoài phố để đặt sạp.</span>`);
     } else if (name === 'home') {
       const h = HOUSING[g.housing];
       acts.take = (i) => { const k = moveStack(g.home, g.bag, i, 1e9, R.carryCap(g) - R.bagWeight(g)); if (!k) toast('Túi đầy rồi.', 'warn'); else sfx('pick'); };
@@ -122,7 +168,7 @@ export function openPanel(ui: UI, name: string) {
             <small><b>Dụng cụ:</b> ${tools.join(', ') || 'không cần'} · <b>Sơ chế</b> (mẻ ${r.batch} phần): ${r.prep.map((s) => ('label' in s && s.label ? s.label : s.t === 'cut' ? `thái ${INGS[s.ing].name.toLowerCase()}` : STEP_NAME[s.t])).join(' › ') || 'không'} · <b>Khi khách gọi:</b> ${r.finish.map((s) => ('label' in s && s.label ? s.label : STEP_NAME[s.t])).join(' › ')}</small>
             <small>Đã bán ${rs.made} phần · ngon nhất ${Math.round(rs.best * 100)} điểm</small></div></details>`;
         };
-        body = `<p class="muted">Tay nghề cấp ${R.level(g)} · ${RECIPE_LIST.filter((r) => g.rec[r.id].known).length}/${RECIPE_LIST.length} món đã biết. Chạm một món để xem số lượng, dụng cụ và các bước. Nguyên liệu: Chợ Xóm Chiều (rẻ, tươi buổi sáng), MiniMart (mở khuya), tạp hoá Cô Ba (than, gas, đá).</p><div class="list">${RECIPE_LIST.filter((r) => g.rec[r.id].known).map(row).join('')}</div><h4>Chưa học</h4><div class="list">${RECIPE_LIST.filter((r) => !g.rec[r.id].known).map(row).join('')}</div>`;
+        body = `<p class="muted">Tay nghề cấp ${R.level(g)} · ${RECIPE_LIST.filter((r) => g.rec[r.id].known).length}/${RECIPE_LIST.length} món đã biết. Chạm một món để xem số lượng, dụng cụ và các bước. Nguyên liệu: Chợ Xóm Chiều (rẻ, tươi buổi sáng), MiniMart 24h (mở 24/7 suốt ngày đêm), tạp hoá Cô Ba (than, gas, đá).</p><div class="list">${RECIPE_LIST.filter((r) => g.rec[r.id].known).map(row).join('')}</div><h4>Chưa học</h4><div class="list">${RECIPE_LIST.filter((r) => !g.rec[r.id].known).map(row).join('')}</div>`;
       } else if (tab === 'led') {
         body = ledgerBody(g);
       } else {
@@ -182,10 +228,30 @@ export function openPanel(ui: UI, name: string) {
       draw(`${ic('map')} Bản đồ khu phố`, [], `<div class="grid2"><canvas id="map" width="640" height="610"></canvas><div><p class="muted">Chạm một địa điểm để ghim đường đi.</p><div class="list">${places.map((p, i) => `<button class="btn small" style="justify-content:flex-start" data-a="go" data-i="${i}">${ic('pin')} ${p.name} <span class="muted">· ${Math.round(Math.hypot(p.x - ctx.player.x, p.z - ctx.player.z))} m</span></button>`).join('')}</div></div></div>`, ctx.acts.way ? `<button class="btn" data-a="clear">Bỏ ghim “${esc(ctx.acts.way.name)}”</button>` : '');
       drawMap(document.getElementById('map') as HTMLCanvasElement, places);
     } else if (name === 'settings') {
+      if (devOpen) {
+        const sections = getDevSections();
+        acts.devBack = () => { devOpen = false; };
+        acts.devLock = () => { devOpen = false; devTaps = 0; toast('Đã ẩn lại menu Test & Dịch chuyển.', 'info'); };
+        acts.devRun = (_i, el) => {
+          const id = el.dataset.k;
+          for (const sec of sections) {
+            const act = sec.items.find((x) => x.id === id);
+            if (act) {
+              if (act.closePanel !== false) ui.closePanel();
+              act.run();
+              return;
+            }
+          }
+        };
+        const body = `<p class="muted"><b>Phiên bản mới nhất:</b> ${DEV_BUILD_TAG}. Danh sách này được làm mới mỗi lần cập nhật tính năng.</p>` +
+          sections.map((sec) => `<h4>${sec.title}</h4><div class="list">${sec.items.map((it) => `<div class="item"><div class="grow"><b>${it.label}</b><small>${it.sub}</small></div><button class="btn small${it.tone ? ' ' + it.tone : ''}" data-a="devRun" data-k="${it.id}">Chạy</button></div>`).join('')}</div>`).join('');
+        draw(`${ic('bolt')} Menu Test & Dịch chuyển (Ẩn)`, [], body, `<button class="btn" data-a="devBack">Quay lại Cài đặt</button><button class="btn" data-a="devLock">Ẩn & Reset (7 lần)</button>`);
+        return;
+      }
       const st = ctx.set;
       acts.q = (i) => { st.quality = i; st.auto = false; ctx.applyQuality(); saveSettings(); }; acts.cam3 = () => { ctx.ui.switchView(); ctx.ui.panel('settings'); }; acts.fps = () => { st.fps = !st.fps; saveSettings(); }; acts.auto = () => { st.auto = !st.auto; saveSettings(); };
       acts.fs = () => { void toggleFullscreen(); }; acts.layout = () => ui.editLayout(); acts.save = () => { ctx.save('thu cong'); toast('Đã lưu game.', 'good'); }; acts.menu = () => { ctx.save('ve menu'); ui.closePanel(); ctx.toMenu(); };
-      draw(`${ic('gear')} Cài đặt`, [], `<h4>Đồ hoạ</h4><div style="display:flex;gap:.4em;flex-wrap:wrap">${QUALITY.map((q, i) => `<button class="btn${st.quality === i ? ' yellow' : ''}" data-a="q" data-i="${i}">${q.name}</button>`).join('')}<button class="btn${st.auto ? ' green' : ''}" data-a="auto">Tự hạ khi giật: ${st.auto ? 'bật' : 'tắt'}</button><button class="btn${st.fps ? ' green' : ''}" data-a="fps">Hiện FPS: ${st.fps ? 'bật' : 'tắt'}</button>${canFullscreen() ? '<button class="btn" data-a="fs">Toàn màn hình</button>' : ''}</div>
+      draw(`${ic('gear')} <span id="dev-unlock" style="cursor:pointer;user-select:none">Cài đặt</span>`, [], `<h4>Đồ hoạ</h4><div style="display:flex;gap:.4em;flex-wrap:wrap">${QUALITY.map((q, i) => `<button class="btn${st.quality === i ? ' yellow' : ''}" data-a="q" data-i="${i}">${q.name}</button>`).join('')}<button class="btn${st.auto ? ' green' : ''}" data-a="auto">Tự hạ khi giật: ${st.auto ? 'bật' : 'tắt'}</button><button class="btn${st.fps ? ' green' : ''}" data-a="fps">Hiện FPS: ${st.fps ? 'bật' : 'tắt'}</button>${canFullscreen() ? '<button class="btn" data-a="fs">Toàn màn hình</button>' : ''}</div>
         <h4>Góc nhìn</h4><div style="display:flex;gap:.6em;align-items:center;flex-wrap:wrap"><button class="btn ${st.cam3 ? 'green' : ''}" data-a="cam3">${st.cam3 ? 'Đang ở góc nhìn thứ ba' : 'Đang ở góc nhìn thứ nhất'} — bấm để đổi</button><span class="muted">Góc nhìn thứ ba cho thấy quần áo, kiểu tóc bạn mua. Phím tắt: V.</span></div>
         <h4>Nút bấm và cỡ chữ</h4><div style="display:flex;gap:.6em;align-items:center;flex-wrap:wrap"><button class="btn yellow" data-a="layout">Sắp xếp vị trí, độ lớn các nút</button><span class="muted">Kéo từng nút tới chỗ vừa tay, phóng to hay thu nhỏ tuỳ ý.</span></div>
         <h4>Cỡ chữ, nút và thanh trạng thái <span class="muted" id="uiscale-v">${Math.round(st.ui.scale * 100)}%</span></h4>

@@ -9,6 +9,8 @@ import { Rig, lookFromArch } from '../gfx/people';
 import { ARCH, ArchId } from '../data/people';
 import { softDot } from '../gfx/tex';
 import { CARS, CAR_BY, CAR_SHARE, CarKind } from '../data/cars';
+import { applyVehicleImpactToStats, classifyVehicleHit, VehicleKind } from '../sim/impact';
+import { toast } from '../core/bus';
 
 const BIKE_COLS = [0xd9261e, 0x2f6fb5, 0x1e1e22, 0xf3f0e8, 0x3f8a6a, 0xf08a2f, 0x8a5fd0, 0x5a6a7a];
 const RIDERS: ArchId[] = ['taixe', 'shipper', 'congnhan', 'vanphong', 'hangrong', 'dukhach'];
@@ -17,7 +19,7 @@ interface Rider {
   grp: THREE.Group; rig: Rig; moto: boolean; car: CarKind | null;
   axis: 0 | 1;                 // 0: chạy dọc trục x (z cố định) · 1: chạy dọc trục z (x cố định)
   sign: 1 | -1; road: number; lane: number; pos: number;
-  speed: number; hornT: number; smokeT?: number;
+  speed: number; hornT: number; smokeT?: number; brakeT?: number;
 }
 /** Hình xe máy, hướng +z là phía trước. */
 function motoGeo(col: number, dark: number) {
@@ -135,7 +137,9 @@ export class Traffic {
     this.group.visible = on;
     if (!on) return;
     for (const r of this.list) {
-      r.pos += r.sign * r.speed * dt;
+      if ((r.brakeT ?? 0) > 0) r.brakeT = Math.max(0, r.brakeT! - dt);
+      const curSp = r.speed * ((r.brakeT ?? 0) > 0 ? 0.25 : 1);
+      r.pos += r.sign * curSp * dt;
       const lim = (r.axis === 0 ? p.x : p.z) + r.sign * 105;      // ra khỏi tầm nhìn thì vào lại từ phía sau
       if (r.sign > 0 ? r.pos > lim : r.pos < lim) this.enter(r);
       const x = this.px(r), z = this.pz(r);
@@ -149,6 +153,52 @@ export class Traffic {
       if (r.hornT <= 0) {
         r.hornT = this.R.range(7, 22);
         if (d2 < 15 * 15 && this.R.chance(r.car ? 0.8 : 0.45)) ctx.sound.play('horn');
+      }
+      // va chạm xe cộ với người chơi và người đi đường (nhẹ · trung bình · nặng)
+      const kind: VehicleKind = r.car ? (r.car === 'truck' ? 'truck' : 'car') : r.moto ? 'moto' : 'bicycle';
+      const hl = r.car ? CAR_BY[r.car].len * 0.52 : r.moto ? 0.96 : 0.84;
+      const hw = r.car ? CAR_BY[r.car].w * 0.52 : r.moto ? 0.46 : 0.4;
+      const fx = r.axis === 0 ? r.sign : 0, fz = r.axis === 0 ? 0 : r.sign;
+      const rx = -fz, rz = fx; // trục ngang bên phải hướng xe chạy
+      const maxJump = r.car ? 1.45 : 0.9;
+      if (ctx.mode === 'play' && !p.camTo && !ctx.anim?.active && p.hitCd <= 0 && p.jumpY < maxJump && d2 < 9) {
+        const dx = p.x - x, dz = p.z - z;
+        const fwdDot = dx * fx + dz * fz, sideDot = dx * rx + dz * rz;
+        if (Math.abs(fwdDot) < hl + 0.32 && Math.abs(sideDot) < hw + 0.32) {
+          const grazing = Math.abs(sideDot) > hw * 0.65 || fwdDot < 0;
+          const spec = classifyVehicleHit(kind, curSp, grazing);
+          const sideSign = sideDot >= 0 ? 1 : -1;
+          const kx = fx * 0.72 + rx * sideSign * 0.88, kz = fz * 0.72 + rz * sideSign * 0.88;
+          p.knockback(kx, kz, spec.knockSpeed, spec.liftVy, spec.stunSec, spec.shake, spec.fallSec);
+          p.hitCd = 1.35; r.brakeT = 1.15;
+          ctx.ui.hitFlash(spec.flash);
+          ctx.sound.play('horn');
+          ctx.sound.play(spec.tier === 'heavy' ? 'crash' : spec.tier === 'medium' ? 'skid' : 'bonk');
+          const res = applyVehicleImpactToStats(ctx.g, spec);
+          toast(`${spec.label} (Máu −${spec.hpLoss})`, spec.tier === 'light' ? 'warn' : 'bad', spec.tier === 'heavy' ? 'skull' : 'bolt', spec.tier === 'heavy');
+          if (res.fainted) ctx.acts.checkFaint();
+        }
+      }
+      // xe đụng người đi đường gần lòng đường
+      if (r.grp.visible && ctx.mode !== 'menu') {
+        for (const n of ctx.npcs.list) {
+          if (n.hidden || n.state === 'fixed' || n.state === 'sit' || n.state === 'queue' || n.state === 'actor' || (n.vehCd ?? 0) > 0) continue;
+          const nd2 = dist2(x, z, n.x, n.z); if (nd2 > 9) continue;
+          const dx = n.x - x, dz = n.z - z;
+          const fwdDot = dx * fx + dz * fz, sideDot = dx * rx + dz * rz;
+          if (Math.abs(fwdDot) < hl + 0.28 && Math.abs(sideDot) < hw + 0.28) {
+            const grazing = Math.abs(sideDot) > hw * 0.65 || fwdDot < 0;
+            const spec = classifyVehicleHit(kind, curSp, grazing);
+            const sideSign = sideDot >= 0 ? 1 : -1;
+            const kx = fx * 0.65 + rx * sideSign * 0.92, kz = fz * 0.65 + rz * sideSign * 0.92;
+            ctx.npcs.knock(n, kx, kz, spec.knockSpeed * 0.9, spec.liftVy, Math.max(spec.fallSec, spec.tier === 'medium' ? 0.55 : 0.25), spec.tier);
+            r.brakeT = 0.85;
+            if (d2 < 22 * 22) {
+              ctx.sound.play('horn');
+              ctx.sound.play(spec.tier === 'heavy' ? 'crash' : spec.tier === 'medium' ? 'thud' : 'bonk');
+            }
+          }
+        }
       }
       // khói pô: ô tô nhả khói xám sau đuôi
       if (r.car && r.grp.visible) {

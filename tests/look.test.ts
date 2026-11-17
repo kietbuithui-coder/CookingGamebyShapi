@@ -65,10 +65,10 @@ describe('cleanLook — đọc bản lưu cho khỏi vỡ hình', () => {
 });
 
 describe('bản lưu', () => {
-  it('ván mới ghi phiên bản 11 và có ngoại hình', () => {
+  it('ván mới ghi phiên bản mới nhất và có ngoại hình', () => {
     const g = newGame(3);
     expect(g.v).toBe(SAVE_VERSION);
-    expect(g.v).toBe(11);
+    expect(g.v).toBeGreaterThanOrEqual(11);
     expect(g.look.hairStyle).toBe(0);
   });
   it('bản lưu v10 (chưa có look) được thêm ngoại hình mặc định', () => {

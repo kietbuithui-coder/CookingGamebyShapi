@@ -18,7 +18,7 @@ export class World {
   boxes: Box2[] = []; circs: Circ[] = []; dyn: (Box2 | Circ)[] = [];
   anchors: Record<string, Anchor> = {};
   doors: DoorDef[] = []; lamps: [number, number, number][] = []; slots: SlotDef[] = [];
-  bins: Anchor[] = []; benches: Anchor[] = []; litter: [number, number][] = []; taps: Anchor[] = [];
+  bins: Anchor[] = []; benches: Anchor[] = []; cafeSeats: { x: number; y: number; z: number; yaw: number; pair: number }[] = []; litter: [number, number][] = []; taps: Anchor[] = [];
   shutters: ShutterDef[] = []; spotsMark: Anchor[] = [];
   /** Danh sách lô đất (kèm khung toạ độ) — dùng cho bản đồ, chỉ đường và công cụ thử nghiệm. */
   lots: Lot[] = [];
@@ -120,6 +120,10 @@ export class Builder {
   anchor(name: string, lx: number, y: number, lz: number, phi = Math.PI): Anchor {
     const [x, z] = this.W(lx, lz), a = { x, y, z, yaw: this.fr.yaw + phi };
     this.world.anchors[name] = a; return a;
+  }
+  cafeSeat(lx: number, y: number, lz: number, phi: number, pair: number) {
+    const [x, z] = this.W(lx, lz);
+    this.world.cafeSeats.push({ x, y, z, yaw: this.fr.yaw + phi, pair });
   }
   slot(shop: string, idx: number, lx: number, y: number, lz: number, gate?: string) { const [x, z] = this.W(lx, lz); this.world.slots.push({ shop, idx, x, y, z, gate }); }
 

@@ -97,7 +97,7 @@ export const FIXED_ROLE: Record<string, string> = {
   wholesale: 'Chủ vựa sỉ', pharmacy: 'Dược sĩ', equip: 'Chủ tiệm đồ nghề', eatery: 'Bà chủ quán cơm', scrap: 'Chủ vựa ve chai',
   pawn: 'Chủ tiệm cầm đồ', bank: 'Nhân viên ngân hàng', shark: 'Gã mặt sẹo', motel: 'Chủ nhà nghỉ', tro: 'Ông chủ trọ',
   hotel: 'Lễ tân khách sạn', dock: 'Cai bốc vác', hobo: 'Ông lão lang thang',
-  hot_toc: 'Thợ cắt tóc', thoi_trang: 'Cô bán quần áo',
+  hot_toc: 'Thợ cắt tóc', thoi_trang: 'Cô bán quần áo', cafe: 'Chủ quán cà phê',
   canho: 'Quản lý căn hộ', nharieng: 'Chủ nhà', cuahang: 'Chủ tạp hoá',
   hospital: 'Bác sĩ trực',
   police: 'Công an khu vực',
@@ -163,6 +163,14 @@ export const SIDE: Record<string, SideDef> = {
       { q: 'Mặc đẹp có giúp bán được hàng không?', a: 'Chớ sao không. Người ta đi ngang, thấy mình lem luốc là họ ngại ghé. Mặc đồ sạch, tóc tai gọn gàng, họ tin mình hơn — đồ ăn cũng thấy ngon hơn. Cô nói thiệt đó, không phải khoe hàng đâu.' },
     ],
   },
+  cafe: {
+    intro: 'Anh Phong đang tráng phin cà phê bằng nước sôi, mùi rang xay thơm phức bay khắp quán. “Vô ngồi chơi em! Quán anh có cà phê sữa đá, trà đào cam sả với bạc xỉu, ngồi thư giãn thoải mái nha.”',
+    again: '“Lại ghé quán hả em? Chọn bàn ngoài hiên hay ngồi trong uống ly gì cho tỉnh táo?”',
+    topics: [
+      { q: 'Quán mình mở ở đây lâu chưa anh?', a: 'Cũng gần bốn năm rồi. Hồi khu căn hộ kế bên mới xây xong là anh thuê mặt bằng này mở quán. Sáng chiều dân văn phòng với mấy cô chú trong chung cư xuống uống đông lắm.' },
+      { q: 'Bí quyết pha cà phê ngon của quán là gì?', a: 'Cà phê phải rang vừa, đừng khét quá, pha phin nhôm chậm từng giọt. Sáng ra nghe tiếng nước nhỏ giọt với mùi cà phê ấm là thấy đời nhẹ đi phân nửa rồi.' },
+    ],
+  },
   tra_da: {
     intro: 'Cô Thắm ngồi bên chiếc bàn nhựa, tay phe phẩy quạt giấy. “Ngồi đi con, nắng lắm.”',
     again: '“Lại ghé hả? Ngồi đi, cô rót cho ly trà đá.”',
@@ -225,6 +233,8 @@ export const LINES = {
   order: ['Cho {self} {n} {dish} nha {you}.', '{You} ơi, {n} {dish}!', 'Bán {self} {n} {dish} đi {you}.', 'Lấy {self} {n} {dish} nghen.', '{n} {dish}, làm lẹ giùm {self} nha.', 'Ở đây có {dish} hả? Cho {self} {n} phần.'],
   order_regular: ['Như mọi khi nha {you}, {n} {dish}.', '{Self} lại ghé nè. {n} {dish} nhé!', 'Nhớ quán {you} quá, cho {self} {n} {dish}.'],
   order_more: ['{Self} ăn thấy ngon quá, cho {self} thêm {dish} nữa đi.', 'Ừ ngon đó. Làm thêm {self} phần {dish} nha.', 'Còn {dish} không {you}? {Self} ăn thêm một phần.', '{Self} ngồi đây ăn luôn. Cho thêm {dish} — {price} hả, được.'],
+  order_group: ['Nhóm {self} {n} người, cho {n} phần {dish} nha {you}!', 'Đi chung cả nhóm {n} người — làm giùm {n} phần {dish} nghen {you}.', 'Tụi {self} {n} người ngồi chung bàn, cho {n} phần {dish} đi {you}.'],
+  booking_arrive: ['{Self} có đặt bàn trước {n} chỗ đây!', 'Chào {you}, bàn đặt trước {n} người của {self} tới rồi nè!'],
   pricey_buy: ['Ủa, hôm nay tăng giá rồi hả? Thôi kệ, lấy {self} {n} {dish}.', '{price} lận hả… Ừ thì lấy {n} phần.', 'Hơi mắc đó nha. Mà thôi, {n} {dish}.'],
   pricey_leave: ['{dish} mà {price}? Mắc quá, thôi {self} đi chỗ khác.', 'Trời đất, chém dữ vậy {you}!', 'Giá này {self} ăn không nổi.', 'Ủa, hôm nay tăng giá rồi hả? Thôi để bữa khác.', 'Bên kia bán rẻ hơn nhiều đó {you}.'],
   cheap: ['Rẻ ghê, bán vậy có lời không {you}?', 'Giá này thì {self} ủng hộ dài dài.', 'Ui, rẻ bất ngờ luôn!'],
@@ -319,6 +329,14 @@ export const HELPER_POOL: HelperDef[] = [
   { name: 'Nhỏ Nhung', fem: true, face: 1, hairStyle: 4, shirt: 0xf5c531, pants: 0x2a3a6a, hair: 0x6a3a22, skin: 0xf6d6b6, wage: 58000, ask: 'Cho con phụ quán với {ac} ơi! Con lanh lắm, 58 ngàn một ngày là được rồi.' },
 ];
 
+/** Ứng viên nhân viên phụ bếp cho nhà hàng bình dân (bậc 6): đứng phòng bếp riêng, tự sơ chế & nấu phụ. */
+export interface SousDef extends HelperDef { speed: number; }
+export const SOUS_POOL: SousDef[] = [
+  { name: 'Bếp phụ Tèo', fem: false, face: 1, hairStyle: 3, shirt: 0xf7f3ea, pants: 0x26282e, hair: 0x1a1816, skin: 0xd9a87a, wage: 95000, speed: 1, ask: 'Dạ {ac}, con làm phụ bếp quán cơm lâu năm rồi — sơ chế với nấu phụ nhanh gọn lắm!' },
+  { name: 'Chị Năm bếp', fem: true, face: 2, hairStyle: 5, shirt: 0xf7f3ea, pants: 0x26282e, hair: 0x2a1c14, skin: 0xe6b88e, wage: 110000, speed: 1.15, ask: 'Em đứng bếp phụ quen rồi {ac}, để em lo sơ chế với ra món phụ cho nhẹ tay.' },
+  { name: 'Thằng Dũng', fem: false, face: 0, hairStyle: 1, shirt: 0xf7f3ea, pants: 0x2d323b, hair: 0x2a1c14, skin: 0xc9936a, wage: 90000, speed: 0.95, ask: 'Con chịu khó đứng bếp cả ngày, phụ {ac} băm chặt với xào nấu nha!' },
+];
+
 export interface FixedNpcDef { id: string; name: string; face: number; fem: boolean; shirt: number; pants: number; hair: number; hat: number; hairStyle: number; fat: number; h: number; }
 export const FIXED: Record<string, FixedNpcDef> = {
   hot_toc: { id: 'hot_toc', name: 'Chú Bảy Kéo', face: 7, fem: false, shirt: 0xf3f0e8, pants: 0x2a2e3a, hair: 0x3a2a22, hat: 0, hairStyle: 6, fat: 1.05, h: 1 },
@@ -364,4 +382,5 @@ export const FIXED: Record<string, FixedNpcDef> = {
   dua_mai: { id: 'dua_mai', name: 'Con Mai', face: 4, fem: true, shirt: 0x3fae5a, pants: 0x2a2e3a, hair: 0x2a201b, hat: 0, hairStyle: 1, fat: 0.88, h: 0.87 },
   dua_thao: { id: 'dua_thao', name: 'Con Thảo', face: 1, fem: true, shirt: 0xf5c531, pants: 0x3a5a8a, hair: 0x1e1a18, hat: 0, hairStyle: 5, fat: 0.92, h: 0.89 },
   hobo: { id: 'hobo', name: 'Ông Bảy Lang Thang', face: 3, fem: false, shirt: 0x6a6258, pants: 0x4a4a42, hair: 0xbfbfbc, hat: 4, hairStyle: 1, fat: 0.9, h: 0.96 },
+  cafe: { id: 'cafe', name: 'Anh Phong', face: 0, fem: false, shirt: 0x3a2416, pants: 0x2a2e3a, hair: 0x1e1a18, hat: 0, hairStyle: 0, fat: 0.98, h: 1.01 },
 };

@@ -11,7 +11,7 @@ export interface Look {
   skin: number; bag: number; hatCol: number; long: boolean; apron: number; shoe: number;
 }
 export const SKINS = [0xf2c9a4, 0xecbe94, 0xe0aa7c, 0xf6d6b6, 0xd49a6a];
-export type Pose = 'idle' | 'walk' | 'sit' | 'talk' | 'work' | 'carry' | 'wave' | 'lie' | 'angry' | 'dance' | 'ride' | 'read' | 'drink' | 'chat';
+export type Pose = 'idle' | 'walk' | 'sit' | 'talk' | 'work' | 'carry' | 'wave' | 'lie' | 'angry' | 'dance' | 'ride' | 'read' | 'drink' | 'chat' | 'punch' | 'rummage' | 'serve' | 'wipe';
 
 export function lookFromArch(a: ArchDef, R: RNG, fem = R.chance(a.fem)): Look {
   let face = R.pick(a.faces);
@@ -152,7 +152,7 @@ export class Rig {
   /** speed: m/s đang đi (0 = đứng). base: biểu cảm nền. */
   update(dt: number, speed: number, base = 0) {
     this.t += dt;
-    const p = this.pose, walking = speed > 0.05 && (p === 'walk' || p === 'carry');
+    const p = this.pose, walking = speed > 0.05 && (p === 'walk' || p === 'carry' || p === 'serve');
     if (walking) this.phase += dt * (3.2 + speed * 3.4);
     const sw = walking ? Math.sin(this.phase) * clamp(0.3 + speed * 0.3, 0, 0.85) : 0, k = Math.min(1, dt * 12);
     const sitT = this.seated || p === 'sit' || p === 'ride' ? 1 : 0, lieT = p === 'lie' ? 1 : 0;
@@ -173,13 +173,18 @@ export class Rig {
     else if (p === 'read') { aL = aR = -1.12; aLz = -0.34; aRz = 0.34; }                   // hai tay cầm tờ báo
     else if (p === 'drink') { aR = -1.05 + Math.sin(this.t * 1.6) * 0.07; aRz = 0.26; aL = -0.16; }   // cầm ly trước bụng, thỉnh thoảng nhấp một ngụm
     else if (p === 'chat') { aR = -1.15 + Math.sin(this.t * 3.1) * 0.42; aL = -0.55 + Math.cos(this.t * 2.3) * 0.22; aRz = 0.25; aLz = -0.18; }
+    else if (p === 'punch') { aR = -1.78 + Math.sin(this.t * 16) * 0.22; aL = -0.78; aLz = 0.22; aRz = -0.16; }
+    else if (p === 'rummage') { aL = -1.25 + Math.sin(this.t * 10) * 0.35; aR = -1.25 - Math.sin(this.t * 10) * 0.35; aLz = -0.18; aRz = 0.18; }
+    else if (p === 'serve') { aL = -1.22; aR = -1.28; aLz = -0.2; aRz = 0.2; }
+    else if (p === 'wipe') { aR = -1.1 + Math.sin(this.t * 8.5) * 0.26; aRz = 0.22 + Math.cos(this.t * 8.5) * 0.26; aL = -0.22; }
     else if (p === 'idle') { aL += Math.sin(this.t * 1.3) * 0.04; aR -= Math.sin(this.t * 1.3) * 0.04; }
     const L = this.legL.rotation, R = this.legR.rotation, A = this.armL.rotation, B = this.armR.rotation;
     L.x += (lL - L.x) * k; R.x += (lR - R.x) * k; A.x += (aL - A.x) * k; B.x += (aR - B.x) * k; A.z += (aLz - A.z) * k; B.z += (aRz - B.z) * k;
     const h = this.look.h;
     this.inner.position.y = (walking ? Math.abs(Math.cos(this.phase)) * 0.028 : Math.sin(this.t * 1.6) * 0.004) * h - this.sit * 0.33 * h - this.lie * 0.62 * h
       + (p === 'dance' ? Math.abs(Math.sin(this.t * 6.4)) * 0.05 * h : 0);
-    this.inner.rotation.x = -this.lie * 1.5 + (walking ? 0.04 : 0) + (p === 'read' ? 0.16 : p === 'drink' ? -0.08 : 0); this.inner.position.z = this.lie * 0.75 * h;
+    this.inner.rotation.x = -this.lie * 1.5 + (walking ? 0.04 : 0) + (p === 'read' ? 0.16 : p === 'drink' ? -0.08 : p === 'rummage' ? 0.26 : p === 'punch' ? 0.14 : p === 'wipe' ? 0.14 : 0); this.inner.position.z = this.lie * 0.75 * h;
+    this.inner.rotation.y = p === 'punch' ? 0.26 : 0;
     this.inner.rotation.z = walking ? Math.sin(this.phase) * 0.025 : 0;
     // biểu cảm: giữ tạm thời rồi về nền, thỉnh thoảng chớp mắt, mấp máy khi nói
     if (this.exprT > 0) { this.exprT -= dt; if (p === 'talk' && this.expr !== 4 && this.expr !== 3) this.setExpr(Math.sin(this.t * 11) > 0 ? 6 : base); }
@@ -192,10 +197,22 @@ export class Rig {
 }
 
 /** Hình chiếc túi giấy/bao hàng nhỏ (khách xách đồ ăn mang đi). */
-let _bagGeo: THREE.BufferGeometry | null = null, _sackGeo: THREE.BufferGeometry | null = null;
+let _bagGeo: THREE.BufferGeometry | null = null, _sackGeo: THREE.BufferGeometry | null = null, _trayGeo: THREE.BufferGeometry | null = null;
 export function takeawayBag(): THREE.Mesh {
   if (!_bagGeo) { const m = new MB(); m.box(0, -0.16, 0, 0.17, 0.16, 0.09, 0xf3ead2, 0xe9dcb8, 0.06, true); m.box(0, 0, 0, 0.1, 0.035, 0.012, 0xc9b890); _bagGeo = m.build(); }
   return new THREE.Mesh(_bagGeo, MAT.lit);
+}
+export function servingTray(): THREE.Mesh {
+  if (!_trayGeo) {
+    const m = new MB();
+    // Khay bưng món màu nâu gỗ + tô/đĩa trắng & ly trà trên khay
+    m.box(-0.08, -0.02, 0.14, 0.34, 0.025, 0.24, 0x8b5a2b, 0xa8713a, 0.05, true);
+    m.cyl(-0.13, 0.03, 0.14, 0.075, 0.055, 0xf6f4ee, 8);
+    m.cyl(-0.13, 0.045, 0.14, 0.06, 0.02, 0xd97336, 8);
+    m.cyl(-0.01, 0.045, 0.14, 0.035, 0.09, 0xe7c88a, 7);
+    _trayGeo = m.build();
+  }
+  return new THREE.Mesh(_trayGeo, MAT.lit);
 }
 export function sackMesh(): THREE.Mesh {
   if (!_sackGeo) { const m = new MB(); m.sph(0, 0, 0, 0.36, 0.17, 0.25, 0xd9cdb0, 8, 0xe9dfc8); m.box(0.3, -0.04, 0, 0.12, 0.08, 0.2, 0xc9b890); _sackGeo = m.build(); }

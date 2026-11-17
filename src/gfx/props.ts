@@ -191,4 +191,80 @@ export function gearModel(mb: MB, id: string, x: number, y: number, z: number) {
       break;
   }
 }
+
+export function speakerModel(mb: MB, x: number, y: number, z: number) {
+  mb.box(x, y, z, 0.16, 0.24, 0.13, 0x1e2228, 0x2d333d, 0.08, true);
+  mb.cyl(x, y + 0.07, z + 0.068, 0.045, 0.01, 0x3b4452, 10);
+  mb.cyl(x, y + 0.17, z + 0.068, 0.032, 0.01, 0x2f8fd5, 10);
+}
+export function takeawayRackModel(mb: MB, x: number, y: number, z: number) {
+  for (let i = 0; i < 4; i++) mb.box(x - 0.08, y + i * 0.024, z, 0.14, 0.02, 0.12, 0xf3f2ec, 0xffffff);
+  mb.cyl(x + 0.1, y, z, 0.045, 0.16, 0xf3f2ec, 10, 0.055);
+  mb.cyl(x + 0.1, y + 0.16, z, 0.058, 0.012, 0xd9463c, 10);
+}
+export function juicerModel(mb: MB, x: number, y: number, z: number) {
+  mb.box(x, y, z, 0.22, 0.1, 0.22, 0xc5cbd2, 0xe3e8ee, 0.06, true);
+  mb.box(x, y + 0.1, z, 0.18, 0.22, 0.18, 0xf3b83a, 0xffd268, 0.04);
+  mb.box(x, y + 0.32, z, 0.2, 0.03, 0.2, 0x2f8fd5, 0x4ba6e8, 0.04);
+}
+export function glassCaseModel(mb: MB, x: number, y: number, z: number, w = 0.85) {
+  // khung inox mảnh quanh tủ kính để không che khuất món ăn bên trong
+  mb.box(x, y, z, w, 0.02, 0.34, 0xc5cbd2, 0xe3e8ee);
+  mb.box(x, y + 0.38, z, w, 0.02, 0.34, 0xc5cbd2, 0xe3e8ee);
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) mb.box(x + sx * (w / 2 - 0.015), y + 0.02, z + sz * 0.155, 0.022, 0.36, 0.022, 0x9aa2ab);
+  mb.box(x, y + 0.19, z, w - 0.04, 0.015, 0.3, 0xd8eef8, 0xeaf7fc);
+}
+export function teaSetModel(mb: MB, x: number, y: number, z: number) {
+  mb.cyl(x - 0.07, y, z, 0.065, 0.19, 0x2f6fb5, 10);
+  mb.cyl(x - 0.07, y + 0.19, z, 0.07, 0.022, 0xe9eef4, 10);
+  mb.cyl(x + 0.07, y, z, 0.04, 0.11, 0xb8734b, 8);
+  mb.rod(x + 0.06, y + 0.11, z, 0.008, 0.09, 0xd8b47c, 0.12, 0, 5);
+  mb.rod(x + 0.085, y + 0.11, z, 0.008, 0.09, 0xd8b47c, -0.1, 0, 5);
+}
+export function standFanModel(mb: MB, x: number, y: number, z: number) {
+  mb.cyl(x, y, z, 0.2, 0.04, 0x26282c, 12);
+  mb.cyl(x, y + 0.04, z, 0.025, 1.08, 0xc5cbd2, 8);
+  mb.cyl(x, y + 1.24, z, 0.22, 0.05, 0x2f8fd5, 14);
+  mb.cyl(x, y + 1.24, z + 0.04, 0.06, 0.03, 0x26282c, 10);
+}
+export function posCounterModel(mb: MB, x: number, y: number, z: number) {
+  mb.box(x, y, z, 0.38, 0.07, 0.28, 0x26282c, 0x353940);
+  mb.box(x - 0.06, y + 0.07, z, 0.22, 0.2, 0.04, 0x1e2024, 0x2c3038);
+  mb.box(x - 0.06, y + 0.09, z + 0.022, 0.19, 0.15, 0.006, 0x5fa8d3, 0x89c7eb);
+  mb.box(x + 0.13, y + 0.07, z + 0.03, 0.1, 0.09, 0.12, 0xe8edf2, 0xffffff);
+}
+export function wifiSpeakerModel(mb: MB, x: number, y: number, z: number) {
+  mb.box(x, y, z, 0.22, 0.04, 0.14, 0x1e2024, 0x32363e);
+  for (const dx of [-0.07, 0.07]) mb.cyl(x + dx, y + 0.04, z - 0.04, 0.008, 0.14, 0x1e2024, 5);
+  mb.box(x + 0.04, y + 0.04, z + 0.04, 0.04, 0.008, 0.02, 0x38d96c, 0x38d96c);
+}
+export function commercialFridgeModel(mb: MB, x: number, y: number, z: number) {
+  mb.box(x, y, z, 0.92, 1.88, 0.64, 0xb8c0c8, 0xd8dfe6, 0.04, true);
+  for (const sx of [-0.22, 0.22]) {
+    mb.box(x + sx, y + 0.06, z + 0.325, 0.42, 1.76, 0.02, 0xdde3ea, 0xedf2f7);
+    mb.box(x + sx * 0.22, y + 0.78, z + 0.345, 0.025, 0.45, 0.025, 0x4b525a);
+  }
+}
+export function commercialStoveModel(mb: MB, x: number, y: number, z: number, s = 1) {
+  mb.box(x, y, z, 0.92 * s, 0.16 * s, 0.46 * s, 0x9aa2ab, 0xd8dfe6, 0.06, true);
+  for (const bx of [-0.24 * s, 0.24 * s]) {
+    mb.cyl(x + bx, y + 0.16 * s, z, 0.11 * s, 0.03 * s, 0x1f2226, 12);
+    mb.cyl(x + bx, y + 0.19 * s, z, 0.14 * s, 0.02 * s, 0x353940, 8);
+    mb.rod(x + bx, y + 0.08 * s, z + 0.24 * s, 0.024 * s, 0.025 * s, 0xd9361e, Math.PI / 2, 0, 8);
+  }
+}
+export function rangeHoodModel(mb: MB, x: number, y: number, z: number) {
+  mb.box(x, y, z, 1.35, 0.22, 0.62, 0xb8c0c8, 0xdde3ea, 0.04, true);
+  mb.box(x, y + 0.22, z, 0.42, 0.78, 0.36, 0xa8b0b8, 0xc8d0d8);
+}
+export function washBasinModel(mb: MB, x: number, y: number, z: number) {
+  mb.box(x, y, z, 0.56, 0.78, 0.42, 0xdce4ea, 0xeef4f8, 0.04, true);
+  mb.box(x, y + 0.78, z, 0.6, 0.08, 0.46, 0xf7f9fb, 0xffffff);
+  mb.box(x, y + 1.02, z - 0.18, 0.46, 0.58, 0.025, 0x9ad1ea, 0xcfeef9);
+  mb.cyl(x, y + 0.86, z - 0.12, 0.018, 0.12, 0xc5cbd2, 8);
+}
+export function acUnitModel(mb: MB, x: number, y: number, z: number, leftSide = true) {
+  mb.box(x, y, z, 0.18, 0.28, 0.92, 0xf3f5f7, 0xffffff, 0.06, true);
+  mb.box(x + (leftSide ? 0.092 : -0.092), y + 0.04, z + 0.26, 0.008, 0.03, 0.14, 0x2f8fd5, 0x56b4f5);
+}
 export { MAT, mix };

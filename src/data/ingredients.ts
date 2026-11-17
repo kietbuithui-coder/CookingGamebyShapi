@@ -101,4 +101,4 @@ const RAW: Row[] = [
 
 export const INGS: Record<string, IngDef> = {};
 export const ING_LIST: IngDef[] = RAW.map(([id, name, cat, unit, price, kg, shelf, cold, shape, c, c2, eat]) =>
-  (INGS[id] = { id, name, cat, unit, price, kg, shelf, cold: !!cold, shape, c, c2: c2 ?? c, eat }));
+  (INGS[id] = { id, name, cat, unit, price, kg, shelf: shelf < 9000 ? Math.round(shelf * 1.2 * 10) / 10 : shelf, cold: !!cold, shape, c, c2: c2 ?? c, eat }));
