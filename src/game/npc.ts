@@ -6,7 +6,7 @@ import { ARCH, ARCH_LIST, ArchDef, ArchId, FIXED, LINES, NAMES, RegularDef, RUDE
 import { NAV, NavNode, findPath, nearestNode, groundY, districtAt, District } from '../world/layout';
 import { RNG, rnd, clamp, angDiff, dist2, damp } from '../core/util';
 import { hourCurve, WeatherDef } from '../data/world';
-import { hourOf } from '../sim/state';
+import { STAT_MAX, hourOf } from '../sim/state';
 import { wx, mods, Persona, Order, say, shopOpen } from '../sim/rules';
 import { SHOPS } from '../data/shops';
 import { MB, MAT } from '../gfx/mb';
@@ -205,7 +205,7 @@ export class Npcs {
   spit(n: Npc) {
     if (ctx.mode !== 'play') return;
     ctx.sound.play('spit'); this.say(n, this.R.pick(LINES.rude.spit), 2.2, 4);
-    ctx.g.st.mood = clamp(ctx.g.st.mood - 3, 0, 100);
+    ctx.g.st.mood = clamp(ctx.g.st.mood - 3, 0, STAT_MAX);
     toast('Ai đó khạc nhổ ngay trước mặt bạn. Chỉ còn biết lắc đầu đi tiếp.', 'warn');
   }
   /**
@@ -218,7 +218,7 @@ export class Npcs {
     ctx.sound.play('thud');
     n.hurt = (n.hurt ?? 0) + 1;
     this.say(n, R.pick(L.cry), 2.4, EXPR.pain);
-    g.st.mood = clamp(g.st.mood + 1, 0, 100);
+    g.st.mood = clamp(g.st.mood + 1, 0, STAT_MAX);
     g.rep = clamp(g.rep - 3, 0, 100);
     // người đứng gần thấy hết: mỗi hai người chứng kiến thì mất thêm uy tín
     let seen = 0;
@@ -333,7 +333,7 @@ export class Npcs {
             const k = 0.6 / dd, o = { x: p.x + (p.x - n.x) * k, z: p.z + (p.z - n.z) * k };
             ctx.world.resolve(o.x, o.z, 0.3, o); p.x = o.x; p.z = o.z;
           }
-          g.st.mood = clamp(g.st.mood - 4, 0, 100);
+          g.st.mood = clamp(g.st.mood - 4, 0, STAT_MAX);
           toast('Bị xô một cái. Bạn lùi lại vài bước cho lành.', 'bad');
         }
         if (n.chaseT <= 0) { n.hit = false; n.state = 'walk'; n.pose = 'walk'; n.persona = undefined; n.served = true; this.route(n, this.destFor(n, nearestNode(n.x, n.z))); }
@@ -375,7 +375,7 @@ export class Npcs {
       if (k >= 1) {
         ctx.scene.remove(f.m); this.paper.splice(i, 1);
         ctx.sound.play('paper');
-        if (dist2(f.to.x, f.to.z, p.x, p.z) < 4) { g.st.mood = clamp(g.st.mood - 2, 0, 100); toast('Một cục giấy bay trúng vai bạn. Ai đó cười khẩy phía sau.', 'info'); }
+        if (dist2(f.to.x, f.to.z, p.x, p.z) < 4) { g.st.mood = clamp(g.st.mood - 2, 0, STAT_MAX); toast('Một cục giấy bay trúng vai bạn. Ai đó cười khẩy phía sau.', 'info'); }
       }
     }
   }

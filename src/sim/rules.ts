@@ -10,8 +10,10 @@ import { ARCH, ArchDef, HELPER_POOL, HelperDef, LINES, FIXED, FIXED_ROLE } from 
 import { EVENTS, EVENT_LIST, EventDef, WEATHER, WeatherDef, WeatherId, floodZone, hourCurve } from '../data/world';
 import { EXPR } from '../data/expr';
 import { District, DISTRICT, SPOTS, districtAt, spotById } from '../world/layout';
-import { Game, Stack, Helper, absMin, addStack, countOf, hourOf, newLedger, purge, spoil, takeFrom, weightOf, junkWeight, emptyStall, Debt, coldWeightOf } from './state';
+import { Game, Stack, Helper, STAT_MAX, absMin, addStack, countOf, hourOf, newLedger, purge, spoil, takeFrom, weightOf, junkWeight, emptyStall, Debt, coldWeightOf } from './state';
 import * as PH from './phone';
+
+export { STAT_MAX };
 
 // ───────────────────────── Tiện ích chung ─────────────────────────
 export const wx = (g: Game): WeatherDef => WEATHER[g.weather.now];
@@ -338,13 +340,13 @@ export function settleSale(g: Game, o: Order, cost: number, rv: Review, quality:
   g.led.cogs += cost; g.led.sold += o.n; g.led.customers++; g.led.stars += rv.stars; g.led.rated++;
   g.tot.served += o.n; g.rep = clamp(g.rep + rv.rep, 0, 100);
   const rs = g.rec[o.rid]; rs.made += o.n; rs.best = Math.max(rs.best, quality);
-  g.st.mood = clamp(g.st.mood + (rv.stars - 3) * 1.2, 0, 100);
+  g.st.mood = clamp(g.st.mood + (rv.stars - 3) * 1.2, 0, STAT_MAX);
   g.stall.dirt = clamp(g.stall.dirt + 0.8 * o.n, 0, 100);
 }
 export function lostCustomer(g: Game, why: 'wait' | 'price' | 'none' | 'dirty') {
   g.led.lost++;
   g.rep = clamp(g.rep - (why === 'wait' ? 0.5 : why === 'dirty' ? 0.35 : why === 'price' ? 0.08 : 0.05), 0, 100);
-  if (why === 'wait') g.st.mood = clamp(g.st.mood - 2, 0, 100);
+  if (why === 'wait') g.st.mood = clamp(g.st.mood - 2, 0, STAT_MAX);
 }
 
 // ───────────────────────── Chỉ số sinh tồn ─────────────────────────
@@ -380,15 +382,15 @@ export function tickStats(g: Game, dm: number, a: Activity) {
   // tinh thần trôi dần về mức nền
   const base = clamp(42 + HOUSING[g.housing].mood + (s.hunger < 25 ? -14 : 0) + (s.hygiene < 25 ? -10 : 0) + (g.debts.some((d) => g.day > d.due) ? -15 : 0) + (g.rep > 40 ? 8 : 0), 5, 90);
   s.mood += (base - s.mood) * clamp(dm * 0.0025);
-  for (const k of Object.keys(s) as (keyof typeof s)[]) s[k] = clamp(s[k], 0, 100);
+  for (const k of Object.keys(s) as (keyof typeof s)[]) s[k] = clamp(s[k], 0, STAT_MAX);
 }
 /** Ăn/uống một món. */
 export function consume(g: Game, eff: { h?: number; t?: number; m?: number; hp?: number; e?: number; hy?: number }, risky = 0) {
   const s = g.st;
-  s.hunger = clamp(s.hunger + (eff.h ?? 0), 0, 100); s.thirst = clamp(s.thirst + (eff.t ?? 0), 0, 100); s.mood = clamp(s.mood + (eff.m ?? 0), 0, 100);
-  s.health = clamp(s.health + (eff.hp ?? 0), 0, 100); s.energy = clamp(s.energy + (eff.e ?? 0), 0, 100); s.hygiene = clamp(s.hygiene + (eff.hy ?? 0), 0, 100);
+  s.hunger = clamp(s.hunger + (eff.h ?? 0), 0, STAT_MAX); s.thirst = clamp(s.thirst + (eff.t ?? 0), 0, STAT_MAX); s.mood = clamp(s.mood + (eff.m ?? 0), 0, STAT_MAX);
+  s.health = clamp(s.health + (eff.hp ?? 0), 0, STAT_MAX); s.energy = clamp(s.energy + (eff.e ?? 0), 0, STAT_MAX); s.hygiene = clamp(s.hygiene + (eff.hy ?? 0), 0, STAT_MAX);
   if ((eff.hp ?? 0) >= 20 && g.flags.sick) { delete g.flags.sick; toast('Hết cảm rồi, khoẻ lại rồi!', 'good', 'heart'); }
-  if (risky > 0 && rnd.chance(risky)) { s.health = clamp(s.health - 18, 0, 100); s.mood = clamp(s.mood - 8, 0, 100); toast('Ăn đồ ôi thiu — đau bụng quá!', 'bad', 'heart'); }
+  if (risky > 0 && rnd.chance(risky)) { s.health = clamp(s.health - 18, 0, STAT_MAX); s.mood = clamp(s.mood - 8, 0, STAT_MAX); toast('Ăn đồ ôi thiu — đau bụng quá!', 'bad', 'heart'); }
 }
 
 // ───────────────────────── Sức khoẻ: xỉu & bệnh viện ─────────────────────────
@@ -462,8 +464,8 @@ export function faint(g: Game): FaintResult {
   if (lost.length) { g.lostBag = lost.map((s) => ({ ...s })); g.lostDay = g.day; }
   const s = g.st;
   s.health = 45; s.energy = Math.max(s.energy, 40);
-  s.mood = clamp(s.mood - 18, 0, 100); s.hygiene = clamp(s.hygiene - 22, 0, 100);
-  s.hunger = clamp(s.hunger - 8, 0, 100); s.thirst = clamp(s.thirst - 8, 0, 100);
+  s.mood = clamp(s.mood - 18, 0, STAT_MAX); s.hygiene = clamp(s.hygiene - 22, 0, STAT_MAX);
+  s.hunger = clamp(s.hunger - 8, 0, STAT_MAX); s.thirst = clamp(s.thirst - 8, 0, STAT_MAX);
   g.rep = clamp(g.rep - 6, 0, 100);
   g.flags.faint = (g.flags.faint ?? 0) + 1; g.flags.faintDay = g.day;
   return { fee, lost };
@@ -512,7 +514,7 @@ export function startEvent(g: Game, id: string, R: RNG = rnd): boolean {
     toast(e.text + ' Hết: ' + g.wd.outOf.map((i) => INGS[i].name).join(', ') + '.', 'event', e.icon, true);
   } else toast(e.text, e.danger ? 'warn' : 'event', e.icon, true);
   if (e.weather) setWeather(g, e.weather, R, false);
-  if (e.gift) { earn(g, e.gift, 'side'); g.st.mood = clamp(g.st.mood + 20, 0, 100); }
+  if (e.gift) { earn(g, e.gift, 'side'); g.st.mood = clamp(g.st.mood + 20, 0, STAT_MAX); }
   bus.emit('event', { id, on: true });
   return true;
 }
@@ -606,7 +608,7 @@ function dailyDebts(g: Game) {
           const pay = Math.min(g.cash, d.owed); g.cash -= pay; d.owed -= pay;
           const taken = d.owed > 0 ? seize(g, d) : [];
           toast('Đàn em Hùng Sẹo tới siết nợ' + (pay ? `, lấy ${money(pay)}` : '') + (taken.length ? ` và ${taken.join(', ')}` : '') + '!', 'bad', 'skull', true);
-          g.st.mood = clamp(g.st.mood - 25, 0, 100); g.st.health = clamp(g.st.health - (d.owed > 0 ? 15 : 0), 5, 100); g.rep = clamp(g.rep - 3, 0, 100);
+          g.st.mood = clamp(g.st.mood - 25, 0, STAT_MAX); g.st.health = clamp(g.st.health - (d.owed > 0 ? 15 : 0), 5, STAT_MAX); g.rep = clamp(g.rep - 3, 0, 100);
         }
       } else if (d.lender === 'bank') {
         if (d.late === 1) toast('Ngân hàng Sao Vàng: khoản vay đã quá hạn, bắt đầu tính phí phạt.', 'warn', 'cash', true);
@@ -658,7 +660,7 @@ function dailyHousing(g: Game) {
     else if (late >= 2) {
       const lost = g.home.reduce((a, s) => a + s.n * s.cost, 0); g.home = []; g.led.loss += lost; g.housing = 'gamcau'; g.paidUntil = 9999;
       if (has(g, 'tulanh')) delete g.gear.tulanh;
-      toast(`Chủ nhà đã lấy lại ${h.name} vì nợ tiền nhà. Đồ để trong phòng bị giữ hết.`, 'bad', 'home', true); g.st.mood = clamp(g.st.mood - 20, 0, 100);
+      toast(`Chủ nhà đã lấy lại ${h.name} vì nợ tiền nhà. Đồ để trong phòng bị giữ hết.`, 'bad', 'home', true); g.st.mood = clamp(g.st.mood - 20, 0, STAT_MAX);
     } else toast(`Chủ nhà nhắc: mai không đóng tiền nhà là trả lại ${h.name}.`, 'warn', 'home', true);
   }
   if (h.per === 'đêm' && g.day >= g.paidUntil) { g.housing = 'gamcau'; g.paidUntil = 9999; }

@@ -8,7 +8,7 @@ import { GEAR, HOUSING, LENDERS, JUNK, TIERS } from '../data/gear';
 import { SHOPS } from '../data/shops';
 import { REGULARS, FIXED } from '../data/people';
 import { WEATHER } from '../data/world';
-import { Game, Stack, LedgerDay, weightOf, moveStack, junkWeight, hourOf, purge, isSpoiled } from '../sim/state';
+import { Game, Stack, LedgerDay, STAT_MAX, weightOf, moveStack, junkWeight, hourOf, purge, isSpoiled } from '../sim/state';
 import * as R from '../sim/rules';
 import * as PH from '../sim/phone';
 import { FEAT_LABEL } from '../data/phone';
@@ -76,7 +76,7 @@ export function openPanel(ui: UI, name: string) {
       acts.toStall = (i) => { const k = moveStack(g.bag, s.store, i, 1e9, R.stallRoom(g)); if (!k) toast('Quầy đầy rồi.', 'warn'); else sfx('pick'); };
       acts.open = () => { if (s.open) ctx.stall.close(); else if (ctx.stall.open()) ui.closePanel(); };
       acts.pack = () => { if (ctx.stall.pickUp()) ui.closePanel(); };
-      acts.clean = () => { R.advance(g, 12, ctx.acts.act()); s.dirt = 0; g.st.hygiene = clamp(g.st.hygiene - 1.5, 0, 100); sfx('splash'); toast('Lau dọn quầy sạch bong.', 'good'); };
+      acts.clean = () => { R.advance(g, 12, ctx.acts.act()); s.dirt = 0; g.st.hygiene = clamp(g.st.hygiene - 1.5, 0, STAT_MAX); sfx('splash'); toast('Lau dọn quầy sạch bong.', 'good'); };
       acts.dump = () => { const lost = s.ready.reduce((a, x) => a + x.n * x.cost, 0) + purge(s.store).lost; s.ready = []; g.led.loss += lost; toast(`Đổ bỏ đồ ế và đồ hỏng (${money(lost)}).`, 'info'); };
       let body = '';
       if (tab === 'menu') {

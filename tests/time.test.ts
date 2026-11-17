@@ -43,16 +43,23 @@ describe('thời gian trôi', () => {
     R.advance(b, 60, { ...IDLE, moving: true, running: true, sheltered: false }, new RNG(4));
     expect(b.st.energy).toBeLessThan(a.st.energy);
   });
-  it('ăn uống hồi chỉ số và không vượt quá 100', () => {
-    const g = fresh(); g.st.hunger = 20; g.st.thirst = 95;
+  it('ăn uống hồi chỉ số và không vượt quá STAT_MAX (125)', () => {
+    const g = fresh(); g.st.hunger = 20; g.st.thirst = 110;
     R.consume(g, { h: 40, t: 30 });
+    expect(R.STAT_MAX).toBe(125);
     expect(g.st.hunger).toBe(60);
-    expect(g.st.thirst).toBe(100);
+    expect(g.st.thirst).toBe(R.STAT_MAX);
   });
-  it('các chỉ số luôn nằm trong 0–100 dù bỏ đói nhiều ngày', () => {
+  it('ngủ dài giúp năng lượng hồi vượt 100 lên tới 125', () => {
+    const g = fresh(); g.st.energy = 80; g.st.hunger = 100; g.st.thirst = 100;
+    R.advance(g, 240, { ...IDLE, sleeping: true, sleepQ: 1.2 }, new RNG(3));
+    expect(g.st.energy).toBeGreaterThan(100);
+    expect(g.st.energy).toBeLessThanOrEqual(R.STAT_MAX);
+  });
+  it('các chỉ số luôn nằm trong 0–125 dù bỏ đói nhiều ngày', () => {
     const g = fresh();
     for (let i = 0; i < 24 * 6; i++) R.advance(g, 60, { ...IDLE, moving: true, sheltered: false }, new RNG(i + 1));
-    for (const v of Object.values(g.st)) { expect(v).toBeGreaterThanOrEqual(0); expect(v).toBeLessThanOrEqual(100); }
+    for (const v of Object.values(g.st)) { expect(v).toBeGreaterThanOrEqual(0); expect(v).toBeLessThanOrEqual(R.STAT_MAX); }
     expect(g.st.health).toBeLessThan(92);                       // đói khát lâu ngày thì đổ bệnh
     expect(R.staminaMax(g)).toBeLessThan(1);
   });

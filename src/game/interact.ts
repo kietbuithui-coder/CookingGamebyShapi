@@ -11,6 +11,7 @@ import { GEAR_LIST, HOUSING, JUNK } from '../data/gear';
 import { RECIPES } from '../data/recipes';
 import { SPOTS, groundY } from '../world/layout';
 import * as R from '../sim/rules';
+import { STAT_MAX } from '../sim/state';
 import { money, dist2, qty, damp, hhmm } from '../core/util';
 import { toast, sfx } from '../core/bus';
 import { MB, MAT, shade } from '../gfx/mb';
@@ -97,7 +98,7 @@ export class Interact {
       }
       case 'bed': { const k = c.ref as string, err = A.canSleep(k); return mk(err ? HOUSING[k].name : `Ngủ — ${HOUSING[k].name}`, () => A.sleepMenu(k), err ?? `Giấc ngủ ${Math.round(HOUSING[k].sleep * 100)}% · an toàn ${Math.round(HOUSING[k].safety * 100)}%`); }
       case 'store': return mk('Mở chỗ cất đồ', () => ctx.ui.panel('home'), `Cất được ${HOUSING[c.ref].storage} kg` + (R.homeChilled(g) ? ' · có giữ lạnh' : ''));
-      case 'wash': return mk(c.ref === 'park' ? 'Tắm — 3.000₫' : 'Tắm vòi sen', () => A.wash(c.ref), `Vệ sinh hiện tại ${Math.round(g.st.hygiene)}%`);
+      case 'wash': return mk(c.ref === 'park' ? 'Tắm — 3.000₫' : 'Tắm vòi sen', () => A.wash(c.ref), `Vệ sinh hiện tại ${Math.round(g.st.hygiene)}/${STAT_MAX}`);
       case 'bench': { const b = ctx.world.benches[c.ref]; return mk('Ngồi nghỉ trên ghế đá', () => { ctx.player.face(b.x, b.z); A.rest(); }, '20 phút · tinh thần +7'); }
       case 'tap': return mk('Dùng vòi nước', () => A.wash('tap'));
       case 'bin': return mk(g.wd.bins[c.ref] === g.day ? 'Thùng rác (đã bới)' : 'Bới thùng rác', () => A.rummage(c.ref));
@@ -107,7 +108,7 @@ export class Interact {
         if (k === 'dock') return j?.kind === 'dock' ? (j.carrying ? null : mk('Vác một bao hàng', () => A.dockTake(), `Đã vác ${g.wd.sacks}/12 bao`)) : null;
         if (k === 'dockDrop') return mk('Đặt bao hàng xuống', () => A.dockDrop(), '+6.000₫');
         if (k === 'board') return mk('Xem bảng việc làm', () => A.board());
-        if (k === 'may_net') return mk('Ngồi vào máy 04', () => A.netMenu(), `3.000₫/giờ · ${Math.round(g.st.energy)}% sức`);
+        if (k === 'may_net') return mk('Ngồi vào máy 04', () => A.netMenu(), `3.000₫/giờ · ${Math.round(g.st.energy)}/${STAT_MAX} sức`);
         if (k === 'xich_du') return mk('Ngồi xích đu', () => A.funMenu('xich_du'), 'Đu cho nhẹ người · tinh thần lên');
         if (k === 'giuong_benhvien') return mk('Nằm phòng hồi sức', () => A.hospitalRest(), `${money(R.RECOVER_FEE)}/giờ · hồi sức khoẻ`);
         if (k === 'quay_thuoc') return mk('Quầy thuốc bệnh viện', () => A.medMenu(), 'Thuốc cảm · bông băng · thuốc bổ');
@@ -121,7 +122,7 @@ export class Interact {
         if (k === 'v_temple') return mk('Cổng chùa Phước An', () => A.funMenu('v_temple'), 'Cơm chay 11h–13h · thắp nhang cầu an');
         if (k === 'dropHome') return mk('Cất quầy ở đây', () => ctx.stall.storeHome(), 'Để quầy cạnh chỗ ngủ');
         if (k === 'tv_bongda') return mk('Quán cà phê Bóng Đá', () => A.funMenu('tv_bongda'), 'Uống cà phê · hát karaoke · xin chạy bàn' + (R.eventOn(g, 'bong_da') ? ' · có trận bóng' : ''));
-        if (k === 'fire_gamcau') return R.isNight(g) ? mk('Sưởi bên thùng lửa', () => { g.weather.wet = Math.max(0, g.weather.wet - 40); g.st.mood = Math.min(100, g.st.mood + 3); R.advance(g, 10, A.act()); toast('Hơ tay bên đống lửa, ấm người hẳn.', 'info'); }) : null;
+        if (k === 'fire_gamcau') return R.isNight(g) ? mk('Sưởi bên thùng lửa', () => { g.weather.wet = Math.max(0, g.weather.wet - 40); g.st.mood = Math.min(STAT_MAX, g.st.mood + 3); R.advance(g, 10, A.act()); toast('Hơ tay bên đống lửa, ấm người hẳn.', 'info'); }) : null;
         return null;
       }
     }
