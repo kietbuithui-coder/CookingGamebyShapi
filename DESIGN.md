@@ -19,7 +19,7 @@ Một vòng chơi trọn vẹn và thật sự chạy được: **tay trắng �
 
 Hai nguyên tắc giữ cho mã kiểm thử được:
 
-1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 348 bài kiểm thử (25 tệp) chạy trong Node trong khoảng 7 giây.
+1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 365 bài kiểm thử (26 tệp) chạy trong Node trong khoảng 7 giây.
 2. **Mọi ngẫu nhiên trong luật chơi nhận một `RNG` có hạt giống** làm tham số cuối, nên kết quả kiểm thử lặp lại được.
 
 Vòng lặp chính (`src/main.ts`): đọc điều khiển → `advance()` cho thời gian game trôi (0,75 phút game mỗi giây thật, một ngày = 32 phút thật; khi ngủ 48 phút game mỗi giây) → cập nhật người chơi, NPC, quầy, nấu ăn, môi trường → vẽ. `dt` bị chặn ở 50 ms nên máy rất chậm thì game chạy chậm lại chứ không nhảy cóc.
@@ -605,6 +605,54 @@ chi nhánh khi chưa bậc 7 hoặc thiếu tiền, mở/đóng và hoàn tiền
 trần khay, `branchTick` bán đúng phần – đúng giá – có tip, `branchNewDay` ghi lịch sử + trừ tiền thuê/lương + bỏ món ế,
 nâng cấp bản lưu v13 → v14 cùng `cleanBranch`, và một lượt chạy bất biến (tiền mặt không âm, tồn kho không âm).
 
+### 4.28 Giao người làm đi chợ mua nguyên liệu (phụ quầy · bếp trưởng · người trông coi)
+
+Trước đây muốn có nguyên liệu thì **chỉ người chơi** tự ra sạp lấy từng món. Từ bản lưu v15, ba loại người làm đi
+chợ thay được: **phụ quầy** (`Game.help`), **bếp trưởng / bếp phó** (`Game.sous`, `Game.sous2`) và **người trông coi
+chi nhánh** (`Game.branch.keeper`). Dữ liệu nằm ở `Game.errands: Errand[]` (`src/sim/state.ts`), luật ở
+`src/sim/rules.ts` mục *Giao người làm đi chợ*.
+
+**Bốn slot cố định.** `slot` 0 = phụ quầy, 1–2 = bếp trưởng thứ nhất/thứ hai, 3 = người trông coi chi nhánh.
+`errandWho(g, slot)` trả về tên + chức danh, `canErrand(g, slot)` chặn khi chưa thuê người hoặc **người đó đang đi
+chuyến khác** (mỗi người một chuyến, tối đa 4 chuyến cùng lúc).
+
+**Báo giá trước, trả tiền trước.** Người chơi chọn *món cần nấu* (một món, hoặc "đủ nguyên liệu 6 món đang bán") chứ
+không tự chọn từng món hàng: `errandPlanFor(g, r, portions)` / `errandPlanForAll(g, recipes)` tính **đúng phần còn
+thiếu** so với kho quầy + túi, rồi `errandQuote(g, plan)` tìm cho mỗi nguyên liệu **cửa hàng đang mở bán món đó và rẻ
+nhất** (`errandShopFor`, dùng lại `shopOpen` / `shopPrice` / `shopFresh` / `shopHas` nên vẫn ăn theo giờ mở cửa, xả
+hàng cuối buổi, sự kiện tăng giá, hàng hết trong ngày). Nguyên liệu nào giờ này không đâu bán thì vào `missing` và
+**không** tính tiền. Chuyến bị chặn ở `ERRAND_MAX = 2.000.000₫` để không mang cả gia tài ra chợ.
+
+**Đi và về theo thời gian thật.** `errandLegs(đường chim bay tới cổng chợ)` → 12–68 phút khứ hồi; `errandTick(g, dm)`
+được gọi trong `advance()` nên ngủ trưa, ngồi quán net hay tua nhanh đều đẩy chuyến đi đúng như thời gian thật. Hết
+nửa đường (`back = true`) là đã mua xong; về tới nơi thì hàng được `addStack` vào **kho quầy** (giữ nguyên độ tươi và
+giá vốn đã trả), có toast + `bus.emit('save')`. Người trông coi chi nhánh cũng chất hàng về kho quầy chứ không để ở
+chi nhánh, vì chi nhánh chỉ nhận món đã nấu và không có tủ lạnh.
+
+**Trong lúc đi thì không đứng quầy.** `StallSys.errandHide(slot)` làm `updateHelper` / `updateSous` / `updateKeeper`
+coi như người đó vắng mặt, nên NPC biến khỏi quầy (và Má Bảy rời quầy chi nhánh) cho tới khi về. Người đi chợ vẫn
+dùng `errandSpot(g, e)` để biết đang ở đâu trên đường (dùng cho hiệu ứng/toast, không spawn thêm NPC).
+
+**Tiền và huỷ.** Trả trước toàn bộ khi giao (`spend(..., 'cogs')`), nên sổ thu chi thấy ngay khoản giá vốn. `cancelErrand`
+giữa đường hoàn **85%** (đi đường rồi), `errandsNewDay` trong `newDay()` huỷ mọi chuyến còn dở và hoàn 85% — không để
+chuyến treo qua đêm.
+
+**Giao diện.** Bảng `'errand'` (`src/ui/panels.ts`) có 4 nút chọn người, dãy nút chọn món, danh sách hàng kèm sạp + độ
+tươi + đơn giá, cảnh báo món không đâu bán, tổng tiền và nút giao. Vào từ 3 chỗ: tab **Nhân sự** của quầy (khối "Đi
+chợ mua nguyên liệu"), hội thoại **phụ quầy** (`talkHelper`) và **phụ bếp** (`talkSous`) — cả hai qua
+`StallSys.errandOpt(slot)`; nói chuyện với người đang đi chợ thì mở bảng kèm số phút còn lại. `UI.panel(name, arg)` nay
+nhận tham số phụ và `UI.reopenPanel` vẽ lại bảng giữ nguyên lựa chọn (`modalArg`), nhờ vậy đổi người / đổi món không
+đóng bảng.
+
+**Sửa kèm: người trông coi chi nhánh đứng lọt trong quầy.** Toạ độ cũ đặt Má Bảy ở `lz = -0.95` với quầy sâu 0.8 m nên
+thân người nằm trong khối gỗ. Nay đứng ở `lz = -1.25` (sau quầy) và **quay mặt ra phía khách** (cùng hướng với quầy,
+trước đây quay vào trong). Probe `tools/probe/steps/dicho.mjs` đo lại `localZ = -1.25` và lệch hướng < 0.35 rad.
+
+**Kiểm thử.** `tests/dicho.test.ts` (17 bài): ai đi được theo từng slot, một người một chuyến, báo giá chỉ tính phần
+thiếu + đúng sạp đang mở, kho đã đủ thì không mua, giờ không đâu bán thì báo thiếu, gộp nhiều món không trùng nguyên
+liệu, trả tiền trước + hàng về kho + hết chuyến, thiếu tiền không trừ đồng nào, huỷ hoàn 85%, `errandsNewDay`, `advance`
+đẩy chuyến, toạ độ `errandSpot` chạy ra chợ rồi về, `cleanErrands` kẹp dữ liệu hỏng, và một lượt 5 ngày liên tục.
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
@@ -615,7 +663,7 @@ nâng cấp bản lưu v13 → v14 cùng `cleanBranch`, và một lượt chạy
 
 ## 6. Lưu game
 
-`localStorage`, khoá `ganhhang.save.v1` (trạng thái) và `ganhhang.settings.v1` (cài đặt). Tự lưu sau việc quan trọng, mỗi 45 giây và khi rời trang. `SAVE_VERSION = 14`; `migrate()` nạp được bản lưu cũ thiếu trường và loại bỏ nguyên liệu không còn tồn tại. Bản lưu trước v4 chưa có sổ `met` nên được coi như đã quen hết người đứng quầy. Bản lưu trước v5 (chưa có bệnh viện) được nâng sức khoẻ lên 45 nếu đang ở 0 — nếu không, mở lên là ngất liền — và thêm sổ đồ thất lạc rỗng. Bản lưu trước v6 được cấp `wanted = 0` và `jailUntil = 0` (chưa ai biết mặt). Bản lưu trước v7 chưa có điện thoại (`phone = null`). Bản lưu trước v8 chưa có sổ phút ngồi quán net (`netDay = -1`, `netMin = 0`). Bản lưu trước v9 chưa có sổ ngày đua xe đạp (`raceDay = -1`, `raceWin = 0`). Bản lưu trước v10 chưa có người phụ việc (`help = null`); dữ liệu `help` hỏng cũng bị bỏ, và bản lưu cũ đã từng bán được hàng thì được ghi mốc `firstSale = 0`. Bản lưu trước v11 chưa có ngoại hình người chơi (`Game.look`): `migrate()` cấp `defaultLook()` theo giới tính của ván, còn `look` hỏng thì `cleanLook()` kẹp lại từng trường. Bản lưu trước v12 chưa có nhà hàng bình dân (`sous = null`, `bookings = []`, `bookSeq = 1`); bản lưu trước v13 chưa có slot nhân sự thứ hai (`help2 = null`, `sous2 = null`). Bản lưu trước v14 chưa có chi nhánh (`branch = null`) — mở bậc 7 rồi mới mở được chi nhánh, và `cleanBranch()` kẹp lại dữ liệu chi nhánh đọc lên. Cài đặt có thêm `ui` (cỡ giao diện và cách xếp nút) và `cam3` (góc nhìn thứ ba); `cleanLayout()` làm sạch dữ liệu đọc lên.
+`localStorage`, khoá `ganhhang.save.v1` (trạng thái) và `ganhhang.settings.v1` (cài đặt). Tự lưu sau việc quan trọng, mỗi 45 giây và khi rời trang. `SAVE_VERSION = 15`; `migrate()` nạp được bản lưu cũ thiếu trường và loại bỏ nguyên liệu không còn tồn tại. Bản lưu trước v4 chưa có sổ `met` nên được coi như đã quen hết người đứng quầy. Bản lưu trước v5 (chưa có bệnh viện) được nâng sức khoẻ lên 45 nếu đang ở 0 — nếu không, mở lên là ngất liền — và thêm sổ đồ thất lạc rỗng. Bản lưu trước v6 được cấp `wanted = 0` và `jailUntil = 0` (chưa ai biết mặt). Bản lưu trước v7 chưa có điện thoại (`phone = null`). Bản lưu trước v8 chưa có sổ phút ngồi quán net (`netDay = -1`, `netMin = 0`). Bản lưu trước v9 chưa có sổ ngày đua xe đạp (`raceDay = -1`, `raceWin = 0`). Bản lưu trước v10 chưa có người phụ việc (`help = null`); dữ liệu `help` hỏng cũng bị bỏ, và bản lưu cũ đã từng bán được hàng thì được ghi mốc `firstSale = 0`. Bản lưu trước v11 chưa có ngoại hình người chơi (`Game.look`): `migrate()` cấp `defaultLook()` theo giới tính của ván, còn `look` hỏng thì `cleanLook()` kẹp lại từng trường. Bản lưu trước v12 chưa có nhà hàng bình dân (`sous = null`, `bookings = []`, `bookSeq = 1`); bản lưu trước v13 chưa có slot nhân sự thứ hai (`help2 = null`, `sous2 = null`). Bản lưu trước v14 chưa có chi nhánh (`branch = null`) — mở bậc 7 rồi mới mở được chi nhánh, và `cleanBranch()` kẹp lại dữ liệu chi nhánh đọc lên. Bản lưu trước v15 chưa có chuyến đi chợ (`errands = []`); `cleanErrands()` bỏ chuyến sai hình dạng và kẹp số phần/thời gian. Cài đặt có thêm `ui` (cỡ giao diện và cách xếp nút) và `cam3` (góc nhìn thứ ba); `cleanLayout()` làm sạch dữ liệu đọc lên.
 
 ## 7. Kiểm thử
 
@@ -653,7 +701,7 @@ Người chơi đã thử bản đầu và gửi danh sách góp ý; việc đư
 Còn lại:
 
 1. **Đã xong 3 kiểu chỗ ở mới: căn hộ, nhà riêng, cửa hàng kiêm nhà ở** (8/8) — xem mục 4.13.
-2. **Đã xong sạp cố định (bậc 3)** — mục 4.12, **quán ăn nhỏ (bậc 4)** — mục 4.22, và **quán có chỗ ngồi (bậc 5)** — mục 4.25, **nhà hàng bình dân (bậc 6)** — mục 4.26, và **chuỗi cửa hàng (bậc 7)** — mục 4.27. Nhánh kinh doanh đã đủ **7/7 bậc**; việc kế tiếp là hệ thống băng nhóm.
+2. **Đã xong sạp cố định (bậc 3)** — mục 4.12, **quán ăn nhỏ (bậc 4)** — mục 4.22, và **quán có chỗ ngồi (bậc 5)** — mục 4.25, **nhà hàng bình dân (bậc 6)** — mục 4.26, **chuỗi cửa hàng (bậc 7)** — mục 4.27, và **giao người làm đi chợ** — mục 4.28. Nhánh kinh doanh đã đủ **7/7 bậc**; việc kế tiếp là hệ thống băng nhóm.
 3. Hệ thống băng nhóm.
 4. Danh sách đầy đủ những gì còn lại nằm ở `TODO.md`.
 

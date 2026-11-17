@@ -6,7 +6,7 @@ import { ganhModel, cartModel, charcoalStove, gasStove, boardModel, knifeModel, 
 import { takeawayBag, servingTray, Look } from '../gfx/people';
 import { SPOTS, Spot, spotById, groundY, NAV_BLOCK, CORNER, edgeKey } from '../world/layout';
 import { Game, Helper, Booking, STAT_MAX, absMin, hourOf, addStack } from '../sim/state';
-import { branchTick, arrivalRate, has, tier, menuOf, available, decide, decideGroup, review, settleSale, lostCustomer, readyCount, finishPossible, spend, earn, stove, changeRel, meet, wx, eventOn, Persona, addXp, canSell, missingFor, hasPrep, stallRoom, stallQueueCap, isNight, level, stallRent, payStallRent, helperGate, hireHelper, fireHelper, helperCandidate, helperPatience, sousCandidate, sousWork, createBooking, dueBooking, reservedSeats, expireBookings, seatCount, dineIn, isRestaurant, secondOrder, periodName, PATIENCE_RANGE } from '../sim/rules';
+import { branchTick, errandWho, arrivalRate, has, tier, menuOf, available, decide, decideGroup, review, settleSale, lostCustomer, readyCount, finishPossible, spend, earn, stove, changeRel, meet, wx, eventOn, Persona, addXp, canSell, missingFor, hasPrep, stallRoom, stallQueueCap, isNight, level, stallRent, payStallRent, helperGate, hireHelper, fireHelper, helperCandidate, helperPatience, sousCandidate, sousWork, createBooking, dueBooking, reservedSeats, expireBookings, seatCount, dineIn, isRestaurant, secondOrder, periodName, PATIENCE_RANGE } from '../sim/rules';
 import { RECIPES, RecipeDef } from '../data/recipes';
 import { INGS } from '../data/ingredients';
 import { ARCH, HelperDef, LINES, REGULARS, RegularDef } from '../data/people';
@@ -1048,16 +1048,18 @@ export class StallSys {
         });
       }
     };
-    stepHelper(1, !!g.help && s.open);
-    stepHelper(2, !!g.help2 && isRestaurant(g) && s.open);
+    stepHelper(1, !!g.help && s.open && !this.errandHide(1));
+    stepHelper(2, !!g.help2 && isRestaurant(g) && s.open && !this.errandHide(2));
     if (this.offerNpc && (!s.open || this.offerNpc.state === 'gone')) this.offerNpc = null;
     this.offerHelper(dt);
     this.updateKeeper(dt);
   }
   /** Người trông coi chi nhánh: đứng sau quầy ở chỗ bán thứ hai khi chi nhánh đang mở. */
+  /** Người làm đang đi chợ: ẩn NPC khỏi quầy (họ đi bộ ở con đường khác), hiện lại khi về. */
+  private errandHide(slot: 0 | 1 | 2 | 3): boolean { return ctx.g.errands.some((e) => e.slot === slot); }
   private updateKeeper(dt: number) {
     const g = ctx.g, b = g.branch, N = ctx.npcs, k = b?.keeper;
-    const want = !!k && !!b && b.open;
+    const want = !!k && !!b && b.open && !this.errandHide(3);
     const sp = b ? SPOTS.find((x) => x.id === b.spot) : undefined;
     if (this.keeper && (!want || this.keeper.state === 'gone' || !sp)) {
       const cur = this.keeper; this.keeper = null;
@@ -1068,13 +1070,14 @@ export class StallSys {
     if (!this.keeper) {
       this.keeperRetry -= dt; if (this.keeperRetry > 0) return; this.keeperRetry = 3;
       const c = Math.cos(sp.yaw), sn = Math.sin(sp.yaw);
-      const x = sp.x - 0.15 * sn - 0.95 * c, z = sp.z - 0.15 * c + 0.95 * sn;
+      // Đứng SAU quầy (phía trong, lz = -1.25) và quay mặt ra phía khách — không đứng lọt thỏm trong quầy.
+      const x = sp.x - 1.25 * sn - 0.5 * c, z = sp.z - 1.25 * c + 0.5 * sn;
       const n = N.spawnPed(sp.x, sp.z, 12, 26, ARCH.hangrong); if (!n) return;
       n.kind = 'actor'; n.actor = 'keeper'; n.name = k.name; n.fem = k.fem;
       n.rig.setLook({ face: k.face, fem: k.fem, shirt: 0xe8e4d8, pants: 0x3b4048, hair: k.hair, hat: 0, hairStyle: k.hairStyle, fat: 1.02, h: 0.97, skin: k.skin, bag: 0, hatCol: 0x2f6fb5, long: false, apron: 0xc9473f, shoe: 0x2a2a2e });
       n.rig.hold(null); n.path = []; n.pi = 0; n.vel = 0; n.onArrive = undefined;
       n.state = 'actor'; n.pose = 'serve'; n.timer = 1e9; n.plan = []; n.base = EXPR.normal; n.greetT = 9999;
-      n.x = x; n.z = z; n.y = groundY(x, z); n.yaw = sp.yaw + Math.PI; n.rig.root.position.set(x, n.y, z); n.rig.root.rotation.y = n.yaw;
+      n.x = x; n.z = z; n.y = groundY(x, z); n.yaw = sp.yaw; n.rig.root.position.set(x, n.y, z); n.rig.root.rotation.y = n.yaw;
       this.keeper = n;
       this.sayLine(n, rnd.pick([`Dạ quầy ${sp.name} mở rồi ${g.ac} ơi.`, 'Dạ con trông quầy đây.']), 3, EXPR.smile);
       return;
@@ -1083,8 +1086,8 @@ export class StallSys {
     n.state = 'actor'; n.timer = 1e9; n.pose = b!.ready.length ? 'serve' : 'idle'; n.base = EXPR.smile;
     if (dist2(n.x, n.z, sp.x, sp.z) > 9) {
       const c = Math.cos(sp.yaw), sn = Math.sin(sp.yaw);
-      const x = sp.x - 0.15 * sn - 0.95 * c, z = sp.z - 0.15 * c + 0.95 * sn;
-      n.x = x; n.z = z; n.y = groundY(x, z); n.yaw = sp.yaw + Math.PI;
+      const x = sp.x - 1.25 * sn - 0.5 * c, z = sp.z - 1.25 * c + 0.5 * sn;
+      n.x = x; n.z = z; n.y = groundY(x, z); n.yaw = sp.yaw;
       n.rig.root.position.set(x, n.y, z); n.rig.root.rotation.y = n.yaw;
     }
   }
@@ -1160,6 +1163,18 @@ export class StallSys {
     });
   }
   /** Trò chuyện với người phụ việc: hỏi chuyện, dặn dò, hoặc cho nghỉ. */
+  /** Nhãn mục "giao đi chợ" cho một người làm (dùng chung cho phụ quầy và phụ bếp). */
+  errandOpt(slot: 0 | 1 | 2 | 3): { t: string; sub: string; off: boolean; fn: () => void } {
+    const g = ctx.g;
+    const who = errandWho(g, slot);
+    const running = g.errands.find((e) => e.slot === slot);
+    if (!who) return { t: 'Giao đi chợ mua nguyên liệu', sub: 'Chưa có người', off: true, fn: () => {} };
+    if (running) {
+      const left = Math.max(0, running.legs - running.t);
+      return { t: `${who.name} đang đi chợ (còn ${left} phút)`, sub: `${running.lines.length} loại · ${money(running.total)}`, off: false, fn: () => ctx.ui.panel('errand') };
+    }
+    return { t: 'Giao đi chợ mua nguyên liệu', sub: 'Chọn món cần nấu — người này tự đi mua đúng thứ còn thiếu', off: false, fn: () => ctx.ui.panel('errand', { slot }) };
+  }
   talkHelper(slot: 1 | 2 = 1) {
     const g = ctx.g, h = slot === 2 ? g.help2 : g.help, n = slot === 2 ? this.helper2 : this.helper; if (!h) return;
     ctx.ui.dialog({
@@ -1168,6 +1183,7 @@ export class StallSys {
       ]),
       opts: [
         { t: 'Hỏi chuyện bán buôn', fn: () => this.helperTalkSales(slot) },
+        this.errandOpt(slot === 2 ? 2 : 0),
         { t: 'Dặn khách chờ thì dỗ dành', fn: () => {
           if (n) ctx.npcs.say(n, 'Dạ con biết rồi, khách chờ con rót nước mời.', 3, EXPR.smile);
           g.st.mood = Math.min(STAT_MAX, g.st.mood + 2); toast('Dặn dò xong. Khách chờ sẽ được dỗ, quầy đỡ căng.', 'info', 'heart');
@@ -1210,7 +1226,7 @@ export class StallSys {
     const stepOne = (slot: 1 | 2) => {
       const h = slot === 2 ? g.sous2 : g.sous;
       const cur = slot === 2 ? this.sous2 : this.sous;
-      const want = !!h && isRestaurant(g) && s.where === 'placed' && s.open;
+      const want = !!h && isRestaurant(g) && s.where === 'placed' && s.open && !this.errandHide(slot === 2 ? 2 : 1);
       if (cur && (!want || cur.state === 'gone')) {
         if (slot === 2) this.sous2 = null; else this.sous = null;
         if (cur.state !== 'gone') {
@@ -1284,6 +1300,7 @@ export class StallSys {
           if (res) { if (slot === 2) this.sous2WorkAnim = 2.6; else this.sousWorkAnim = 2.6; this.stockKey = ''; const nm = RECIPES[res.rid]?.name.toLowerCase() ?? res.rid; if (n) ctx.npcs.say(n, `Xong ngay một phần ${nm} rồi ${g.ac}!`, 2.6, EXPR.happy); toast(`Phụ bếp ${h.name} vừa làm thêm ${nm}.`, 'good', 'dish'); }
           else { if (n) ctx.npcs.say(n, `Bếp đang đủ đồ sẵn hoặc thiếu nguyên liệu/nhiên liệu rồi ${g.ac} ơi.`, 2.8, EXPR.normal); }
         } },
+        this.errandOpt(slot),
         { t: `Cho ${h.name} nghỉ việc`, fn: () => {
           if (slot === 2) g.sous2 = null; else { g.sous = g.sous2 ?? null; g.sous2 = null; }
           if (n) ctx.npcs.say(n, `Dạ, vậy con xin phép nghỉ nghen ${g.ac}.`, 2.6, EXPR.sad);

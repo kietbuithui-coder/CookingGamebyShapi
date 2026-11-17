@@ -362,7 +362,7 @@ có 32–54% cơ hội ngồi lại gọi thêm một món **nước uống** ho
 nguyên liệu (`o.more = true`, kiên nhẫn ×1,8 × `helperPatience`, câu thoại riêng trong `LINES.order_more`). Giao
 xong món thứ hai khách mới đứng dậy về.
 
-**Kiểm thử:** `tests/quanngoi.test.ts` 18 bài — lúc đó tổng **278 bài / 18 tệp**; hiện là **348 bài / 25 tệp**. Probe `tools/probe/steps/quanngoi.mjs`:
+**Kiểm thử:** `tests/quanngoi.test.ts` 18 bài — lúc đó tổng **278 bài / 18 tệp**; hiện là **365 bài / 26 tệp**. Probe `tools/probe/steps/quanngoi.mjs`:
 mua `sap → quanan → quanngoi` ở tiệm Ba Tài → dựng ở Mặt bằng Khu Căn Hộ → mở bán, 6 khách ngồi vào 3 bàn gỗ trên
 nền gạch bông ca-rô → giao món cho 4 khách, khách ngồi lại gọi thêm trà đá (`more: true`) → bảng quầy hiện nhãn
 `hợp buổi này` / `ngoài buổi` → đóng quán, kiểm bản lưu v11 giữ nguyên bậc 5 và 6 ghế.
@@ -401,9 +401,29 @@ sọc + bảng hiệu đỏ *CHI NHÁNH · ĐANG BÁN* và khay món xếp theo 
 của hôm nay, tổng dồn nhiều ngày, thuê/cho nghỉ người trông coi, tạm đóng/mở lại, chuyển món hai chiều, 8 ngày lịch sử
 và nút trả mặt bằng (hoàn nửa tiền thuê ngày đầu, bỏ món đang để đó).
 
-**Kiểm thử:** `tests/chuoi.test.ts` 24 bài + 1 bài sửa cho `tests/devpoints.test.ts` — tổng **348 bài / 25 tệp**;
+**Kiểm thử:** `tests/chuoi.test.ts` 24 bài + 1 bài sửa cho `tests/devpoints.test.ts` — tổng **348 bài / 25 tệp** (lượt 19 thêm 17 bài → 365/26);
 `npx tsc --noEmit`, `npm run build`, `npm run build:pages` sạch. Probe `tools/probe/steps/chuoi.mjs` chạy ở 844×390 và
 390×844: lên bậc 7 → mở chi nhánh Cổng Chợ → thuê người trông coi → chuyển 14 phần sang → chạm đúng quầy để mở sổ →
 tua 3 tiếng thấy bán hết 14 phần (280.000₫ + tip) → trả mặt bằng; không lỗi console. Menu ẩn (Cài đặt → bấm 7 lần chữ “Cài đặt”) được dọn lại: xoá hết mục test của lượt 14–17, thêm 9 mục cho bậc 7
 (dựng chi nhánh ở 3 chỗ, tới quầy, đổ món, tua 3 tiếng, mở sổ, đổi người trông, trả mặt bằng) và **chỉ giữ** nhóm
 “Địa điểm — tele nhanh”; probe `tools/probe/steps/devmenu.mjs` bấm lần lượt 17 mục, không lỗi.
+
+---
+
+## Lượt 19 — Giao người làm đi chợ mua nguyên liệu ✅ đã xong
+
+Người chơi không còn phải tự ra từng sạp: **phụ quầy, bếp trưởng/bếp phó và người trông coi chi nhánh** đi chợ thay.
+Chi tiết ở **`DESIGN.md` mục 4.28**.
+
+**Cách dùng.** Chọn *món cần nấu* (một món, hoặc "đủ nguyên liệu 6 món đang bán") → game tính đúng phần còn thiếu →
+tự tìm **sạp đang mở bán và rẻ nhất** cho từng nguyên liệu → trả tiền trước → người đó xách giỏ đi, **biến khỏi quầy**
+12–68 phút tuỳ quãng đường → về chất hàng lên kho quầy với đúng độ tươi. Huỷ giữa đường hoàn 85%; qua ngày mới thì
+chuyến dở tự huỷ. Vào bảng từ tab **Nhân sự**, hoặc nói chuyện với phụ quầy / phụ bếp.
+
+**Sửa kèm lỗi bạn báo:** Má Bảy (người trông coi chi nhánh) hết đứng lọt trong quầy — nay đứng sau quầy 1,25 m và
+quay mặt ra phía khách.
+
+**Kiểm thử:** `tests/dicho.test.ts` 17 bài (tổng **365 bài / 26 tệp**); bản lưu nâng lên **v15** (`Game.errands`).
+Probe `tools/probe/steps/dicho.mjs` ở 390×844: đo lại vị trí Má Bảy (`localZ = −1,25`, quay ra khách), mở bảng giao
+chợ, chọn cơm sườn rồi bấm giao trên UI thật (9 loại, 109.801₫, về sau 12 phút), tua cho về thấy kho có 9 loại hàng,
+người phụ quầy biến khỏi quầy trong lúc đi, giao người trông coi chi nhánh thì Má Bảy rời quầy; **console sạch**.

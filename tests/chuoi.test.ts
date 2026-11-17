@@ -290,7 +290,7 @@ describe('bản lưu v13 -> v14', () => {
     delete raw.branch;
     const m = migrate(raw)!;
     expect(m.v).toBe(SAVE_VERSION);
-    expect(SAVE_VERSION).toBe(14);
+    expect(SAVE_VERSION).toBeGreaterThanOrEqual(14);
     expect(m.branch).toBeNull();
   });
 

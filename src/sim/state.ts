@@ -7,7 +7,7 @@ import type { WeatherId } from '../data/world';
 import { PLACES } from '../world/layout';
 import { PlayerLookData, defaultLook, cleanLook } from '../data/looks';
 
-export const SAVE_VERSION = 14;
+export const SAVE_VERSION = 15;
 /** Một lô nguyên liệu. fresh 0–100, q chất lượng 0–1, cost giá vốn mỗi đơn vị. */
 export interface Stack { id: string; n: number; fresh: number; q: number; cost: number; }
 /** Mẻ sơ chế sẵn ("cốt" món). */
@@ -62,6 +62,27 @@ export interface Booking {
   day: number; hour: number; deposit: number; dish?: string; regular?: string;
   status: 'pending' | 'accepted' | 'seated' | 'done' | 'missed';
 }
+/** Một chuyến đi chợ giao cho người làm: phụ quầy (1), bếp trưởng (2–3) hoặc người trông coi chi nhánh (4). */
+export interface Errand {
+  /** 1 = phụ quầy, 2/3 = bếp trưởng (phụ bếp), 4 = người trông coi chi nhánh. */
+  slot: 0 | 1 | 2 | 3;
+  /** Tên người đi chợ (đã chốt lúc giao việc). */
+  who: string;
+  /** Ngày bắt đầu chuyến (g.day). */
+  day: number;
+  /** Số phút đi đường khứ hồi: đi chợ (nửa) + về quầy (nửa). */
+  legs: number;
+  /** Phút đã trôi của chuyến. */
+  t: number;
+  /** Hàng đã mua, chờ chất lên quầy khi về. */
+  lines: { id: string; n: number; price: number; fresh: number; q: number }[];
+  /** Nơi đã mua (id cửa hàng) — để hiện trong sổ. */
+  shop: string;
+  total: number;
+  /** Đang ở chặng về (đã mua xong). */
+  back: boolean;
+}
+
 export interface Game {
   v: number; seed: number; ac: 'anh' | 'chị';
   /** Ngoại hình người chơi (đổi ở tiệm cắt tóc / tiệm thời trang, xem ở góc nhìn thứ ba). */
@@ -90,6 +111,8 @@ export interface Game {
   sous2: Helper | null;
   /** Chi nhánh thứ hai của Chuỗi cửa hàng (bậc 7), null = chưa mở chi nhánh. */
   branch: Branch | null;
+  /** Chuyến đi chợ đang giao cho người làm (tối đa 3: phụ quầy + 2 bếp trưởng + người trông coi). */
+  errands: Errand[];
   /** Tổng doanh thu của chi nhánh qua các ngày (để tính thành tích). */
   /** Danh sách đặt bàn trước (bậc 6). */
   bookings: Booking[];
@@ -125,13 +148,33 @@ export function newGame(seed = (Math.random() * 1e9) | 0, ac: 'anh' | 'chị' = 
     st: { hunger: 58, thirst: 55, energy: 82, health: 92, hygiene: 42, mood: 45 }, rep: 0, xp: 0,
     pos: { x: PLACES.camp.x, z: PLACES.camp.z - 1.2, yaw: Math.PI, pitch: 0 },
     bag: [], junk: {}, meals: [], lostBag: [], lostDay: -1, wanted: 0, jailUntil: 0, gear: {}, phone: null, housing: 'gamcau', paidUntil: 0, home: [],
-    stall: emptyStall(), help: null, help2: null, sous: null, sous2: null, branch: null, bookings: [], bookSeq: 1, rec, debts: [], debtSeq: 1, credit: 0,
+    stall: emptyStall(), help: null, help2: null, sous: null, sous2: null, branch: null, errands: [], bookings: [], bookSeq: 1, rec, debts: [], debtSeq: 1, credit: 0,
     led: newLedger(0), hist: [], rel: {}, met: {}, flags: {},
     weather: { now: 'nang', until: 6 * 60 + 10 + 420, next: 'nang', flood: 0, wet: 0 },
     ev: { active: [], last: {}, check: 9 * 60, lastStart: -999 },
     wd: { litterDay: -1, picked: [], bins: {}, sacks: 0, plates: 0, deliveries: 0, begTired: 0, outOf: [], haggled: {}, job: null },
     tot: { served: 0, earned: 0, begged: 0, scrap: 0, best: 0, bankrupt: 0 }, quest: 0,
   };
+}
+
+/** Làm sạch danh sách chuyến đi chợ đọc từ bản lưu (bỏ chuyến hỏng, kẹp số phần và thời gian). */
+export function cleanErrands(raw: any[]): Errand[] {
+  const ok = (v: unknown) => typeof v === 'number' && isFinite(v);
+  return raw.filter((e) => e && typeof e === 'object' && ok(e.slot) && e.slot >= 0 && e.slot <= 3)
+    .slice(0, 4)
+    .map((e) => ({
+      slot: e.slot as Errand['slot'],
+      who: typeof e.who === 'string' ? e.who.slice(0, 24) : 'Người làm',
+      day: ok(e.day) ? Math.max(0, Math.floor(e.day)) : 0,
+      legs: ok(e.legs) ? Math.max(10, Math.min(600, Math.round(e.legs))) : 60,
+      t: ok(e.t) ? Math.max(0, Math.round(e.t)) : 0,
+      shop: typeof e.shop === 'string' ? e.shop : '',
+      total: ok(e.total) ? Math.max(0, Math.round(e.total)) : 0,
+      back: !!e.back,
+      lines: Array.isArray(e.lines) ? e.lines.filter((l: any) => l && typeof l.id === 'string' && l.id.length > 0 && ok(l.n) && l.n > 0)
+        .slice(0, 24)
+        .map((l: any) => ({ id: l.id, n: Math.min(200, Math.max(1, Math.round(l.n))), price: ok(l.price) ? Math.max(0, l.price) : 0, fresh: ok(l.fresh) ? Math.max(0, Math.min(100, l.fresh)) : 80, q: ok(l.q) ? Math.max(0, Math.min(1, l.q)) : 0.9 })) : [],
+    }));
 }
 
 /** Làm sạch dữ liệu chi nhánh đọc từ bản lưu (có thể thiếu trường, hỏng, hoặc chỗ bán không còn). */
@@ -215,6 +258,8 @@ export function migrate(raw: any): Game | null {
   // v14: chi nhánh của Chuỗi cửa hàng (bậc 7). Bản lưu cũ chưa có chi nhánh nào.
   if ((raw.v ?? 0) < 14 || !raw.branch) g.branch = null;
   else g.branch = cleanBranch(raw.branch);
+  // v15: giao người làm đi chợ (phụ quầy / bếp trưởng / người trông coi chi nhánh). Bản lưu cũ chưa có chuyến nào.
+  g.errands = (raw.v ?? 0) < 15 || !Array.isArray(raw.errands) ? [] : cleanErrands(raw.errands);
   if (typeof g.flags.firstSale !== 'number' && (g.hist.some((h) => h.revenue > 0) || g.led.revenue > 0)) g.flags.firstSale = 0;
   for (const k of Object.keys(g.st) as (keyof Stats)[]) g.st[k] = Math.min(STAT_MAX, Math.max(0, Number.isFinite(g.st[k]) ? g.st[k] : base.st[k]));
   g.v = SAVE_VERSION;

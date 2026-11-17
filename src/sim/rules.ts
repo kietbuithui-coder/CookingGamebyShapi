@@ -10,7 +10,7 @@ import { ARCH, ArchDef, HELPER_POOL, HelperDef, SOUS_POOL, SousDef, KEEPER_POOL,
 import { EVENTS, EVENT_LIST, EventDef, WEATHER, WeatherDef, WeatherId, floodZone, hourCurve } from '../data/world';
 import { EXPR } from '../data/expr';
 import { District, DISTRICT, SPOTS, districtAt, spotById } from '../world/layout';
-import { Game, Stack, Helper, Booking, Branch, Ready, STAT_MAX, absMin, addStack, countOf, hourOf, newLedger, purge, spoil, takeFrom, weightOf, junkWeight, emptyStall, Debt, coldWeightOf } from './state';
+import { Game, Stack, Helper, Booking, Branch, Ready, Errand, STAT_MAX, absMin, addStack, countOf, hourOf, newLedger, purge, spoil, takeFrom, weightOf, junkWeight, emptyStall, Debt, coldWeightOf } from './state';
 import * as PH from './phone';
 
 export { STAT_MAX };
@@ -896,6 +896,145 @@ export function sousWork(g: Game, nowMin = absMin(g)): SousWorkResult | null {
 }
 
 
+// ───────────────────────── Giao người làm đi chợ (phụ quầy / bếp trưởng / người trông coi) ─────────────────────────
+/** Trần chi tiêu mỗi chuyến đi chợ (người làm tự mua, không mang hết gia tài đi). */
+export const ERRAND_MAX = 2000000;
+/** Mỗi chuyến đi bộ chợ–quầy mất bao nhiêu phút (khứ hồi), chia theo khoảng cách thật. */
+export const errandLegs = (dist: number) => Math.round(clamp(Math.hypot(dist, 0) / 26, 6, 34) * 2);
+/** Có người nào đi chợ được trong slot này chưa (và chưa có chuyến nào). */
+export function canErrand(g: Game, slot: 0 | 1 | 2 | 3): boolean {
+  if (g.errands.some((e) => e.slot === slot)) return false;
+  if (slot === 0) return !!g.help;
+  if (slot === 1) return !!g.sous;
+  if (slot === 2) return !!g.sous2;
+  const b = g.branch;
+  return !!b && !!b.keeper && b.spot !== '';
+}
+/** Tên + chức danh của người sẽ đi chợ. */
+export function errandWho(g: Game, slot: 0 | 1 | 2 | 3): { name: string; role: string } | null {
+  if (slot === 0) return g.help ? { name: g.help.name, role: 'phụ quầy' } : null;
+  if (slot === 1) return g.sous ? { name: g.sous.name, role: 'bếp trưởng' } : null;
+  if (slot === 2) return g.sous2 ? { name: g.sous2.name, role: 'bếp phó' } : null;
+  return g.branch?.keeper ? { name: g.branch.keeper.name, role: 'người trông coi chi nhánh' } : null;
+}
+/**
+ * Cửa hàng tốt nhất cho một nguyên liệu: đang mở cửa, có bán món đó, giá sau giảm là thấp nhất.
+ * Trả về `null` nếu giờ này không đâu bán.
+ */
+export function errandShopFor(g: Game, ingId: string): ShopDef | null {
+  let best: ShopDef | null = null, bestP = Infinity;
+  for (const shop of Object.values(SHOPS)) {
+    if (!shop.items.includes(ingId) || !shopOpen(g, shop) || !shopHas(g, shop, ingId)) continue;
+    const p = shopPrice(g, shop, ingId);
+    if (p < bestP) { bestP = p; best = shop; }
+  }
+  return best;
+}
+export interface ErrandQuote { lines: { id: string; n: number; price: number; fresh: number; q: number; shop: string }[]; total: number; missing: string[]; }
+/**
+ * Báo giá một chuyến đi chợ: mua cho đủ `plan` (số phần mỗi món cần nấu), trừ những gì đã có sẵn.
+ * `plan` = danh sách `[id nguyên liệu, số phần cần]`. Nguyên liệu nào không đâu bán trong giờ này thì vào `missing`.
+ */
+export function errandQuote(g: Game, plan: [string, number][]): ErrandQuote {
+  const lines: ErrandQuote['lines'] = [], missing: string[] = [];
+  let total = 0;
+  for (const [id, portions] of plan) {
+    const d = INGS[id]; if (!d || portions <= 0) continue;
+    const shop = errandShopFor(g, id);
+    if (!shop) { missing.push(d.name); continue; }
+    const n = Math.max(1, Math.ceil(portions));
+    const price = shopPrice(g, shop, id) * (d.kg > 0 ? d.kg : 1);
+    if (total + price * n > ERRAND_MAX) continue;
+    total += price * n;
+    lines.push({ id, n, price, fresh: shopFresh(g, shop, id), q: shop.q, shop: shop.id });
+  }
+  return { lines, total: Math.round(total), missing };
+}
+/** Nguyên liệu còn thiếu cho một món, quy ra số phần cần mua (dùng cho nút "đi chợ món này"). */
+export function errandPlanFor(g: Game, r: RecipeDef, portions = 1): [string, number][] {
+  const out: [string, number][] = [];
+  const have = (id: string) => countOf([g.stall.store, g.bag], id);
+  for (const [id, q] of Object.entries(r.ings)) {
+    const need = q * portions, cur = have(id);
+    if (cur < need - 1e-6) out.push([id, need - cur]);
+  }
+  return out;
+}
+/** Gộp nguyên liệu còn thiếu cho nhiều món (mỗi món 1 phần) — dùng cho nút "đủ nguyên liệu N món đang bán". */
+export function errandPlanForAll(g: Game, recipes: RecipeDef[], portions = 1): [string, number][] {
+  const need = new Map<string, number>();
+  for (const r of recipes) for (const [id, n] of errandPlanFor(g, r, portions)) need.set(id, Math.max(need.get(id) ?? 0, n));
+  return [...need.entries()];
+}
+/**
+ * Giao một chuyến đi chợ. `lines` là hàng sẽ mua, `total` là tiền trả trước (đã báo giá).
+ * Trả về `null` nếu không giao được; ngược lại là chuyến vừa tạo.
+ */
+export function startErrand(g: Game, slot: 0 | 1 | 2 | 3, lines: ErrandQuote['lines'], total: number): Errand | null {
+  const who = errandWho(g, slot);
+  if (!who || !canErrand(g, slot) || !lines.length) return null;
+  if (!spend(g, Math.min(total, ERRAND_MAX), 'cogs')) return null;
+  const legs = errandLegs(Math.hypot(g.stall.x - (SPOTS.find((s) => s.id === 'cho')?.x ?? 0), g.stall.z - (SPOTS.find((s) => s.id === 'cho')?.z ?? 0)));
+  const e: Errand = {
+    slot, who: who.name, day: g.day, legs, t: 0,
+    lines: lines.map((l) => ({ id: l.id, n: l.n, price: l.price, fresh: l.fresh, q: l.q })),
+    shop: lines[0]?.shop ?? '', total: Math.round(total), back: false,
+  };
+  g.errands.push(e);
+  bus.emit('save', 'giao di cho');
+  return e;
+}
+/** Huỷ chuyến: người làm quay về tay không, mất 15% tiền đã đưa (đi đường rồi). */
+export function cancelErrand(g: Game, slot: 0 | 1 | 2 | 3): boolean {
+  const i = g.errands.findIndex((e) => e.slot === slot);
+  if (i < 0) return false;
+  const e = g.errands[i];
+  g.errands.splice(i, 1);
+  if (!e.back) earn(g, Math.round(e.total * 0.85), null);   // hoàn 85% (đi đường rồi), không ghi vào doanh thu
+  return true;
+}
+/** Người trông coi chi nhánh đã mua xong: hàng về chi nhánh (món nấu sẵn) thay vì quầy chính. */
+/**
+ * Tiến một chuyến thêm `dm` phút. Trả về thông tin khi chuyến vừa xong, ngược lại `null`.
+ * Hàng mua được chất vào kho quầy (hoặc để ở chi nhánh nếu là người trông coi).
+ */
+export function errandTick(g: Game, dm: number, _R?: RNG): Errand[] {
+  const done: Errand[] = [];
+  if (!g.errands.length || dm <= 0) return done;
+  for (const e of g.errands.slice()) {
+    e.t += dm;
+    if (!e.back && e.t >= e.legs / 2) { e.back = true; }
+    if (e.t < e.legs) continue;
+    // Về tới nơi: chất hàng vào kho (đồ tươi thì ưu tiên tủ lạnh của quầy).
+    // Người trông coi chi nhánh cũng chất hàng về kho quầy chính (nơi duy nhất có tủ lạnh);
+    // chi nhánh chỉ nhận món đã nấu sẵn nên không thể để nguyên liệu sống ở đó.
+    const part = e.slot === 3 ? `${e.who} (chi nhánh)` : e.who;
+    for (const l of e.lines) addStack(g.stall.store, { id: l.id, n: l.n, fresh: l.fresh, q: l.q, cost: l.price });
+    g.errands.splice(g.errands.indexOf(e), 1);
+    done.push(e);
+    bus.emit('save', 'di cho ve');
+    toast(`${part} đi chợ về: ${e.lines.length} loại hàng đã chất lên kho quầy.`, 'good', 'box');
+  }
+  return done;
+}
+/** Toạ độ người làm đang đứng trong chuyến đi chợ (để vẽ NPC đi bộ), `null` nếu không có chuyến. */
+export function errandSpot(g: Game, e: Errand): { x: number; z: number } {
+  const a = SPOTS.find((s) => s.id === 'cho') ?? SPOTS[0];
+  const b = { x: g.stall.x, z: g.stall.z };
+  const half = Math.max(1, e.legs / 2), u = e.back ? clamp((e.t - half) / half, 0, 1) : clamp(e.t / half, 0, 1);
+  const from = e.back ? a : b, to = e.back ? b : a;
+  return { x: from.x + (to.x - from.x) * u, z: from.z + (to.z - from.z) * u };
+}
+
+/** Qua ngày mới: chuyến nào còn đi dở thì người làm về tay không, hoàn 85% tiền đã đưa. */
+export function errandsNewDay(g: Game) {
+  if (!g.errands.length) return;
+  for (const e of g.errands) { if (!e.back) earn(g, Math.round(e.total * 0.85), null); }
+  const n = g.errands.length;
+  g.errands = [];
+  if (n) toast(`${n} chuyến đi chợ dở dang đã huỷ (hoàn 85% tiền).`, 'warn', 'box');
+}
+
 // ───────────────────────── Chuỗi cửa hàng (bậc 7) — chi nhánh & người trông coi ─────────────────────────
 /** Đã lên Chuỗi cửa hàng (bậc 7) chưa: chỉ bậc này mới mở được chi nhánh thứ hai. */
 export const isChain = (g: Game) => g.stall.tier >= 7;
@@ -1174,6 +1313,7 @@ function newDay(g: Game, R: RNG) {
   for (const l of [g.bag, s.store, g.home]) waste += purge(l).lost;
   g.led.loss += waste;
   branchNewDay(g);
+  errandsNewDay(g);
   g.hist.push(g.led); if (g.hist.length > 30) g.hist.shift();
   g.tot.best = Math.max(g.tot.best, g.led.revenue);
   g.day++; g.min -= 1440; g.led = newLedger(g.day);
@@ -1220,6 +1360,7 @@ export function advance(g: Game, dm: number, act: Activity, R: RNG = rnd) {
   PH.tick(g, dm);
   tickStats(g, dm, act);
   branchTick(g, dm, R);
+  errandTick(g, dm, R);
   if (g.min >= 1440) newDay(g, R);
   const h1 = Math.floor(absMin(g) / 60);
   for (let h = h0; h < h1; h++) hourly(g, R);

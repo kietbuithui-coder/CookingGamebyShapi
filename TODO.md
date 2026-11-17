@@ -6,7 +6,7 @@ Danh sách những gì **chưa làm**, rà theo mã ngày 2026-11-17 (`main` = `
 đua xe đạp · NPC sinh hoạt theo giờ · giao diện dễ đọc · 16 biểu cảm · 8 kiểu tóc · người phụ việc ·
 ngoại hình người chơi (góc nhìn thứ ba, cắt tóc, thời trang) · quán có chỗ ngồi (sáu ghế bàn gỗ, thực đơn theo buổi, gọi thêm) ·
 nhà hàng bình dân (8 ghế trong nhà kín, đặt bàn trước, phụ bếp, khách đoàn) ·
-chuỗi cửa hàng (chi nhánh thứ hai, người trông coi, sổ từng điểm) · 348 bài kiểm thử / 25 tệp.
+chuỗi cửa hàng (chi nhánh thứ hai, người trông coi, sổ từng điểm) · giao người làm đi chợ mua nguyên liệu · 365 bài kiểm thử / 26 tệp.
 
 ---
 
@@ -40,8 +40,9 @@ chuỗi cửa hàng (chi nhánh thứ hai, người trông coi, sổ từng đi�
 - **Chưa đo trên máy yếu thật**: người chơi báo máy chạy trên 50 khung hình/giây nhưng chưa rõ máy nào.
 - Khi cần tối ưu: gộp các khối cơ thể NPC thành một lưới, dùng instancing cho đồ vật lặp lại (ghế, cây, xe), bỏ sương mù theo điểm ảnh ở mức đồ hoạ thấp, thêm LOD cho khu ở xa.
 - **Tách gói JavaScript**: hiện một tệp khoảng 1,23 MB (nén còn ~384 kB). Nên tách phần dựng thành phố ra khỏi phần giao diện.
+- **Đi chợ thuê người**: mới có một kiểu chuyến (mua theo món cần, giá tốt nhất trong giờ). Còn thiếu: **mặc cả hộ** (người làm có thể trả giá theo độ thân với người bán), **mua theo danh sách tự soạn** (tự chọn từng nguyên liệu + số lượng), **đi chợ bị mưa/ kẹt xe nên về muộn**, và **mua hộ cho chi nhánh** (hiện người trông coi vẫn chất hàng về kho quầy chính).
 - **Chơi ngoại tuyến**: chưa có service worker; mất mạng là không mở được.
-- **Lưu đám mây**: chưa có; xoá dữ liệu trình duyệt là mất bản lưu (bản lưu v13, tự lưu sau mỗi việc quan trọng).
+- **Lưu đám mây**: chưa có; xoá dữ liệu trình duyệt là mất bản lưu (bản lưu v15, tự lưu sau mỗi việc quan trọng).
 - **Nội thất cửa hàng**: một số tiệm còn sơ sài (kệ hàng, quầy, biển giá mới ở mức khối hộp).
 
 ## 5. Cân chỉnh

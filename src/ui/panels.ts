@@ -31,13 +31,24 @@ export function ledgerBody(g: Game): string {
           <h4>Tổng kết</h4><div class="kv"><span>Tổng số phần đã bán</span><b>${g.tot.served}</b></div><div class="kv"><span>Ngày bán chạy nhất</span><b>${money(g.tot.best)}</b></div><div class="kv"><span>Tiền xin được</span><b>${money(g.tot.begged)}</b></div><div class="kv"><span>Tiền bán ve chai</span><b>${money(g.tot.scrap)}</b></div></div></div>`;
 }
 
+/** Khối "giao đi chợ" dùng trong tab Nhân sự: ai đang đi, giao cho ai, huỷ chuyến. */
+function errandBlock(g: Game): string {
+  const slots: (0 | 1 | 2 | 3)[] = [0, 1, 2, 3];
+  const who = slots.map((sl) => ({ sl, w: R.errandWho(g, sl) })).filter((x) => x.w);
+  if (!who.length) return '';
+  const running = g.errands.map((e) => `<div class="item"><div class="grow"><b>${e.who}</b><small>${e.back ? 'đang trên đường về' : 'đang ở chợ'} · còn ${Math.max(0, e.legs - e.t)} phút · ${e.lines.length} loại · ${money(e.total)}</small></div></div>`).join('');
+  return `<h4 style="margin-top:.8em">Đi chợ mua nguyên liệu</h4>` +
+    (running ? `<div class="list">${running}</div>` : '<p class="muted">Chưa ai đi chợ. Giao người làm đi mua đúng thứ còn thiếu cho món đang bán.</p>') +
+    `<div style="display:flex;gap:.4em;flex-wrap:wrap;margin-top:.4em"><button class="btn small green" data-a="errandOpen">Giao đi chợ…</button></div>`;
+}
+
 export function openPanel(ui: UI, name: string) {
   const M = ui.$('modal'), g = ctx.g;
   let devTaps = 0, devOpen = false;
   const draw = (title: string, tabs: [string, string][], body: string, foot = '') => {
     M.innerHTML = `<div class="panel"><header><h2>${title}</h2><div class="tabs">${tabs.map(([id, t]) => `<button class="tab${id === tab ? ' on' : ''}" data-tab="${id}">${t}</button>`).join('')}</div><button class="x" data-a="close">${ic('x')}</button></header><div class="body">${body}</div>${foot ? `<div class="foot">${foot}</div>` : ''}</div>`;
   };
-  const acts: Record<string, (i: number, e: HTMLElement) => void> = { close: () => ui.closePanel() };
+  const acts: Record<string, (i: number, e: HTMLElement) => void> = { close: () => ui.closePanel(), errandOpen: () => ui.panel('errand') };
   const render = () => { const sc = (M.querySelector('.body') as HTMLElement | null)?.scrollTop ?? 0; build(); const b = M.querySelector('.body') as HTMLElement | null; if (b) b.scrollTop = sc; };
   M.onclick = (e) => {
     const t = e.target as HTMLElement; if (t === M) { ui.closePanel(); return; }
@@ -145,7 +156,8 @@ export function openPanel(ui: UI, name: string) {
           `<div style="margin-top:.5em"><button class="btn small${activeBooks.length >= R.BOOKING_MAX ? ' off' : ''}" data-a="findBook">Nhận thêm khách đặt bàn</button></div>` +
           (R.isChain(g) ? `<h4 style="margin-top:.8em">Chi nhánh (chuỗi cửa hàng)</h4>` + (g.branch
             ? `<div class="item"><div class="grow"><b>${SPOTS.find((x) => x.id === g.branch!.spot)?.name ?? ''}</b><small>${g.branch.keeper ? g.branch.keeper.name + ' trông coi · ' + (g.branch.open ? 'đang bán' : 'đang đóng cửa') : 'Chưa có người trông coi'} · ${R.branchStock(g)} phần sẵn</small></div><button class="btn small" data-tab="branch">Mở sổ</button></div>`
-            : `<p class="muted">Đã có bảng hiệu chuỗi nhưng chưa thuê chi nhánh. Ghé tiệm Ba Tài mở thêm điểm bán thứ hai.</p>`) + `</div></div>` : `</div></div>`);
+            : `<p class="muted">Đã có bảng hiệu chuỗi nhưng chưa thuê chi nhánh. Ghé tiệm Ba Tài mở thêm điểm bán thứ hai.</p>`) +
+          errandBlock(g) + `</div></div>` : `</div></div>`);
       } else {
         const sp = ctx.stall.spot(), rate = R.arrivalRate(g);
         const seatLabel = R.isRestaurant(g) ? `${R.seatCount(g)} ghế trong nhà kín (4 bàn · phòng bếp riêng)` : `${R.seatCount(g)} ghế${R.dineIn(g) ? ' trong nhà' : ' nhựa ngoài sân'}`;
@@ -186,6 +198,48 @@ export function openPanel(ui: UI, name: string) {
           <h4>Khách quen</h4><div class="list">${REGULARS.map((r) => { const rel = R.hasMet(g, r.id) ? g.rel[r.id] : undefined; return `<div class="item${rel?.n ? '' : ' off'}"><div class="grow"><b>${rel?.n ? r.name : '???'}</b><small>${rel?.n ? r.note + ' Thường ghé lúc ' + hhmm(r.hour * 60) + '. Thích: ' + r.likes.map((c) => CAT_LABEL[c].toLowerCase()).join(', ') + '.' : 'Chưa quen ai ở giờ này.'}</small></div><span class="tag ${(rel?.v ?? 0) > 20 ? 'good' : ''}">${rel?.n ? 'thân ' + Math.round(rel.v) : '—'}</span></div>`; }).join('')}</div>`;
       }
       draw(`${ic('book')} Sổ tay`, [['rec', 'Công thức'], ['led', 'Sổ sách'], ['debt', 'Nợ & khách quen']], body);
+    } else if (name === 'errand') {
+      const slots: (0 | 1 | 2 | 3)[] = [0, 1, 2, 3];
+      const workers = slots.map((sl) => ({ sl, who: R.errandWho(g, sl), run: g.errands.find((e) => e.slot === sl) })).filter((w) => w.who);
+      if (!workers.length) {
+        draw(`${ic('bag')} Giao đi chợ`, [], '<p class="muted">Chưa có ai để giao việc. Thuê người phụ quầy (từ xe đẩy), phụ bếp (nhà hàng bình dân) hoặc người trông coi chi nhánh (chuỗi cửa hàng) trước đã.</p>');
+        return;
+      }
+      let sel = +(ui.modalArg?.slot ?? workers[0].sl) as 0 | 1 | 2 | 3;
+      if (!workers.some((w) => w.sl === sel)) sel = workers[0].sl;
+      const target = +(ui.modalArg?.dish ? 1 : 1);
+      void target;
+      const pickDish = (ui.modalArg?.dish ? String(ui.modalArg.dish) : '');
+      const menu = R.menuOf(g);
+      const plan: [string, number][] = pickDish && RECIPES[pickDish]
+        ? R.errandPlanFor(g, RECIPES[pickDish], 2)
+        : R.errandPlanForAll(g, menu.slice(0, 6));
+      const quote = R.errandQuote(g, plan);
+      const names = new Map<string, string>();
+      for (const l of quote.lines) names.set(l.shop, SHOPS[l.shop]?.name ?? l.shop);
+      acts.erPick = (i) => { ui.reopenPanel('errand', { ...(ui.modalArg ?? {}), slot: workers[i].sl }); };
+      acts.erDish = (_i, e) => { ui.reopenPanel('errand', { slot: sel, dish: e.dataset.k! }); };
+      acts.erSend = () => {
+        const e = R.startErrand(g, sel, quote.lines, quote.total);
+        if (!e) { toast(g.cash < quote.total ? `Không đủ tiền — cần ${money(quote.total)}.` : 'Không giao được chuyến này.', 'warn', 'cash'); return; }
+        sfx('coin');
+        toast(`${e.who} xách giỏ đi chợ: ${e.lines.length} loại, ${money(e.total)}, về sau ${e.legs} phút.`, 'good', 'bag');
+        ui.closePanel();
+      };
+      const rows = workers.map((w, i) => `<button class="btn small${w.sl === sel ? ' yellow' : ''}" data-a="erPick" data-i="${i}">${w.who!.name} <span class="muted">· ${w.who!.role}</span>${w.run ? ' — đang đi chợ' : ''}</button>`).join(' ');
+      const lines = quote.lines.length
+        ? `<div class="list">${quote.lines.map((l) => `<div class="item"><div class="grow"><b>${INGS[l.id].name} <span class="muted">× ${qty(l.n)} ${INGS[l.id].unit}</span></b><small>${names.get(l.shop) ?? ''} · tươi ${Math.round(l.fresh)}% · ${money(l.price)}/${INGS[l.id].unit}</small></div><b>${money(l.price * l.n)}</b></div>`).join('')}</div>`
+        : '<p class="muted">Không còn gì phải mua: kho quầy đã đủ nguyên liệu cho các món này.</p>';
+      const body = `<p class="muted">Người làm tự đi các sạp ở cổng chợ lúc cửa hàng đang mở, trả tiền mặt của bạn, rồi mang hàng về chất lên kho quầy. Đi và về mất khoảng nửa giờ tuỳ quãng đường. Bạn trả tiền trước, họ không tự thương lượng giá.</p>
+        <h4>Giao cho ai</h4><div style="display:flex;gap:.4em;flex-wrap:wrap">${rows}</div>
+        <h4>Mua gì</h4><div style="display:flex;gap:.4em;flex-wrap:wrap"><button class="btn small${pickDish ? '' : ' yellow'}" data-a="erDish" data-k="">Đủ nguyên liệu 6 món đang bán</button>${menu.map((r) => `<button class="btn small${pickDish === r.id ? ' yellow' : ''}" data-a="erDish" data-k="${r.id}">${RECIPES[r.id].short}</button>`).join('')}</div>
+        <h4>Tạm tính (${quote.lines.length} loại)</h4>${lines}
+        ${quote.missing.length ? `<p class="warn">Giờ này không đâu bán: ${quote.missing.join(', ')}.</p>` : ''}
+        <div class="kv sum"><span>Tổng tiền trả trước</span><b class="${g.cash < quote.total ? 'neg' : 'pos'}">${money(quote.total)}</b></div>
+        ${(g.errands.length ? `<h4>Đang đi chợ</h4><div class="list">${g.errands.map((e) => `<div class="item"><div class="grow"><b>${e.who}</b><small>${e.back ? 'đang về' : 'đang ở chợ'} · còn ${Math.max(0, e.legs - e.t)} phút · ${e.lines.length} loại</small></div><button class="btn small" data-a="erCancel" data-n="${e.slot}">Huỷ</button></div>`).join('')}</div>` : '')}`;
+      acts.erCancel = (i, e) => { const sl = +(e.dataset.n ?? 0) as 0 | 1 | 2 | 3; R.cancelErrand(g, sl); toast('Đã huỷ chuyến, hoàn 85% tiền.', 'info', 'cash'); };
+      draw(`${ic('bag')} Giao đi chợ mua nguyên liệu`, [], body,
+        `<button class="btn green${quote.lines.length ? '' : ' off'}" data-a="erSend">Giao ${workers.find((w) => w.sl === sel)?.who?.name ?? ''} đi chợ — ${money(quote.total)}</button><button class="btn" data-a="close">Thôi</button>`);
     } else if (name === 'branch') {
       const b = g.branch;
       if (!b) { draw(`${ic('shop')} Chi nhánh`, [], '<p class="muted">Chưa mở chi nhánh nào. Cần bậc 7 (Chuỗi cửa hàng) rồi ghé tiệm Đồ Nghề Ba Tài.</p>'); return; }

@@ -3,10 +3,11 @@
 // chỉ giữ lại nhóm "Địa điểm — tele nhanh". Đừng để menu phình thành bãi rác test cũ.
 import { ctx } from './ctx';
 import * as R from '../sim/rules';
+import { RECIPES } from '../data/recipes';
 import { SPOTS, CORR } from '../world/layout';
 import { toast } from '../core/bus';
 
-export const DEV_BUILD_TAG = 'Bậc 7 Chuỗi cửa hàng · chi nhánh thứ hai · người trông coi · sổ từng điểm';
+export const DEV_BUILD_TAG = 'Giao người làm đi chợ (phụ quầy · bếp trưởng · người trông coi) · sửa người trông coi đứng lọt quầy';
 
 export interface DevAction {
   id: string;
@@ -65,8 +66,67 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Bậc 7 Chuỗi cửa hàng (lượt 18)',
+      title: 'Mới nhất — Giao người làm đi chợ mua nguyên liệu (lượt 19)',
       items: [
+        {
+          id: 'setup_dicho',
+          label: 'Dựng nhà hàng full + 3 người làm, rồi mở bảng Giao đi chợ',
+          sub: 'Lên bậc 6, thuê phụ quầy + 2 bếp trưởng; bảng chọn người và món cần mua, báo giá rồi giao',
+          tone: 'green',
+          closePanel: false,
+          run: () => {
+            setupChain('cho');
+            for (const id of ['daothot', 'bepthan', 'vi', 'noi', 'chao', 'bepgas', 'thungda', 'bien', 'den', 'ghe', 'wc_lavabo']) if (!R.has(ctx.g, id)) R.buyGear(ctx.g, id);
+            while (R.helperCount(ctx.g) < R.maxHelpers(ctx.g)) R.hireHelper(ctx.g);
+            while (R.sousCount(ctx.g) < R.maxSous(ctx.g)) R.hireSous(ctx.g);
+            ctx.stall.refresh();
+            toast('Đã có phụ quầy + 2 bếp trưởng. Chọn món rồi giao người đi chợ.', 'good', 'bag');
+            ctx.ui.panel('errand');
+          },
+        },
+        {
+          id: 'dicho_send',
+          label: 'Giao ngay phụ quầy đi chợ (mua đồ cho 2 phần cơm sườn)',
+          sub: 'Tính đúng thứ còn thiếu, trừ tiền, hẹn giờ về — rồi tự chạy tới lúc hàng về kho',
+          run: () => {
+            const g = ctx.g;
+            if (!g.help) { toast('Chưa có phụ quầy — bấm mục dựng người làm trước.', 'warn'); return; }
+            if (g.errands.some((e) => e.slot === 0)) { toast('Phụ quầy đang đi chợ rồi.', 'warn'); return; }
+            const r = RECIPES.com_suon;
+            const q = R.errandQuote(g, R.errandPlanFor(g, r, 2));
+            if (!q.lines.length) { toast('Kho đã đủ đồ cho cơm sườn.', 'info'); return; }
+            const e = R.startErrand(g, 0, q.lines, q.total);
+            toast(e ? `${e.who} đi chợ: ${e.lines.length} loại · ${e.total.toLocaleString('vi-VN')}₫ · về sau ${e.legs} phút.` : 'Không giao được chuyến này.', e ? 'good' : 'warn', 'bag');
+          },
+        },
+        {
+          id: 'dicho_skip',
+          label: 'Tua cho người đi chợ về tới quầy',
+          sub: 'Đẩy hết thời gian đi đường của mọi chuyến đang chạy để xem hàng chất lên kho',
+          closePanel: false,
+          run: () => {
+            const g = ctx.g;
+            if (!g.errands.length) { toast('Không có ai đang đi chợ.', 'warn'); return; }
+            const legs = Math.max(...g.errands.map((e) => e.legs - e.t));
+            const done = R.errandTick(g, legs);
+            toast(done.length ? `${done.length} người đã về, hàng vào kho quầy.` : 'Chưa ai về tới.', done.length ? 'good' : 'warn', 'box');
+          },
+        },
+        {
+          id: 'dicho_keeper',
+          label: 'Giao người trông coi chi nhánh đi chợ',
+          sub: 'Người trông coi cũng đi mua nguyên liệu được (cần có chi nhánh + người trông)',
+          run: () => {
+            const g = ctx.g;
+            if (!g.branch?.keeper) { toast('Cần mở chi nhánh và thuê người trông coi trước.', 'warn'); return; }
+            if (g.errands.some((e) => e.slot === 3)) { toast('Người trông coi đang đi chợ rồi.', 'warn'); return; }
+            const r = RECIPES.tra_da;
+            const q = R.errandQuote(g, R.errandPlanFor(g, r, 4));
+            if (!q.lines.length) { toast('Kho đã đủ đồ cho trà đá.', 'info'); return; }
+            const e = R.startErrand(g, 3, q.lines, q.total);
+            toast(e ? `${e.who} (chi nhánh) đi chợ: ${e.lines.length} loại · ${e.legs} phút.` : 'Không giao được.', e ? 'good' : 'warn', 'bag');
+          },
+        },
         {
           id: 'setup_chuoi',
           label: 'Dựng Chuỗi cửa hàng + chi nhánh Cổng Chợ',

@@ -3,10 +3,10 @@ import { DEV_BUILD_TAG, getDevSections } from '../src/game/devPoints';
 
 describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
   it('chỉ gồm mục của tính năng mới nhất + nhóm địa điểm tele nhanh', () => {
-    expect(DEV_BUILD_TAG).toContain('Bậc 7');
+    expect(DEV_BUILD_TAG).toContain('đi chợ');
     const sections = getDevSections();
     expect(sections.length).toBe(2);
-    expect(sections[0].title).toContain('Bậc 7');
+    expect(sections[0].title).toContain('đi chợ');
     expect(sections[1].title).toContain('Địa điểm');
     const ids = new Set<string>();
     for (const sec of sections) {
@@ -19,10 +19,12 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
         expect(item.sub.length).toBeGreaterThan(3);
       }
     }
-    // mục mới của lượt 18
+    // mục mới của lượt 18 vẫn còn (bậc 7 mới làm, chưa thay)
     for (const id of ['setup_chuoi', 'setup_chuoi_vp', 'setup_chuoi_cv', 'tp_chinhanh', 'branch_fill', 'branch_skip', 'branch_panel', 'branch_keeper', 'branch_close']) {
       expect(ids.has(id)).toBe(true);
     }
+    // mục mới của lượt 19: giao người làm đi chợ
+    for (const id of ['setup_dicho', 'dicho_send', 'dicho_skip', 'dicho_keeper']) expect(ids.has(id)).toBe(true);
     // tele nhanh vẫn còn
     const loc = sections[1].items.map((i) => i.id);
     expect(loc).toContain('tp_equip');
