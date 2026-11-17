@@ -13,8 +13,9 @@ import * as R from '../sim/rules';
 import * as PH from '../sim/phone';
 import type { Contact } from '../sim/phone';
 import { ledgerBody } from './panels';
+import { RECIPES } from '../data/recipes';
 
-export type PhoneApp = 'ledger' | 'contacts' | 'sms' | 'radio' | 'music' | 'wap' | 'battery';
+export type PhoneApp = 'ledger' | 'contacts' | 'sms' | 'radio' | 'music' | 'wap' | 'battery' | 'shop';
 
 export { appsOf };
 export interface PhoneView {
@@ -44,6 +45,7 @@ const GLYPH: Record<string, string> = {
   music: '<path d="M9 18V6l9-2v12"/><circle cx="7" cy="18" r="2.2"/><circle cx="16" cy="16" r="2.2"/>',
   wap: '<circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c4 5 4 11 0 16M12 4c-4 5-4 11 0 16"/>',
   battery: '<rect x="3" y="7" width="15" height="10" rx="2"/><path d="M20 10v4"/><path d="M6 10h6v4H6z" fill="currentColor" stroke="none"/>',
+  shop: '<path d="M4 9l1-4h14l1 4M5 9v11h14V9M4 9h16"/><path d="M9.5 20v-5h5v5"/>',
 };
 const GLYPH_OLD: Record<string, string> = {
   ledger: '<path d="M6 5h11v14H6z"/><path d="M8 9h7M8 12h7M8 15h4"/><path d="M6 3h11"/>',
@@ -53,6 +55,7 @@ const GLYPH_OLD: Record<string, string> = {
   music: '<path d="M10 17V7l7-2v10"/><circle cx="8" cy="17" r="1.8"/>',
   wap: '<rect x="5" y="4" width="14" height="16" rx="2"/><path d="M5 9h14M5 16h14"/>',
   battery: '<rect x="7" y="3" width="10" height="18" rx="2"/><path d="M10 7h4v6h-4z" fill="currentColor" stroke="none"/>',
+  shop: '<path d="M5 10h14v10H5z"/><path d="M4 6h16l-1 4H5z"/><path d="M10 20v-5h4v5"/>',
 };
 export const appGlyph = (id: string, old = false) => `<svg viewBox="0 0 24 24" class="pg">${(old ? GLYPH_OLD : GLYPH)[id] ?? (old ? GLYPH_OLD : GLYPH).battery}</svg>`;
 
@@ -90,6 +93,7 @@ export function runRow(app: PhoneApp, row: { act?: string; k?: string }) {
   const g = ctx.g;
   if (row.act === 'call' && row.k) { ctx.acts.phoneCall(row.k); return true; }
   if (row.act === 'fun' && row.k) { ctx.acts.phoneFun(row.k as 'radio' | 'music' | 'wap'); return true; }
+  if (row.act === 'shopopen' && row.k) { return R.setShopOpen(g, row.k as 'main' | 'branch', !(row.k === 'main' ? g.stall.open : !!g.branch?.open)); }
   if (row.act === 'charge') { ctx.ui.closePanel(); ctx.ui.panel('map'); return true; }
   void g;
   return false;
@@ -131,6 +135,16 @@ export function appScreen(g: Game, m: PhoneDef, app: PhoneApp): string {
   const v = phoneView(), on = PH.isOn(g), a = appsOf(m).find((x) => x.id === app)!;
   const dead = on ? '' : `<p class="pdead">Máy hết pin. Sạc ở nhà hoặc sạc nhờ tạp hoá 5.000₫.</p>`;
   if (app === 'ledger') return `${dead}${ledgerBody(g)}`;
+  if (app === 'shop') {
+    return `${dead}<p class="muted">Xem quầy chính và chi nhánh, bật/tắt bán ngay trên máy — không cần chạy ra quầy.</p>
+      <div class="plist">${R.shopRows(g).map((r) => `<div class="row"><span class="g"><b>${esc(r.name)} <em class="${r.open ? 'ok' : 'bad'}">${r.open ? 'đang bán' : 'tạm đóng'}</em></b>
+        <s>${r.stock} phần · ${r.kinds} món${r.low ? ` · ${r.low} món sắp hết` : ''} · thuê ${money(r.rent)}/ngày</s>
+        <s>Hôm nay: ${money(r.revenue)} · ${r.sold} phần · ${r.customers} khách${r.lost ? ` · mất ${r.lost} khách` : ''}</s>
+        <s class="hint">${esc(r.hint)}</s></span>
+        <button class="btn small${r.open ? '' : ' green'}" data-a="phshop" data-k="${r.id}"${r.canToggle ? '' : ' disabled'}>${r.open ? 'Đóng' : 'Mở'}</button></div>`).join('')}</div>
+      ${R.lossDishes(g).length ? `<h4>Bán lỗ so với giá vốn</h4><div class="plist">${R.lossDishes(g).map((l) => `<div class="row"><span class="g"><b>${RECIPES[l.rid].name}</b><s>đang bán ${money(l.price)} · vốn ${money(l.cost)} — lỗ ${money(l.cost - l.price)}/phần</s></span></div>`).join('')}</div>` : ''}
+      ${g.branch ? '' : '<p class="muted">Chưa có chi nhánh nào. Lên Chuỗi cửa hàng (bậc 7) rồi thuê mặt bằng thứ hai.</p>'}`;
+  }
   if (app === 'battery') {
     const pin = Math.round(PH.battery(g));
     return `<p>Pin còn <b>${pin}%</b> · để trong túi dùng được khoảng <b>${(PH.battery(g) / PH.DRAIN_PER_HOUR).toFixed(1).replace('.', ',')} giờ</b> nữa.</p>
@@ -197,6 +211,14 @@ export function phoneKey(k: 'up' | 'down' | 'ok' | 'home' | 'pick' | 'open', arg
   }
   return false;
 }
+/** Bấm nút Mở/Đóng của một điểm bán trong app Quản lý cửa hàng. */
+export function phoneToggleShop(id: 'main' | 'branch'): boolean {
+  const g = ctx.g, on = id === 'main' ? !!g.stall.open : !!g.branch?.open;
+  if (!R.setShopOpen(g, id, !on)) return false;
+  ctx.sound.play('ui');
+  return true;
+}
+
 /** Bấm một dòng trong danh sách (máy cảm ứng bấm thẳng, máy phím thì bấm = chọn + làm). */
 export function phoneRow(i: number): boolean {
   const v = phoneView(), g = ctx.g, m = PH.phone(g);

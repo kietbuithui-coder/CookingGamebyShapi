@@ -230,7 +230,11 @@ export class UI {
   // ───────── bảng lớn ─────────
   /** Tham số phụ của bảng đang mở (ví dụ bảng 'errand' nhớ người được chọn, món đang chọn). */
   modalArg: any = null;
-  panel(name: string, arg?: any) { if (ctx.mode !== 'play' && ctx.mode !== 'panel') return; this.modalArg = arg ?? null; if (ctx.anim?.active) ctx.anim.stop(); this.closeDialog(); this.modalName = name; ctx.mode = 'panel'; ctx.input.reset(); this.E.modal.classList.remove('hide'); openPanel(this, name); }
+  panel(name: string, arg?: any) {
+    if (ctx.mode !== 'play' && ctx.mode !== 'panel') return;
+    // Mở máy mới thật sự (không phải vẽ lại) thì mới đưa điện thoại về màn hình chính
+    if (name === 'phone' && this.modalName !== 'phone') PUI.resetPhoneView();
+    this.modalArg = arg ?? null; if (ctx.anim?.active) ctx.anim.stop(); this.closeDialog(); this.modalName = name; ctx.mode = 'panel'; ctx.input.reset(); this.E.modal.classList.remove('hide'); openPanel(this, name); }
   /** Vẽ lại bảng đang mở với tham số mới (giữ nguyên tên bảng). */
   reopenPanel(name: string, arg?: any) { if (this.modalName !== name) return this.panel(name, arg); this.modalArg = arg ?? null; openPanel(this, name); }
   closePanel() { if (!this.modalName) return; this.modalName = ''; this.modalArg = null; this.E.modal.classList.add('hide'); this.E.modal.innerHTML = ''; if (ctx.mode === 'panel' && !this.dlgOpen) ctx.mode = 'play'; ctx.stall.refresh(); }

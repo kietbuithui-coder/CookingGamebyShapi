@@ -19,7 +19,7 @@ Một vòng chơi trọn vẹn và thật sự chạy được: **tay trắng �
 
 Hai nguyên tắc giữ cho mã kiểm thử được:
 
-1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 393 bài kiểm thử (29 tệp) chạy trong Node trong khoảng 7 giây.
+1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 400 bài kiểm thử (30 tệp) chạy trong Node trong khoảng 7 giây.
 2. **Mọi ngẫu nhiên trong luật chơi nhận một `RNG` có hạt giống** làm tham số cuối, nên kết quả kiểm thử lặp lại được.
 
 Vòng lặp chính (`src/main.ts`): đọc điều khiển → `advance()` cho thời gian game trôi (0,75 phút game mỗi giây thật, một ngày = 32 phút thật; khi ngủ 48 phút game mỗi giây) → cập nhật người chơi, NPC, quầy, nấu ăn, môi trường → vẽ. `dt` bị chặn ở 50 ms nên máy rất chậm thì game chạy chậm lại chứ không nhảy cóc.
@@ -752,6 +752,35 @@ chưa mua thì không có gì để mở. Probe `tools/probe/steps/phone3.mjs` �
 4 dòng + 3 phím, bấm ▼ rồi OK mở đúng **Danh bạ**; nắp gập 8 icon + ô giữa, TÁCH mở **Sổ thu chi**; cảm ứng 7 icon,
 bấm icon mở **Tin nhắn** (2 tin) rồi mở **Sổ thu chi** — console sạch.
 
+### 4.32 App "Quản lý cửa hàng" trên điện thoại
+
+Mở máy (nút điện thoại trên HUD hoặc phím P) là có thêm một app **Cửa hàng** trên **cả ba mẫu máy** — kể cả cục gạch
+rẻ nhất, vì điện thoại nào cũng phải xem được quầy của mình. App gom mọi thứ về hai điểm bán vào một chỗ, khỏi phải
+chạy ra quầy:
+
+- **Mỗi điểm bán một dòng**: quầy chính và (nếu có) chi nhánh — tên chỗ, trạng thái **đang bán / tạm đóng**, số phần
+  đang bày, số món, số món sắp hết, tiền thuê chỗ mỗi ngày, doanh thu − số phần − số khách − số khách mất của hôm nay,
+  và **một câu gợi ý** nói đúng việc nên làm ("Khay trống — chuyển món đã làm sẵn sang đây", "Chưa có người trông coi…").
+- **Nút Mở / Đóng bán ngay trên máy** (`setShopOpen`): quầy chính chỉ mở được khi đã đặt ra phố và có món bật trong thực
+  đơn; chi nhánh chỉ mở được khi đã có người trông coi. Không cần đứng gần quầy.
+- **Cảnh báo bán lỗ** (`lossDishes`): so giá đang bán với `recipeCost(...).total` (nguyên liệu + bao bì + nhiên liệu) và
+  liệt kê món nào bán dưới giá vốn, lỗ bao nhiêu một phần. Đây là việc "báo giá bán lỗ" còn treo trong `TODO.md`.
+- Chưa có chi nhánh thì app nói rõ cần lên **Chuỗi cửa hàng (bậc 7)** rồi thuê mặt bằng thứ hai.
+
+**Luật tách khỏi giao diện.** `shopRows(g)` trả `ShopRow[]` (thuần, không DOM) nên `tests/shopapp.test.ts` kiểm được
+số phần, trạng thái, gợi ý và chuyện bật/tắt; `src/ui/phoneUI.ts` chỉ vẽ. Trạng thái app đang mở nằm ở `phoneView()`,
+nên bấm sang tab khác rồi quay lại vẫn đứng đúng chỗ; mở lại máy từ HUD mới về màn hình chính (`ui.panel('phone')`
+reset, `reopenPanel` thì không).
+
+**Kiểm thử.** `tests/shopapp.test.ts` (7 bài): máy nào cũng có app, không chi nhánh thì một dòng kèm số phần/số món/số
+món sắp hết, bật/tắt bán quầy chính và chi nhánh (chưa có người trông coi thì không mở được), quầy chưa đặt ra phố hoặc
+chưa bật món thì không mở được, câu gợi ý đúng ba tình huống (khay trống / chưa bật món / đang đóng), cảnh báo bán lỗ
+chỉ ra đúng món, và chi nhánh hiện đúng số phần sau khi chuyển món sang. Probe `tools/probe/steps/shopapp.mjs` ở
+390×844: máy cảm ứng có icon **Cửa hàng** thứ 8, mở ra thấy 2 dòng (quầy chính tạm đóng + chi nhánh đang bán), bấm
+**Đóng** thì `stall.open` thành `false`, bật chi nhánh từ máy thì `branch.open` thành `true`, đặt cơm sườn 2.000₫ thì
+app hiện mục **Bán lỗ so với giá vốn** ("đang bán 2.000₫ · vốn 25.426₫ — lỗ 23.426₫/phần"), và máy cục gạch cũng có
+dòng "Cửa hàng" trong danh sách; **console sạch**.
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
@@ -800,7 +829,7 @@ Người chơi đã thử bản đầu và gửi danh sách góp ý; việc đư
 Còn lại:
 
 1. **Đã xong 3 kiểu chỗ ở mới: căn hộ, nhà riêng, cửa hàng kiêm nhà ở** (8/8) — xem mục 4.13.
-2. **Đã xong sạp cố định (bậc 3)** — mục 4.12, **quán ăn nhỏ (bậc 4)** — mục 4.22, và **quán có chỗ ngồi (bậc 5)** — mục 4.25, **nhà hàng bình dân (bậc 6)** — mục 4.26, **chuỗi cửa hàng (bậc 7)** — mục 4.27, **giao người làm đi chợ** — mục 4.28, **báo cáo sắp hết đồ + tự duyệt đặt bàn** — mục 4.29, **vựa ve chai thứ hai + bấm chuông mở cửa** — mục 4.30, và **ba giao diện điện thoại** — mục 4.31. Nhánh kinh doanh đã đủ **7/7 bậc**; việc kế tiếp là hệ thống băng nhóm.
+2. **Đã xong sạp cố định (bậc 3)** — mục 4.12, **quán ăn nhỏ (bậc 4)** — mục 4.22, và **quán có chỗ ngồi (bậc 5)** — mục 4.25, **nhà hàng bình dân (bậc 6)** — mục 4.26, **chuỗi cửa hàng (bậc 7)** — mục 4.27, **giao người làm đi chợ** — mục 4.28, **báo cáo sắp hết đồ + tự duyệt đặt bàn** — mục 4.29, **vựa ve chai thứ hai + bấm chuông mở cửa** — mục 4.30, **ba giao diện điện thoại** — mục 4.31, và **app Quản lý cửa hàng** — mục 4.32. Nhánh kinh doanh đã đủ **7/7 bậc**; việc kế tiếp là hệ thống băng nhóm.
 3. Hệ thống băng nhóm.
 4. Danh sách đầy đủ những gì còn lại nằm ở `TODO.md`.
 

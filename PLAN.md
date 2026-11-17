@@ -496,3 +496,18 @@ chính (trước đó mở app thì chữ hoà vào nền giấy).
 **Kiểm thử:** `tests/phone3.test.ts` 5 bài → tổng **393 bài / 29 tệp**. Probe `tools/probe/steps/phone3.mjs` ở 390×844 mở
 lần lượt cả ba máy: cục gạch bấm ▼ + OK mở Danh bạ, nắp gập TÁCH mở Sổ thu chi, cảm ứng bấm icon mở Tin nhắn rồi Sổ thu
 chi; **console sạch**.
+
+---
+
+## Lượt 23 — App Quản lý cửa hàng trên điện thoại ✅ đã xong
+
+Thêm app **Cửa hàng** cho **cả ba mẫu máy** (kể cả cục gạch): mỗi điểm bán một dòng gồm trạng thái đang bán/tạm đóng, số
+phần đang bày, số món, món sắp hết, tiền thuê chỗ, doanh thu – số phần – số khách – khách mất của hôm nay, kèm **câu
+gợi ý** đúng việc cần làm. Có **nút Mở/Đóng bán ngay trên máy** (`setShopOpen`) và mục **Bán lỗ so với giá vốn**
+(`lossDishes`, so giá bán với `recipeCost`). Luật nằm ở `shopRows/setShopOpen/lossDishes` trong `src/sim/rules.ts`, UI
+chỉ vẽ — nên test được mà không cần DOM.
+
+**Kiểm thử:** `tests/shopapp.test.ts` 7 bài → tổng **400 bài / 30 tệp**. Probe `tools/probe/steps/shopapp.mjs` ở 390×844:
+máy cảm ứng có icon Cửa hàng, mở ra thấy quầy chính + chi nhánh, bấm Đóng thì `stall.open = false`, bật chi nhánh từ
+máy thì `branch.open = true`, đặt cơm sườn 2.000₫ thì hiện "lỗ 23.426₫/phần", máy cục gạch cũng có app; **console sạch**.
+Sửa thêm một lỗi nhỏ gặp trong lúc làm: `reopenPanel` từng đưa điện thoại về màn hình chính, giờ chỉ `panel()` mới reset.

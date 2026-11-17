@@ -14,14 +14,17 @@ describe('giao diện ba mẫu điện thoại', () => {
 
   it('app trên máy đúng theo chức năng: cục gạch ít nhất, cảm ứng nhiều nhất', () => {
     const ids = (id: string) => appsOf(PHONES[id]).map((a) => a.id);
-    expect(ids('cucgach')).toEqual(['ledger', 'contacts', 'sms', 'battery']);
-    expect(ids('napgap')).toEqual(['ledger', 'contacts', 'sms', 'radio', 'music', 'battery']);
-    expect(ids('camung')).toEqual(['ledger', 'contacts', 'sms', 'radio', 'music', 'wap', 'battery']);
+    expect(ids('cucgach')).toEqual(['ledger', 'contacts', 'sms', 'battery', 'shop']);
+    expect(ids('napgap')).toEqual(['ledger', 'contacts', 'sms', 'radio', 'music', 'battery', 'shop']);
+    expect(ids('camung')).toEqual(['ledger', 'contacts', 'sms', 'radio', 'music', 'wap', 'battery', 'shop']);
     // máy rẻ không có nhạc, radio, web
     expect(ids('cucgach')).not.toContain('music');
     expect(ids('cucgach')).not.toContain('wap');
-    // mục Pin máy nào cũng có
-    for (const p of PHONE_LIST) expect(appsOf(p).some((a) => a.id === 'battery')).toBe(true);
+    // mục Pin và app Quản lý cửa hàng máy nào cũng có
+    for (const p of PHONE_LIST) {
+      expect(appsOf(p).some((a) => a.id === 'battery')).toBe(true);
+      expect(appsOf(p).some((a) => a.id === 'shop')).toBe(true);
+    }
   });
 
   it('tên app ngắn gọn để nhét vừa lưới icon 3 cột và danh sách máy phím', () => {
@@ -36,7 +39,7 @@ describe('giao diện ba mẫu điện thoại', () => {
 
   it('mỗi app có tên hiện trên cả hai kiểu máy, không app nào bị bỏ quên', () => {
     const all = new Set(PHONE_LIST.flatMap((p) => appsOf(p).map((a) => a.id)));
-    expect([...all].sort()).toEqual(['battery', 'contacts', 'ledger', 'music', 'radio', 'sms', 'wap']);
+    expect([...all].sort()).toEqual(['battery', 'contacts', 'ledger', 'music', 'radio', 'shop', 'sms', 'wap']);
   });
 
   it('máy mua ở tiệm là máy duy nhất đang cắm sim, không mở được app khi hết pin', () => {

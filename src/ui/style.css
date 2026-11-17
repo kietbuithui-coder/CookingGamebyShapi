@@ -338,3 +338,9 @@ svg.pg { width: 1.85em; height: 1.85em; fill: none; stroke: currentColor; stroke
 .pkeys.touch { padding-top: .3em; }
 .pkeys.touch .key.home { width: 2.2em; height: 2.2em; border-radius: 50%; font-size: .95em; }
 @media (max-width: 520px) { .phonewrap { gap: .5em; } .phoneside { min-width: 9em; font-size: .92em; } }
+
+.plist .row em.ok, .plist .row em.bad { font-style: normal; font-weight: 800; font-size: .82em; padding: 0 .35em; border-radius: .4em; }
+.plist .row em.ok { background: rgba(63, 174, 90, .22); color: #1d6b32; }
+.plist .row em.bad { background: rgba(217, 70, 60, .2); color: #8f1d16; }
+.plist .row s.hint { opacity: .9; font-style: italic; }
+.plist .row .btn.small { flex: none; align-self: center; }

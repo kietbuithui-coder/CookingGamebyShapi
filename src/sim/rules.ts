@@ -1108,6 +1108,86 @@ export function setAutoBook(g: Game, on: boolean): boolean {
   return true;
 }
 
+// ───────────────────────── Bảng điều khiển cửa hàng trên điện thoại ─────────────────────────
+/** Một dòng trong app "Quản lý cửa hàng": quầy chính và (nếu có) chi nhánh. Luật thuần, UI chỉ vẽ. */
+export interface ShopRow {
+  id: 'main' | 'branch';
+  name: string;
+  /** Đang bán / tạm đóng. */
+  open: boolean;
+  /** Có người đứng bán (quầy chính: người chơi; chi nhánh: người trông coi). */
+  staffed: boolean;
+  /** Số phần đang bày, số món khác nhau, món sắp hết (≤ 1 phần). */
+  stock: number; kinds: number; low: number;
+  /** Tiền thuê chỗ mỗi ngày (quầy chính: phí chỗ sạp, 0 nếu chưa tới bậc 3; chi nhánh: rent). */
+  rent: number;
+  /** Sổ hôm nay. */
+  revenue: number; sold: number; customers: number; lost: number;
+  /** Câu gợi ý ngắn cho người chơi biết nên làm gì tiếp. */
+  hint: string;
+  canToggle: boolean;
+  canStock: boolean;
+}
+/** Quầy chính: đọc từ g.stall; chi nhánh: đọc từ g.branch. Dùng cho app điện thoại. */
+export function shopRows(g: Game): ShopRow[] {
+  const s = g.stall, out: ShopRow[] = [];
+  const ready = s.ready.filter((r) => r.n > 1e-6);
+  const stock = ready.reduce((a, r) => a + r.n, 0);
+  const placed = s.where === 'placed';
+  out.push({
+    id: 'main', name: placed ? `Quầy chính · ${spotById(s.spot ?? '')?.name ?? 'ngoài phố'}` : 'Quầy chính · đang mang theo',
+    open: !!s.open, staffed: placed, stock, kinds: ready.length, low: ready.filter((r) => r.n <= 1).length,
+    rent: s.tier >= 3 ? stallRent(g) : 0,
+    revenue: g.led.revenue, sold: g.led.sold, customers: g.led.customers, lost: g.led.lost,
+    hint: !placed ? 'Quầy chưa đặt ra phố — ra mặt bằng rồi dựng quầy mới bán được.'
+      : !menuOf(g).length ? 'Chưa bật món nào trong thực đơn.'
+      : stock <= 0 ? 'Không còn phần nào trên khay — nấu thêm hoặc chuyển món từ kho.'
+      : !s.open ? 'Đang tạm đóng — mở bán đi.' : low0Text(ready.length),
+    canToggle: placed, canStock: stock > 0,
+  });
+  const b = g.branch;
+  if (b) {
+    const br = b.ready.filter((r) => r.n > 1e-6);
+    out.push({
+      id: 'branch', name: `Chi nhánh · ${spotById(b.spot)?.name ?? '?'}`,
+      open: !!b.open, staffed: !!b.keeper, stock: br.reduce((a, r) => a + r.n, 0), kinds: br.length,
+      low: br.filter((r) => r.n <= 1).length, rent: b.rent,
+      revenue: b.led.revenue, sold: b.led.sold, customers: b.led.customers, lost: b.led.lost,
+      hint: !b.keeper ? 'Chưa có người trông coi — thuê người thì chi nhánh mới bán.'
+        : !b.open ? 'Chi nhánh đang đóng (thiếu tiền thuê hoặc bạn tắt) — mở lại đi.'
+        : br.length === 0 ? 'Khay trống — chuyển món đã làm sẵn sang đây.'
+        : `Đang bán · còn ${br.reduce((a, r) => a + r.n, 0)} phần`,
+      canToggle: !!b.keeper, canStock: br.length > 0,
+    });
+  }
+  return out;
+}
+const low0Text = (kinds: number) => (kinds ? 'Đang bán — có món sắp hết, nấu thêm.' : 'Đang bán.');
+/** Bật/tắt bán một điểm (chỉ đổi cờ, không đụng tới khách đang ăn — phần đó do StallSys lo). */
+export function setShopOpen(g: Game, id: 'main' | 'branch', on: boolean): boolean {
+  if (id === 'main') {
+    const s = g.stall;
+    if (s.where !== 'placed' || !menuOf(g).length) return false;
+    s.open = on; bus.emit('ui', 'stall');
+  } else {
+    const b = g.branch;
+    if (!b || !b.keeper) return false;
+    b.open = on; bus.emit('ui', 'branch');
+  }
+  bus.emit('save', 'mo/dong ban');
+  return true;
+}
+/** Cảnh báo loại "bán lỗ": món nào đang bán giá thấp hơn giá vốn nguyên liệu + công. */
+export function lossDishes(g: Game): { rid: string; price: number; cost: number }[] {
+  const out: { rid: string; price: number; cost: number }[] = [];
+  for (const r of menuOf(g)) {
+    const price = g.rec[r.id]?.price ?? 0;
+    const cost = recipeCost(g, r).total;
+    if (price > 0 && cost > 0 && price < cost) out.push({ rid: r.id, price, cost });
+  }
+  return out.sort((a, b) => a.price - a.cost - (b.price - b.cost));
+}
+
 // ───────────────────────── Chuỗi cửa hàng (bậc 7) — chi nhánh & người trông coi ─────────────────────────
 /** Đã lên Chuỗi cửa hàng (bậc 7) chưa: chỉ bậc này mới mở được chi nhánh thứ hai. */
 export const isChain = (g: Game) => g.stall.tier >= 7;

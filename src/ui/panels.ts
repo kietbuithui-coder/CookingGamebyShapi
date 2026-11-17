@@ -55,7 +55,7 @@ function errandBlock(g: Game): string {
 
 export function openPanel(ui: UI, name: string) {
   const M = ui.$('modal'), g = ctx.g;
-  let devTaps = 0, devOpen = false, phoneOpened = false;
+  let devTaps = 0, devOpen = false;
   const draw = (title: string, tabs: [string, string][], body: string, foot = '') => {
     M.innerHTML = `<div class="panel"><header><h2>${title}</h2><div class="tabs">${tabs.map(([id, t]) => `<button class="tab${id === tab ? ' on' : ''}" data-tab="${id}">${t}</button>`).join('')}</div><button class="x" data-a="close">${ic('x')}</button></header><div class="body">${body}</div>${foot ? `<div class="foot">${foot}</div>` : ''}</div>`;
   };
@@ -328,8 +328,6 @@ export function openPanel(ui: UI, name: string) {
         draw(`${ic('info')} Chưa có điện thoại`, [], `<p class="muted">Trong túi chưa có máy nào. Tiệm Đồ Nghề Ba Tài ở Phố Trung Tâm bán ba mẫu: cục gạch (180.000₫), nắp gập (520.000₫) và cảm ứng (1.450.000₫).</p>`);
         return;
       }
-      // chỉ đưa về màn hình chính khi MỞ máy, không phải mỗi lần vẽ lại
-      if (!phoneOpened) { phoneOpened = true; PUI.resetPhoneView(); }
       acts.phonehome = () => { if (PUI.phoneView().app === 'home') ui.closePanel(); else PUI.phoneKey('home'); };
       acts.phoneup = () => PUI.phoneKey('up');
       acts.phonedown = () => PUI.phoneKey('down');
@@ -337,6 +335,7 @@ export function openPanel(ui: UI, name: string) {
       acts.phonepick = (i) => PUI.phoneKey('pick', i);
       acts.phoneopen = (_i, e) => PUI.phoneKey('open', e.dataset.k!);
       acts.phonerow = (i) => PUI.phoneRow(i);
+      acts.phshop = (_i, e) => PUI.phoneToggleShop(e.dataset.k as 'main' | 'branch');
       const sh = PUI.phoneShell(g, m);
       draw(sh.title, [], sh.html, sh.foot);
     } else if (name === 'map') {

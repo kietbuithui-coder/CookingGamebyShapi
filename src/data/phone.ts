@@ -36,7 +36,7 @@ export const FEAT_LABEL: Record<PhoneFeat, string> = {
 };
 
 /** Danh mục app trên máy — dùng cho cả ba giao diện (cục gạch, nắp gập, cảm ứng). */
-export type AppId = PhoneFeat | 'battery';
+export type AppId = PhoneFeat | 'battery' | 'shop';
 export interface AppDef { id: AppId; name: string; short: string; }
 export const PHONE_APPS: AppDef[] = [
   { id: 'ledger', name: 'Sổ thu chi', short: 'Sổ sách' },
@@ -46,6 +46,9 @@ export const PHONE_APPS: AppDef[] = [
   { id: 'music', name: 'Nghe nhạc', short: 'Nhạc' },
   { id: 'wap', name: 'Lướt web', short: 'WAP' },
   { id: 'battery', name: 'Pin & sạc', short: 'Pin' },
+  { id: 'shop', name: 'Quản lý cửa hàng', short: 'Cửa hàng' },
 ];
 /** Máy này mở được app nào: theo `feats` của máy, riêng mục Pin thì máy nào cũng có. */
-export const appsOf = (m: PhoneDef): AppDef[] => PHONE_APPS.filter((a) => a.id === 'battery' || m.feats.includes(a.id as PhoneFeat));
+/** App "Quản lý cửa hàng" mở được trên mọi máy (điện thoại nào cũng xem được quầy của mình). */
+export const ALWAYS_APPS: AppId[] = ['battery', 'shop'];
+export const appsOf = (m: PhoneDef): AppDef[] => PHONE_APPS.filter((a) => ALWAYS_APPS.includes(a.id) || m.feats.includes(a.id as PhoneFeat));

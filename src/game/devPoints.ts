@@ -6,8 +6,10 @@ import * as R from '../sim/rules';
 import { RECIPES } from '../data/recipes';
 import { SPOTS, CORR } from '../world/layout';
 import { toast } from '../core/bus';
+import * as PUI from '../ui/phoneUI';
+const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Ba giao diện điện thoại riêng: cục gạch phím cứng · nắp gập xoay vòng · cảm ứng lưới icon';
+export const DEV_BUILD_TAG = 'App Quản lý cửa hàng trên điện thoại: xem quầy chính + chi nhánh, bật/tắt bán từ xa, cảnh báo bán lỗ';
 
 export interface DevAction {
   id: string;
@@ -66,42 +68,74 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Giao diện 3 mẫu điện thoại (lượt 22)',
+      title: 'Mới nhất — App Quản lý cửa hàng trên điện thoại (lượt 23)',
       items: [
         {
-          id: 'phone_cucgach',
-          label: 'Mở máy CỤC GẠCH (màn đen trắng + phím cứng ▲ OK ▼)',
-          sub: 'Máy rẻ nhất: chỉ Sổ thu chi, Danh bạ, Tin nhắn. Dùng ▲▼ chọn, OK để mở — như Nokia 1110i',
+          id: 'setup_shopapp',
+          label: 'Dựng nhà hàng bậc 7 + quầy đang bán + chi nhánh có người trông coi, mở app',
+          sub: 'Bày 2 món sẵn (một món còn đúng 1 phần), chi nhánh có 3 phần — xem app báo gì',
           tone: 'green',
-          closePanel: false,
-          run: () => { const g = ctx.g; g.gear.cucgach = 100; g.phone = { id: 'cucgach', battery: 82 }; ctx.ui.closePanel(); ctx.ui.panel('phone'); },
-        },
-        {
-          id: 'phone_napgap',
-          label: 'Mở máy NẮP GẬP (xoay vòng icon, phím TÁCH)',
-          sub: 'Màn hình màu nhỏ: thêm Radio FM và Nghe nhạc. ▲▼ xoay vòng, TÁCH để mở app đang chọn',
-          closePanel: false,
-          run: () => { const g = ctx.g; g.gear.napgap = 100; g.phone = { id: 'napgap', battery: 66 }; ctx.ui.closePanel(); ctx.ui.panel('phone'); },
-        },
-        {
-          id: 'phone_camung',
-          label: 'Mở máy CẢM ỨNG (lưới icon, bấm thẳng)',
-          sub: 'Máy xịn nhất: đủ 6 app gồm Lướt web WAP; bấm thẳng vào icon để mở, nút ● để về màn hình chính',
-          tone: 'green',
-          closePanel: false,
-          run: () => { const g = ctx.g; g.gear.camung = 100; g.phone = { id: 'camung', battery: 45 }; ctx.ui.closePanel(); ctx.ui.panel('phone'); },
-        },
-        {
-          id: 'phone_unread',
-          label: 'Đẩy pin xuống 8% + tạo tin nhắn chưa đọc để thử máy',
-          sub: 'Xem cảnh báo pin đỏ trên cả ba máy và chấm đỏ ở icon Tin nhắn trên màn hình chính',
           closePanel: false,
           run: () => {
             const g = ctx.g;
-            if (!g.phone) { toast('Chưa có máy nào — bấm một trong ba mục phía trên trước.', 'warn'); return; }
-            g.phone.battery = 8;
-            delete g.flags.smsSeen;
-            toast('Pin còn 8% và có tin mới — mở máy xem cảnh báo.', 'info', 'bolt');
+            g.cash = Math.max(g.cash, 3000000); g.stall.tier = 7; g.stall.where = 'placed'; g.stall.spot = 'cho';
+            for (const id of ['daothot', 'bepthan', 'vi', 'noi', 'chao', 'bepgas']) if (!R.has(g, id)) R.buyGear(g, id);
+            for (const rid of ['com_suon', 'tra_da']) { g.rec[rid].known = true; g.rec[rid].on = true; g.rec[rid].price = R.suggestPrice(g, RECIPES[rid]); }
+            g.stall.ready = [{ rid: 'com_suon', n: 5, q: 1, at: 0, cost: 12000 }, { rid: 'tra_da', n: 1, q: 1, at: 0, cost: 3000 }];
+            if (!g.branch) { R.openBranch(g, 'cho'); if (g.branch) R.hireKeeper(g); }
+            if (g.branch && !g.branch.keeper) R.hireKeeper(g);
+            if (g.branch) R.moveToBranch(g, 'com_suon', 3);
+            g.gear.camung = 100; g.phone = { id: 'camung', battery: 72 };
+            ctx.stall.refresh();
+            ctx.ui.closePanel(); ctx.ui.panel('phone');
+            // mở thẳng app Cửa hàng
+            const P = PUIphone();
+            P.phoneKey('open', 'shop');
+            ctx.ui.reopenPanel('phone');
+          },
+        },
+        {
+          id: 'shopapp_open',
+          label: 'Mở thẳng app Quản lý cửa hàng (máy cảm ứng)',
+          sub: 'Xem quầy chính + chi nhánh, số phần đang bày, tiền thuê, doanh thu hôm nay và câu gợi ý',
+          closePanel: false,
+          run: () => {
+            const g = ctx.g;
+            if (!g.phone) { g.gear.camung = 100; g.phone = { id: 'camung', battery: 72 }; }
+            ctx.ui.closePanel(); ctx.ui.panel('phone');
+            PUIphone().phoneKey('open', 'shop');
+            ctx.ui.reopenPanel('phone');
+          },
+        },
+        {
+          id: 'shopapp_loss',
+          label: 'Đặt giá cơm sườn xuống 2.000₫ để xem cảnh báo bán lỗ',
+          sub: 'App so giá bán với giá vốn thật của món rồi báo lỗ bao nhiêu một phần',
+          tone: 'yellow',
+          closePanel: false,
+          run: () => {
+            const g = ctx.g, rid = 'com_suon';
+            if (!g.rec[rid]) { toast('Chưa có món cơm sườn.', 'warn'); return; }
+            g.rec[rid].price = 2000; g.rec[rid].on = true;
+            toast('Giá cơm sườn giờ còn 2.000₫ — mở app xem cảnh báo bán lỗ.', 'info', 'cash');
+            ctx.ui.closePanel(); ctx.ui.panel('phone');
+            PUIphone().phoneKey('open', 'shop');
+            ctx.ui.reopenPanel('phone');
+          },
+        },
+        {
+          id: 'shopapp_toggle',
+          label: 'Bật/tắt bán quầy chính và chi nhánh từ điện thoại',
+          sub: 'Chạy thẳng luật setShopOpen — không cần chạy ra quầy, cũng không cần đứng gần',
+          closePanel: false,
+          run: () => {
+            const g = ctx.g;
+            const before = [g.stall.open, !!g.branch?.open];
+            R.setShopOpen(g, 'main', !g.stall.open);
+            if (g.branch?.keeper) R.setShopOpen(g, 'branch', !g.branch.open);
+            toast(`Quầy chính: ${g.stall.open ? 'mở' : 'đóng'} · chi nhánh: ${g.branch ? (g.branch.open ? 'mở' : 'đóng') : 'chưa có'} (trước: ${before[0] ? 'mở' : 'đóng'}/${before[1] ? 'mở' : 'đóng'}).`, 'good', 'shop');
+            ctx.ui.closePanel(); ctx.ui.panel('phone');
+            PUIphone().phoneKey('open', 'shop');
             ctx.ui.reopenPanel('phone');
           },
         },
