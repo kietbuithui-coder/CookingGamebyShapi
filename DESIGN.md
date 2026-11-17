@@ -19,7 +19,7 @@ Một vòng chơi trọn vẹn và thật sự chạy được: **tay trắng �
 
 Hai nguyên tắc giữ cho mã kiểm thử được:
 
-1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 386 bài kiểm thử (28 tệp) chạy trong Node trong khoảng 7 giây.
+1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 388 bài kiểm thử (28 tệp) chạy trong Node trong khoảng 7 giây.
 2. **Mọi ngẫu nhiên trong luật chơi nhận một `RNG` có hạt giống** làm tham số cuối, nên kết quả kiểm thử lặp lại được.
 
 Vòng lặp chính (`src/main.ts`): đọc điều khiển → `advance()` cho thời gian game trôi (0,75 phút game mỗi giây thật, một ngày = 32 phút thật; khi ngủ 48 phút game mỗi giây) → cập nhật người chơi, NPC, quầy, nấu ăn, môi trường → vẽ. `dt` bị chặn ở 50 ms nên máy rất chậm thì game chạy chậm lại chứ không nhảy cóc.
@@ -706,10 +706,24 @@ probe: `rotY` đổi −77°, `box.on` → `false` nên đi qua được), hết
 bấm chuông **ngoài giờ** vẫn mở cửa; gợi ý trên nút đổi theo giờ: "Ngoài giờ (6h–22h) nhưng bấm chuông thì chủ nhà
 vẫn ra mở cửa". Cùng cơ chế này dùng cho nhà riêng và cửa hàng.
 
-**Kiểm thử.** `tests/vua2.test.ts` (9 bài): hai vựa là hai lô `kind: 'scrap'` ở hai khu khác nhau, mỗi vựa có chủ
+**Chủ nhà bước ra đúng ô cửa.** Trước đây `ringBell` lấy **neo chuông** làm tâm rồi đẩy nhân vật ra theo hướng người chơi,
+nên với cửa lệch khỏi neo (căn hộ An Bình: cửa `(6,2 … 8,0)` còn neo `bell_canho` ở `x 5,05`) chủ nhà hiện ra **xuyên
+tường**, chỗ tấm biển “CĂN 102”, chứ không qua cánh cửa. Nay `Interact.bellDoor(homeId)` trả cánh cửa của căn đang mở to
+nhất; `ringBell` lấy **tâm ô cửa** (`bản lề + yaw * w/2`) và **pháp tuyến của cánh cửa**, tự chọn phía người chơi đang đứng
+làm phía ngoài, rồi mới đặt điểm đi ra (+0,9 m) và điểm xuất phát (−1,45 m). Nhân vật vì thế **đi qua ô cửa**: probe đo
+được lúc đầu ở phía trong (cách mặt cửa −1,3 m), sau 1,3 giây đã ở phía ngoài, lệch dọc theo ô cửa **0 m**. Đồng thời
+chờ **1,62 giây** (trước 0,62) mới mở lời thoại để cửa kịp xoay mở, và lời nhắc tại chỗ dài 3,2 giây.
+
+**Bỏ biển dọc chìa ra đường.** Mỗi tiệm ở dãy phố sinh ngẫu nhiên có 30% gắn thêm biển dọc “Tiệm Vàng Kim” chìa ra
+lòng đường (`shop.blade`, `src/world/city.ts`). Nó vượt qua ban công nhà mình nhưng lại **che mất biển ngang của tiệm bên
+cạnh** và che cả mặt tiền — người chơi phản ánh. Nay bỏ hẳn; hai lần gọi `R.chance` vẫn giữ để cách bốc ngẫu nhiên của
+cả khu phố không đổi (không xáo tung toàn bộ thành phố đã quen mắt).
+
+**Kiểm thử.** `tests/vua2.test.ts` (11 bài): hai vựa là hai lô `kind: 'scrap'` ở hai khu khác nhau, mỗi vựa có chủ
 riêng và cùng giờ mở cửa, ve chai không bán nhầm ở tiệm cầm đồ, bán ở vựa nào cũng ra đúng giá và `tot.scrap` chỉ
 cộng một lần, bán vựa này không mất đồ của vựa kia, cộng thêm 3 bài canh chuyện cửa: cửa căn hộ An Bình có `lock`
-là `'canho'`, `openBellDoor` so theo `lock` (không còn `d.d.home`), và chủ nhà ra mở cửa kể cả ngoài giờ.
+là `'canho'`, `openBellDoor` so theo `lock` (không còn `d.d.home`), chủ nhà ra mở cửa kể cả ngoài giờ, chủ nhà đi ra đúng ô cửa (so tâm cửa + pháp tuyến, chờ ≥ 1,2 giây mới nói), và
+không còn biển dọc chìa ra đường.
 
 ## 5. Điều khiển cảm ứng
 

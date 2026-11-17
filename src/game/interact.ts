@@ -152,6 +152,12 @@ export class Interact {
   }
   /** Cửa của một căn (canho/nharieng/cuahang…) biết chủ nhà qua `lock` của DoorDef. */
   private doorHome(d: { lock?: string }) { return d.lock; }
+  /** Cửa nào của căn đó đang mở to nhất (để chủ nhà bước ra đúng ô cửa, không xuyên tường). */
+  bellDoor(homeId: string) {
+    let best: { d: any; m: THREE.Mesh; open: number; want: number } | null = null;
+    for (const d of this.doors) if (this.doorHome(d.d) === homeId && (!best || d.open > best.open)) best = d;
+    return best;
+  }
   openBellDoor(homeId: string, sec = 10) {
     let n = 0;
     for (const d of this.doors) if (this.doorHome(d.d) === homeId) { d.want = 1; d.bellUntil = ctx.time + sec; n++; }

@@ -45,39 +45,42 @@ export default [boot, fresh(10 * 60),
   }, wait: 1800 },
   { shot: 'vua2-02-cua-dong.png' },
 
-  { label: '②b lùi ra xa 4m để nhìn rõ cả cánh cửa' },
+  { label: '②b đứng đúng trước cửa (nhìn thẳng vào ô cửa)' },
   { eval: async () => {
     const G = window.__game, d = G.interact.doors.find((x) => x.d.lock === 'canho').d;
-    const px = d.x + d.w / 2 + 2.4, pz = d.z - 3.4;          // đứng chéo để thấy rõ cánh cửa
-    G.player.place(px, pz, Math.atan2(d.x + d.w / 2 - px, d.z - pz));
+    const cx = d.x + Math.cos(d.yaw) * d.w * 0.5, cz = d.z + Math.sin(d.yaw) * d.w * 0.5;
+    const nx = -Math.sin(d.yaw), nz = Math.cos(d.yaw);
+    G.player.place(cx + nx * 2.4, cz + nz * 2.4, Math.atan2(cx - (cx + nx * 2.4), cz - (cz + nz * 2.4)));
     await new Promise((r) => setTimeout(r, 900));
-    return true;
+    return { doorCentre: [Math.round(cx * 100) / 100, Math.round(cz * 100) / 100] };
   }, wait: 1100 },
   { shot: 'vua2-02b-cua-truoc-khi-bam.png' },
 
-  { label: '②b bấm chuông → đo góc mở của cánh cửa + chủ nhà có ra ngoài không' },
+  { label: '②c bấm chuông → cửa mở, chủ nhà đi ra đúng ô cửa (không xuyên tường)' },
   { eval: async () => {
     const G = window.__game, I = G.interact, m = window.__dev;
     const d = I.doors.find((x) => x.d.lock === 'canho');
     const before = { open: d?.open ?? null, want: d?.want ?? null, rotY: d?.m.rotation.y ?? null };
     m.getDevSections()[0].items.find((i) => i.id === 'bell_now').run();
-    await new Promise((r) => setTimeout(r, 1200));   // cửa damp 9/s nên ~1 giây là mở hết
+    const n0 = G.npcs.fixed.get('canho');
+    const start = { x: n0.x, z: n0.z, t: G.time };
+    await new Promise((r) => setTimeout(r, 1300));   // cửa damp 9/s nên ~1 giây là mở gần hết
     const after = { open: d?.open ?? null, want: d?.want ?? null, rotY: d?.m.rotation.y ?? null, boxOn: d?.d.box.on ?? null };
-    const npc = G.npcs.fixed.get('canho');
+    const dd = d.d;
+    const cx = dd.x + Math.cos(dd.yaw) * dd.w * 0.5, cz = dd.z + Math.sin(dd.yaw) * dd.w * 0.5;
+    const nx = -Math.sin(dd.yaw), nz = Math.cos(dd.yaw);
+    // "ra khỏi cửa" = từ phía trong (âm pháp tuyến) sang phía ngoài (dương pháp tuyến), và bám sát ô cửa
+    const sideOf = (x, z) => (x - cx) * nx + (z - cz) * nz;
     return { before, after, doorMovedDeg: Math.round(((after.rotY ?? 0) - (before.rotY ?? 0)) * 180 / Math.PI),
-      npcVisible: !npc?.hidden, npcOut: !!npc?.bellOut };
+      npcVisible: !n0?.hidden, npcOut: !!n0?.bellOut,
+      startSide: Math.round(sideOf(start.x, start.z) * 100) / 100,
+      nowSide: Math.round(sideOf(n0.x, n0.z) * 100) / 100,
+      nowAlongDoor: Math.round(Math.abs((n0.x - cx) * Math.cos(dd.yaw) + (n0.z - cz) * Math.sin(dd.yaw)) * 100) / 100,
+      travelled: Math.round(Math.hypot(n0.x - start.x, n0.z - start.z) * 100) / 100 };
   }, wait: 1500 },
-  { label: '②b dời góc nhìn sang chéo cánh cửa để thấy nó đang mở' },
-  { eval: async () => {
-    const G = window.__game, d = G.interact.doors.find((x) => x.d.lock === 'canho').d;
-    const px = d.x + d.w / 2 + 2.4, pz = d.z - 3.4;
-    G.player.place(px, pz, Math.atan2(d.x + d.w / 2 - px, d.z - pz));
-    await new Promise((r) => setTimeout(r, 900));
-    return { open: Math.round(G.interact.doors.find((x) => x.d.lock === 'canho').open * 100) / 100 };
-  }, wait: 1100 },
   { shot: 'vua2-03-cua-mo.png' },
 
-  { label: '②c tua hết 16 giây hẹn giờ → cửa tự đóng lại' },
+  { label: '②d tua hết 16 giây hẹn giờ → cửa tự đóng lại' },
   { eval: async () => {
     const G = window.__game, I = G.interact;
     const d = I.doors.find((x) => x.d.lock === 'canho');

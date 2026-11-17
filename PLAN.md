@@ -468,7 +468,12 @@ cả nhà riêng và cửa hàng; bấm chuông ngoài giờ chủ nhà vẫn ra
 và **Cửa căn hộ An Bình**) cùng 4 mục mới của lượt này: tới vựa Bà Chín kèm ve chai trong túi, bán hết ve chai, tới cửa
 căn hộ, và bấm chuông ngay.
 
-**Kiểm thử:** thêm `tests/vua2.test.ts` 9 bài → tổng **386 bài / 28 tệp**. Probe `tools/probe/steps/vua2.mjs` ở 390×844:
+**Kiểm thử:** thêm `tests/vua2.test.ts` 11 bài → tổng **388 bài / 28 tệp**. Probe `tools/probe/steps/vua2.mjs` ở 390×844:
 tele tới vựa Bà Chín (neo `v_scrap2` ở `x 78,6 / z −6,6`, Bà Chín hiện ra), bán 5 chai + 5 lon + 5 bìa + 5 sắt được
 51.500₫ và `tot.scrap` cũng đúng 51.500₫ → tới cửa căn hộ bấm chuông: `want 0→1`, cửa xoay **−77°**, `box.on → false`,
 chủ nhà bước ra ngoài hiên → tua hết 16 giây thì `want 0`, cửa đóng lại, `box.on → true`; **console sạch**.
+
+**Vá sau khi chơi thử:** bỏ biển dọc chìa ra đường (nó che biển tiệm bên cạnh và che cả mặt tiền — ảnh người chơi gửi),
+và sửa chuyện chủ nhà hiện ra **xuyên tường**: `ringBell` nay lấy tâm ô cửa + pháp tuyến của cánh cửa (qua
+`Interact.bellDoor`) thay vì lấy neo chuông làm tâm, nên Cô Hạnh **đi ra qua đúng ô cửa**; thời gian chờ trước khi mở
+lời thoại tăng 0,62 → 1,62 giây cho cửa kịp xoay mở.

@@ -8,6 +8,8 @@ import { PLACE_HOURS } from '../src/game/npc';
 import placesSrc from '../src/world/places.ts?raw';
 import interactSrc from '../src/game/interact.ts?raw';
 import npcSrc from '../src/game/npc.ts?raw';
+import citySrc from '../src/world/city.ts?raw';
+import actsSrc from '../src/game/acts.ts?raw';
 import { fresh } from './helpers';
 
 // Dự án không dựng được world 3D trong vitest nên kiểm tra thẳng dữ liệu cửa của căn hộ.
@@ -24,6 +26,22 @@ describe('bấm chuông căn hộ', () => {
     expect(interactSrc).toMatch(/doorHome\(d: \{ lock\?: string \}\) \{ return d\.lock; \}/);
     expect(interactSrc).toMatch(/if \(this\.doorHome\(d\.d\) === homeId\) \{ d\.want = 1;/);
     expect(interactSrc).not.toMatch(/d\.d\.home/);
+  });
+
+  it('chủ nhà bước ra đúng ô cửa của căn (không hiện ra xuyên tường)', () => {
+    // ringBell phải lấy tâm ô cửa + pháp tuyến của cánh cửa làm gốc, và đứng về phía người chơi
+    expect(actsSrc).toMatch(/const dr = ctx\.interact\.bellDoor\(hid\)/);
+    expect(actsSrc).toMatch(/phía người chơi đứng = phía ngoài/);
+    expect(interactSrc).toMatch(/bellDoor\(homeId: string\)/);
+    // và phải chờ cửa mở xong mới nói chuyện (≥ 1,2 giây, trước đây 0,62)
+    const m = actsSrc.match(/\}, (\d{3,4})\);/);
+    expect(m).toBeTruthy();
+    expect(Number(m![1])).toBeGreaterThanOrEqual(1200);
+  });
+
+  it('không còn biển dọc chìa ra đường che biển tiệm bên cạnh', () => {
+    expect(citySrc).not.toContain('vertical: true');
+    expect(citySrc).not.toContain('shop.blade');
   });
 
   it('chủ nhà ra mở cửa kể cả ngoài giờ mở cửa', () => {

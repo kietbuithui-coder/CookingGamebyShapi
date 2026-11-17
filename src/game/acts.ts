@@ -535,21 +535,32 @@ export class Acts {
     ctx.sound.play('bell');
     ctx.interact.openBellDoor(hid, 16);
     if (!n) { toast('Đing đong! Nhưng không thấy ai ở nhà.', 'info'); return; }
-    const ax = bellAnchor?.x ?? p.x, az = bellAnchor?.z ?? p.z;
-    const dx = p.x - ax, dz = p.z - az, dl = Math.hypot(dx, dz) || 1;
+    let ax = bellAnchor?.x ?? p.x, az = bellAnchor?.z ?? p.z;
+    // Đi ra ĐÚNG ô cửa của căn: vị trí bản lề + nửa bề ngang cánh, đứng về phía người chơi.
+    // (Trước đây lấy neo chuông làm tâm nên với cửa lệch khỏi neo thì nhân vật hiện ra ngay giữa tường.)
+    const dr = ctx.interact.bellDoor(hid);
+    if (dr) {
+      const { x: hx, z: hz, yaw, w } = dr.d;
+      const cx = hx + Math.cos(yaw) * w * 0.5, cz = hz + Math.sin(yaw) * w * 0.5;   // giữa ô cửa
+      const nx = -Math.sin(yaw), nz = Math.cos(yaw);                                 // pháp tuyến của cánh cửa
+      const side = (p.x - cx) * nx + (p.z - cz) * nz >= 0 ? 1 : -1;                   // phía người chơi đứng = phía ngoài
+      ax = cx + nx * side * 0.15; az = cz + nz * side * 0.15;
+    }
+    const dl2 = Math.hypot(p.x - ax, p.z - az) || 1, ux = (p.x - ax) / dl2, uz = (p.z - az) / dl2;
     // Điểm đứng ngay trước cửa (ngoài hiên, đối diện người chơi) và điểm xuất phát ngay sau cánh cửa đang mở
-    const outX = ax + (dx / dl) * 0.9, outZ = az + (dz / dl) * 0.9;
-    const inX = ax - (dx / dl) * 1.45, inZ = az - (dz / dl) * 1.45;
+    const outX = ax + ux * 0.9, outZ = az + uz * 0.9;
+    const inX = ax - ux * 1.45, inZ = az - uz * 1.45;
     n.x = inX; n.z = inZ; n.hidden = false; n.rig.root.visible = true;
-    n.bellOut = { x: outX, z: outZ, yaw: Math.atan2(p.x - outX, p.z - outZ), until: ctx.time + 26 };
+    n.bellOut = { x: outX, z: outZ, yaw: Math.atan2(p.x - outX, p.z - outZ), until: ctx.time + 27 };
     toast('Đing đong! Chủ nhà đang mở cửa bước ra...', 'info', 'home');
-    ctx.npcs.say(n, 'Ai bấm chuông vậy? Chờ chút nha!', 2.2);
+    ctx.npcs.say(n, 'Ai bấm chuông vậy? Chờ chút nha!', 3.2);
+    // Chờ cửa xoay mở xong rồi mới nói chuyện (trước đây 0,62 giây, cửa chưa kịp mở đã thấy mặt).
     setTimeout(() => {
       if (ctx.mode === 'play') {
         ctx.player.face(n.x, n.z);
         this.talk(n);
       }
-    }, 620);
+    }, 1620);
   }
   beg(n: Npc) {
     const g = this.g, a = n.arch;
