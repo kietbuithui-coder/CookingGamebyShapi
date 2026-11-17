@@ -6,7 +6,7 @@ import { ganhModel, cartModel, charcoalStove, gasStove, boardModel, knifeModel, 
 import { takeawayBag, servingTray, Look } from '../gfx/people';
 import { SPOTS, Spot, spotById, groundY, NAV_BLOCK, CORNER, edgeKey } from '../world/layout';
 import { Game, Helper, Booking, STAT_MAX, absMin, hourOf, addStack } from '../sim/state';
-import { branchTick, errandWho, arrivalRate, has, tier, menuOf, available, decide, decideGroup, review, settleSale, lostCustomer, readyCount, finishPossible, spend, earn, stove, changeRel, meet, wx, eventOn, Persona, addXp, canSell, missingFor, hasPrep, stallRoom, stallQueueCap, isNight, level, stallRent, payStallRent, helperGate, hireHelper, fireHelper, helperCandidate, helperPatience, sousCandidate, sousWork, createBooking, dueBooking, reservedSeats, expireBookings, seatCount, dineIn, isRestaurant, secondOrder, periodName, PATIENCE_RANGE } from '../sim/rules';
+import { branchTick, errandWho, arrivalRate, has, tier, menuOf, available, decide, decideGroup, review, settleSale, lostCustomer, readyCount, finishPossible, spend, earn, stove, changeRel, meet, wx, eventOn, Persona, addXp, canSell, missingFor, hasPrep, stallRoom, stallQueueCap, isNight, level, stallRent, payStallRent, helperGate, hireHelper, fireHelper, helperCandidate, helperPatience, sousCandidate, sousWork, createBooking, dueBooking, reservedSeats, expireBookings, staffReports, lowStockCount, autoBookOn, seatCount, dineIn, isRestaurant, secondOrder, periodName, PATIENCE_RANGE } from '../sim/rules';
 import { RECIPES, RecipeDef } from '../data/recipes';
 import { INGS } from '../data/ingredients';
 import { ARCH, HelperDef, LINES, REGULARS, RegularDef } from '../data/people';
@@ -41,6 +41,8 @@ export class StallSys {
   sous: Npc | null = null; sous2: Npc | null = null; private sousT = 18; private sous2T = 22; private sousWorkAnim = 0; private sous2WorkAnim = 0; private sousRetry = 0; private sous2Retry = 0;
   private sousPhase: Record<1 | 2, { idx: number; moveCd: number }> = { 1: { idx: 0, moveCd: 7 }, 2: { idx: 0, moveCd: 9 } };
   private bookT = 45; private expireT = 12; private groupSeq = 1;
+  /** Nhịp báo cáo của người làm (thiếu nguyên liệu) + chống spam. */
+  private repT = 25; private repMood = '';
   constructor() {
     ctx.scene.add(this.group); this.group.add(this.tools); this.group.visible = false;
     ctx.scene.add(this.branchGroup); this.branchGroup.visible = false;
@@ -1055,6 +1057,28 @@ export class StallSys {
     this.updateKeeper(dt);
   }
   /** Người trông coi chi nhánh: đứng sau quầy ở chỗ bán thứ hai khi chi nhánh đang mở. */
+  /**
+   * Người làm tự canh kho: khi món đang bán sắp hết nguyên liệu thì báo (tối đa 1 lần / 25 giây,
+   * và chỉ báo lại khi tình hình đổi) kèm nút nhảy tới bảng Báo cáo.
+   */
+  private staffReportTick(dt: number) {
+    const g = ctx.g, s = g.stall;
+    this.repT -= dt;
+    if (this.repT > 0) return;
+    this.repT = 25;
+    if (s.where !== 'placed' || !menuOf(g).length) return;   // quầy tạm đóng vẫn báo để kịp đi chợ
+    if (!(g.help || g.help2 || g.sous || g.sous2 || g.branch?.keeper)) return;
+    const low = lowStockCount(g);
+    const key = `${low}|${Math.floor(g.min / 120)}`;
+    if (low <= 0 || key === this.repMood) return;
+    this.repMood = key;
+    const reps = staffReports(g).filter((r) => r.dishes.length);
+    const boss = reps.find((r) => r.slot === 1 || r.slot === 2) ?? reps[0];
+    if (!boss) return;
+    const npc = boss.slot === 1 ? this.sous : boss.slot === 2 ? this.sous2 : boss.slot === 3 ? this.keeper : this.helper;
+    if (npc && npc.state !== 'gone') ctx.npcs.say(npc, boss.urgent ? `${g.ac} ơi, sắp hết đồ rồi — con đi chợ nghen?` : 'Kho còn ít đồ cho mấy món đang bán đó.', 3.2, EXPR.sad);
+    toast(`${boss.name} (${boss.role}) báo: ${boss.text}`, boss.urgent ? 'warn' : 'info', 'box');
+  }
   /** Người làm đang đi chợ: ẩn NPC khỏi quầy (họ đi bộ ở con đường khác), hiện lại khi về. */
   private errandHide(slot: 0 | 1 | 2 | 3): boolean { return ctx.g.errands.some((e) => e.slot === slot); }
   private updateKeeper(dt: number) {
@@ -1431,12 +1455,16 @@ export class StallSys {
             if (b) {
               const hh = Math.floor(b.hour), mm = Math.round((b.hour - hh) * 60);
               const hm = `${hh}h${mm ? String(mm).padStart(2, '0') : ''}`;
-              toast(`Có khách đặt bàn trước: ${b.name} (${b.size} người, ${b.day > g.day ? 'ngày mai ' : ''}${hm}) — mở Quầy › Nhân sự & Đặt bàn để nhận!`, 'info', 'star');
+              const boss = g.sous ?? g.sous2;
+              toast(autoBookOn(g)
+                ? `Khách đặt bàn: ${b.name} (${b.size} người, ${b.day > g.day ? 'ngày mai ' : ''}${hm}) — ${boss ? boss.name : 'bếp trưởng'} đã tự nhận bàn.`
+                : `Có khách đặt bàn trước: ${b.name} (${b.size} người, ${b.day > g.day ? 'ngày mai ' : ''}${hm}) — mở Quầy › Nhân sự & Đặt bàn để nhận!`, 'info', 'star');
             }
           }
         }
       }
     }
+    this.staffReportTick(dt);
     if (this.actorId) { this.actorT -= dt; if (this.actorT <= 0) this.spawnActor(); }
     // khách quen trả nợ
     this.regT -= dt; if (this.regT <= 0) { this.regT = 20; for (const r of REGULARS) { const due = g.flags['owe_' + r.id], rel = g.rel[r.id]; if (due !== undefined && g.day >= due && rel?.owe && s.open) { delete g.flags['owe_' + r.id]; if (rnd.chance(0.75)) { const pay = round1k(rel.owe * rnd.range(1, 1.6)); earn(g, pay, 'revenue'); toast(`${r.name} ghé trả ${money(pay)} tiền ăn chịu hôm trước. "Cảm ơn ${g.ac} đã thương!"`, 'good', 'heart', true); changeRel(g, r.id, 5); } else toast(`Nghe nói ${r.name} đã chuyển đi nơi khác… khoản ăn chịu coi như mất.`, 'bad', 'heart'); rel.owe = 0; } } }

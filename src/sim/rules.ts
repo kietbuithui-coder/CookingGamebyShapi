@@ -1035,6 +1035,79 @@ export function errandsNewDay(g: Game) {
   if (n) toast(`${n} chuyến đi chợ dở dang đã huỷ (hoàn 85% tiền).`, 'warn', 'box');
 }
 
+// ───────────────────────── Báo cáo của người làm: sắp hết nguyên liệu & tự duyệt đặt bàn ─────────────────────────
+export interface StaffReport {
+  /** 0 = phụ quầy, 1–2 = bếp trưởng/bếp phó, 3 = người trông coi chi nhánh. */
+  slot: 0 | 1 | 2 | 3;
+  name: string;
+  role: string;
+  /** Món đang bán mà kho sắp hết nguyên liệu (nấu được ≤ 1 phần). */
+  dishes: { rid: string; canMake: number }[];
+  /** Nguyên liệu sắp hết, kèm số phần còn nấu được. */
+  ings: { id: string; left: number; need: number }[];
+  /** Tổng tiền nếu giao người này đi chợ mua cho các món đó (0 nếu kho còn đủ). */
+  cost: number;
+  /** Có nên báo động không (để UI tô đỏ). */
+  urgent: boolean;
+  text: string;
+}
+/**
+ * Người làm tự nhìn kho và báo: món nào sắp hết nguyên liệu, thiếu gì, đi chợ hết bao nhiêu.
+ * Chỉ báo món **đang bật bán** (menu đang mở) và chỉ tính nguyên liệu còn nấu được ≤ 1 phần.
+ */
+export function staffReport(g: Game, slot: 0 | 1 | 2 | 3): StaffReport | null {
+  const who = errandWho(g, slot);
+  if (!who) return null;
+  const menu = menuOf(g);
+  const dishes: StaffReport['dishes'] = [];
+  const ing = new Map<string, { left: number; need: number }>();
+  for (const r of menu) {
+    const can = finishPossible(g, r);
+    if (can > 1) continue;
+    for (const [id, q] of Object.entries(r.ings)) {
+      const left = countOf([g.stall.store, g.bag], id);
+      if (left >= q * 2 - 1e-6) continue;
+      const cur = ing.get(id);
+      if (!cur || left < cur.left) ing.set(id, { left, need: q * 2 });
+    }
+    dishes.push({ rid: r.id, canMake: Math.max(0, can) });
+  }
+  const ings = [...ing.entries()].map(([id, v]) => ({ id, ...v })).sort((a, b) => a.left - b.left).slice(0, 6);
+  const quote = dishes.length ? errandQuote(g, errandPlanForAll(g, dishes.map((d) => RECIPES[d.rid]), 2)) : { total: 0 };
+  const cost = Math.min(quote.total, ERRAND_MAX);
+  const urgent = ings.length > 0 && (dishes.length >= 2 || ings.some((i) => i.left <= 0));
+  const text = !menu.length
+    ? `Chưa bật món nào trên thực đơn ${g.ac} ơi, con không biết phải chuẩn bị gì.`
+    : !dishes.length
+      ? `Kho còn đủ đồ cho cả ${menu.length} món đang bán. Cứ bán tiếp, cần gì con báo.`
+      : `Sắp hết đồ cho ${dishes.length} món (${dishes.slice(0, 3).map((d) => RECIPES[d.rid].short).join(', ')}${dishes.length > 3 ? '…' : ''}). Thiếu ${ings.length} thứ, đặt chợ hết khoảng ${money(cost)}. Giao con đi mua một chuyến là đủ bán tiếp.`;
+  return { slot, name: who.name, role: who.role, dishes, ings, cost, urgent, text };
+}
+/** Ai đang có mặt để báo cáo: phụ quầy, bếp trưởng/bếp phó, người trông coi chi nhánh. */
+export function staffReports(g: Game): StaffReport[] {
+  const out: StaffReport[] = [];
+  for (const sl of [1, 2, 0, 3] as (0 | 1 | 2 | 3)[]) {
+    if (g.errands.some((e) => e.slot === sl)) continue;      // đang đi chợ thì không báo
+    const r = staffReport(g, sl);
+    if (r) out.push(r);
+  }
+  return out;
+}
+/** Bao nhiêu món đang bán có nguy cơ hết nguyên liệu (dùng cho chấm đỏ trên HUD). */
+export function lowStockCount(g: Game): number {
+  if (!menuOf(g).length) return 0;
+  return menuOf(g).filter((r) => finishPossible(g, r) <= 1).length;
+}
+/** Bật/tắt quyền tự duyệt đặt bàn cho bếp trưởng (chỉ khi đã có ít nhất một bếp). */
+export function canAutoBook(g: Game): boolean { return !!g.sous || !!g.sous2; }
+export function autoBookOn(g: Game): boolean { return canAutoBook(g) && g.flags.autoBook === 1; }
+export function setAutoBook(g: Game, on: boolean): boolean {
+  if (!canAutoBook(g)) return false;
+  g.flags.autoBook = on ? 1 : 0;
+  bus.emit('save', 'tu dong duyet dat ban');
+  return true;
+}
+
 // ───────────────────────── Chuỗi cửa hàng (bậc 7) — chi nhánh & người trông coi ─────────────────────────
 /** Đã lên Chuỗi cửa hàng (bậc 7) chưa: chỉ bậc này mới mở được chi nhánh thứ hai. */
 export const isChain = (g: Game) => g.stall.tier >= 7;
@@ -1254,6 +1327,8 @@ export function createBooking(g: Game, R: RNG = rnd): Booking | null {
   const deposit = round1k(size * 12000);
   const b: Booking = { id: g.bookSeq++, name, fem, arch: archId, size, day, hour, deposit, dish, status: 'pending' };
   g.bookings.push(b);
+  // Bếp trưởng được giao quyền tự duyệt: nhận luôn thay người chơi (vẫn trừ uy tín nếu sau đó lỡ hẹn).
+  if (autoBookOn(g)) b.status = 'accepted';
   return b;
 }
 /** Nhận đặt bàn trước: giữ chỗ cho khách vào khung giờ hẹn. */

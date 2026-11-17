@@ -7,7 +7,7 @@ import { RECIPES } from '../data/recipes';
 import { SPOTS, CORR } from '../world/layout';
 import { toast } from '../core/bus';
 
-export const DEV_BUILD_TAG = 'Giao người làm đi chợ (phụ quầy · bếp trưởng · người trông coi) · sửa người trông coi đứng lọt quầy';
+export const DEV_BUILD_TAG = 'Báo cáo sắp hết nguyên liệu của bếp trưởng · nút giao quyền tự duyệt đặt bàn cho bếp trưởng';
 
 export interface DevAction {
   id: string;
@@ -66,8 +66,52 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Giao người làm đi chợ mua nguyên liệu (lượt 19)',
+      title: 'Mới nhất — Báo cáo sắp hết đồ & bếp trưởng tự duyệt đặt bàn (lượt 20)',
       items: [
+        {
+          id: 'setup_baocao',
+          label: 'Dựng nhà hàng + bếp trưởng, để kho TRỐNG rồi mở Báo cáo',
+          sub: 'Kho không còn đồ cho món đang bán → bếp trưởng báo thiếu gì, gợi ý đi chợ hết bao nhiêu',
+          tone: 'green',
+          closePanel: false,
+          run: () => {
+            setupChain('cho');
+            for (const id of ['daothot', 'bepthan', 'vi', 'noi', 'chao', 'bepgas', 'thungda', 'bien', 'den', 'ghe']) if (!R.has(ctx.g, id)) R.buyGear(ctx.g, id);
+            while (R.helperCount(ctx.g) < R.maxHelpers(ctx.g)) R.hireHelper(ctx.g);
+            while (R.sousCount(ctx.g) < R.maxSous(ctx.g)) R.hireSous(ctx.g);
+            ctx.stall.refresh();
+            ctx.ui.panel('report');
+          },
+        },
+        {
+          id: 'baocao_clear',
+          label: 'Xoá sạch kho để thấy báo cáo "sắp hết" ngay',
+          sub: 'Dọn kho quầy + túi + phần sơ chế, rồi mở lại bảng Báo cáo (món đang bán giờ nấu được 0 phần)',
+          tone: 'yellow',
+          closePanel: false,
+          run: () => {
+            const g = ctx.g;
+            g.stall.store = []; g.bag = []; g.stall.preps = [];
+            ctx.stall.refresh();
+            toast('Đã dọn sạch kho — mở Báo cáo xem bếp trưởng nói gì.', 'warn', 'box');
+            ctx.ui.panel('report');
+          },
+        },
+        {
+          id: 'book_auto',
+          label: 'Bật/tắt bếp trưởng tự duyệt đặt bàn',
+          sub: 'Bật rồi tạo 1 đặt bàn mới để thấy khách được nhận luôn (không cần vào tab Nhân sự)',
+          closePanel: false,
+          run: () => {
+            const g = ctx.g;
+            if (!R.canAutoBook(g)) { toast('Cần bếp trưởng (nhà hàng bình dân) trước đã.', 'warn', 'star'); return; }
+            const on = !R.autoBookOn(g);
+            R.setAutoBook(g, on);
+            if (on) g.bookings.filter((b) => b.status === 'pending').forEach((b) => R.acceptBooking(g, b.id));
+            const b = on ? R.createBooking(g) : null;
+            toast(on ? `Đã bật tự duyệt${b ? ` — ${b.name} (${b.size} người) được nhận luôn` : ''}.` : 'Đã tắt tự duyệt — bạn tự nhận bàn.', 'good', 'star');
+          },
+        },
         {
           id: 'setup_dicho',
           label: 'Dựng nhà hàng full + 3 người làm, rồi mở bảng Giao đi chợ',

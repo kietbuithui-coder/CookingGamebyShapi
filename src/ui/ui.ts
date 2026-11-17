@@ -14,7 +14,7 @@ import { SHOPS } from '../data/shops';
 import { DISTRICT, districtAt } from '../world/layout';
 import { STAT_MAX, hourOf } from '../sim/state';
 import { jailLeft } from '../sim/police';
-import { activeEvents, totalDebt, level, tier, hasMet, fixedLabel } from '../sim/rules';
+import { activeEvents, totalDebt, level, tier, hasMet, fixedLabel, lowStockCount } from '../sim/rules';
 import { stallHint } from '../game/stall';
 import { openPanel } from './panels';
 import * as PH from '../sim/phone';
@@ -117,6 +117,7 @@ export class UI {
     const toggleQuest = () => { this.questMin = !this.questMin; E.quest.classList.toggle('min', this.questMin); qmin.textContent = this.questMin ? '+' : '–'; };
     qmin.onclick = (e) => { e.stopPropagation(); toggleQuest(); };
     E.quest.onclick = (e) => { if ((e.target as HTMLElement).closest('.qmin')) return; toggleQuest(); };
+    E.events.onclick = (e) => { if ((e.target as HTMLElement).closest('#lowchip')) ctx.ui.panel('report'); };
     E.cart.onclick = () => { const c = ctx.acts.cart; if (c) { const v = ctx.npcs.fixed.get(c.shop); if (v) ctx.acts.way = { x: v.x, z: v.z, name: 'Tính tiền: ' + SHOPS[c.shop].name }; } };
     E.stallchip.onclick = () => { const s = ctx.g.stall; if (s.where === 'placed' || s.where === 'home') ctx.acts.way = { x: s.x, z: s.z, name: 'Quầy của bạn' }; };
     // lớp nấu ăn
@@ -295,7 +296,9 @@ export class UI {
     const way = ctx.acts.way, giaoHang = ctx.acts.job?.kind === 'delivery';
     E.way.classList.toggle('hide', !way); E.way.classList.toggle('giao', !!way && giaoHang);
     if (way) { const dx = way.x - p.x, dz = way.z - p.z, ang = Math.atan2(dx, dz) - p.yaw; E.way.innerHTML = `<svg class="ic" viewBox="0 0 24 24" style="transform:rotate(${(-ang * 180 / Math.PI).toFixed(0)}deg)">${IC.arrow}</svg>${giaoHang ? ic('box') : ''}${esc(way.name)} · ${Math.round(Math.hypot(dx, dz))} m`; }
-    const evs = activeEvents(g); E.events.innerHTML = evs.map((e) => `<span class="chip${e.danger ? ' danger' : ''}">${ic(e.icon)}${esc(e.name)}</span>`).join('') + (g.flags.sick ? `<span class="chip danger">${ic('heart')}Bị cảm</span>` : '') + (g.weather.wet > 55 ? `<span class="chip">${ic('drop')}Ướt sũng</span>` : '') + (g.weather.flood > 0.35 ? `<span class="chip">${ic('drop')}Ngập khu trũng</span>` : '');
+    // Quầy đã dựng ở chỗ (kể cả đang tạm đóng) mà món đang bán sắp hết nguyên liệu → nhắc trên HUD.
+    const lowN = ctx.g.stall.where === 'placed' && ctx.g.stall.tier > 0 ? lowStockCount(ctx.g) : 0;
+    const evs = activeEvents(g); E.events.innerHTML = (lowN ? `<span class="chip danger" id="lowchip" style="cursor:pointer">${ic('box')}Sắp hết đồ ${lowN} món · xem báo cáo</span>` : '') + evs.map((e) => `<span class="chip${e.danger ? ' danger' : ''}">${ic(e.icon)}${esc(e.name)}</span>`).join('') + (g.flags.sick ? `<span class="chip danger">${ic('heart')}Bị cảm</span>` : '') + (g.weather.wet > 55 ? `<span class="chip">${ic('drop')}Ướt sũng</span>` : '') + (g.weather.flood > 0.35 ? `<span class="chip">${ic('drop')}Ngập khu trũng</span>` : '');
     const c = ctx.acts.cart; E.cart.classList.toggle('hide', !c); if (c) E.cart.innerHTML = `${ic('bag')}Giỏ: ${c.lines.map((l) => `${l.n} ${INGS[l.id].name.toLowerCase()}`).join(', ')} — <b>${money(ctx.acts.cartTotal())}</b> · đưa ${hasMet(g, c.shop) ? SHOPS[c.shop].vendor : fixedLabel(g, c.shop).toLowerCase()} tính tiền`;
     const s = g.stall; E.stallchip.classList.toggle('hide', s.tier === 0); if (s.tier) E.stallchip.innerHTML = `${ic('shop')}${tier(g).name}: ${stallHint(g, ctx.stall.stowed)}` + (s.open ? ` · ${ctx.stall.customers.length} khách · hôm nay ${money(g.led.revenue + g.led.tips)}` : '');
     // Thanh sức bền chỉ hiện khi đang hụt so với trần hiện tại (đang chạy hoặc đang hồi), không hiện suốt chỉ vì đói/khát làm trần tụt xuống.

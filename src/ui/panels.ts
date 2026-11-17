@@ -31,6 +31,16 @@ export function ledgerBody(g: Game): string {
           <h4>Tổng kết</h4><div class="kv"><span>Tổng số phần đã bán</span><b>${g.tot.served}</b></div><div class="kv"><span>Ngày bán chạy nhất</span><b>${money(g.tot.best)}</b></div><div class="kv"><span>Tiền xin được</span><b>${money(g.tot.begged)}</b></div><div class="kv"><span>Tiền bán ve chai</span><b>${money(g.tot.scrap)}</b></div></div></div>`;
 }
 
+/** Khối "bếp trưởng tự duyệt đặt bàn" + lối vào bảng Báo cáo (tab Nhân sự). */
+function autoBookBlock(g: Game): string {
+  const can = R.canAutoBook(g), on = R.autoBookOn(g);
+  const low = R.lowStockCount(g);
+  return `<h4 style="margin-top:.8em">Báo cáo & đặt bàn</h4>` +
+    `<div class="item"><div class="grow"><b>Báo cáo của người làm</b><small>${low ? `${low} món sắp hết nguyên liệu — xem gợi ý đi chợ` : 'Kho còn đủ cho món đang bán'}</small></div><button class="btn small${low ? ' yellow' : ''}" data-a="reportOpen">Mở báo cáo</button></div>` +
+    `<div class="item"><div class="grow"><b>Bếp trưởng tự duyệt đặt bàn</b><small>${can ? (on ? 'Đang bật: khách đặt là bếp nhận luôn' : 'Đang tắt: bạn tự nhận / từ chối') : 'Cần có bếp trưởng (nhà hàng bình dân)'}</small></div>` +
+    (can ? `<button class="btn small${on ? ' green' : ''}" data-a="autoBook2">${on ? 'Đang tự duyệt' : 'Bật tự duyệt'}</button>` : '') + `</div>`;
+}
+
 /** Khối "giao đi chợ" dùng trong tab Nhân sự: ai đang đi, giao cho ai, huỷ chuyến. */
 function errandBlock(g: Game): string {
   const slots: (0 | 1 | 2 | 3)[] = [0, 1, 2, 3];
@@ -48,7 +58,16 @@ export function openPanel(ui: UI, name: string) {
   const draw = (title: string, tabs: [string, string][], body: string, foot = '') => {
     M.innerHTML = `<div class="panel"><header><h2>${title}</h2><div class="tabs">${tabs.map(([id, t]) => `<button class="tab${id === tab ? ' on' : ''}" data-tab="${id}">${t}</button>`).join('')}</div><button class="x" data-a="close">${ic('x')}</button></header><div class="body">${body}</div>${foot ? `<div class="foot">${foot}</div>` : ''}</div>`;
   };
-  const acts: Record<string, (i: number, e: HTMLElement) => void> = { close: () => ui.closePanel(), errandOpen: () => ui.panel('errand') };
+  const toggleAutoBook = () => {
+    const on = !R.autoBookOn(g);
+    if (!R.setAutoBook(g, on)) { toast('Cần bếp trưởng trước đã.', 'warn', 'star'); return; }
+    if (on) g.bookings.filter((b) => b.status === 'pending').forEach((b) => R.acceptBooking(g, b.id));
+    toast(on ? 'Bếp trưởng tự duyệt đặt bàn từ giờ.' : 'Bếp trưởng thôi tự duyệt — bạn tự nhận bàn.', 'info', 'star');
+  };
+  const acts: Record<string, (i: number, e: HTMLElement) => void> = {
+    close: () => ui.closePanel(), errandOpen: () => ui.panel('errand'), reportOpen: () => ui.panel('report'),
+    autoBook2: () => toggleAutoBook(), autoBook: () => toggleAutoBook(),
+  };
   const render = () => { const sc = (M.querySelector('.body') as HTMLElement | null)?.scrollTop ?? 0; build(); const b = M.querySelector('.body') as HTMLElement | null; if (b) b.scrollTop = sc; };
   M.onclick = (e) => {
     const t = e.target as HTMLElement; if (t === M) { ui.closePanel(); return; }
@@ -157,7 +176,7 @@ export function openPanel(ui: UI, name: string) {
           (R.isChain(g) ? `<h4 style="margin-top:.8em">Chi nhánh (chuỗi cửa hàng)</h4>` + (g.branch
             ? `<div class="item"><div class="grow"><b>${SPOTS.find((x) => x.id === g.branch!.spot)?.name ?? ''}</b><small>${g.branch.keeper ? g.branch.keeper.name + ' trông coi · ' + (g.branch.open ? 'đang bán' : 'đang đóng cửa') : 'Chưa có người trông coi'} · ${R.branchStock(g)} phần sẵn</small></div><button class="btn small" data-tab="branch">Mở sổ</button></div>`
             : `<p class="muted">Đã có bảng hiệu chuỗi nhưng chưa thuê chi nhánh. Ghé tiệm Ba Tài mở thêm điểm bán thứ hai.</p>`) +
-          errandBlock(g) + `</div></div>` : `</div></div>`);
+          errandBlock(g) + autoBookBlock(g) + `</div></div>` : `</div></div>`);
       } else {
         const sp = ctx.stall.spot(), rate = R.arrivalRate(g);
         const seatLabel = R.isRestaurant(g) ? `${R.seatCount(g)} ghế trong nhà kín (4 bàn · phòng bếp riêng)` : `${R.seatCount(g)} ghế${R.dineIn(g) ? ' trong nhà' : ' nhựa ngoài sân'}`;
@@ -240,6 +259,37 @@ export function openPanel(ui: UI, name: string) {
       acts.erCancel = (i, e) => { const sl = +(e.dataset.n ?? 0) as 0 | 1 | 2 | 3; R.cancelErrand(g, sl); toast('Đã huỷ chuyến, hoàn 85% tiền.', 'info', 'cash'); };
       draw(`${ic('bag')} Giao đi chợ mua nguyên liệu`, [], body,
         `<button class="btn green${quote.lines.length ? '' : ' off'}" data-a="erSend">Giao ${workers.find((w) => w.sl === sel)?.who?.name ?? ''} đi chợ — ${money(quote.total)}</button><button class="btn" data-a="close">Thôi</button>`);
+    } else if (name === 'report') {
+      const reps = R.staffReports(g);
+      const dishMenu = R.menuOf(g);
+      if (!reps.length) {
+        draw(`${ic('book')} Báo cáo của người làm`, [], '<p class="muted">Chưa có ai để báo cáo. Thuê người phụ quầy (từ xe đẩy), phụ bếp (nhà hàng bình dân) hoặc người trông coi chi nhánh (chuỗi cửa hàng) là họ tự canh kho và báo bạn.</p>');
+        return;
+      }
+      acts.repErrand = (_i, e) => { ui.panel('errand', { slot: +(e.dataset.k ?? 0), dish: e.dataset.rid || '' }); };
+      acts.repCheck = () => { bus.emit('ui', 'staffReportCheck'); render(); };
+      const low = R.lowStockCount(g);
+      const cards = reps.map((r) => {
+        const dishes = r.dishes.length
+          ? r.dishes.map((d) => `<div class="item"><div class="grow"><b>${RECIPES[d.rid].short} <span class="muted">· còn nấu được ${d.canMake} phần</span></b><small>${d.canMake === 0 ? 'hết đồ, món này không ra được' : 'đủ cho khoảng một phần nữa'}</small></div><button class="btn small" data-a="repErrand" data-k="${r.slot}" data-rid="${d.rid}">Giao đi chợ</button></div>`).join('')
+          : '<p class="muted">Kho còn đủ cho mọi món đang bán.</p>';
+        const ings = r.ings.length
+          ? `<div class="list">${r.ings.map((x) => `<div class="kv"><span>${INGS[x.id].name}</span><b class="${x.left <= 0 ? 'neg' : 'warn'}">còn ${qty(x.left)} ${INGS[x.id].unit} · cần ${qty(x.need)}</b></div>`).join('')}</div>`
+          : '';
+        return `<div style="margin-bottom:.9em">
+          <div class="item"><div class="grow"><b>${r.name} <span class="muted">· ${r.role}</span></b><small>${r.text}</small></div>${r.urgent ? '<span class="tag bad">gấp</span>' : r.dishes.length ? '<span class="tag warn">sắp hết</span>' : '<span class="tag good">đủ hàng</span>'}</div>
+          ${dishes}${ings}
+          ${r.cost ? `<button class="btn small green" data-a="repErrand" data-k="${r.slot}">Giao ${r.name} đi chợ — ${money(r.cost)}</button>` : ''}
+        </div>`;
+      }).join('');
+      const body = `<p class="muted">Người làm tự canh kho và báo mỗi khi nguyên liệu cho món đang bán còn đủ nấu ≤ 1 phần. Bấm "Giao đi chợ" là họ đi mua đúng thứ còn thiếu.</p>
+        ${low ? `<p class="warn">${low} món đang bán sắp hết nguyên liệu.</p>` : ''}
+        ${cards}
+        <h4>Đặt bàn trước</h4>
+        <div class="item"><div class="grow"><b>Bếp trưởng tự duyệt đặt bàn</b><small>${R.canAutoBook(g) ? 'Khách gọi đặt bàn là bếp nhận luôn (vẫn trừ uy tín nếu lỡ hẹn). Tắt thì bạn tự nhận/từ chối trong tab Nhân sự.' : 'Cần có bếp trưởng (nhà hàng bình dân) mới giao được quyền này.'}</small></div>${R.canAutoBook(g) ? `<button class="btn small${R.autoBookOn(g) ? ' green' : ''}" data-a="autoBook">${R.autoBookOn(g) ? 'Đang tự duyệt — bấm để tắt' : 'Bật tự duyệt'}</button>` : ''}</div>
+        <h4>Thực đơn đang bán (${dishMenu.length} món)</h4>
+        ${dishMenu.length ? `<div class="list">${dishMenu.map((r) => { const can = R.finishPossible(g, r); return `<div class="item"><div class="grow"><b>${r.name}</b><small>nấu được thêm ${can} phần</small></div>${can <= 1 ? '<span class="tag bad">sắp hết</span>' : can <= 3 ? '<span class="tag warn">ít</span>' : '<span class="tag good">ok</span>'}</div>`; }).join('')}</div>` : '<p class="muted">Chưa bật món nào trên thực đơn.</p>'}`;
+      draw(`${ic('book')} Báo cáo & gợi ý của người làm`, [], body, `<button class="btn" data-a="repCheck">Kiểm tra lại kho</button><button class="btn" data-a="close">Đóng</button>`);
     } else if (name === 'branch') {
       const b = g.branch;
       if (!b) { draw(`${ic('shop')} Chi nhánh`, [], '<p class="muted">Chưa mở chi nhánh nào. Cần bậc 7 (Chuỗi cửa hàng) rồi ghé tiệm Đồ Nghề Ba Tài.</p>'); return; }

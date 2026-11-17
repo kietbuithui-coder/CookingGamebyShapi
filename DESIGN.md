@@ -19,7 +19,7 @@ Một vòng chơi trọn vẹn và thật sự chạy được: **tay trắng �
 
 Hai nguyên tắc giữ cho mã kiểm thử được:
 
-1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 365 bài kiểm thử (26 tệp) chạy trong Node trong khoảng 7 giây.
+1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 377 bài kiểm thử (27 tệp) chạy trong Node trong khoảng 7 giây.
 2. **Mọi ngẫu nhiên trong luật chơi nhận một `RNG` có hạt giống** làm tham số cuối, nên kết quả kiểm thử lặp lại được.
 
 Vòng lặp chính (`src/main.ts`): đọc điều khiển → `advance()` cho thời gian game trôi (0,75 phút game mỗi giây thật, một ngày = 32 phút thật; khi ngủ 48 phút game mỗi giây) → cập nhật người chơi, NPC, quầy, nấu ăn, môi trường → vẽ. `dt` bị chặn ở 50 ms nên máy rất chậm thì game chạy chậm lại chứ không nhảy cóc.
@@ -653,6 +653,37 @@ thiếu + đúng sạp đang mở, kho đã đủ thì không mua, giờ không 
 liệu, trả tiền trước + hàng về kho + hết chuyến, thiếu tiền không trừ đồng nào, huỷ hoàn 85%, `errandsNewDay`, `advance`
 đẩy chuyến, toạ độ `errandSpot` chạy ra chợ rồi về, `cleanErrands` kẹp dữ liệu hỏng, và một lượt 5 ngày liên tục.
 
+### 4.29 Báo cáo sắp hết nguyên liệu của người làm & quyền tự duyệt đặt bàn
+
+**Báo cáo (`staffReport`).** Người làm tự canh kho thay người chơi. `staffReport(g, slot)` đọc **thực đơn đang bán**
+(`menuOf`) và với mỗi món tính `finishPossible` — nấu thêm được bao nhiêu phần; món nào ≤ 1 phần thì vào danh sách
+`dishes`, kèm các nguyên liệu còn thiếu (`INGS` + số còn lại / số cần cho 2 phần, tối đa 6 dòng). Tiền đi chợ lấy từ
+chính `errandPlanForAll` + `errandQuote` của mục 4.28, nên con số trong báo cáo **đúng bằng** con số trên nút giao chợ.
+`urgent` bật khi có ≥ 2 món sắp hết hoặc có nguyên liệu đã về 0. Báo cáo **chỉ đọc**: không trừ tiền, không đụng kho.
+`staffReports(g)` gom phụ quầy + bếp trưởng + bếp phó + người trông coi chi nhánh (bỏ người đang đi chợ), xếp bếp
+trưởng lên trước vì đó là người lo bếp. `lowStockCount(g)` đếm số món đang bán sắp hết — dùng cho chip trên HUD.
+
+**Nhắc tự động.** `StallSys.staffReportTick` chạy mỗi 25 giây khi quầy đã dựng và thực đơn có món: nếu số món sắp hết
+đổi (khoá `low|giờ/2`) thì người làm nói một câu tại chỗ (`ctx.npcs.say`) và hiện toast kèm câu gợi ý đi chợ. Quầy
+**tạm đóng vẫn báo** — vì đó là lúc cần đi mua nhất.
+
+**Bảng `'report'`.** "Báo cáo & gợi ý của người làm": mỗi người một thẻ gồm câu nói, danh sách món sắp hết (kèm số
+phần còn nấu được), danh sách nguyên liệu (còn/cần), và nút **Giao … đi chợ — số tiền** mở thẳng bảng `'errand'` với
+đúng người và đúng món; cuối bảng là danh sách cả thực đơn kèm nhãn `sắp hết / ít / ok`. Vào từ 3 chỗ: chip
+**“Sắp hết đồ N món · xem báo cáo”** trên HUD (dải sự kiện), nút **Mở báo cáo** trong tab Nhân sự, và menu ẩn.
+
+**Quyền tự duyệt đặt bàn.** `setAutoBook(g, on)` ghi `g.flags.autoBook` (dùng `flags` nên **không cần đổi bản lưu**),
+`autoBookOn(g)` chỉ trả `true` khi đã có bếp trưởng (`canAutoBook`). Khi bật, `createBooking` tạo phiếu ở trạng thái
+`accepted` luôn thay vì `pending`; bật giữa lúc đang có phiếu chờ thì các phiếu đó được nhận luôn. Bàn tự duyệt vẫn
+giữ chỗ như bàn nhận tay và **vẫn bị trừ 0,5 uy tín nếu lỡ hẹn** (`expireBookings`) — quyền tự duyệt không miễn trách
+nhiệm. Nút bật/tắt có ở tab **Nhân sự** và trong bảng Báo cáo; toast tạo phiếu đổi câu thành "… đã tự nhận bàn".
+
+**Kiểm thử.** `tests/baocao.test.ts` (12 bài): kho đầy thì báo "đủ đồ", thiếu thì chỉ đúng món + nguyên liệu + tiền,
+chức danh theo slot và người chưa thuê thì không báo, người đang đi chợ không báo, thứ tự bếp trước phụ quầy, chưa
+bật món thì không bịa nguyên liệu, `lowStockCount`, báo cáo không đổi tiền/kho, và phần tự duyệt: chưa có bếp thì
+không bật được, bật → phiếu `accepted` / tắt → `pending`, phiếu tự duyệt vẫn bị trừ uy tín khi lỡ hẹn, cờ nằm trong
+`flags` nên qua `migrate()` vẫn giữ.
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
@@ -701,7 +732,7 @@ Người chơi đã thử bản đầu và gửi danh sách góp ý; việc đư
 Còn lại:
 
 1. **Đã xong 3 kiểu chỗ ở mới: căn hộ, nhà riêng, cửa hàng kiêm nhà ở** (8/8) — xem mục 4.13.
-2. **Đã xong sạp cố định (bậc 3)** — mục 4.12, **quán ăn nhỏ (bậc 4)** — mục 4.22, và **quán có chỗ ngồi (bậc 5)** — mục 4.25, **nhà hàng bình dân (bậc 6)** — mục 4.26, **chuỗi cửa hàng (bậc 7)** — mục 4.27, và **giao người làm đi chợ** — mục 4.28. Nhánh kinh doanh đã đủ **7/7 bậc**; việc kế tiếp là hệ thống băng nhóm.
+2. **Đã xong sạp cố định (bậc 3)** — mục 4.12, **quán ăn nhỏ (bậc 4)** — mục 4.22, và **quán có chỗ ngồi (bậc 5)** — mục 4.25, **nhà hàng bình dân (bậc 6)** — mục 4.26, **chuỗi cửa hàng (bậc 7)** — mục 4.27, **giao người làm đi chợ** — mục 4.28, và **báo cáo sắp hết đồ + tự duyệt đặt bàn** — mục 4.29. Nhánh kinh doanh đã đủ **7/7 bậc**; việc kế tiếp là hệ thống băng nhóm.
 3. Hệ thống băng nhóm.
 4. Danh sách đầy đủ những gì còn lại nằm ở `TODO.md`.
 

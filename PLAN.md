@@ -362,7 +362,7 @@ có 32–54% cơ hội ngồi lại gọi thêm một món **nước uống** ho
 nguyên liệu (`o.more = true`, kiên nhẫn ×1,8 × `helperPatience`, câu thoại riêng trong `LINES.order_more`). Giao
 xong món thứ hai khách mới đứng dậy về.
 
-**Kiểm thử:** `tests/quanngoi.test.ts` 18 bài — lúc đó tổng **278 bài / 18 tệp**; hiện là **365 bài / 26 tệp**. Probe `tools/probe/steps/quanngoi.mjs`:
+**Kiểm thử:** `tests/quanngoi.test.ts` 18 bài — lúc đó tổng **278 bài / 18 tệp**; hiện là **377 bài / 27 tệp**. Probe `tools/probe/steps/quanngoi.mjs`:
 mua `sap → quanan → quanngoi` ở tiệm Ba Tài → dựng ở Mặt bằng Khu Căn Hộ → mở bán, 6 khách ngồi vào 3 bàn gỗ trên
 nền gạch bông ca-rô → giao món cho 4 khách, khách ngồi lại gọi thêm trà đá (`more: true`) → bảng quầy hiện nhãn
 `hợp buổi này` / `ngoài buổi` → đóng quán, kiểm bản lưu v11 giữ nguyên bậc 5 và 6 ghế.
@@ -423,7 +423,26 @@ chuyến dở tự huỷ. Vào bảng từ tab **Nhân sự**, hoặc nói chuy�
 **Sửa kèm lỗi bạn báo:** Má Bảy (người trông coi chi nhánh) hết đứng lọt trong quầy — nay đứng sau quầy 1,25 m và
 quay mặt ra phía khách.
 
-**Kiểm thử:** `tests/dicho.test.ts` 17 bài (tổng **365 bài / 26 tệp**); bản lưu nâng lên **v15** (`Game.errands`).
+**Kiểm thử:** `tests/dicho.test.ts` 17 bài (tổng 365 bài / 26 tệp lúc đó; lượt 20 thêm 12 bài → 377/27); bản lưu nâng lên **v15** (`Game.errands`).
 Probe `tools/probe/steps/dicho.mjs` ở 390×844: đo lại vị trí Má Bảy (`localZ = −1,25`, quay ra khách), mở bảng giao
 chợ, chọn cơm sườn rồi bấm giao trên UI thật (9 loại, 109.801₫, về sau 12 phút), tua cho về thấy kho có 9 loại hàng,
 người phụ quầy biến khỏi quầy trong lúc đi, giao người trông coi chi nhánh thì Má Bảy rời quầy; **console sạch**.
+
+---
+
+## Lượt 20 — Báo cáo sắp hết nguyên liệu & bếp trưởng tự duyệt đặt bàn ✅ đã xong
+
+**Người làm tự canh kho.** Bếp trưởng / bếp phó / phụ quầy / người trông coi chi nhánh báo mỗi khi món đang bán còn
+nấu được ≤ 1 phần: thiếu nguyên liệu gì, còn bao nhiêu, và **giao họ đi chợ thì hết bao nhiêu tiền** (dùng lại đúng
+báo giá của mục 4.28). Bảng "Báo cáo & gợi ý của người làm" mở từ chip **“Sắp hết đồ N món”** trên HUD, từ tab Nhân
+sự, hoặc menu ẩn; mỗi món có nút *Giao đi chợ* riêng. Tự nhắc bằng thoại + toast mỗi 25 giây khi tình hình đổi (quầy
+tạm đóng vẫn nhắc).
+
+**Quyền tự duyệt đặt bàn.** Nút **“Bếp trưởng tự duyệt đặt bàn”** (tab Nhân sự và trong bảng Báo cáo): bật thì khách
+gọi đặt bàn được nhận luôn, không phải vào duyệt tay; bật giữa chừng thì nhận luôn các phiếu đang chờ. Vẫn giữ chỗ và
+vẫn bị trừ uy tín nếu lỡ hẹn. Cờ nằm trong `flags` nên **không phải đổi bản lưu** (vẫn v15).
+
+**Kiểm thử:** `tests/baocao.test.ts` 12 bài → tổng **377 bài / 27 tệp**. Probe `tools/probe/steps/baocao.mjs` ở
+390×844: dựng nhà hàng + 2 bếp + 2 phụ quầy → dọn kho → bảng báo cáo hiện 4 món sắp hết, đúng danh sách thiếu và
+163.475₫ → bấm *Giao đi chợ* ngay trong báo cáo mở đúng bảng với đúng người → bật tự duyệt thì phiếu mới `accepted`,
+tắt thì `pending` → chip HUD mở được báo cáo; **console sạch**.
