@@ -1,6 +1,6 @@
 // Sức khoẻ: ngất vì máu về 0, viện phí, đồ rơi, bệnh viện Phước An và quầy thuốc.
 import { describe, it, expect } from 'vitest';
-import { SAVE_VERSION, migrate, newGame, weightOf } from '../src/sim/state';
+import { SAVE_VERSION, STAT_MAX, migrate, newGame, weightOf } from '../src/sim/state';
 import { faint, claimLost, buyMed, exam, recover, recoverCost, MEDS, MED_LIST, EXAM_FEE, RECOVER_FEE, FAINT_FEE, carryCap, bagWeight } from '../src/sim/rules';
 import { LOTS } from '../src/world/layout';
 import { fresh, give } from './helpers';
@@ -63,14 +63,14 @@ describe('bệnh viện Phước An', () => {
     expect(g.cash).toBe(EXAM_FEE - 1000);
   });
 
-  it('phòng hồi sức tính theo giờ và hồi máu, không vượt 100', () => {
+  it('phòng hồi sức tính theo giờ và hồi máu, không vượt 125', () => {
     expect(recoverCost(1)).toBe(RECOVER_FEE);
     expect(recoverCost(4)).toBe(4 * RECOVER_FEE);
     const g = fresh(); g.cash = 100000; g.st.health = 40;
     expect(recover(g, 2)).toBe(true);
     expect(g.cash).toBe(100000 - recoverCost(2));
     expect(g.st.health).toBe(40 + 28);
-    recover(g, 8); expect(g.st.health).toBeLessThanOrEqual(100);
+    recover(g, 8); expect(g.st.health).toBe(STAT_MAX);
   });
 
   it('nghèo thì không nằm phòng hồi sức được', () => {

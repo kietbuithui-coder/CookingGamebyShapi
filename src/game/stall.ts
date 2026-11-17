@@ -5,7 +5,7 @@ import { MB, MAT } from '../gfx/mb';
 import { ganhModel, cartModel, charcoalStove, gasStove, boardModel, knifeModel, panModel, potModel, grateModel, iceBox, lanternModel, umbrellaModel, plasticStool, plasticTable, ingModel, signBoardModel } from '../gfx/props';
 import { takeawayBag, Look } from '../gfx/people';
 import { SPOTS, Spot, spotById, groundY, NAV_BLOCK, CORNER, edgeKey } from '../world/layout';
-import { Game, Helper, absMin, hourOf, addStack } from '../sim/state';
+import { Game, Helper, STAT_MAX, absMin, hourOf, addStack } from '../sim/state';
 import { arrivalRate, has, tier, menuOf, available, decide, review, settleSale, lostCustomer, readyCount, finishPossible, spend, earn, stove, changeRel, meet, wx, eventOn, Persona, addXp, canSell, missingFor, hasPrep, stallRoom, isNight, level, stallRent, payStallRent, helperGate, hireHelper, fireHelper, helperCandidate, helperPatience, seatCount, dineIn, secondOrder, periodName } from '../sim/rules';
 import { RECIPES, RecipeDef } from '../data/recipes';
 import { INGS } from '../data/ingredients';
@@ -463,7 +463,7 @@ export class StallSys {
         { t: 'Hỏi chuyện bán buôn', fn: () => this.helperTalkSales() },
         { t: 'Dặn khách chờ thì dỗ dành', fn: () => {
           if (n) ctx.npcs.say(n, 'Dạ con biết rồi, khách chờ con rót nước mời.', 3, EXPR.smile);
-          g.st.mood = Math.min(100, g.st.mood + 2); toast('Dặn dò xong. Khách chờ sẽ được dỗ, quầy đỡ căng.', 'info', 'heart');
+          g.st.mood = Math.min(STAT_MAX, g.st.mood + 2); toast('Dặn dò xong. Khách chờ sẽ được dỗ, quầy đỡ căng.', 'info', 'heart');
         } },
         { t: `Cho ${h.name} nghỉ việc`, fn: () => {
           const name = h.name; fireHelper(g);
@@ -530,14 +530,14 @@ export class StallSys {
         ui.dialog({ who: who(n), npc: n, text: `Ê, bán ở khu này phải biết luật. Đại ca Hùng Sẹo thu ${money(fee)} "phí bảo kê". Đưa đây!`, opts: [
           { t: `Đưa ${money(fee)}`, off: g.cash < fee, fn: () => { spend(g, fee, 'fees'); g.flags.gangPaid = g.day + 2; N.say(n, 'Biết điều đó. Ba bữa nữa tụi tao ghé.', 3); toast('Đã nộp tiền bảo kê, yên thân được 3 ngày.', 'info', 'skull'); setTimeout(done, 1500); } },
           { t: 'Xin khất tới mai', sub: 'Chỉ được một lần', off: !!g.flags.gangDefer && g.flags.gangDefer >= g.day - 3, fn: () => { g.flags.gangDefer = g.day; g.flags.gangPaid = g.day; N.say(n, 'Mai mà không có là dẹp quầy nghe chưa!', 3, 4); setTimeout(done, 1500); } },
-          { t: 'Không đưa!', sub: 'Có thể bị đập quầy', fn: () => { if (R.chance(0.5)) { n.pose = 'work'; s.cond = clamp(s.cond - 35, 0, 100); const lost = s.ready.reduce((a, x) => a + x.n * x.cost, 0); s.ready = []; g.led.loss += lost; g.st.health = clamp(g.st.health - 10, 5, 100); g.st.mood = clamp(g.st.mood - 12, 0, 100); N.say(n, 'Cứng đầu hả? Đập!', 2.5, 4); sfx('crash'); toast('Bọn chúng đập quầy! Quầy hư hại nặng, đồ làm sẵn đổ hết.', 'bad', 'skull', true); this.builtKey = ''; } else { g.rep = clamp(g.rep + 1, 0, 100); g.flags.gangPaid = g.day; N.say(n, 'Được… mày giỏi. Cứ chờ đó.', 3, 4); toast('Chúng bỏ đi — lần này thôi. Bà con trong hẻm nể bạn hơn.', 'good', 'skull'); } setTimeout(done, 1600); } }] });
+          { t: 'Không đưa!', sub: 'Có thể bị đập quầy', fn: () => { if (R.chance(0.5)) { n.pose = 'work'; s.cond = clamp(s.cond - 35, 0, 100); const lost = s.ready.reduce((a, x) => a + x.n * x.cost, 0); s.ready = []; g.led.loss += lost; g.st.health = clamp(g.st.health - 10, 5, STAT_MAX); g.st.mood = clamp(g.st.mood - 12, 0, STAT_MAX); N.say(n, 'Cứng đầu hả? Đập!', 2.5, 4); sfx('crash'); toast('Bọn chúng đập quầy! Quầy hư hại nặng, đồ làm sẵn đổ hết.', 'bad', 'skull', true); this.builtKey = ''; } else { g.rep = clamp(g.rep + 1, 0, 100); g.flags.gangPaid = g.day; N.say(n, 'Được… mày giỏi. Cứ chờ đó.', 3, 4); toast('Chúng bỏ đi — lần này thôi. Bà con trong hẻm nể bạn hơn.', 'good', 'skull'); } setTimeout(done, 1600); } }] });
         break;
       }
       case 'rowdy': {
         n.pose = 'angry'; this.rowdy = 70; const tea = RECIPES.tra_da && readyCount(g, 'tra_da') + finishPossible(g, RECIPES.tra_da) > 0 && g.rec.tra_da.on;
         ui.dialog({ who: who(n), npc: n, text: 'Ê… hức… bán cái gì đây? Đồ ăn gì mà… hức… dở ẹc! Tao nói cho cả phố biết!', opts: [
           { t: 'Mời ly trà đá giải rượu', off: !tea, sub: tea ? 'Tốn một ly trà đá' : 'Quầy không có trà đá', fn: () => { this.rowdy = 0; n.pose = 'drink'; n.rig.hold(cupProp()); n.rig.inner.rotation.z = 0; n.base = 1; g.rep = clamp(g.rep + 0.5, 0, 100); if (readyCount(g, 'tra_da') > 0) { const rd = s.ready.find((x) => x.rid === 'tra_da')!; rd.n--; s.ready = s.ready.filter((x) => x.n > 0); } N.say(n, 'Ờ… mát ghê. Xin lỗi nha, tui xỉn quá.', 3, 1); toast('Ông khách dịu lại rồi bỏ đi. Khách xung quanh khen bạn khéo.', 'good'); setTimeout(() => done(true), 1800); } },
-          { t: 'Lớn tiếng đuổi đi', fn: () => { if (R.chance(0.6)) { this.rowdy = 0; N.say(n, 'Đi thì đi! Làm gì dữ vậy…', 2.5, 5); } else { n.pose = 'work'; const lost = s.ready.reduce((a, x) => a + x.n * x.cost, 0); s.ready = []; g.led.loss += lost; g.st.mood = clamp(g.st.mood - 10, 0, 100); this.rowdy = 0; sfx('crash'); N.say(n, 'Dám đuổi tao hả!', 2.5, 4); toast('Ông ta hất đổ đồ ăn làm sẵn rồi mới chịu đi.', 'bad'); } setTimeout(done, 1600); } },
+          { t: 'Lớn tiếng đuổi đi', fn: () => { if (R.chance(0.6)) { this.rowdy = 0; N.say(n, 'Đi thì đi! Làm gì dữ vậy…', 2.5, 5); } else { n.pose = 'work'; const lost = s.ready.reduce((a, x) => a + x.n * x.cost, 0); s.ready = []; g.led.loss += lost; g.st.mood = clamp(g.st.mood - 10, 0, STAT_MAX); this.rowdy = 0; sfx('crash'); N.say(n, 'Dám đuổi tao hả!', 2.5, 4); toast('Ông ta hất đổ đồ ăn làm sẵn rồi mới chịu đi.', 'bad'); } setTimeout(done, 1600); } },
           { t: 'Mặc kệ ông ta', sub: 'Khách sẽ ngại ghé một lúc', fn: () => { N.say(n, 'Hức… bán với chả buôn…', 3, 4); setTimeout(done, 45000); } }] });
         break;
       }
@@ -546,7 +546,7 @@ export class StallSys {
         if (!r) { done(); break; }
         n.base = 5; ui.dialog({ who: who(n), npc: n, text: `${g.ac === 'anh' ? 'Anh' : 'Chị'} Hai ơi… tháng này tui kẹt quá, lương chưa về. Cho tui ăn chịu một phần ${r.name.toLowerCase()} được không? Có tiền tui trả liền.`, opts: [
           { t: 'Cho ăn chịu', sub: 'Phần lớn sẽ quay lại trả, có khi trả hậu', fn: () => { if (this.giveFree(r)) { changeRel(g, reg.id, 15); (g.rel[reg.id] ??= { v: 0, n: 0, last: -1 }).owe = g.rec[r.id].price; g.flags['owe_' + reg.id] = g.day + R.int(1, 2); N.say(n, 'Cảm ơn nhiều lắm! Tui không quên ơn đâu.', 3, 1); n.rig.hold(takeawayBag()); } setTimeout(() => done(true), 1600); } },
-          { t: 'Tặng luôn, khỏi trả', fn: () => { if (this.giveFree(r)) { changeRel(g, reg.id, 22); g.st.mood = clamp(g.st.mood + 6, 0, 100); g.rep = clamp(g.rep + 0.6, 0, 100); N.say(n, 'Trời ơi, quý hoá quá! Tui sẽ kêu cả xóm tới ủng hộ.', 3.2, 2); n.rig.hold(takeawayBag()); } setTimeout(() => done(true), 1600); } },
+          { t: 'Tặng luôn, khỏi trả', fn: () => { if (this.giveFree(r)) { changeRel(g, reg.id, 22); g.st.mood = clamp(g.st.mood + 6, 0, STAT_MAX); g.rep = clamp(g.rep + 0.6, 0, 100); N.say(n, 'Trời ơi, quý hoá quá! Tui sẽ kêu cả xóm tới ủng hộ.', 3.2, 2); n.rig.hold(takeawayBag()); } setTimeout(() => done(true), 1600); } },
           { t: 'Từ chối khéo', fn: () => { changeRel(g, reg.id, -4); N.say(n, 'Ừ… tui hiểu mà. Buôn bán cũng khó.', 3, 5); setTimeout(done, 1500); } }] });
         break;
       }

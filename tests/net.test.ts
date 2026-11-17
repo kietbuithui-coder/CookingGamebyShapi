@@ -1,6 +1,6 @@
 // Quán net: giá theo giờ, hiệu ứng từng kiểu chơi, mỏi mắt sau 2 tiếng, sạc nhờ điện thoại.
 import { describe, it, expect } from 'vitest';
-import { SAVE_VERSION, migrate, newGame, absMin } from '../src/sim/state';
+import { SAVE_VERSION, STAT_MAX, migrate, newGame, absMin } from '../src/sim/state';
 import { advance, consume } from '../src/sim/rules';
 import { activate, battery, fullCharge, hasPhone } from '../src/sim/phone';
 import {
@@ -100,9 +100,9 @@ describe('quán net', () => {
     expect(g.st.energy).toBeLessThan(before.energy);
     expect(g.st.hunger).toBeLessThan(before.hunger);
     expect(g.st.thirst).toBeLessThan(before.thirst);
-    // tinh thần không thể vượt 100 dù chơi bao lâu
+    // tinh thần không thể vượt 125 dù chơi bao lâu
     for (let i = 0; i < 20; i++) consume(g, { m: s.mood });
-    expect(g.st.mood).toBe(100);
+    expect(g.st.mood).toBe(STAT_MAX);
   });
 
   it('quán mở 6 giờ sáng tới 11 giờ đêm, có mười máy', () => {

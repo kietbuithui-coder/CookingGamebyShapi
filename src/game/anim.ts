@@ -6,6 +6,7 @@ import { Pose } from '../gfx/people';
 import { Npc, cupProp } from './npc';
 import { clamp } from '../core/util';
 import { toast } from '../core/bus';
+import { STAT_MAX } from '../sim/state';
 import { LOTS, groundY, toWorld } from '../world/layout';
 import {
   Board, Piece, ChessMove, CHESS_PRESETS, pieceSvg,
@@ -389,7 +390,7 @@ export class AnimSystem {
           this.step++;
           if (this.step >= moves.length) {
             if (this.score >= 3) {
-              ctx.g.st.mood = clamp(ctx.g.st.mood + 2, 0, 100);
+              ctx.g.st.mood = clamp(ctx.g.st.mood + 2, 0, STAT_MAX);
               if (this.npc) ctx.npcs.say(this.npc, 'Đỉnh quá bạn ơi! Vũ đạo đường phố thứ thiệt!', 3.2, 1);
             }
             this.stop();
@@ -726,7 +727,7 @@ export class AnimSystem {
         sfx('yay');
         if (!this.chessWinRewarded) {
           this.chessWinRewarded = true;
-          ctx.g.st.mood = clamp(ctx.g.st.mood + 4, 0, 100);
+          ctx.g.st.mood = clamp(ctx.g.st.mood + 4, 0, STAT_MAX);
         }
         if (this.npc) ctx.npcs.say(this.npc, 'Chiếu bí đẹp quá! Bữa nay cháu cao cờ hơn ông Tư rồi, bái phục!', 4.0, 1);
         ctx.ui.cookGrade(1, 'CHIẾU BÍ ÔNG TƯ!');

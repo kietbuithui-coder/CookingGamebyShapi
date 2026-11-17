@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { ctx } from '../game/ctx';
 import { RecipeDef, Step, STEP_NAME, RECIPES } from '../data/recipes';
-import { absMin } from '../sim/state';
+import { absMin, STAT_MAX } from '../sim/state';
 import { prepPossible, finishPossible, consumePrep, consumeFinish, dishQuality, useFuel, stove, missingTools, missingFor, hasPrep, cookEase, addXp, wx, has, recipeCost, fuelUnitCost } from '../sim/rules';
 import { GEAR } from '../data/gear';
 import { toast, sfx, bus } from '../core/bus';
@@ -199,7 +199,7 @@ export class Cook implements PtrHandler {
     }
     for (const st of this.steps) for (const t of st.t === 'cut' ? ['daothot'] : st.t === 'fry' ? ['chao'] : st.t === 'grill' ? ['vi'] : st.t === 'boil' ? ['noi'] : []) this.wear(t);
     if (this.steps.some((x) => x.t !== 'cut' && x.t !== 'assemble')) this.wear(stove(g)!);
-    g.stall.dirt = clamp(g.stall.dirt + 1.5 + (1 - score) * 2, 0, 100); g.st.hygiene = clamp(g.st.hygiene - 0.6, 0, 100); addXp(g, score);
+    g.stall.dirt = clamp(g.stall.dirt + 1.5 + (1 - score) * 2, 0, 100); g.st.hygiene = clamp(g.st.hygiene - 0.6, 0, STAT_MAX); addXp(g, score);
     void recipeCost;
     const d = this.done; this.exit(); d?.(); bus.emit('ui', 'cook');
   }

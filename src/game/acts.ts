@@ -14,7 +14,7 @@ import { FIXED, LINES, SIDE } from '../data/people';
 import { FunDef, funHoursText, funOpenAt } from '../data/fun';
 import { HAIR_STYLES, HAIR_COLORS, SHIRT_COLORS, PANTS_COLORS, SHOE_COLORS, GLASSES, ColorDef } from '../data/looks';
 import { EXPR } from '../data/expr';
-import { Game, addStack, hourOf, absMin, Stack, weightOf } from '../sim/state';
+import { Game, STAT_MAX, addStack, hourOf, absMin, Stack, weightOf } from '../sim/state';
 import * as R from '../sim/rules';
 import * as P from '../sim/police';
 import * as PH from '../sim/phone';
@@ -348,7 +348,7 @@ export class Acts {
     const g = this.g, h = hourOf(g), say = (t: string) => ctx.npcs.say(n, t, 2.8, 1);
     switch (id) {
       case 'tra_da': return [
-        { t: 'Mua một ly trà đá — 3.000₫', sub: `Khát ${Math.round(100 - g.st.thirst)}%`, off: g.cash < 3000,
+        { t: 'Mua một ly trà đá — 3.000₫', sub: `Khát ${Math.round(Math.max(0, (1 - g.st.thirst / STAT_MAX) * 100))}%`, off: g.cash < 3000,
           fn: () => { if (!R.spend(g, 3000, 'food')) return; R.consume(g, { t: 18, m: 3 }); sfx('drink'); say('Ly này cô thêm đá cho mát. Ngồi chơi chút đi con.'); ctx.anim.startIcedTea(n); } },
         { t: 'Phụ bưng trà đá một buổi — 40 phút', sub: h >= 6 && h < 21 ? 'Công 12.000₫, hơi mệt' : 'Ngoài giờ cô bán', off: !(h >= 6 && h < 21) || g.st.energy < 18,
           fn: () => { R.advance(g, 40, this.act()); R.earn(g, 12000, 'side'); R.consume(g, { e: -9, t: -6, m: 2 }); sfx('coin'); ctx.ui.float('+12.000₫', n, 'good'); say('Giỏi quá. Cầm lấy, mai ghé nữa nghen con.'); ctx.anim.startTeaShift(n); } },
@@ -397,7 +397,7 @@ export class Acts {
         { t: 'Bật gương — xem mình ở góc nhìn thứ ba', sub: ctx.set.cam3 ? 'Đang bật rồi' : 'Phím tắt: V', off: ctx.set.cam3, fn: () => { ctx.ui.switchView(); } },
       ];
       case 'danh_giay': return [
-        { t: 'Đánh giày — 5.000₫', sub: `Vệ sinh hiện tại ${Math.round(g.st.hygiene)}%`, off: g.cash < 5000,
+        { t: 'Đánh giày — 5.000₫', sub: `Vệ sinh hiện tại ${Math.round(g.st.hygiene)}/${STAT_MAX}`, off: g.cash < 5000,
           fn: () => { if (!R.spend(g, 5000, 'other')) return; R.consume(g, { hy: 14, m: 3 }); sfx('fix'); say('Bóng chưa? Con đánh hai lớp đó nghen. Cảm ơn anh/chị!'); ctx.anim.startShoeshine(n); } },
         { t: 'Cho Bo 5.000₫ mua xi', off: g.cash < 5000, fn: () => { if (!R.spend(g, 5000, 'other')) return; g.rep = clamp(g.rep + 0.2, 0, 100); sfx('coin'); say('Thiệt hả anh/chị? Con để dành mua hộp xi mới. Con cảm ơn nhiều!'); } },
       ];
@@ -417,15 +417,15 @@ export class Acts {
       if (rnd.chance(clamp(p, 0, 0.92))) {
         if (rnd.chance(a.beg.food)) { addStack(g.bag, { id: 'banhmi', n: 1, fresh: 85, q: 0.8, cost: 0 }); ctx.npcs.say(n, R.say(rnd.pick(LINES.beg_food), a, n.fem, g), 3, 1); toast('Được cho một ổ bánh mì.', 'good', 'heart'); }
         else { const amt = Math.max(500, round500(rnd.range(a.beg.amt[0], a.beg.amt[1]) * (style === 'kekho' ? 1.15 : 1))); R.earn(g, amt, 'side'); g.tot.begged += amt; ctx.npcs.say(n, R.say(rnd.pick(LINES.beg_give), a, n.fem, g), 3, 1); sfx('coin'); ctx.ui.float(`+${money(amt)}`, n, 'good'); }
-        g.st.mood = clamp(g.st.mood - 1, 0, 100);
+        g.st.mood = clamp(g.st.mood - 1, 0, STAT_MAX);
         if (rnd.chance(0.3)) setTimeout(() => n.state !== 'gone' && ctx.npcs.say(n, R.say(rnd.pick(LINES.beg_chat), a, n.fem, g), 4.5), 3200);
       } else {
         // hiếm khi người bị xin tiền mất bình tĩnh: khạc nhổ, có khi quay ra đuổi
         if (rnd.chance(0.08) && a.beg[style] > 0.15) { ctx.npcs.spit(n); return; }
         const annoyed = style === 'naini' && rnd.chance(0.5);
-        if (annoyed && rnd.chance(0.22)) { ctx.npcs.chase(n, 3.6); g.st.mood = clamp(g.st.mood - 5, 0, 100); g.rep = clamp(g.rep - 0.4, 0, 100); return; }
-        ctx.npcs.say(n, R.say(rnd.pick(annoyed ? LINES.beg_annoyed : LINES.beg_refuse), a, n.fem, g), 2.6, annoyed ? 4 : 3); g.st.mood = clamp(g.st.mood - (annoyed ? 4 : 1.5), 0, 100);
-        if (annoyed) { g.rep = clamp(g.rep - 0.3, 0, 100); sfx('boo'); const cop = ctx.npcs.near(n.x, n.z, 18, (c) => c.arch.id === 'congan'); if (cop) setTimeout(() => { ctx.npcs.say(cop, 'Này! Không được đeo bám làm phiền người đi đường!', 3.5, 4); g.st.mood = clamp(g.st.mood - 5, 0, 100); }, 1500); }
+        if (annoyed && rnd.chance(0.22)) { ctx.npcs.chase(n, 3.6); g.st.mood = clamp(g.st.mood - 5, 0, STAT_MAX); g.rep = clamp(g.rep - 0.4, 0, 100); return; }
+        ctx.npcs.say(n, R.say(rnd.pick(annoyed ? LINES.beg_annoyed : LINES.beg_refuse), a, n.fem, g), 2.6, annoyed ? 4 : 3); g.st.mood = clamp(g.st.mood - (annoyed ? 4 : 1.5), 0, STAT_MAX);
+        if (annoyed) { g.rep = clamp(g.rep - 0.3, 0, 100); sfx('boo'); const cop = ctx.npcs.near(n.x, n.z, 18, (c) => c.arch.id === 'congan'); if (cop) setTimeout(() => { ctx.npcs.say(cop, 'Này! Không được đeo bám làm phiền người đi đường!', 3.5, 4); g.st.mood = clamp(g.st.mood - 5, 0, STAT_MAX); }, 1500); }
       }
     };
     if (a.id === 'congan') { ctx.npcs.say(n, 'Ăn xin ở đây là không được đâu nhé. Kiếm việc mà làm.', 3, 3); n.asked = true; return; }
@@ -461,12 +461,12 @@ export class Acts {
   pickLitter(l: { i: number; x: number; z: number; id: string }) {
     const g = this.g, j = JUNK[l.id];
     if (R.bagWeight(g) + j.kg > R.carryCap(g)) { toast('Túi đầy rồi, không nhặt thêm được.', 'warn', 'bag'); return; }
-    g.junk[l.id] = (g.junk[l.id] ?? 0) + 1; g.wd.picked.push(l.i); this.litter.splice(this.litter.indexOf(l), 1); sfx('pick'); ctx.ui.float(`+1 ${j.name}`, { x: l.x, y: 0.5, z: l.z }, 'info'); g.st.hygiene = clamp(g.st.hygiene - 0.4, 0, 100);
+    g.junk[l.id] = (g.junk[l.id] ?? 0) + 1; g.wd.picked.push(l.i); this.litter.splice(this.litter.indexOf(l), 1); sfx('pick'); ctx.ui.float(`+1 ${j.name}`, { x: l.x, y: 0.5, z: l.z }, 'info'); g.st.hygiene = clamp(g.st.hygiene - 0.4, 0, STAT_MAX);
   }
   rummage(i: number) {
     const g = this.g, b = ctx.world.bins[i];
     if (g.wd.bins[i] === g.day) { toast('Thùng này hôm nay bạn bới rồi, chẳng còn gì.', 'info'); return; }
-    g.wd.bins[i] = g.day; R.advance(g, 4, this.act()); g.st.hygiene = clamp(g.st.hygiene - 4, 0, 100); sfx('rummage');
+    g.wd.bins[i] = g.day; R.advance(g, 4, this.act()); g.st.hygiene = clamp(g.st.hygiene - 4, 0, STAT_MAX); sfx('rummage');
     const r = rnd.next(), give = (id: string, n: number) => { g.junk[id] = (g.junk[id] ?? 0) + n; ctx.ui.float(`+${n} ${JUNK[id].name}`, { x: b.x, y: 1.1, z: b.z }, 'info'); };
     if (r < 0.05) { const id = rnd.pick(['dongho', 'radio', 'nhan']); give(id, 1); toast(`Trúng mánh! Bới được ${JUNK[id].name.toLowerCase()} — đem ra tiệm cầm đồ Chú Lâm bán.`, 'good', 'star', true); }
     else if (r < 0.2) this.D('Thùng rác', undefined, 'Có nửa ổ bánh mì ai bỏ lại, còn khá lành lặn… Ăn không?', [{ t: 'Ăn luôn (đỡ đói, có thể đau bụng)', fn: () => { R.consume(g, { h: 16, m: -3 }, 0.3); sfx('eat'); } }, { t: 'Thôi, ghê quá.' }]);
@@ -478,7 +478,7 @@ export class Acts {
   // ───────────────────────── Việc làm thêm ─────────────────────────
   dockTake() { const j = this.job; if (j?.kind !== 'dock' || j.carrying) return; if (this.g.st.energy < 8) { toast('Kiệt sức rồi, không vác nổi nữa. Đi ăn rồi nghỉ đi.', 'bad'); return; } j.carrying = true; ctx.player.setCarry('sack'); sfx('pick'); this.setWay('v_m_kho', 'Sạp gạo Bà Hai — giao bao hàng'); }
   dockDrop() {
-    const j = this.job, g = this.g; if (j?.kind !== 'dock' || !j.carrying) return; j.carrying = false; ctx.player.setCarry(''); g.wd.sacks++; R.earn(g, 6000, 'side'); sfx('coin'); g.st.energy = clamp(g.st.energy - 2.5, 0, 100); g.st.hunger = clamp(g.st.hunger - 1.2, 0, 100); g.st.hygiene = clamp(g.st.hygiene - 1, 0, 100);
+    const j = this.job, g = this.g; if (j?.kind !== 'dock' || !j.carrying) return; j.carrying = false; ctx.player.setCarry(''); g.wd.sacks++; R.earn(g, 6000, 'side'); sfx('coin'); g.st.energy = clamp(g.st.energy - 2.5, 0, STAT_MAX); g.st.hunger = clamp(g.st.hunger - 1.2, 0, STAT_MAX); g.st.hygiene = clamp(g.st.hygiene - 1, 0, STAT_MAX);
     ctx.ui.float('+6.000₫', { x: ctx.player.x + ctx.player.fwd[0], y: 1.3, z: ctx.player.z + ctx.player.fwd[1] }, 'good');
     if (g.wd.sacks >= 12) { this.job = null; this.way = null; toast('Hết hàng để vác rồi! Hôm nay kiếm được kha khá.', 'good', 'cash'); } else this.setWay('dock', 'Xe tải — lấy bao hàng');
   }
@@ -488,7 +488,7 @@ export class Acts {
     ctx.player.x = a.x - s * 0.75; ctx.player.z = a.z - c * 0.75; ctx.player.yaw = a.yaw; this.way = null;
     ctx.cook.wash(st, 8, (score) => {
       this.job = null; if (score < 0) { toast('Bỏ ngang việc rửa chén, Bà Tư không trả công.', 'warn'); return; }
-      const pay = round1k(8 * 4000 * (0.75 + 0.25 * score)); g.wd.plates++; R.earn(g, pay, 'side'); R.consume(g, { h: 45, t: 10, m: 3 }); g.st.hygiene = clamp(g.st.hygiene + 6, 0, 100); g.st.energy = clamp(g.st.energy - 6, 0, 100); R.changeRel(g, 'eatery', 4, true);
+      const pay = round1k(8 * 4000 * (0.75 + 0.25 * score)); g.wd.plates++; R.earn(g, pay, 'side'); R.consume(g, { h: 45, t: 10, m: 3 }); g.st.hygiene = clamp(g.st.hygiene + 6, 0, STAT_MAX); g.st.energy = clamp(g.st.energy - 6, 0, STAT_MAX); R.changeRel(g, 'eatery', 4, true);
       const n = ctx.npcs.fixed.get('eatery'); toast(`Rửa xong 8 cái đĩa: nhận ${money(pay)} và một bữa cơm của Bà Tư.`, 'good', 'cash', true); if (n) ctx.npcs.say(n, 'Sạch đó! Ăn cơm đi con rồi hãy về.', 3, 1);
     });
   }
@@ -540,7 +540,7 @@ export class Acts {
     if (p.carry === 'ganh' || p.carry === 'xeday' || p.carry === 'sack') { toast('Đang cõng hàng nặng, nhảy không nổi.', 'info'); this.jumpCd = 0.5; return; }
     if (g.st.energy < 3) { toast('Mệt rũ người, nhảy không nổi nữa.', 'warn', 'bolt'); this.jumpCd = 0.6; return; }
     if (!p.jump()) return;
-    this.jumpCd = 0.5; g.st.energy = clamp(g.st.energy - 0.7, 0, 100); sfx('jump');
+    this.jumpCd = 0.5; g.st.energy = clamp(g.st.energy - 0.7, 0, STAT_MAX); sfx('jump');
   }
   /** Đấm một cái: trúng ai thì người đó la lên, có người quay lại đánh, có người bỏ chạy. */
   punch() {
@@ -556,7 +556,7 @@ export class Acts {
       const dot = (dx * fx + dz * fz) / (Math.sqrt(d2) || 1); if (dot < 0.45) continue;
       bd = d2; best = n;
     }
-    g.st.energy = clamp(g.st.energy - 1.2, 0, 100);
+    g.st.energy = clamp(g.st.energy - 1.2, 0, STAT_MAX);
     if (!best) { this.working = 0.25; return; }
     this.working = 0.35;
     ctx.npcs.hit(best);
@@ -834,7 +834,7 @@ export class Acts {
     const g = this.g;
     if (kind === 'tap') { this.D('Vòi nước công cộng', undefined, 'Nước máy chảy mát lạnh.', [{ t: 'Uống cho đỡ khát', fn: () => { R.consume(g, { t: 35 }, 0.04); sfx('drink'); } }, { t: 'Rửa mặt mũi tay chân', sub: 'Sạch hơn một chút (tối đa 60%)', fn: () => { g.st.hygiene = Math.max(g.st.hygiene, Math.min(60, g.st.hygiene + 14)); R.advance(g, 5, this.act()); sfx('splash'); toast('Mát mẻ, đỡ lem luốc hơn rồi.', 'good'); } }, { t: 'Thôi' }]); return; }
     if (kind === 'park') { if (!R.spend(g, 3000, 'other')) { toast('Tắm ở đây tốn 3.000₫ mà bạn không đủ tiền.', 'bad', 'cash'); return; } }
-    ctx.ui.fade(true, 0.5); setTimeout(() => { g.st.hygiene = kind === 'park' ? Math.max(g.st.hygiene, 86) : 100; g.st.mood = clamp(g.st.mood + 5, 0, 100); g.weather.wet = 0; R.advance(g, 15, this.act()); sfx('splash'); ctx.ui.fade(false, 0.6); toast('Tắm rửa sạch sẽ thơm tho!', 'good'); }, 900);
+    ctx.ui.fade(true, 0.5); setTimeout(() => { g.st.hygiene = kind === 'park' ? Math.max(g.st.hygiene, 86) : STAT_MAX; g.st.mood = clamp(g.st.mood + 5, 0, STAT_MAX); g.weather.wet = 0; R.advance(g, 15, this.act()); sfx('splash'); ctx.ui.fade(false, 0.6); toast('Tắm rửa sạch sẽ thơm tho!', 'good'); }, 900);
   }
   temple() {
     const g = this.g, h = hourOf(g);
@@ -931,7 +931,7 @@ export class Acts {
     const g = this.g, h = HOUSING[where], err = this.canSleep(where); if (err) { toast(err, 'warn'); return; }
     if (ctx.stall.customers.length) { toast('Còn khách đang chờ kìa!', 'warn'); return; }
     const hr = hourOf(g), night = hr >= 19 || hr < 5, till = hr < 5.5 ? 6 : 30, hrs = till - hr;
-    this.D(h.name, undefined, `${h.desc} Bây giờ là ${hhmm(g.min)}. Năng lượng ${Math.round(g.st.energy)}%.` + (g.stall.where === 'placed' && g.stall.tier < 3 ? ' CHÚ Ý: quầy vẫn đang để ngoài chỗ bán — để qua đêm rất dễ mất đồ!' : ''), [
+    this.D(h.name, undefined, `${h.desc} Bây giờ là ${hhmm(g.min)}. Năng lượng ${Math.round(g.st.energy)}/${STAT_MAX}.` + (g.stall.where === 'placed' && g.stall.tier < 3 ? ' CHÚ Ý: quầy vẫn đang để ngoài chỗ bán — để qua đêm rất dễ mất đồ!' : ''), [
       { t: night ? `Ngủ tới 6 giờ sáng (${hrs.toFixed(1)} tiếng)` : 'Ngủ một giấc dài (8 tiếng)', fn: () => this.sleep(where, night ? hrs : 8) },
       { t: 'Chợp mắt 2 tiếng', fn: () => this.sleep(where, 2) }, { t: 'Chưa buồn ngủ.' }]);
   }
@@ -944,12 +944,12 @@ export class Acts {
   private wake(reason = '') {
     const g = this.g, where = this.sleepWhere, h = HOUSING[where];
     if (PH.hasPhone(g) && PH.hasPower(g) && PH.battery(g) < 99) { PH.fullCharge(g); toast('Cắm sạc qua đêm, điện thoại đầy pin.', 'info', 'bolt'); } ctx.mode = 'play'; ctx.speed = MIN_PER_SEC; ctx.player.eyeTarget = 1.6; ctx.ui.fade(false, 1.2); ctx.ui.sleeping(false); sfx('wake');
-    toast(reason || `Tỉnh giấc lúc ${hhmm(g.min)}. Năng lượng ${Math.round(g.st.energy)}%.`, 'info', 'moon');
+    toast(reason || `Tỉnh giấc lúc ${hhmm(g.min)}. Năng lượng ${Math.round(g.st.energy)}/${STAT_MAX}.`, 'info', 'moon');
     // trộm đêm
     const risk = (1 - h.safety) * 0.4 + (R.eventOn(g, 'trom') && h.safety < 0.6 ? 0.35 : 0);
     if (rnd.chance(risk)) {
       const cash = Math.min(g.cash, round1k(g.cash * rnd.range(0.2, 0.45))), lost = g.home.splice(0, Math.ceil(g.home.length / 2));
-      g.cash -= cash; g.led.loss += cash + lost.reduce((a, s) => a + s.n * s.cost, 0); g.st.mood = clamp(g.st.mood - 10, 0, 100);
+      g.cash -= cash; g.led.loss += cash + lost.reduce((a, s) => a + s.n * s.cost, 0); g.st.mood = clamp(g.st.mood - 10, 0, STAT_MAX);
       if (cash > 0 || lost.length) toast(`Bị trộm lúc đang ngủ! Mất ${money(cash)}` + (lost.length ? ' và một phần đồ cất ở đây.' : '.') + ' Gửi tiền ngân hàng hoặc thuê phòng có khoá sẽ an toàn hơn.', 'bad', 'skull', true);
     }
     const s = g.stall;
@@ -985,7 +985,7 @@ export class Acts {
     }
     this.drawLitter(); if (this.glint) { this.glint.position.y = Math.sin(ctx.time * 3) * 0.05; this.glint.visible = ctx.mode === 'play'; }
     if (ctx.mode === 'sleep') {
-      const woke = absMin(g) >= this.sleepUntil ? '' : g.st.hunger <= 2 ? 'Đói cồn cào làm bạn tỉnh giấc.' : g.st.thirst <= 2 ? 'Khát khô cổ làm bạn tỉnh giấc.' : this.sleepWhere === 'ghe' && g.weather.wet > 60 ? 'Mưa tạt ướt sũng, không ngủ nổi!' : (g.st.energy >= 99.5 && hourOf(g) > 5.5 && hourOf(g) < 19) ? `Ngủ đẫy giấc rồi. Bây giờ là ${hhmm(g.min)}.` : null;
+      const woke = absMin(g) >= this.sleepUntil ? '' : g.st.hunger <= 2 ? 'Đói cồn cào làm bạn tỉnh giấc.' : g.st.thirst <= 2 ? 'Khát khô cổ làm bạn tỉnh giấc.' : this.sleepWhere === 'ghe' && g.weather.wet > 60 ? 'Mưa tạt ướt sũng, không ngủ nổi!' : (g.st.energy >= STAT_MAX - 0.5 && hourOf(g) > 5.5 && hourOf(g) < 19) ? `Ngủ đẫy giấc rồi. Bây giờ là ${hhmm(g.min)}.` : null;
       if (woke !== null) this.wake(woke);
     }
     if (this.cart) { const v = ctx.npcs.fixed.get(this.cart.shop); if (v && dist2(v.x, v.z, p.x, p.z) > 17 * 17) { toast(`Bạn để lại hàng chưa tính tiền ở ${SHOPS[this.cart.shop].name}.`, 'info'); this.dropCart(); } }

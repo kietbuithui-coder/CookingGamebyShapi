@@ -19,6 +19,8 @@ export interface LedgerDay {
   day: number; revenue: number; tips: number; side: number; cogs: number; fees: number; rent: number; gear: number; loss: number; interest: number;
   food: number; other: number; sold: number; customers: number; lost: number; stars: number; rated: number;
 }
+/** Giới hạn tối đa của tất cả thanh chỉ số nhân vật (tăng +25% từ 100 lên 125). */
+export const STAT_MAX = 125;
 export interface Stats { hunger: number; thirst: number; energy: number; health: number; hygiene: number; mood: number; }
 export interface RecState { known: boolean; price: number; on: boolean; made: number; best: number; }
 export interface Rel { v: number; n: number; last: number; owe?: number; }
@@ -138,6 +140,7 @@ export function migrate(raw: any): Game | null {
   else if (typeof g.help?.name !== 'string' || typeof g.help?.wage !== 'number') g.help = null;
   if (g.help) { g.help.hired = true; if (typeof g.help.since !== 'number') g.help.since = g.day; if (typeof g.help.paid !== 'number') g.help.paid = g.day; }
   if (typeof g.flags.firstSale !== 'number' && (g.hist.some((h) => h.revenue > 0) || g.led.revenue > 0)) g.flags.firstSale = 0;
+  for (const k of Object.keys(g.st) as (keyof Stats)[]) g.st[k] = Math.min(STAT_MAX, Math.max(0, Number.isFinite(g.st[k]) ? g.st[k] : base.st[k]));
   g.v = SAVE_VERSION;
   return g;
 }

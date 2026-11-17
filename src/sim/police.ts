@@ -2,7 +2,7 @@
 // Toàn bộ là logic thuần để kiểm thử được (xem tests/police.test.ts); phần gọi hội thoại, tua thời gian
 // và đặt người chơi vào buồng giam nằm ở game/acts.ts.
 import { clamp, round1k } from '../core/util';
-import { Game, absMin } from './state';
+import { Game, STAT_MAX, absMin } from './state';
 import { toast } from '../core/bus';
 
 /** Một cú đấm giữa đường làm công an để ý bao nhiêu. */
@@ -67,11 +67,11 @@ export function labour(g: Game): boolean {
   if (!inJail(g)) return false;
   const minLeft = absMin(g) + 30;
   g.jailUntil = Math.max(minLeft, g.jailUntil - 60);
-  g.st.health = clamp(g.st.health - 5, 0, 100);
-  g.st.energy = clamp(g.st.energy - 12, 0, 100);
-  g.st.hygiene = clamp(g.st.hygiene - 8, 0, 100);
-  g.st.mood = clamp(g.st.mood - 6, 0, 100);
-  g.st.hunger = clamp(g.st.hunger - 8, 0, 100);
+  g.st.health = clamp(g.st.health - 5, 0, STAT_MAX);
+  g.st.energy = clamp(g.st.energy - 12, 0, STAT_MAX);
+  g.st.hygiene = clamp(g.st.hygiene - 8, 0, STAT_MAX);
+  g.st.mood = clamp(g.st.mood - 6, 0, STAT_MAX);
+  g.st.hunger = clamp(g.st.hunger - 8, 0, STAT_MAX);
   return true;
 }
 
@@ -79,7 +79,7 @@ export function labour(g: Game): boolean {
 export function release(g: Game) {
   g.jailUntil = 0;
   g.rep = clamp(g.rep - 8, 0, 100);
-  g.st.mood = clamp(g.st.mood - 10, 0, 100);
-  g.st.hygiene = clamp(g.st.hygiene - 18, 0, 100);
+  g.st.mood = clamp(g.st.mood - 10, 0, STAT_MAX);
+  g.st.hygiene = clamp(g.st.hygiene - 18, 0, STAT_MAX);
   toast('Hết hạn tạm giữ, chú công an mở cửa: “Về đi, lần sau đừng để tôi gặp lại.”', 'warn', 'badge', true);
 }

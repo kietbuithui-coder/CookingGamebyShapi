@@ -12,7 +12,7 @@ import { RECIPES, RecipeDef } from '../data/recipes';
 import { INGS } from '../data/ingredients';
 import { SHOPS } from '../data/shops';
 import { DISTRICT, districtAt } from '../world/layout';
-import { hourOf } from '../sim/state';
+import { STAT_MAX, hourOf } from '../sim/state';
 import { jailLeft } from '../sim/police';
 import { activeEvents, totalDebt, level, tier, hasMet, fixedLabel } from '../sim/rules';
 import { stallHint } from '../game/stall';
@@ -70,7 +70,7 @@ const _v = new THREE.Vector3();
 export class UI {
   root = document.getElementById('ui')!; world: HTMLElement; private atts: Att[] = []; private hudT = 0; private E: Record<string, HTMLElement> = {};
   private dlgOpen = false; private prevMode = 'play'; modalName = ''; onCookBtn: ((id: string, down: boolean) => void) | null = null; onCookSlide: ((v: number) => void) | null = null;
-  private labels: Att[] = []; private gradeT = 0; private fpsN = 0; private fpsT = 0; fpsVal = 60; private lastMs = performance.now(); private worstMs = 0; /** khung hình chậm nhất (ms) trong nửa giây vừa qua */ hitch = 0; private lastCash = -1; private questMin = false; private em = 14; private sliderV = 0.4;
+  private labels: Att[] = []; private gradeT = 0; private fpsN = 0; private fpsT = 0; fpsVal = 60; private lastMs = performance.now(); private worstMs = 0; /** khung hình chậm nhất (ms) trong nửa giây vừa qua */ hitch = 0; private lastCash = -1; private questMin = false; private em = 14; private sliderV = 0.4; private tipEl: HTMLElement | null = null;
   constructor() {
     const R = this.root, E = this.E, add = (id: string, html = '', cls = '') => { const e = el('div', cls, html, R); e.id = id; E[id] = e; return e; };
     this.world = add('world');
@@ -87,23 +87,27 @@ export class UI {
     for (const id of ['clock', 'wx', 'place', 'jailclock', 'stats', 'rep', 'money', 'bagdot', 'debt', 'fps', 'stowb', 'wanted', 'phoneb', 'phonedot']) E[id] = document.getElementById(id)!;
     E.stowb.onclick = () => { if (ctx.mode === 'play') ctx.stall.stow(); };
     E.stats.innerHTML = ([['dish', 'hunger', 'Độ no', 'no bụng — tụt thì đói, kiệt sức'], ['drop', 'thirst', 'Nước', 'khát — tụt thì khô cổ, dễ cảm'], ['bolt', 'energy', 'Năng lượng', 'sức lực — tụt thì đi chậm, ngất được'], ['heart', 'health', 'Sức khoẻ', 'máu — tụt vì bệnh, bị đánh, ngất'], ['sparkle', 'hygiene', 'Sạch sẽ', 'tắm rửa — bẩn thì khách chê'], ['smile', 'mood', 'Vui vẻ', 'tinh thần — thấp thì nấu kém, khách bỏ đi']] as const)
-      .map(([i, k, t, note]) => `<div class="stat" data-k="${k}" data-tip="${t}: ${note}">${ic(i)}<i><b></b></i></div>`).join('');
+      .map(([i, k, t, note]) => `<div class="stat" data-k="${k}" data-title="${t}" data-note="${note}" data-tip="${t} (0/${STAT_MAX}): ${note}">${ic(i)}<i><b></b></i></div>`).join('');
     document.getElementById('rotok')!.onclick = () => E.rotate.classList.remove('want');
-    // Gợi ý khi rê chuột (máy tính) hoặc chạm (điện thoại): hiện một câu giải thích ngay dưới biểu tượng.
+    // Gợi ý khi rê chuột (máy tính) hoặc chạm (điện thoại): hiện số liệu và giải thích ngay dưới biểu tượng.
     const tip = E.tip; let tipT = 0;
+    const hideTip = () => { this.tipEl = null; tip.classList.add('hide'); };
     const showTip = (el: HTMLElement) => {
       const t = el.dataset.tip; if (!t) return;
+      this.tipEl = el;
       const r = el.getBoundingClientRect();
       tip.textContent = t; tip.classList.remove('hide');
-      tip.style.left = Math.round(Math.min(Math.max(r.left + r.width / 2, 90), window.innerWidth - 90)) + 'px';
+      const half = Math.max(90, tip.offsetWidth / 2 + 8);
+      tip.style.left = Math.round(Math.min(Math.max(r.left + r.width / 2, half), Math.max(half, window.innerWidth - half))) + 'px';
       const below = r.bottom + 6;
       if (below > window.innerHeight - 70) { tip.style.top = Math.round(r.top - 6) + 'px'; tip.style.transform = 'translate(-50%, -100%)'; }
       else { tip.style.top = Math.round(below) + 'px'; tip.style.transform = 'translate(-50%, 0)'; }
     };
     const tipTarget = (e: Event) => ((e.target as HTMLElement)?.closest('[data-tip]') as HTMLElement | null);
-    R.addEventListener('pointerover', (e) => { const el = tipTarget(e); if (el) showTip(el); else tip.classList.add('hide'); });
-    R.addEventListener('pointerout', (e) => { if (!tipTarget(e)) tip.classList.add('hide'); });
-    R.addEventListener('pointerdown', (e) => { const el = tipTarget(e); if (!el) { tip.classList.add('hide'); return; } showTip(el); clearTimeout(tipT); tipT = window.setTimeout(() => tip.classList.add('hide'), 2600); });
+    R.addEventListener('pointerover', (e) => { if (e.pointerType !== 'mouse') return; const el = tipTarget(e); if (el) showTip(el); else hideTip(); });
+    R.addEventListener('pointerout', (e) => { if (e.pointerType !== 'mouse') return; const next = (e.relatedTarget as HTMLElement | null)?.closest?.('[data-tip]'); if (!next) hideTip(); });
+    R.addEventListener('pointerdown', (e) => { const el = tipTarget(e); if (!el) { hideTip(); return; } showTip(el); clearTimeout(tipT); tipT = window.setTimeout(hideTip, 2800); });
+    window.addEventListener('pointerdown', (e) => { if (!tipTarget(e)) hideTip(); });
     R.addEventListener('click', (e) => { const b = (e.target as HTMLElement).closest('[data-p]') as HTMLElement | null; if (b && ctx.mode === 'play') { ctx.sound.play('ui'); this.panel(b.dataset.p!); } });
     const main = E.act.querySelector('.main') as HTMLElement, alt = E.act.querySelector('.alt') as HTMLElement, run = E.runb.querySelector('.run') as HTMLElement;
     main.onclick = () => ctx.interact.trigger(); alt.onclick = () => ctx.interact.triggerAlt(); run.onclick = () => { ctx.input.runLock = !ctx.input.runLock; run.classList.toggle('on', ctx.input.runLock); };
@@ -266,7 +270,14 @@ export class UI {
     if (g.wanted >= 1) { E.wanted.innerHTML = `${ic('badge')}Bị để ý ${Math.round(g.wanted)}%`; E.wanted.style.background = g.wanted >= 45 ? 'rgba(160,30,24,.92)' : 'rgba(40,26,16,.72)'; }
     const td = totalDebt(g); E.debt.classList.toggle('hide', td <= 0); if (td > 0) { const due = Math.min(...g.debts.map((d) => d.due)); E.debt.innerHTML = `${ic('skull')}Nợ ${money(td)} · ${due < g.day ? 'QUÁ HẠN' : due === g.day ? 'hạn hôm nay' : 'còn ' + (due - g.day) + ' ngày'}`; E.debt.style.background = due <= g.day ? 'rgba(160,30,24,.9)' : ''; }
     E.fps.classList.toggle('hide', !ctx.set.fps); if (ctx.set.fps) E.fps.textContent = `${Math.round(this.fpsVal)} FPS · ${ctx.renderer.info.render.calls} lệnh vẽ`;
-    for (const s of Array.from(E.stats.children) as HTMLElement[]) { const v = (g.st as any)[s.dataset.k!] as number; (s.querySelector('b') as HTMLElement).style.width = v + '%'; s.classList.toggle('low', v < 22); s.classList.toggle('mid', v >= 22 && v < 45); }
+    for (const s of Array.from(E.stats.children) as HTMLElement[]) {
+      const v = (g.st as any)[s.dataset.k!] as number;
+      (s.querySelector('b') as HTMLElement).style.width = clamp((v / STAT_MAX) * 100, 0, 100) + '%';
+      s.classList.toggle('low', v < 22); s.classList.toggle('mid', v >= 22 && v < 45);
+      const t = `${s.dataset.title} (${Math.round(v)}/${STAT_MAX}): ${s.dataset.note}`;
+      s.dataset.tip = t;
+      if (this.tipEl === s && !E.tip.classList.contains('hide')) E.tip.textContent = t;
+    }
     (E.quest.lastElementChild as HTMLElement).textContent = ctx.acts.quest(); E.quest.classList.toggle('min', this.questMin || (g.stall.open && g.stall.where === 'placed' && dist2(p.x, p.z, g.stall.x, g.stall.z) < 25));
     const way = ctx.acts.way, giaoHang = ctx.acts.job?.kind === 'delivery';
     E.way.classList.toggle('hide', !way); E.way.classList.toggle('giao', !!way && giaoHang);
