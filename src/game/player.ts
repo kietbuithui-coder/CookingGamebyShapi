@@ -16,6 +16,8 @@ export class Player {
   rig = new Rig(); look: Look | null = null; private rigCarry = new THREE.Group(); private carryMesh: Partial<Record<Carry, THREE.Object3D>> = {};
   actPose: Pose | null = null;
   actRigPos: { x: number; y: number; z: number; yaw: number; pitch?: number } | null = null;
+  private gesturePose: Pose | null = null;
+  private gestureT = 0;
   private camP = new THREE.Vector3(); private camDist = 3; private camOn = false;
   x = 0; z = 0; yaw = Math.PI; pitch = 0; eye = 1.6; eyeTarget = 1.6; y = 0.12;
   stamina = 1; /** Trần sức bền hiện tại (tụt khi đói, khát). */ staminaCap = 1; tired = false; moving = false; running = false; speed = 0; phase = 0; bob = 0;
@@ -25,6 +27,9 @@ export class Player {
   frozen = false; private stepSide = 0;
   /** Độ cao đang nhảy (mét) và vận tốc lên — chỉ để cảm giác, không đổi va chạm. */
   jumpY = 0; private vy = 0;
+  /** Vật lý bị văng / choáng / ngã khi bị xe đụng hoặc bị đánh trúng. */
+  kbx = 0; kbz = 0; stunT = 0; fallT = 0; hitCd = 0;
+  private shakeT = 0; private shakeMag = 0; private rollTilt = 0;
   constructor() {
     const cam = ctx.camera; cam.rotation.order = 'YXZ'; cam.add(this.holder); ctx.scene.add(cam);
     const mk = (fn: (m: MB) => void) => { const m = new MB(); fn(m); const mesh = new THREE.Mesh(m.build(), MAT.lit); mesh.visible = false; this.holder.add(mesh); return mesh; };
@@ -48,9 +53,22 @@ export class Player {
     if (!this.onGround || this.frozen || this.camTo) return false;
     this.vy = 3.4; return true;
   }
+  /** Hất văng người chơi theo hướng (dirX, dirZ) với lực đẩy, nảy lên, choáng, rung camera và ngã. */
+  knockback(dirX: number, dirZ: number, speed: number, liftVy = 0, stunSec = 0, shake = 0, fallSec = 0) {
+    const len = Math.hypot(dirX, dirZ) || 1;
+    this.kbx = (dirX / len) * speed;
+    this.kbz = (dirZ / len) * speed;
+    if (liftVy > 0) this.vy = Math.max(this.vy, liftVy);
+    this.stunT = Math.max(this.stunT, stunSec);
+    this.fallT = Math.max(this.fallT, fallSec);
+    this.shakeMag = Math.max(this.shakeMag, shake);
+    this.shakeT = Math.max(this.shakeT, 0.28 + shake * 0.32);
+    this.rollTilt = (Math.random() > 0.5 ? 1 : -1) * clamp(shake * 0.24, 0.04, 0.26);
+  }
   place(x: number, z: number, yaw: number, pitch = 0) {
     if (ctx.anim?.active && !ctx.anim.placing) ctx.anim.stop();
     this.x = x; this.z = z; this.yaw = yaw; this.pitch = pitch; this.y = groundY(x, z);
+    this.kbx = 0; this.kbz = 0; this.stunT = 0; this.fallT = 0; this.shakeT = 0; this.rollTilt = 0;
   }
   setCarry(c: Carry) { if (c === this.carry) return; this.carry = c; for (const [k, m] of Object.entries(this.models)) m!.visible = k === c; this.syncCarry(); }
   /** Đồ mang theo: bản gắn vào camera (góc nhìn 1) và bản gắn vào nhân vật (góc nhìn 3). */
@@ -66,14 +84,20 @@ export class Player {
   get fwd(): [number, number] { return [Math.sin(this.yaw), Math.cos(this.yaw)]; }
   update(dt: number) {
     const g = ctx.g, inp = ctx.input, s = ctx.set;
+    if (this.hitCd > 0) this.hitCd = Math.max(0, this.hitCd - dt);
+    if (this.stunT > 0) this.stunT = Math.max(0, this.stunT - dt);
+    if (this.fallT > 0) this.fallT = Math.max(0, this.fallT - dt);
+    if (this.shakeT > 0) this.shakeT = Math.max(0, this.shakeT - dt);
+    if (this.gestureT > 0) { this.gestureT = Math.max(0, this.gestureT - dt); if (this.gestureT === 0) this.gesturePose = null; }
+    this.rollTilt = damp(this.rollTilt, 0, 7, dt);
     const [lx, ly] = inp.consumeLook();
     if (!this.frozen && !this.camTo) {
       const k = 0.0042 * s.sens * (ctx.mobile ? 1.15 : 1);
       this.yaw -= lx * k; this.pitch = clamp(this.pitch - ly * k, -1.35, 1.2);
       if (inp.keys.has('q')) this.yaw += dt * 2; if (inp.keys.has('e') && false) this.yaw -= dt * 2;
     }
-    // di chuyển
-    let mx = inp.mx, mz = inp.mz; if (this.frozen || this.camTo) mx = mz = 0;
+    // di chuyển (tạm khoá bước chủ động trong lúc đang bị hất văng/choáng)
+    let mx = inp.mx, mz = inp.mz; if (this.frozen || this.camTo || this.stunT > 0 || this.fallT > 0) mx = mz = 0;
     const mag = Math.min(1, Math.hypot(mx, mz)); this.moving = mag > 0.08;
     const maxSt = this.staminaCap = staminaMax(g); this.stamina = Math.min(this.stamina, maxSt);
     const wantRun = inp.run && this.moving && mz > 0.3 && !this.tired && this.carry === '';
@@ -84,9 +108,10 @@ export class Player {
     const load = bagWeight(g) / carryCap(g); if (load > 0.85) sp *= clamp(1.25 - load * 0.4, 0.55, 1);
     if (mz < -0.1) sp *= 0.7;
     const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw), rx = -fz, rz = fx;
-    const vx = (fx * mz + rx * mx) * sp, vz = (fz * mz + rz * mx) * sp;
+    const vx = (fx * mz + rx * mx) * sp + this.kbx, vz = (fz * mz + rz * mx) * sp + this.kbz;
     this.speed = Math.hypot(vx, vz);
-    if (this.moving) {
+    const kbActive = Math.abs(this.kbx) + Math.abs(this.kbz) > 0.05;
+    if (this.moving || kbActive) {
       let nx = this.x + vx * dt, nz = this.z + vz * dt;
       ctx.world.resolve(nx, nz, 0.3, _o); nx = clamp(_o.x, MAP.x0 + 0.5, MAP.x1 - 0.5); nz = clamp(_o.z, MAP.z0 + 0.5, MAP.z1 - 0.7);
       // lỡ bị kẹt trong vật cản (khe hẹp, góc tường, cửa hẹp) thì bò ra chỗ trống gần nhất,
@@ -98,18 +123,27 @@ export class Player {
         }
       }
       this.x = nx; this.z = nz;
-      const prev = this.phase; this.phase += dt * (wantRun ? 11.5 : 8.2) * clamp(this.speed / 3.3, 0.4, 1.4);
-      if (Math.floor(prev / Math.PI) !== Math.floor(this.phase / Math.PI)) { this.stepSide ^= 1; const wet = ctx.env.wet > 0.4 || (floodPct(g) > 0.3 && floodZone(this.x, this.z)); ctx.sound.step(wet ? 'wet' : 'dry', wantRun ? 1 : 0.7); }
+      if (this.moving) {
+        const prev = this.phase; this.phase += dt * (wantRun ? 11.5 : 8.2) * clamp(this.speed / 3.3, 0.4, 1.4);
+        if (Math.floor(prev / Math.PI) !== Math.floor(this.phase / Math.PI)) { this.stepSide ^= 1; const wet = ctx.env.wet > 0.4 || (floodPct(g) > 0.3 && floodZone(this.x, this.z)); ctx.sound.step(wet ? 'wet' : 'dry', wantRun ? 1 : 0.7); }
+      }
     }
+    const kbDrag = this.jumpY > 0.05 ? 2.6 : 8.5;
+    this.kbx = damp(this.kbx, 0, kbDrag, dt);
+    this.kbz = damp(this.kbz, 0, kbDrag, dt);
     // nhảy: lên rồi rơi xuống, chạm đất thì kêu một tiếng
     if (this.vy !== 0 || this.jumpY > 0) {
       this.jumpY += this.vy * dt; this.vy -= 12.5 * dt;
       if (this.jumpY <= 0) { this.jumpY = 0; this.vy = 0; ctx.sound.step('dry', 1.15); }
     }
     this.bob = damp(this.bob, this.moving ? 1 : 0, 8, dt);
-    this.y = damp(this.y, groundY(this.x, this.z), 14, dt); this.eye = damp(this.eye, this.eyeTarget, 6, dt);
+    this.y = damp(this.y, groundY(this.x, this.z), 14, dt);
+    const wantEye = this.fallT > 0 ? 0.55 : this.eyeTarget;
+    this.eye = damp(this.eye, wantEye, this.fallT > 0 ? 14 : 6, dt);
     const cam = ctx.camera, by = Math.sin(this.phase * 2) * 0.03 * this.bob, bx = Math.cos(this.phase) * 0.02 * this.bob;
-    const px = this.x + rx * bx, py = this.y + this.eye + by + this.jumpY, pz = this.z + rz * bx;
+    const shakeAmp = this.shakeT > 0 ? this.shakeMag * clamp(this.shakeT * 2.4, 0, 1) * 0.09 : 0;
+    const sx = shakeAmp ? (Math.random() - 0.5) * shakeAmp : 0, sy = shakeAmp ? (Math.random() - 0.5) * shakeAmp : 0;
+    const px = this.x + rx * bx + sx, py = this.y + this.eye + by + this.jumpY + sy, pz = this.z + rz * bx;
     if (this.camTo) {
       if (this.camK === 0) { this.from.copy(cam.position); this.fromQ.copy(cam.quaternion); this.fromFov = cam.fov; }
       this.camK = Math.min(1, this.camK + dt * 2.6); const t = this.camK * this.camK * (3 - 2 * this.camK);
@@ -120,7 +154,7 @@ export class Player {
         const rp = this.actRigPos;
         this.rig.root.position.set(rp ? rp.x : this.x, (rp ? rp.y : this.y) + this.jumpY, rp ? rp.z : this.z);
         this.rig.root.rotation.y = rp ? rp.yaw : this.yaw;
-        this.rig.pose = this.actPose ?? (this.moving ? 'walk' : 'idle');
+        this.rig.pose = this.actPose ?? (this.gestureT > 0 && this.gesturePose ? this.gesturePose : this.moving ? 'walk' : 'idle');
         this.rig.update(dt, this.speed);
         if (rp?.pitch) this.rig.inner.rotation.x += rp.pitch;
       }
@@ -139,13 +173,13 @@ export class Player {
         this.camDist = wasOn ? damp(this.camDist, want, 10, dt) : want; this.camOn = true;
         const tx = px - dirx * this.camDist, tz = pz - dirz * this.camDist, ty = Math.max(groundY(tx, tz) + 0.4, py - diry * this.camDist);
         if (!wasOn) this.camP.set(tx, ty, tz); else { this.camP.x = damp(this.camP.x, tx, 14, dt); this.camP.y = damp(this.camP.y, ty, 14, dt); this.camP.z = damp(this.camP.z, tz, 14, dt); }
-        cam.position.copy(this.camP); cam.rotation.set(this.pitch, this.yaw + Math.PI, 0, 'YXZ');
+        cam.position.copy(this.camP); cam.rotation.set(this.pitch, this.yaw + Math.PI, this.rollTilt, 'YXZ');
         if (cam.fov !== bf) { cam.fov = bf; cam.updateProjectionMatrix(); }
         this.rig.root.position.set(this.x, this.y + this.jumpY, this.z); this.rig.root.rotation.y = this.yaw;
-        this.rig.pose = this.moving ? 'walk' : 'idle'; this.rig.update(dt, this.speed);
+        this.rig.pose = this.fallT > 0 ? 'lie' : this.gestureT > 0 && this.gesturePose ? this.gesturePose : this.moving ? 'walk' : 'idle'; this.rig.update(dt, this.speed);
       } else {
         this.camOn = false;
-        cam.position.set(px, py, pz); cam.rotation.set(this.pitch, this.yaw + Math.PI, 0, 'YXZ'); if (cam.fov !== bf) { cam.fov = bf; cam.updateProjectionMatrix(); }
+        cam.position.set(px, py, pz); cam.rotation.set(this.pitch, this.yaw + Math.PI, this.rollTilt, 'YXZ'); if (cam.fov !== bf) { cam.fov = bf; cam.updateProjectionMatrix(); }
       }
     }
     // nép sát quá thì giấu nhân vật đi, đừng để camera chui vô trong đầu
@@ -155,6 +189,8 @@ export class Player {
     this.holder.rotation.x = -this.pitch * 0.55; this.holder.visible = !this.camTo && this.camK === 0 && !ctx.set.cam3;
     g.pos.x = this.x; g.pos.z = this.z; g.pos.yaw = this.yaw; g.pos.pitch = this.pitch;
   }
+  /** Bật tư thế cử chỉ ngắn trong góc nhìn thứ ba (đấm, bới thùng rác, làm món, nhặt đồ...). */
+  gesture(pose: Pose, dur = 0.45) { this.gesturePose = pose; this.gestureT = Math.max(this.gestureT, dur); }
   /** Bật/tắt tư thế camera cố định. */
   view(pos: THREE.Vector3 | null, look?: THREE.Vector3, fov?: number) { if (pos && look) { if (!this.camTo) this.camK = 0; this.camTo = { pos: pos.clone(), look: look.clone(), fov }; } else this.camTo = null; }
   /** Quay mặt về một điểm. */

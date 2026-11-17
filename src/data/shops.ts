@@ -20,7 +20,7 @@ export const SHOP_LIST: ShopDef[] = [
     items: ['muoi', 'duong', 'tieu', 'nuocmam', 'nuoctuong', 'tuongot', 'dauan', 'giam', 'giavipho'], say: 'Mắm muối đủ cả, thiếu gì cứ hỏi.' },
   { id: 'm_trung', name: 'Trứng – Giò chả Dì Sáu', vendor: 'Dì Sáu', vendorLook: 4, open: [5, 18], priceMul: 1, fresh: [88, 100], q: 0.92, haggle: 0.45, lateSale: true,
     items: ['trung', 'dauhu', 'gio', 'chaca', 'nam'], say: 'Trứng gà ta, giò chả nhà làm.' },
-  { id: 'mart', name: 'MiniMart 24h', vendor: 'Bé Na', vendorLook: 1, open: [6, 22.5], priceMul: 1.18, fresh: [90, 96], q: 0.96, haggle: 0, card: true, coldFrom: 14,
+  { id: 'mart', name: 'MiniMart 24h', vendor: 'Bé Na', vendorLook: 1, open: [0, 24], priceMul: 1.18, fresh: [90, 96], q: 0.96, haggle: 0, card: true, coldFrom: 14,
     items: ['nuocloc', 'nuocngot', 'tra', 'caphe', 'suadac', 'nuocdua', 'tranchau', 'duong', 'muoi', 'dauan', 'tuongot', 'nuoctuong', 'mi', 'botmi',
       'suatuoi', 'xucxich', 'cavien', 'pate', 'phomai', 'bolat', 'trungca', 'da'], say: 'Dạ, em chào anh chị ạ.' },
   { id: 'kiosk', name: 'Tạp hoá Cô Ba', vendor: 'Cô Ba', vendorLook: 4, open: [5.5, 23], priceMul: 1.12, fresh: [72, 90], q: 0.8, haggle: 0.2,

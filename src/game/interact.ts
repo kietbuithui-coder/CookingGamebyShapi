@@ -21,7 +21,7 @@ interface Cand { kind: Kind; ref: any; x: number; y: number; z: number; r: numbe
 export interface Focus { label: string; sub?: string; act: () => void; alt?: { label: string; act: () => void }; x: number; y: number; z: number; }
 const _v = new THREE.Vector3(), _f = new THREE.Vector3();
 export class Interact {
-  focus: Focus | null = null; private cands: Cand[] = []; private doors: { d: any; m: THREE.Mesh; open: number; want: number }[] = []; private shut: { s: any; m: THREE.Mesh; k: number }[] = []; private T = 0;
+  focus: Focus | null = null; private cands: Cand[] = []; private doors: { d: any; m: THREE.Mesh; open: number; want: number; bellUntil?: number }[] = []; private shut: { s: any; m: THREE.Mesh; k: number }[] = []; private T = 0;
   constructor() {
     const W = ctx.world;
     for (const d of W.doors) {
@@ -41,6 +41,10 @@ export class Interact {
     for (const n of ctx.npcs.list) { if (n.hidden || n.kind === 'kid' || !near(n.x, n.z, n.state === 'fixed' ? 3.6 : 3)) continue; this.add('npc', n, n.x, n.y + n.rig.headY - 0.35, n.z, n.state === 'fixed' ? 3.6 : n.state === 'queue' ? 3.4 : 2.6, n.state === 'queue' && n.order ? 0.25 : n.state === 'fixed' ? 0.1 : 0); }
     const s = g.stall;
     if ((s.where === 'placed' || s.where === 'home') && near(s.x, s.z, 3.2)) this.add(s.where === 'home' ? 'homeStall' : 'stall', null, s.x, groundY(s.x, s.z) + (s.tier <= 1 ? 0.35 : 0.95), s.z, 3, 0.05);
+    if (s.where === 'placed' && R.isRestaurant(g) && R.has(g, 'wc_lavabo')) {
+      const c = Math.cos(s.yaw), sn = Math.sin(s.yaw), wx = s.x + -3.12 * c + 2.15 * sn, wz = s.z - -3.12 * sn + 2.15 * c;
+      if (near(wx, wz, 2.2)) this.add('wash', 'sink', wx, groundY(wx, wz) + 0.85, wz, 2.1, 0.15);
+    }
     if (s.where === 'carried') for (const sp of SPOTS) if (near(sp.x, sp.z, 4.2)) this.add('spot', sp, sp.x, 0.4, sp.z, 4.2, 0.3);
     for (const d of this.doors) if (near(d.d.x, d.d.z, 2.6)) this.add('door', d, d.d.x + Math.cos(d.d.yaw) * d.d.w * 0.5, 1.1, d.d.z + Math.sin(d.d.yaw) * d.d.w * 0.5, 2.4);
     for (const k of Object.keys(HOUSING)) {
@@ -59,7 +63,7 @@ export class Interact {
     for (const t of W.taps) if (near(t.x, t.z, 2.2)) this.add('tap', t, t.x, t.y, t.z, 2.1);
     W.bins.forEach((b, i) => { if (near(b.x, b.z, 2.1)) this.add('bin', i, b.x, b.y, b.z, 2); });
     for (const l of ctx.acts.litter) if (near(l.x, l.z, 2.2)) this.add('litter', l, l.x, groundY(l.x, l.z) + 0.08, l.z, 2.2, 0.15);
-    for (const k of ['dock', 'board', 'sink', 'v_temple', 'tv_bongda', 'fire_gamcau', 'seat_eatery', 'hot_toc_ghe', 'giuong_benhvien', 'quay_thuoc', 'giuong_giam', 'lao_dong', 'may_net', 'xich_du']) { const a = A[k]; if (a && near(a.x, a.z, 2.8)) this.add('anchor', k, a.x, a.y, a.z, 2.7, k === 'dock' ? 0.2 : k === 'giuong_benhvien' || k === 'quay_thuoc' ? 0.05 : 0); }
+    for (const k of ['dock', 'board', 'sink', 'v_temple', 'tv_bongda', 'ban_cafe', 'fire_gamcau', 'seat_eatery', 'hot_toc_ghe', 'giuong_benhvien', 'quay_thuoc', 'giuong_giam', 'lao_dong', 'may_net', 'xich_du', 'bell_canho', 'bell_nharieng', 'bell_cuahang']) { const a = A[k]; if (a && near(a.x, a.z, 2.8)) this.add('anchor', k, a.x, a.y, a.z, 2.7, k === 'dock' ? 0.2 : k.startsWith('bell_') ? 0.45 : k === 'giuong_benhvien' || k === 'quay_thuoc' ? 0.05 : 0); }
     const j = ctx.acts.job; if (j?.kind === 'dock' && j.carrying) { const a = A.v_m_kho; if (a && near(a.x, a.z, 4.2)) this.add('anchor', 'dockDrop', a.x, 0.9, a.z, 4.2, 0.4); }
   }
   private atHome() { const g = ctx.g, a = ctx.world.anchors['bed_' + g.housing]; return !!a && dist2(a.x, a.z, ctx.player.x, ctx.player.z) < 36; }
@@ -74,22 +78,24 @@ export class Interact {
         if (!R.shopOpen(g, shop)) return mk(`${shop.name} — đã đóng cửa`, () => toast(`Mở cửa ${hhmm(shop.open[0] * 60)}–${hhmm(shop.open[1] * 60)}.`, 'info'));
         if (!R.shopHas(g, shop, id)) return mk(`${d.name} — hết hàng`, () => A.take(sl));
         const n = shop.bulk ?? 1, pr = R.shopPrice(g, shop, id);
-        return mk(`Lấy ${n > 1 ? n + ' ' : ''}${d.unit} ${d.name.toLowerCase()} — ${money(pr * n)}`, () => A.take(sl), d.shelf < 9000 ? `Tươi ${Math.round(R.shopFresh(g, shop, id, undefined))}% · để được ~${d.shelf < 24 ? d.shelf + ' giờ' : Math.round(d.shelf / 24) + ' ngày'}${d.cold ? ' · cần giữ lạnh' : ''}` : undefined, { label: `×${n * 5}`, act: () => A.take(sl, true) });
+        return mk(`Lấy ${n > 1 ? n + ' ' : ''}${d.unit} ${d.name.toLowerCase()} — ${money(pr * n)}`, () => A.take(sl), d.shelf < 9000 ? `Tươi ${Math.round(R.shopFresh(g, shop, id, undefined))}% · để được ~${d.shelf < 24 ? Math.round(d.shelf) + ' giờ' : Math.round(d.shelf / 24) + ' ngày'}${d.cold ? ' · cần giữ lạnh' : ''}` : undefined, { label: `×${n * 5}`, act: () => A.take(sl, true) });
       }
       case 'npc': {
         const n: Npc = c.ref;
-        if (n.actor === 'helper') return mk(`Nói chuyện với ${n.name} — phụ quầy`, () => { ctx.player.face(n.x, n.z); ctx.stall.talkHelper(); }, 'Hỏi chuyện bán buôn · dặn dò · cho nghỉ việc');
+        if (n.actor === 'helper' || n.actor === 'helper2') return mk(`Nói chuyện với ${n.name} — phục vụ`, () => { ctx.player.face(n.x, n.z); ctx.stall.talkHelper(n.actor === 'helper2' ? 2 : 1); }, 'Hỏi chuyện bán buôn · dặn dò · cho nghỉ việc');
+        if (n.actor === 'sous' || n.actor === 'sous2') return mk(`Nói chuyện với ${n.name} — phụ bếp`, () => { ctx.player.face(n.x, n.z); ctx.stall.talkSous(n.actor === 'sous2' ? 2 : 1); }, 'Kiểm tra bếp · thúc nấu thêm món · cho nghỉ việc');
         if (n.state === 'fixed') { const cart = A.cart && A.cart.shop === n.fixedId; return mk(cart ? `Tính tiền — ${money(A.cartTotal())}` : `Nói chuyện với ${whoIn(n)}`, () => { ctx.player.face(n.x, n.z); A.talk(n); }); }
-        if (n.state === 'queue' && n.order) { const r = RECIPES[n.order.rid], have = R.readyCount(g, r.id) >= n.order.n; return mk(have ? `Giao ${n.order.n} ${r.short}` : `Làm ${r.short} cho khách`, () => ctx.stall.serve(n), who(n) + (n.regular && known(n) ? ' · khách quen' : '')); }
+        const ordNpc: Npc | undefined = n.state === 'queue' && n.order ? n : (n.state === 'queue' && n.data?.leader?.order ? n.data.leader : undefined);
+        if (ordNpc && ordNpc.order) { const r = RECIPES[ordNpc.order.rid], have = R.readyCount(g, r.id) >= ordNpc.order.n; return mk(have ? `Giao ${ordNpc.order.n} ${r.short}` : `Làm ${r.short} cho ${ordNpc.order.group ? `đoàn ${ordNpc.order.group} người` : 'khách'}`, () => ctx.stall.serve(ordNpc), who(ordNpc) + (ordNpc.regular && known(ordNpc) ? ' · khách quen' : '')); }
         if (n.state === 'toStall' || n.state === 'actor' || n.state === 'queue' || n.kind === 'actor') return null;
         if (g.stall.open) return null;
         return mk(`Xin tiền ${whoIn(n)}`, () => { ctx.player.face(n.x, n.z); A.beg(n); });
       }
-      case 'stall': return mk(g.stall.open ? 'Quầy hàng (đang mở bán)' : 'Quầy hàng', () => ctx.ui.panel('stall'), 'Thực đơn · Sơ chế · Kho quầy');
+      case 'stall': return mk(g.stall.open ? (R.isRestaurant(g) ? 'Nhà hàng (đang mở)' : 'Quầy hàng (đang mở bán)') : (R.isRestaurant(g) ? 'Nhà hàng bình dân' : 'Quầy hàng'), () => ctx.ui.panel('stall'), R.isRestaurant(g) ? 'Thực đơn · Sơ chế · Nhân sự & Đặt bàn · Kho' : 'Thực đơn · Sơ chế · Kho quầy');
       case 'homeStall': return mk('Mang quầy đi', () => { ctx.stall.pickUp(); }, 'Chạm để gánh lên vai', { label: 'Kho', act: () => ctx.ui.panel('stall') });
       case 'spot': {
-        const sp = c.ref, sap = g.stall.tier >= 3, quan = g.stall.tier >= 4;
-        return mk(`${quan ? 'Dựng quán' : sap ? 'Dựng sạp' : 'Đặt quầy'} tại ${sp.name}`, () => ctx.stall.placeAt(sp),
+        const sp = c.ref, sap = g.stall.tier >= 3, quan = g.stall.tier >= 4, nh = g.stall.tier >= 6;
+        return mk(`${nh ? 'Mở nhà hàng' : quan ? 'Dựng quán' : sap ? 'Dựng sạp' : 'Đặt quầy'} tại ${sp.name}`, () => ctx.stall.placeAt(sp),
           (sp.fee ? `Phí ${quan ? 'mặt bằng' : 'chỗ'} ${money(sp.fee)}/ngày` : 'Miễn phí') + ' · ' + sp.note + (sap ? ' · đặt rồi không dời được' : ''));
       }
       case 'door': {
@@ -98,7 +104,7 @@ export class Interact {
       }
       case 'bed': { const k = c.ref as string, err = A.canSleep(k); return mk(err ? HOUSING[k].name : `Ngủ — ${HOUSING[k].name}`, () => A.sleepMenu(k), err ?? `Giấc ngủ ${Math.round(HOUSING[k].sleep * 100)}% · an toàn ${Math.round(HOUSING[k].safety * 100)}%`); }
       case 'store': return mk('Mở chỗ cất đồ', () => ctx.ui.panel('home'), `Cất được ${HOUSING[c.ref].storage} kg` + (R.homeChilled(g) ? ' · có giữ lạnh' : ''));
-      case 'wash': return mk(c.ref === 'park' ? 'Tắm — 3.000₫' : 'Tắm vòi sen', () => A.wash(c.ref), `Vệ sinh hiện tại ${Math.round(g.st.hygiene)}/${STAT_MAX}`);
+      case 'wash': return mk(c.ref === 'park' ? 'Tắm — 3.000₫' : c.ref === 'sink' ? 'Rửa tay & rửa mặt (nhà hàng)' : 'Tắm vòi sen', () => A.wash(c.ref === 'sink' ? 'tap' : c.ref), `Vệ sinh hiện tại ${Math.round(g.st.hygiene)}/${STAT_MAX}`);
       case 'bench': { const b = ctx.world.benches[c.ref]; return mk('Ngồi nghỉ trên ghế đá', () => { ctx.player.face(b.x, b.z); A.rest(); }, '20 phút · tinh thần +7'); }
       case 'tap': return mk('Dùng vòi nước', () => A.wash('tap'));
       case 'bin': return mk(g.wd.bins[c.ref] === g.day ? 'Thùng rác (đã bới)' : 'Bới thùng rác', () => A.rummage(c.ref));
@@ -122,11 +128,19 @@ export class Interact {
         if (k === 'v_temple') return mk('Cổng chùa Phước An', () => A.funMenu('v_temple'), 'Cơm chay 11h–13h · thắp nhang cầu an');
         if (k === 'dropHome') return mk('Cất quầy ở đây', () => ctx.stall.storeHome(), 'Để quầy cạnh chỗ ngủ');
         if (k === 'tv_bongda') return mk('Quán cà phê Bóng Đá', () => A.funMenu('tv_bongda'), 'Uống cà phê · hát karaoke · xin chạy bàn' + (R.eventOn(g, 'bong_da') ? ' · có trận bóng' : ''));
+        if (k === 'ban_cafe') return mk('Cà phê Sân Vườn', () => A.gardenCafeMenu(), 'Ngồi bàn uống cà phê · trà đào · xin phụ quán');
         if (k === 'fire_gamcau') return R.isNight(g) ? mk('Sưởi bên thùng lửa', () => { g.weather.wet = Math.max(0, g.weather.wet - 40); g.st.mood = Math.min(STAT_MAX, g.st.mood + 3); R.advance(g, 10, A.act()); toast('Hơ tay bên đống lửa, ấm người hẳn.', 'info'); }) : null;
+        if (k === 'bell_canho' || k === 'bell_nharieng' || k === 'bell_cuahang') {
+          const hid = k.slice(5) as 'canho' | 'nharieng' | 'cuahang';
+          return mk('Bấm chuông cửa (đing đong)', () => A.ringBell(hid, ctx.world.anchors[k]), 'Gọi chủ nhà ra nói chuyện thuê hoặc mua nhà');
+        }
         return null;
       }
     }
     return null;
+  }
+  openBellDoor(homeId: string, sec = 10) {
+    for (const d of this.doors) if (d.d.home === homeId) { d.want = 1; d.bellUntil = ctx.time + sec; }
   }
   trigger() { if (ctx.anim?.active) { ctx.anim.stop(); this.update(0.05); } const f = this.focus; if (f && ctx.mode === 'play') { f.act(); ctx.acts.working = 0.3; } }
   triggerAlt() { if (ctx.anim?.active) { ctx.anim.stop(); this.update(0.05); } const f = this.focus; if (f?.alt && ctx.mode === 'play') f.alt.act(); }
@@ -134,7 +148,7 @@ export class Interact {
     const g = ctx.g, cam = ctx.camera;
     // cửa phòng & cửa cuốn
     this.T -= dt; const tick = this.T <= 0; if (tick) this.T = 0.5;
-    for (const d of this.doors) { d.open = damp(d.open, d.want, 9, dt); d.m.rotation.y = -d.d.yaw - d.open * 1.5; d.d.box.on = d.open < 0.5; }
+    for (const d of this.doors) { if (d.bellUntil && ctx.time >= d.bellUntil) { d.bellUntil = undefined; if (g.housing !== d.d.home) d.want = 0; } d.open = damp(d.open, d.want, 9, dt); d.m.rotation.y = -d.d.yaw - d.open * 1.5; d.d.box.on = d.open < 0.5; }
     for (const s of this.shut) { if (tick) s.s.box.on = !placeOpen(s.s.shop) || (s.s.shop === 'mart' && R.eventOn(g, 'cup_dien')); const want = s.s.box.on ? 1 : 0; s.k = damp(s.k, want, 3, dt); s.m.visible = s.k > 0.02; s.m.position.y = 0.12 + (1 - s.k) * s.s.h; s.m.scale.y = Math.max(0.02, s.k); }
     if (ctx.mode !== 'play' || ctx.anim?.active) { this.focus = null; ctx.input.taps.length = 0; return; }
     this.collect();

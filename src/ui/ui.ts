@@ -83,7 +83,7 @@ export class UI {
     add('tip', '', 'tip hide');
     add('stick', '<i></i>', 'hide'); add('cart', '', 'chip hide'); add('stallchip', '', 'chip hide'); add('toasts');
     add('cook', `<button class="btn small red quit">${ic('x')} Bỏ dở</button><div class="top"><div class="title"></div><div class="steps"></div><div class="hint"></div><div class="prog hide"><div class="meter"><div class="z"></div><div class="v"></div></div><small></small></div></div><div class="heat hide"><small>LỬA</small><div class="meter"><div class="z"></div><div class="v"></div><div class="n"></div></div></div><div class="slider hide"><i>LỬA</i></div><div class="card hide"></div><div class="custom hide"></div><div class="btns"></div>`, 'hide');
-    add('grade', '', 'hide'); add('dlg', '', 'hide'); add('fade'); add('zzz', '', 'hide'); add('modal', '', 'hide'); add('menu', '', 'hide'); add('load', 'Đang dựng thành phố…<small>Gánh Hàng Đường Phố</small>'); add('rotate', 'Hãy xoay ngang điện thoại để chơi thoải mái hơn.<br><br><button class="btn" id="rotok">Cứ chơi dọc</button>', 'want');
+    add('grade', '', 'hide'); add('dlg', '', 'hide'); add('fade'); add('hitflash'); add('zzz', '', 'hide'); add('modal', '', 'hide'); add('menu', '', 'hide'); add('load', 'Đang dựng thành phố…<small>Gánh Hàng Đường Phố</small>'); add('rotate', 'Hãy xoay ngang điện thoại để chơi thoải mái hơn.<br><br><button class="btn" id="rotok">Cứ chơi dọc</button>', 'want');
     for (const id of ['clock', 'wx', 'place', 'jailclock', 'stats', 'rep', 'money', 'bagdot', 'debt', 'fps', 'stowb', 'wanted', 'phoneb', 'phonedot']) E[id] = document.getElementById(id)!;
     E.stowb.onclick = () => { if (ctx.mode === 'play') ctx.stall.stow(); };
     E.stats.innerHTML = ([['dish', 'hunger', 'Độ no', 'no bụng — tụt thì đói, kiệt sức'], ['drop', 'thirst', 'Nước', 'khát — tụt thì khô cổ, dễ cảm'], ['bolt', 'energy', 'Năng lượng', 'sức lực — tụt thì đi chậm, ngất được'], ['heart', 'health', 'Sức khoẻ', 'máu — tụt vì bệnh, bị đánh, ngất'], ['sparkle', 'hygiene', 'Sạch sẽ', 'tắm rửa — bẩn thì khách chê'], ['smile', 'mood', 'Vui vẻ', 'tinh thần — thấp thì nấu kém, khách bỏ đi']] as const)
@@ -226,6 +226,15 @@ export class UI {
     (E.act.querySelector('.main') as HTMLElement).classList.toggle('dim', !f); const alt = E.act.querySelector('.alt') as HTMLElement; alt.classList.toggle('hide', !f?.alt); if (f?.alt) alt.textContent = f.alt.label;
   }
   fade(on: boolean, secs = 0.8) { const f = this.E.fade; f.style.transitionDuration = secs + 's'; f.classList.toggle('on', on); }
+  private hitT = 0;
+  /** Chớp viền đỏ màn hình khi bị xe đụng hoặc bị đánh trúng. */
+  hitFlash(strength = 0.6) {
+    const f = this.E.hitflash; if (!f) return;
+    clearTimeout(this.hitT);
+    f.style.transitionDuration = '0.05s';
+    f.style.opacity = String(clamp(strength, 0.2, 1));
+    this.hitT = window.setTimeout(() => { f.style.transitionDuration = '0.45s'; f.style.opacity = '0'; }, 70);
+  }
   sleeping(on: boolean) { this.E.zzz.classList.toggle('hide', !on); }
   menu(html: string | null) { const m = this.E.menu; m.classList.toggle('hide', html === null); if (html !== null) m.innerHTML = html; return m; }
   // ───────── lớp phủ nấu ăn ─────────

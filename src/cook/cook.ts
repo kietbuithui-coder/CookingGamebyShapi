@@ -117,6 +117,7 @@ export class Cook implements PtrHandler {
   }
   private enter(st: Station) {
     this.st = st; this.active = true; ctx.mode = 'cook'; ctx.input.reset(); ctx.input.capture = this; this.time = 0;
+    if (ctx.set.cam3) ctx.player.actPose = 'work';
     this.group.position.set(st.x, st.y, st.z); this.group.rotation.y = st.yaw + Math.PI; this.group.visible = true; this.group.updateMatrixWorld(true);
     this.aspect = 0; this.frameCam(); this.ease = cookEase(ctx.g); this.light.intensity = 2.2 * ctx.env.night;
     ctx.ui.onCookBtn = (id, down) => { if (id === 'quit') { if (down) this.abort(); } else this.mini?.btn?.(id, down); }; ctx.ui.onCookSlide = (v) => this.mini?.slide?.(v);
@@ -210,6 +211,7 @@ export class Cook implements PtrHandler {
   abort() { if (!this.active) return; const d = this.done; if (this.phase === 'job') { this.exit(); this.jobDone?.(-1); this.jobDone = null; return; } toast('Bỏ dở giữa chừng.', 'warn'); this.exit(); d?.(); }
   private exit() {
     this.clearStage(); this.mini = null; this.active = false; this.group.visible = false; this.gradeT = 0; this.done = null;
+    if (ctx.player.actPose === 'work') ctx.player.actPose = null;
     ctx.input.capture = null; ctx.input.reset(); ctx.player.view(null); ctx.mode = 'play'; ctx.ui.cookHide(); ctx.stall.cooking(false);
   }
 }

@@ -7,7 +7,7 @@ import type { WeatherId } from '../data/world';
 import { PLACES } from '../world/layout';
 import { PlayerLookData, defaultLook, cleanLook } from '../data/looks';
 
-export const SAVE_VERSION = 11;
+export const SAVE_VERSION = 13;
 /** Một lô nguyên liệu. fresh 0–100, q chất lượng 0–1, cost giá vốn mỗi đơn vị. */
 export interface Stack { id: string; n: number; fresh: number; q: number; cost: number; }
 /** Mẻ sơ chế sẵn ("cốt" món). */
@@ -35,6 +35,12 @@ export interface Helper {
   /** Lương mỗi ngày (trừ vào sáng hôm sau) và ngày bắt đầu làm, ngày đã trả lương gần nhất. */
   wage: number; since: number; paid: number; hired: boolean;
 }
+/** Đặt bàn trước của khách tại Nhà hàng bình dân (bậc 6). */
+export interface Booking {
+  id: number; name: string; fem: boolean; arch: string; size: number;
+  day: number; hour: number; deposit: number; dish?: string; regular?: string;
+  status: 'pending' | 'accepted' | 'seated' | 'done' | 'missed';
+}
 export interface Game {
   v: number; seed: number; ac: 'anh' | 'chị';
   /** Ngoại hình người chơi (đổi ở tiệm cắt tóc / tiệm thời trang, xem ở góc nhìn thứ ba). */
@@ -55,6 +61,15 @@ export interface Game {
   stall: Stall;
   /** Người phụ việc đang làm ở quầy (null = chưa thuê ai). */
   help: Helper | null;
+  /** Người phụ việc thứ 2 cho Nhà hàng bình dân (bậc 6). */
+  help2: Helper | null;
+  /** Nhân viên phụ bếp đứng phòng bếp riêng ở bậc 6 (null = chưa thuê). */
+  sous: Helper | null;
+  /** Nhân viên phụ bếp thứ 2 trong phòng bếp riêng (bậc 6). */
+  sous2: Helper | null;
+  /** Danh sách đặt bàn trước (bậc 6). */
+  bookings: Booking[];
+  bookSeq: number;
   rec: Record<string, RecState>;
   debts: Debt[]; debtSeq: number; credit: number;
   led: LedgerDay; hist: LedgerDay[];
@@ -86,7 +101,7 @@ export function newGame(seed = (Math.random() * 1e9) | 0, ac: 'anh' | 'chị' = 
     st: { hunger: 58, thirst: 55, energy: 82, health: 92, hygiene: 42, mood: 45 }, rep: 0, xp: 0,
     pos: { x: PLACES.camp.x, z: PLACES.camp.z - 1.2, yaw: Math.PI, pitch: 0 },
     bag: [], junk: {}, meals: [], lostBag: [], lostDay: -1, wanted: 0, jailUntil: 0, gear: {}, phone: null, housing: 'gamcau', paidUntil: 0, home: [],
-    stall: emptyStall(), help: null, rec, debts: [], debtSeq: 1, credit: 0,
+    stall: emptyStall(), help: null, help2: null, sous: null, sous2: null, bookings: [], bookSeq: 1, rec, debts: [], debtSeq: 1, credit: 0,
     led: newLedger(0), hist: [], rel: {}, met: {}, flags: {},
     weather: { now: 'nang', until: 6 * 60 + 10 + 420, next: 'nang', flood: 0, wet: 0 },
     ev: { active: [], last: {}, check: 9 * 60, lastStart: -999 },
@@ -139,6 +154,21 @@ export function migrate(raw: any): Game | null {
   if ((raw.v ?? 0) < 10 || !raw.help) g.help = null;
   else if (typeof g.help?.name !== 'string' || typeof g.help?.wage !== 'number') g.help = null;
   if (g.help) { g.help.hired = true; if (typeof g.help.since !== 'number') g.help.since = g.day; if (typeof g.help.paid !== 'number') g.help.paid = g.day; }
+  // v12: nhà hàng bình dân (bậc 6) — nhân viên phụ bếp và đặt bàn trước.
+  if ((raw.v ?? 0) < 12) {
+    g.sous = null;
+    g.bookings = [];
+    g.bookSeq = 1;
+  } else {
+    if (!g.sous || typeof g.sous.name !== 'string' || typeof g.sous.wage !== 'number') g.sous = null;
+    if (g.sous) { g.sous.hired = true; if (typeof g.sous.since !== 'number') g.sous.since = g.day; if (typeof g.sous.paid !== 'number') g.sous.paid = g.day; }
+    g.bookings = Array.isArray(raw.bookings) ? raw.bookings.filter((b: any) => b && typeof b.id === 'number' && typeof b.size === 'number' && typeof b.hour === 'number') : [];
+    g.bookSeq = typeof raw.bookSeq === 'number' && raw.bookSeq >= 1 ? raw.bookSeq : 1;
+  }
+  if ((raw.v ?? 0) < 13) {
+    if (!g.help2 || typeof g.help2 !== 'object') g.help2 = null;
+    if (!g.sous2 || typeof g.sous2 !== 'object') g.sous2 = null;
+  }
   if (typeof g.flags.firstSale !== 'number' && (g.hist.some((h) => h.revenue > 0) || g.led.revenue > 0)) g.flags.firstSale = 0;
   for (const k of Object.keys(g.st) as (keyof Stats)[]) g.st[k] = Math.min(STAT_MAX, Math.max(0, Number.isFinite(g.st[k]) ? g.st[k] : base.st[k]));
   g.v = SAVE_VERSION;
@@ -189,11 +219,11 @@ export function moveStack(from: Stack[], to: Stack[], idx: number, n: number, ro
   if (s.n <= 1e-6) from.splice(idx, 1);
   return k;
 }
-/** Làm hỏng dần nguyên liệu theo thời gian. hours: số giờ trôi qua · mul: hệ số thời tiết · chilled: kho có giữ lạnh. */
-export function spoil(list: Stack[], hours: number, mul: number, chilled: boolean) {
+/** Làm hỏng dần nguyên liệu theo thời gian. hours: số giờ trôi qua · mul: hệ số thời tiết · chilled: kho có giữ lạnh · coldMul: hệ số giữ lạnh thêm (tủ đông công nghiệp). */
+export function spoil(list: Stack[], hours: number, mul: number, chilled: boolean, coldMul = 1) {
   for (const s of list) {
     const d = INGS[s.id]; if (!d || d.shelf > 9000) continue;
-    const rate = (100 / d.shelf) * (chilled ? 0.22 : d.cold ? 2.6 * mul : mul);
+    const rate = (100 / d.shelf) * (chilled ? 0.22 * coldMul : d.cold ? 2.6 * mul : mul);
     s.fresh = Math.max(0, s.fresh - rate * hours);
   }
 }

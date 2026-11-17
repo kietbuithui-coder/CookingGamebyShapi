@@ -97,6 +97,7 @@ export class Sound {
       case 'boo': T(200, 0.4, 'sawtooth', 0.09, 0, 0.6); break;
       case 'yay': [784, 988, 1175].forEach((f, i) => T(f, 0.16, 'triangle', 0.13, i * 0.07)); break;
       case 'order': T(880, 0.07, 'sine', 0.16); T(1175, 0.14, 'sine', 0.14, 0.07); break;
+      case 'bell': T(880, 0.28, 'sine', 0.22, 0); T(1760, 0.18, 'sine', 0.06, 0); T(659.25, 0.45, 'sine', 0.22, 0.24); T(1318.5, 0.25, 'sine', 0.05, 0.24); break;
       case 'ding': T(1568, 0.5, 'sine', 0.16); T(3136, 0.3, 'sine', 0.04); break;
       case 'chop': N(0.05, 'bandpass', 2400, 0.3, 0, 1.5); T(190, 0.07, 'triangle', 0.22, 0.01, 0.6); break;
       case 'toss': N(0.22, 'highpass', 3200, 0.2, 0, 0.8, 1.6); break;
@@ -124,8 +125,10 @@ export class Sound {
       case 'spit': N(0.14, 'highpass', 2800, 0.15, 0, 0.9, 0.5); N(0.07, 'bandpass', 800, 0.07, 0.04); break;
       case 'shout': T(185, 0.26, 'sawtooth', 0.09, 0, 1.25); T(240, 0.2, 'sawtooth', 0.06, 0.07, 1.1); break;
       case 'horn': T(430, 0.1, 'square', 0.07); T(430, 0.09, 'square', 0.05, 0.15); break;
-      // ── đấm, nhảy, ngất ──
+      // ── đấm, nhảy, ngất, xe đụng ──
       case 'thud': N(0.09, 'lowpass', 700, 0.5, 0, 0.7, 0.4); T(95, 0.13, 'triangle', 0.28, 0, 0.6); break;
+      case 'bonk': N(0.06, 'bandpass', 950, 0.3, 0, 1.1, 0.5); T(165, 0.08, 'triangle', 0.2, 0, 0.75); break;
+      case 'skid': N(0.28, 'bandpass', 2400, 0.24, 0, 3.2, 0.65); N(0.22, 'lowpass', 900, 0.48, 0.05, 0.8, 0.35); T(110, 0.22, 'sawtooth', 0.2, 0.04, 0.45); break;
       case 'whoosh': N(0.16, 'bandpass', 1200, 0.16, 0, 1.6, 1.4); break;
       case 'jump': T(300, 0.09, 'sine', 0.1, 0, 1.8); T(430, 0.06, 'sine', 0.07, 0.05, 2); break;
       // ── xe đạp, xích đu ──

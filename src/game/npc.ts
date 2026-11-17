@@ -13,6 +13,7 @@ import { MB, MAT } from '../gfx/mb';
 import { EXPR } from '../gfx/tex';
 import { toast } from '../core/bus';
 import { GREET_GAP, GREET_NEAR, crowdWeight, greetKind, routineFor, rushMul, voicePitch } from '../sim/life';
+import { applyCombatImpactToStats, combatHitSpec, HitTier } from '../sim/impact';
 
 export type NState = 'walk' | 'stand' | 'sit' | 'toStall' | 'queue' | 'fixed' | 'follow' | 'actor' | 'chase' | 'cop' | 'gone';
 export interface Npc {
@@ -28,10 +29,15 @@ export interface Npc {
   /** đã nói chuyện với người chơi lần nào chưa — quen mặt thì chào thân hơn */ met?: boolean;
   /** đếm ngược tới câu chào kế tiếp; umb: đang che dù */ greetT: number; umb?: boolean; cheer?: boolean;
   /** đếm ngược tới lần gây sự kế tiếp; chaseT: còn đuổi bao lâu; hit: đã xô người chơi lần này chưa */ rudeT: number; chaseT?: number; hit?: boolean;
+  /** Vật lý bị hất văng / ngã xuống đường (bị đấm hoặc bị xe đụng). */
+  kbx?: number; kbz?: number; ky?: number; kvy?: number; fallT?: number; vehCd?: number;
+  /** Chủ nhà bước ra ngoài cửa sau khi khách bấm chuông. */
+  bellOut?: { x: number; z: number; yaw: number; until: number };
 }
 /** Giờ mở cửa của những nơi không phải cửa hàng nguyên liệu. */
 export const PLACE_HOURS: Record<string, [number, number]> = { equip: [7, 20], bank: [8, 17], eatery: [6, 21.5], pawn: [8, 21], scrap: [6, 19], dock: [4.5, 10], motel: [0, 24], hotel: [0, 24], tro: [6, 22], shark: [9, 24], hobo: [0, 24],
   canho: [6, 22], nharieng: [6, 22], cuahang: [6, 21],
+  cafe: [0, 24],
   police: [0, 24],
   hospital: [0, 24],
   // nhân vật phụ: mỗi người chỉ ở chỗ của mình trong một quãng giờ nhất định
@@ -68,12 +74,14 @@ function paperGeo(): THREE.BufferGeometry {
   if (!_paperGeo) { const m = new MB(); m.sph(0, 0, 0, 0.1, 0.09, 0.1, 0xfbf8ef, 6); m.sph(0.042, 0.03, 0.014, 0.07, 0.062, 0.07, 0xeee7d4, 5); m.sph(-0.036, -0.028, 0.026, 0.068, 0.06, 0.068, 0xe6dfcb, 5); _paperGeo = m.build(); }
   return _paperGeo;
 }
-const APRON: Record<string, number> = { m_thit: 0xf3f0e8, m_haisan: 0x2f6fa8, bakery: 0xf3f0e8, eatery: 0xd9463c, mart: 0x1f9d55, m_trung: 0xf3ead2 };
+const APRON: Record<string, number> = { m_thit: 0xf3f0e8, m_haisan: 0x2f6fa8, bakery: 0xf3f0e8, eatery: 0xd9463c, mart: 0x1f9d55, m_trung: 0xf3ead2, cafe: 0xf3e8d2 };
 
 export class Npcs {
   list: Npc[] = []; fixed = new Map<string, Npc>(); private seq = 1; private spawnT = 0; private R = new RNG((Math.random() * 1e9) | 0); private barkCd = 4;
   private browses: { n: Npc; shop: string }[] = []; private browseT = 6;
+  private cafePatrons: { n: Npc; seat: number }[] = []; private cafeT = 0.05;
   private rudeCd = 20; private paper: { m: THREE.Mesh; t: number; dur: number; from: THREE.Vector3; to: THREE.Vector3 }[] = [];
+  private stuck = new WeakMap<Npc, { x: number; z: number; t: number; tries: number }>();
   group = new THREE.Group(); private pool: Rig[] = [];
   constructor() {
     ctx.scene.add(this.group);
@@ -150,6 +158,17 @@ export class Npcs {
     // đi theo đồ thị tới gần rồi rẽ thẳng vào điểm đích
     const from = nearestNode(n.x, n.z), to = nearestNode(x, z), ids = dist2(n.x, n.z, x, z) > 14 * 14 ? findPath(from.id, to.id) : [];
     n.path = ids.map((id) => [NAV[id].x + n.ox, NAV[id].z + n.oz] as [number, number]); n.path.push([x, z]); n.pi = 0; n.enter = false; n.pose = 'walk'; n.onArrive = onArrive;
+  }
+  /** Đi theo đồ thị tới điểm cửa ngoài rồi đi theo từng điểm mốc vào trong (tránh đi xuyên tường). */
+  gotoPath(n: Npc, pts: [number, number][], onArrive?: (n: Npc) => void) {
+    const [ex, ez] = pts[0];
+    const from = nearestNode(n.x, n.z), to = nearestNode(ex, ez), ids = dist2(n.x, n.z, ex, ez) > 5 * 5 ? findPath(from.id, to.id) : [];
+    n.path = ids.map((id) => [NAV[id].x + n.ox, NAV[id].z + n.oz] as [number, number]);
+    while (n.path.length && ctx.stall.insideFootprint(n.path[n.path.length - 1][0], n.path[n.path.length - 1][1])) n.path.pop();
+    const prev = n.path.length ? n.path[n.path.length - 1] : [n.x, n.z];
+    for (const ap of ctx.stall.safeApproach(prev[0], prev[1])) n.path.push(ap);
+    for (const pt of pts) n.path.push(pt);
+    n.pi = 0; n.enter = false; n.pose = 'walk'; n.onArrive = onArrive;
   }
   spawnPed(nearX: number, nearZ: number, minD = 34, maxD = 80, arch?: ArchDef): Npc | null {
     const R = this.R, h = hourOf(ctx.g), p = ctx.player, [fx, fz] = p.fwd;
@@ -229,8 +248,25 @@ export class Npcs {
     // khách đang chờ thì bỏ đi
     if (n.state === 'queue' || n.state === 'toStall') { n.order = undefined; ctx.ui.unorder(n); }
     n.path = []; n.pose = 'angry';
+    const p = ctx.player, sp = combatHitSpec('player', n.hurt >= 3);
+    this.knock(n, n.x - p.x, n.z - p.z, sp.knockSpeed, sp.liftVy, n.hurt >= 3 ? sp.stunSec : 0);
     if (n.hurt >= 3 || R.chance(0.55)) this.chase(n, 3.4);
     else { this.say(n, R.pick(L.run), 2.6, 4); this.leave(n); }
+  }
+  /** Hất văng một NPC theo hướng (dx, dz), nảy lên rồi ngã nằm nếu va chạm mạnh. */
+  knock(n: Npc, dx: number, dz: number, speed: number, liftVy = 0, fallSec = 0, tier?: HitTier) {
+    if (n.state === 'fixed' || n.hidden) return;
+    const len = Math.hypot(dx, dz) || 1;
+    n.kbx = (dx / len) * speed; n.kbz = (dz / len) * speed;
+    if (liftVy > 0) n.kvy = Math.max(n.kvy ?? 0, liftVy);
+    n.fallT = Math.max(n.fallT ?? 0, fallSec);
+    n.base = EXPR.pain;
+    if (tier) {
+      n.vehCd = 1.6;
+      this.idleOff(n);
+      if (n.state === 'queue' || n.state === 'toStall') { n.order = undefined; ctx.ui.unorder(n); }
+      this.say(n, this.R.pick(tier === 'heavy' ? ['Áaaa! Xe đụng tui rồi!', 'Trời ơi, cứu tui với!', 'Đau quá trời ơi!'] : ['Ui da! Coi chừng xe chứ!', 'Á! Chạy xe kiểu gì vậy!']), 2.6, EXPR.pain);
+    }
   }
   /** Công an phường đi tuần: gọi một chú lại gần để hỏi giấy tờ khi người chơi bị để ý. */
   sendPolice(): Npc | null {
@@ -276,7 +312,19 @@ export class Npcs {
     return best;
   }
   /** Cho NPC rời đi (đi tiếp tới nơi khác). */
-  leave(n: Npc) { n.persona = undefined; n.order = undefined; n.slot = -1; n.served = true; ctx.ui.unorder(n); n.state = 'walk'; this.route(n, this.destFor(n, nearestNode(n.x, n.z))); n.kind = n.kind === 'actor' ? 'ped' : n.kind; }
+  leave(n: Npc) { n.persona = undefined; n.order = undefined; n.slot = -1; n.served = true; ctx.ui.unorder(n); n.rig.seated = false; n.state = 'walk'; this.route(n, this.destFor(n, nearestNode(n.x, n.z))); n.kind = n.kind === 'actor' ? 'ped' : n.kind; }
+  /** Rời quán qua các điểm mốc cửa ra vào rồi mới nhập lộ trình ngoài phố (không đi xuyên tường). */
+  leaveVia(n: Npc, pts: [number, number][]) {
+    n.persona = undefined; n.order = undefined; n.slot = -1; n.served = true; ctx.ui.unorder(n); n.rig.seated = false; n.state = 'walk'; n.pose = 'walk'; n.onArrive = undefined;
+    const last = pts[pts.length - 1] ?? [n.x, n.z];
+    const dest = this.destFor(n, nearestNode(last[0], last[1]));
+    const ids = findPath(nearestNode(last[0], last[1]).id, dest.id);
+    const tail: [number, number][] = ids.map((id) => [NAV[id].x + n.ox, NAV[id].z + n.oz] as [number, number]);
+    while (tail.length && ctx.stall?.insideFootprint(tail[0][0], tail[0][1])) tail.shift();
+    n.dest = dest; n.enter = false;
+    n.path = [...pts, ...tail, [dest.door ? dest.door[0] : dest.x + n.ox, dest.door ? dest.door[1] : dest.z + n.oz]];
+    n.pi = 0; n.kind = n.kind === 'actor' ? 'ped' : n.kind;
+  }
 
   update(dt: number) {
     const g = ctx.g, p = ctx.player, h = hourOf(g), R = this.R, q = QUALITY[ctx.set.quality], w = wx(g);
@@ -289,10 +337,30 @@ export class Npcs {
     if (peds < want && this.spawnT <= 0 && ctx.mode !== 'menu') { this.spawnT = peds < want * 0.5 ? 0.15 : 0.9; this.spawnPed(p.x, p.z, peds < 4 ? 22 : 34, 85); }
     this.barkCd -= dt; this.rudeCd -= dt;
     this.browseT -= dt; if (this.browseT <= 0) { this.browseT = R.range(2.5, 6); this.manageShoppers(); }
+    this.cafeT -= dt; if (this.cafeT <= 0) { this.manageCafe(); this.cafeT = this.cafePatrons.length ? R.range(2.2, 4.8) : 0.35; }
     const rainHurry = w.rain > 0.3 ? 1.3 : 1, viewD = Math.min(95, ctx.env.fog.far * 0.62);
     for (let i = this.list.length - 1; i >= 0; i--) {
       const n = this.list[i], pd2 = dist2(n.x, n.z, p.x, p.z);
       if (n.state === 'fixed') { this.updFixed(n, pd2, dt); continue; }
+      if ((n.vehCd ?? 0) > 0) n.vehCd = Math.max(0, n.vehCd! - dt);
+      // vật lý bị hất văng / ngã của NPC
+      if (Math.abs(n.kbx ?? 0) > 0.05 || Math.abs(n.kbz ?? 0) > 0.05 || (n.ky ?? 0) > 0 || (n.kvy ?? 0) !== 0 || (n.fallT ?? 0) > 0) {
+        const nx = n.x + (n.kbx ?? 0) * dt, nz = n.z + (n.kbz ?? 0) * dt, o = { x: nx, z: nz };
+        ctx.world.resolve(nx, nz, 0.3, o); n.x = o.x; n.z = o.z;
+        const drag = (n.ky ?? 0) > 0.05 ? 2.8 : 9;
+        n.kbx = damp(n.kbx ?? 0, 0, drag, dt); n.kbz = damp(n.kbz ?? 0, 0, drag, dt);
+        if ((n.kvy ?? 0) !== 0 || (n.ky ?? 0) > 0) {
+          n.ky = (n.ky ?? 0) + (n.kvy ?? 0) * dt; n.kvy = (n.kvy ?? 0) - 13 * dt;
+          if (n.ky <= 0) { n.ky = 0; n.kvy = 0; }
+        }
+        if ((n.fallT ?? 0) > 0) {
+          n.fallT = Math.max(0, n.fallT! - dt);
+          n.pose = 'lie';
+          this.pose(n, pd2, dt, viewD, w);
+          if (n.fallT === 0 && n.state === 'walk') { n.pose = 'walk'; this.route(n, this.destFor(n, nearestNode(n.x, n.z))); }
+          continue;
+        }
+      }
       // người đứng chờ nhận hàng thì giữ lại, dù người chơi đang ở tận đâu
       if (n.data?.parcels) { if (!n.rig.root.visible) n.rig.root.visible = true; continue; }
       if (pd2 > 105 * 105 && n.state !== 'toStall' && n.state !== 'queue' && n.state !== 'actor') { if (n.kind !== 'kid') this.remove(n); else if (!n.parent || n.parent.state === 'gone') this.remove(n); continue; }
@@ -304,7 +372,9 @@ export class Npcs {
       } else if (n.path.length && n.pi < n.path.length && (n.state === 'walk' || n.state === 'toStall' || n.state === 'actor')) {
         const [tx, tz] = n.path[n.pi];
         const sp = n.speed * rainHurry * rushMul(h) * (n.state === 'toStall' ? 1.1 : 1);
-        if (this.step(n, tx, tz, sp, dt, n.pi === n.path.length - 1 ? 0.18 : 0.5)) {
+        const tol = (n.state === 'actor' || n.state === 'toStall') ? 0.22 : (n.pi === n.path.length - 1 ? 0.18 : 0.45);
+        if (this.step(n, tx, tz, sp, dt, tol)) {
+          this.stuck.delete(n);
           n.pi++;
           if (n.pi >= n.path.length) {
             n.path = []; n.vel = 0;
@@ -314,7 +384,20 @@ export class Npcs {
           }
         } else {
           this.idleOff(n); // đang đi thì không cầm báo, không cầm ly
-          n.pose = n.state === 'walk' || n.vel > 0.1 ? 'walk' : n.pose;
+          if (n.pose !== 'serve') n.pose = n.state === 'walk' || n.vel > 0.1 ? 'walk' : n.pose;
+          // Tự phát hiện kẹt nếu đi quá 1.1s mà vẫn đứng nguyên một chỗ -> tự tìm đường vòng ra
+          let st = this.stuck.get(n);
+          if (!st) { st = { x: n.x, z: n.z, t: 0, tries: 0 }; this.stuck.set(n, st); }
+          if (dist2(n.x, n.z, st.x, st.z) > 0.35 * 0.35) { st.x = n.x; st.z = n.z; st.t = 0; st.tries = 0; }
+          else if ((st.t += dt) >= 1.1) {
+            st.t = 0; st.tries++;
+            if (ctx.stall?.unstuck(n)) { st.x = n.x; st.z = n.z; }
+            else if (st.tries >= 2) {
+              if (n.pi < n.path.length - 1) n.pi++;
+              else if (n.state === 'walk') this.route(n, this.destFor(n, nearestNode(n.x, n.z)));
+              st.tries = 0;
+            }
+          }
         }
       } else if (n.state === 'cop') {
         // đi thẳng tới người chơi rồi gọi lại hỏi giấy tờ
@@ -325,23 +408,34 @@ export class Npcs {
       } else if (n.state === 'chase') {
         n.chaseT = (n.chaseT ?? 2) - dt; n.pose = 'angry';
         const dd = Math.sqrt(pd2) || 0.001;
-        if (dd > 1.3) this.step(n, p.x, p.z, n.speed * 1.5, dt, 0.9);
+        if (dd > 1.35) this.step(n, p.x, p.z, n.speed * 1.5, dt, 0.9);
         else if (!n.hit) {
-          // xô một cái: người chơi lùi lại vài bước, tinh thần tụt
-          n.hit = true; ctx.sound.play('shout');
+          // vung tay đánh một cú thật đau: người chơi bị hất văng, rung màn hình, chớp đỏ và tụt máu
+          n.hit = true; n.pose = 'work'; ctx.sound.play('thud'); ctx.sound.play('shout');
+          const sp = combatHitSpec(n.actor === 'gang' ? 'gang' : n.actor === 'rowdy' ? 'rowdy' : 'ped');
           if (ctx.mode === 'play') {
-            const k = 0.6 / dd, o = { x: p.x + (p.x - n.x) * k, z: p.z + (p.z - n.z) * k };
-            ctx.world.resolve(o.x, o.z, 0.3, o); p.x = o.x; p.z = o.z;
+            p.knockback(p.x - n.x, p.z - n.z, sp.knockSpeed, sp.liftVy, sp.stunSec, sp.shake, 0);
+            ctx.ui.hitFlash(sp.flash);
+            const res = applyCombatImpactToStats(g, sp);
+            toast(`Bị ${n.name} đánh trúng, văng lùi lại! (Máu −${sp.hpLoss})`, 'bad', 'angry');
+            if (res.fainted) ctx.acts.checkFaint();
           }
-          g.st.mood = clamp(g.st.mood - 4, 0, STAT_MAX);
-          toast('Bị xô một cái. Bạn lùi lại vài bước cho lành.', 'bad');
         }
         if (n.chaseT <= 0) { n.hit = false; n.state = 'walk'; n.pose = 'walk'; n.persona = undefined; n.served = true; this.route(n, this.destFor(n, nearestNode(n.x, n.z))); }
       } else if (n.state === 'stand' || n.state === 'sit') {
-        n.timer -= dt; if (n.timer <= 0) { this.idleOff(n); n.pose = 'walk'; this.route(n, this.destFor(n, nearestNode(n.x, n.z))); }
+        n.timer -= dt;
+        if (n.timer <= 0) {
+          if (n.data?.cafeSeat !== undefined) {
+            const cs = ctx.world.cafeSeats[n.data.cafeSeat];
+            delete n.data.cafeSeat;
+            if (cs) { const o = { x: cs.x, z: cs.z }; ctx.world.resolve(cs.x - Math.sin(cs.yaw) * 0.48, cs.z - Math.cos(cs.yaw) * 0.48, 0.34, o); n.x = o.x; n.z = o.z; }
+          }
+          n.rig.seated = false; n.rig.hold(null);
+          this.idleOff(n); n.pose = 'walk'; this.route(n, this.destFor(n, nearestNode(n.x, n.z)));
+        }
       }
       // né người chơi
-      if (pd2 < 0.55 * 0.55 && n.state !== 'queue') { const dd = Math.sqrt(pd2) || 0.01; n.x += ((n.x - p.x) / dd) * dt * 1.5; n.z += ((n.z - p.z) / dd) * dt * 1.5; }
+      if (pd2 < 0.55 * 0.55 && n.state !== 'queue' && n.state !== 'sit') { const dd = Math.sqrt(pd2) || 0.01; n.x += ((n.x - p.x) / dd) * dt * 1.5; n.z += ((n.z - p.z) / dd) * dt * 1.5; }
       // chào hỏi khi đi ngang: quen mặt / mưa nắng / giờ giấc
       if ((n.kind === 'ped' || n.kind === 'actor') && !n.persona && (n.state === 'walk' || n.state === 'stand') && pd2 < GREET_NEAR * GREET_NEAR && ctx.mode === 'play' && n.talkT <= 0) {
         n.greetT -= dt;
@@ -410,6 +504,7 @@ export class Npcs {
     const dx = tx - n.x, dz = tz - n.z, d = Math.hypot(dx, dz);
     if (d < tol) return true;
     const s = Math.min(d, sp * dt); n.x += (dx / d) * s; n.z += (dz / d) * s; n.vel = sp;
+    ctx.stall?.resolveNpcWalls(n, dt);
     n.yaw += angDiff(n.yaw, Math.atan2(dx, dz)) * Math.min(1, dt * 9);
     return false;
   }
@@ -417,8 +512,8 @@ export class Npcs {
     const rig = n.rig, vis = pd2 < viewD * viewD;
     if (rig.root.visible !== vis) rig.root.visible = vis;
     if (!vis) return;
-    if (n.state !== 'sit') n.y = damp(n.y, groundY(n.x, n.z), 12, dt);
-    rig.root.position.set(n.x, n.y, n.z); rig.root.rotation.y = n.yaw;
+    if (n.state !== 'sit') n.y = damp(n.y, groundY(n.x, n.z) + (n.rig.seated ? 0.16 : 0), 12, dt);
+    rig.root.position.set(n.x, n.y + (n.ky ?? 0), n.z); rig.root.rotation.y = n.yaw;
     if (n.talkT > 0) n.talkT -= dt;
     // hành động lúc rảnh
     if (n.idleT2 !== undefined) {
@@ -434,7 +529,7 @@ export class Npcs {
       if (wantUmb && !n.umb) { n.umb = true; n.rig.hold(umbrellaProp(this.R.chance(0.5) ? 0x2f6fb5 : 0xd9463c)); }
       else if (!wantUmb && n.umb) { n.umb = false; n.rig.hold(null); }
     }
-    rig.pose = n.talkT > 0 && n.pose !== 'sit' && n.pose !== 'walk' && n.pose !== 'angry' && n.pose !== 'read' && n.pose !== 'work' ? 'talk' : n.pose;
+    rig.pose = n.talkT > 0 && n.pose !== 'sit' && n.pose !== 'walk' && n.pose !== 'angry' && n.pose !== 'read' && n.pose !== 'work' && n.pose !== 'serve' && n.pose !== 'wipe' ? 'talk' : n.pose;
     if (pd2 < 45 * 45) {
       rig.update(dt, n.vel, n.base);
       if (n.actor === 'rowdy' && n.pose === 'angry') rig.inner.rotation.z = Math.sin(rig.t * 4.2) * 0.14;
@@ -466,14 +561,69 @@ export class Npcs {
     this.list.push(n); this.browses.push({ n, shop: id });
     if (R.chance(0.55)) this.say(n, R.pick(['Bán cho tôi một phần nghen.', 'Cái này bao nhiêu vậy chú?', 'Cho con thêm ít rau.', 'Tính tiền giúp tôi.', 'Còn tươi không cô?']), 2.6);
   }
+  /** Giữ cho quán Cà Phê Sân Vườn có vài vị khách ngồi uống nước, đọc báo hoặc trò chuyện khi quán đang mở. */
+  private manageCafe() {
+    const R = this.R, p = ctx.player, q = QUALITY[ctx.set.quality], seats = ctx.world.cafeSeats;
+    for (let i = this.cafePatrons.length - 1; i >= 0; i--) {
+      const b = this.cafePatrons[i];
+      if (b.n.state !== 'sit' || b.n.hidden || !this.list.includes(b.n) || b.n.data?.cafeSeat !== b.seat) this.cafePatrons.splice(i, 1);
+    }
+    if (!seats.length || ctx.mode !== 'play') return;
+    if (!placeOpen('cafe')) { for (const b of this.cafePatrons) b.n.timer = Math.min(b.n.timer, 2); return; }
+    const anchor = ctx.world.anchors.v_cafe ?? seats[0];
+    if (dist2(anchor.x, anchor.z, p.x, p.z) > 72 * 72) return;
+    const h = hourOf(ctx.g), night = h >= 23 || h < 5.5;
+    const want = clamp(night ? 2 : Math.round((q?.npcs ?? 16) / 5), night ? 1 : 2, night ? 2 : 5);
+    if (this.cafePatrons.length >= want) return;
+    const rounds = this.cafePatrons.length < 2 ? 2 : 1;
+    for (let k = 0; k < rounds && this.cafePatrons.length < want; k++) {
+      const free = seats.map((_, i) => i).filter((i) => !this.cafePatrons.some((b) => b.seat === i));
+      if (!free.length) return;
+      const seatPatron = (idx: number, pose: Pose, dur: number): Npc => {
+        const s = seats[idx], h = hourOf(ctx.g);
+        const arch = this.R.weighted(
+          [ARCH.vanphong, ARCH.hocsinh, ARCH.phuhuynh, ARCH.nguoigia, ARCH.dukhach],
+          (a) => (h >= a.hours[0] && h <= a.hours[1] ? a.w : 0.2),
+        ) ?? ARCH.vanphong;
+        const fem = R.chance(arch.fem);
+        const n = this.make('ped', arch, fem, lookFromArch(arch, R, fem), s.x, s.z, s.yaw);
+        n.name = this.name(fem); n.y = s.y + 0.08; n.state = 'sit'; n.rig.seated = true; n.pose = pose;
+        n.timer = dur; n.base = R.range(-0.04, 0.04); n.data = { cafeSeat: idx };
+        n.rig.hold(pose === 'read' ? paperProp() : pose === 'drink' ? cupProp() : null);
+        this.cafePatrons.push({ n, seat: idx });
+        return n;
+      };
+      const idx = R.pick(free), s = seats[idx];
+      const mateIdx = seats.findIndex((o, i) => i !== idx && o.pair === s.pair && free.includes(i));
+      if (mateIdx >= 0 && this.cafePatrons.length + 2 <= want && R.chance(0.55)) {
+        const dur = R.range(36, 72);
+        const a = seatPatron(idx, 'chat', dur), b = seatPatron(mateIdx, 'drink', dur);
+        a.chatWith = b.id; b.chatWith = a.id; a.idleT2 = R.range(8, 16); b.idleT2 = a.idleT2;
+        if (R.chance(0.45)) this.say(a, R.pick(['Cà phê ở đây thơm ghê.', 'Ngồi ngoài này mát quá ha.', 'Cuối tuần rảnh ghé tiếp nghen.', 'Công việc dạo này sao rồi?']), 2.6);
+      } else {
+        const pose: Pose = R.chance(0.72) ? 'drink' : R.chance(0.65) ? 'read' : 'sit';
+        const n = seatPatron(idx, pose, R.range(30, 68));
+        if (R.chance(0.3)) this.say(n, R.pick(['Cho một ly cà phê sữa đá nha anh.', 'Ngồi đây yên tĩnh dễ chịu thật.', 'Trà đào mát quá!']), 2.4);
+      }
+    }
+  }
   /** Thôi đọc báo / uống nước / tám chuyện: trả về dáng đứng thường và bỏ đồ khỏi tay. */
   private idleOff(n: Npc) {
     if (n.idleT2 === undefined && n.chatWith === undefined) return;
     const o = n.chatWith !== undefined ? this.list.find((x) => x.id === n.chatWith) : undefined;
     n.idleT2 = undefined; n.chatWith = undefined; n.umb = false;
-    if (n.pose === 'read' || n.pose === 'drink' || n.pose === 'chat') n.pose = 'idle';
-    n.rig.hold(null); n.idleT = this.R.range(18, 50);
-    if (o) { o.chatWith = undefined; if (o.pose === 'chat') o.pose = 'idle'; o.rig.hold(null); }
+    if (n.data?.cafeSeat !== undefined && n.state === 'sit') {
+      n.pose = 'drink'; n.rig.hold(cupProp());
+    } else {
+      if (n.pose === 'read' || n.pose === 'drink' || n.pose === 'chat') n.pose = 'idle';
+      n.rig.hold(null);
+    }
+    n.idleT = this.R.range(18, 50);
+    if (o) {
+      o.chatWith = undefined;
+      if (o.data?.cafeSeat !== undefined && o.state === 'sit') { o.pose = 'drink'; o.rig.hold(cupProp()); }
+      else { if (o.pose === 'chat') o.pose = 'idle'; o.rig.hold(null); }
+    }
   }
   /** Việc lúc rảnh: đọc báo, uống nước, tám chuyện với người bên cạnh (thưa, chỉ khi đang đứng chờ). */
   private idleAct(n: Npc) {
@@ -524,18 +674,33 @@ export class Npcs {
   }
   private updFixed(n: Npc, pd2: number, dt: number) {
     const inAnim = !!(ctx.anim?.active && ctx.anim.hasNpc(n));
-    const open = placeOpen(n.fixedId!) || inAnim, vis = open && pd2 < 60 * 60;
+    const bellActive = !!(n.bellOut && ctx.time < n.bellOut.until);
+    if (n.bellOut && !bellActive) n.bellOut = undefined;
+    const open = placeOpen(n.fixedId!) || inAnim || bellActive, vis = open && pd2 < 60 * 60;
     n.hidden = !open;
     if (n.rig.root.visible !== vis) n.rig.root.visible = vis;
     if (!vis) return;
     const p = ctx.player, hm = n.home!;
+    let walkSp = 0;
     if (!inAnim) {
-      if (pd2 < 16 && n.pose !== 'sit' && !n.rig.seated) n.yaw += angDiff(n.yaw, Math.atan2(p.x - n.x, p.z - n.z)) * Math.min(1, dt * 5); else n.yaw += angDiff(n.yaw, hm.yaw) * Math.min(1, dt * 3);
+      const tx = bellActive ? n.bellOut!.x : hm.x, tz = bellActive ? n.bellOut!.z : hm.z;
+      const dx = tx - n.x, dz = tz - n.z, d = Math.hypot(dx, dz);
+      if (d > 0.08) {
+        const sp = 2.1 * dt;
+        const step = Math.min(d, sp);
+        n.x += (dx / d) * step; n.z += (dz / d) * step; n.y = groundY(n.x, n.z);
+        n.yaw += angDiff(n.yaw, Math.atan2(dx, dz)) * Math.min(1, dt * 10);
+        walkSp = 2.1;
+      } else if (pd2 < 16 && n.pose !== 'sit' && !n.rig.seated) {
+        n.yaw += angDiff(n.yaw, Math.atan2(p.x - n.x, p.z - n.z)) * Math.min(1, dt * 5);
+      } else {
+        n.yaw += angDiff(n.yaw, bellActive ? n.bellOut!.yaw : hm.yaw) * Math.min(1, dt * 3);
+      }
     }
     n.rig.root.position.set(n.x, n.y, n.z); n.rig.root.rotation.y = n.yaw;
     if (n.talkT > 0) n.talkT -= dt;
-    n.rig.pose = n.pose !== 'idle' && n.pose !== 'sit' ? n.pose : n.pose === 'sit' ? 'sit' : n.talkT > 0 ? 'talk' : n.dance && pd2 < 26 * 26 ? 'dance' : 'idle';
-    if (pd2 < 40 * 40) n.rig.update(dt, 0, n.base);
+    n.rig.pose = walkSp > 0.1 ? 'walk' : n.pose !== 'idle' && n.pose !== 'sit' ? n.pose : n.pose === 'sit' ? 'sit' : n.talkT > 0 ? 'talk' : n.dance && pd2 < 26 * 26 ? 'dance' : 'idle';
+    if (pd2 < 40 * 40) n.rig.update(dt, walkSp, n.base);
     n.rig.shadow(false);
   }
 }

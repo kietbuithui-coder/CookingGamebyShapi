@@ -9,15 +9,15 @@ ngoại hình người chơi (góc nhìn thứ ba, cắt tóc, thời trang) · 
 
 ---
 
-## 1. Nhánh kinh doanh — còn 2 bậc
+## 1. Nhánh kinh doanh — còn 1 bậc
 
 | Bậc | Tên | Cần gì để làm |
 |---|---|---|
 | ✅ 5 | Quán có chỗ ngồi | **Đã xong (lượt 16):** 58.000.000₫, 200 kg, 20 món, 12 khách, hiên mái tôn + nền gạch bông + 3 bàn gỗ 6 ghế tựa lưng, thực đơn theo buổi (sáng/trưa/chiều/khuya, `fitsPeriod` ×1,35), khách ăn tại chỗ kiên nhẫn ×1,9 và gọi thêm món tráng miệng/nước (`secondOrder`) |
-| 6 | Nhà hàng bình dân | Nội thất trong nhà kín (nhiều bàn, phòng bếp riêng), đặt bàn trước, nhân viên phụ bếp, khách đoàn |
+| ✅ 6 | Nhà hàng bình dân | **Đã xong:** 145.000.000₫, 280 kg, 26 món, 16 khách, nội thất trong nhà kín (4 bàn 8 ghế, phòng bếp riêng có vách ngăn & cửa bếp, không ngại mưa/tối), đặt bàn trước (nhận/từ chối/giữ chỗ/tiền cọc), nhân viên phụ bếp (`sous` tự sơ chế & nấu phụ), khách đoàn 3–4 người (`decideGroup`) |
 | 7 | Chuỗi cửa hàng | Mở điểm bán thứ hai cùng lúc, quản lý từ xa (sổ sách từng điểm), thuê người trông coi |
 
-Hiện `FUTURE_TIERS` trong `src/data/gear.ts` còn 2 bậc (`Nhà hàng bình dân`, `Chuỗi cửa hàng`); chưa có dữ liệu, mô hình, luật đặt chỗ và kiểm thử.
+Hiện `FUTURE_TIERS` trong `src/data/gear.ts` còn 1 bậc (`Chuỗi cửa hàng`); chưa có dữ liệu, mô hình, luật đặt chỗ và kiểm thử.
 
 ## 2. Băng nhóm
 

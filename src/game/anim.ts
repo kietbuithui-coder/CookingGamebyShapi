@@ -1084,6 +1084,39 @@ export class AnimSystem {
     ]);
   }
 
+  // ── 9a2. Ngồi uống nước ở Cà Phê Sân Vườn ───────────────────────────────────────
+  startGardenCafe(drinkName = 'Cà phê sữa đá') {
+    const seats = ctx.world.cafeSeats;
+    const seat = seats.find((st) => !ctx.npcs.list.some((n) => n.state === 'sit' && (n.x - st.x) ** 2 + (n.z - st.z) ** 2 < 0.3))
+      ?? seats[0]
+      ?? ctx.world.anchors.ban_cafe
+      ?? { x: 0, y: 0.13, z: 0, yaw: 0 };
+    const s = Math.sin(seat.yaw), c = Math.cos(seat.yaw);
+    this.begin(
+      'cafe_sua',
+      `CÀ PHÊ SÂN VƯỜN — ${drinkName.toUpperCase()}`,
+      ['Ngồi bàn gỗ', 'Thưởng thức đồ uống', 'Ngắm phố xá'],
+      `Gió nhẹ thổi qua tán cây xanh trước hiên, ly ${drinkName.toLowerCase()} mát lạnh đặt trên bàn gỗ...`,
+      seat.x, seat.y + 0.08, seat.z, seat.yaw,
+      'drink', true, cupProp(),
+      [seat.x - s * 1.85 + c * 1.15, 1.42, seat.z - c * 1.85 - s * 1.15],
+      [seat.x + s * 0.55, 0.9, seat.z + c * 0.55],
+      5.5, null,
+    );
+    this.setBtns([
+      {
+        label: 'NHẤP NGỤM THƯ GIÃN!',
+        hot: true,
+        fn: () => {
+          sfx('drink');
+          this.flt(seat.x, 1.55, seat.z, '☕ Mát dịu, tỉnh táo hẳn!', 'good');
+          this.stop();
+        },
+      },
+      { label: 'Đứng dậy', hot: false, fn: () => this.stop() },
+    ]);
+  }
+
   // ── 9b. Hát Karaoke ở Quán Cà Phê Bóng Đá ────────────────────────────────────────
   startKaraoke() {
     const a = ctx.world.anchors.tv_bongda ?? { x: -49.5, y: 0.13, z: 3.0, yaw: -Math.PI / 2 };
@@ -1326,23 +1359,24 @@ export class AnimSystem {
     ]);
   }
 
-  // ── 13a. Chạy bàn quán cà phê Bóng Đá ────────────────────────────────────────────
-  startCafeShift() {
-    const a = ctx.world.anchors.tv_bongda ?? { x: -49.5, y: 0.13, z: 3.0, yaw: -Math.PI / 2 };
+  // ── 13a. Chạy bàn quán cà phê ─────────────────────────────────────────────────────
+  startCafeShift(garden = false) {
+    const a = (garden ? ctx.world.anchors.ban_cafe : ctx.world.anchors.tv_bongda) ?? { x: -49.5, y: 0.13, z: 3.0, yaw: -Math.PI / 2 };
     const s = Math.sin(a.yaw), c = Math.cos(a.yaw);
     const steps = ['Bưng bàn 1', 'Bưng bàn 2', 'Dọn ly bàn 3'];
+    const title = garden ? 'PHỤ PHA CHẾ & BƯNG BÀN — CÀ PHÊ SÂN VƯỜN' : 'PHỤ BƯNG BÀN — QUÁN CÀ PHÊ BÓNG ĐÁ';
     this.begin(
       'cafe_shift',
-      'PHỤ BƯNG BÀN — QUÁN CÀ PHÊ BÓNG ĐÁ',
+      title,
       steps,
-      'Bưng khay cà phê sữa đá thoăn thoắt qua các bàn khách đang xem bóng đá!',
+      garden ? 'Bưng khay cà phê sữa & trà đào phục vụ khách ngồi bàn gỗ!' : 'Bưng khay cà phê sữa đá thoăn thoắt qua các bàn khách đang xem bóng đá!',
       a.x, a.y, a.z, a.yaw,
       'carry', false, trayProp(),
       [a.x - s * 2.2 + c * 1.3, 1.55, a.z - c * 2.2 - s * 1.3],
       [a.x + s * 0.5, 0.9, a.z + c * 0.5],
       8.0, null,
     );
-    this.setupShiftBtn('PHỤ BƯNG BÀN — QUÁN CÀ PHÊ BÓNG ĐÁ', steps, 'BƯNG CÀ PHÊ RA BÀN!', 'pick', [
+    this.setupShiftBtn(title, steps, 'BƯNG CÀ PHÊ RA BÀN!', 'pick', [
       [a.x, a.z, a.yaw],
       [a.x + c * 0.9, a.z - s * 0.9, a.yaw + 0.4],
       [a.x - c * 0.9, a.z + s * 0.9, a.yaw - 0.4],

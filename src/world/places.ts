@@ -116,17 +116,27 @@ export function buildPlace(b: Builder, l: Lot, R: RNG) {
       const di = 10.6, col = 0xf3f5f2;
       shell(b, { w, d, di, h1: 3.4, H: 7.2, col, inner: 0xf7f7f2, floor: 'tile', opens: [{ x0: 1, x1: 5, sill: 0.8, top: 2.7 }, { x0: 5.8, x1: 8.2, top: 2.7 }, { x0: 9, x1: 13, sill: 0.8, top: 2.7 }] });
       L.box(w / 2, 3.25, -0.5, w - 0.4, 0.14, 1.1, 0x1f9d55, 0x1f9d55, 0, true);
-      bigSign(b, w, 3.5, 'MiniMart 24h', { bg: '#1f9d55', fg: '#ffffff', sub: 'Tiện lợi · Tươi ngon · 6:00 – 22:30', subFg: '#d9ffe6' }, 1.15, 0.7, 120);
+      b.glow.box(w / 2, 3.17, -1.02, w - 0.5, 0.06, 0.06, 0xd9ffe6, 0xd9ffe6, 0, true);
+      b.glow.box(7.0, 2.73, -0.18, 2.2, 0.06, 0.16, 0xfff4d6, 0xfff4d6, 0, true);
+      bigSign(b, w, 3.5, 'MiniMart 24h', { bg: '#1f9d55', fg: '#ffffff', sub: 'Tiện lợi · Tươi ngon · Mở cửa 24/7', subFg: '#d9ffe6' }, 1.15, 0.7, 120);
       for (let i = 0; i < 4; i++) b.glow.quad(11.6 - i * 3.1, 4.9, -0.02, 9.4 - i * 3.1, 4.9, -0.02, 9.4 - i * 3.1, 6.4, -0.02, 11.6 - i * 3.1, 6.4, -0.02, i % 2 ? 0xffe2a0 : 0x20262e);
       counter(b, 0.9, 2.3, 4.2, 2.9, 0x2f9d62); U.box(1.6, 1.0, 2.6, 0.4, 0.3, 0.35, 0x2a2c30); b.anchor('v_mart', 2.5, 0.13, 1.5, 0);
       shelfUnit(b, 0.26, 3.6, 0.85, 9.5, 1.9, WHITE, R, 0.95); for (let i = 0; i < 6; i++) display(b, U, 'mart', i, 0.56, 0.95, 4.1 + i * 0.98, R, [1, 0]);
       shelfUnit(b, w - 0.85, 1.0, w - 0.26, 9.5, 1.9, WHITE, R, 0.95); for (let i = 0; i < 6; i++) display(b, U, 'mart', 6 + i, w - 0.56, 0.95, 1.7 + i * 1.45, R, [-1, 0]);
       shelfUnit(b, 6.3, 4.4, 7.7, 8.0, 1.5, WHITE, R, 0.95); display(b, U, 'mart', 12, 6.62, 0.95, 5.3, R, [-1, 0]); display(b, U, 'mart', 13, 7.38, 0.95, 7.1, R, [1, 0]);
-      // tủ mát cuối tiệm
-      U.box(w / 2, 0.13, di - 0.55, 11.8, 2.0, 0.62, 0xe6eef2, 0xffffff, 0.04); U.box(w / 2, 0.9, di - 0.87, 11.6, 0.9, 0.02, 0xbfe6f7); b.collide(1.1, di - 0.9, 12.9, di - 0.2);
+      // tủ mát cuối tiệm (có dải đèn LED lạnh sáng ban đêm)
+      U.box(w / 2, 0.13, di - 0.55, 11.8, 2.0, 0.62, 0xe6eef2, 0xffffff, 0.04); U.box(w / 2, 0.9, di - 0.87, 11.6, 0.9, 0.02, 0xbfe6f7); b.glow.box(w / 2, 2.02, di - 0.87, 11.6, 0.07, 0.04, 0xdff8ff, 0xdff8ff, 0, true); b.collide(1.1, di - 0.9, 12.9, di - 0.2);
       for (let i = 0; i < 8; i++) display(b, U, 'mart', 14 + i, 1.9 + i * 1.45, 0.98, di - 1.15, R, [0, -1]);
       U.box(w / 2, 0.13, di - 1.15, 11.8, 0.85, 0.6, 0xdfe9ee, 0xcfe0e8); b.collide(1.1, di - 1.45, 12.9, di - 0.9);
-      for (const z of [3, 6, 9]) { ceilLight(b, 3.5, 3.37, z, 2); ceilLight(b, 10.5, 3.37, z, 2); }
+      for (const z of [3, 6, 9]) {
+        ceilLight(b, 3.5, 3.37, z, 2); ceilLight(b, 10.5, 3.37, z, 2);
+        b.glow.box(3.5, 3.31, z, 1.9, 0.04, 0.18, 0xfff4d6, 0xfff4d6, 0, true);
+        b.glow.box(10.5, 3.31, z, 1.9, 0.04, 0.18, 0xfff4d6, 0xfff4d6, 0, true);
+      }
+      for (const [lx, ly, lz] of [[7.0, 3.2, -1.1], [7.0, 3.4, 5.2]] as const) {
+        const [wx, wz] = b.W(lx, lz);
+        b.world.lamps.push([wx, ly, wz]);
+      }
       b.shutter('mart', 5.8, 8.2, 0.1, 2.7);
       break;
     }
@@ -227,6 +237,8 @@ export function buildPlace(b: Builder, l: Lot, R: RNG) {
       b.signAt(8.8, 1.72, -0.06, 1.3, 0.26, 'HỘP THƯ', { bg: '#f3f0e8', fg: '#3a4048', border: '#8a8f96' }, 0, -1, 48);
       b.signAt(5.5, 2.05, -0.06, 1.0, 0.3, 'CĂN 102', { bg: '#2a4a6a', fg: '#ffffff' }, 0, -1, 48);
       U.box(5.05, 1.25, -0.05, 0.16, 0.3, 0.08, 0x8a9096, 0xb9c0c8, 0.05);
+      U.box(5.05, 1.25, -0.095, 0.07, 0.09, 0.025, 0xf7f3e6, 0xffffff);
+      b.anchor('bell_canho', 5.05, 1.25, -0.1, Math.PI);
       // phòng khách: sofa, bàn, tivi, thảm
       U.box(2.6, 0.14, 2.4, 2.6, 0.014, 1.9, 0x8a4a4a);
       sofa(b, 2.6, 2.15, 2.4, 0x5a6a7a, 1);
@@ -256,6 +268,9 @@ export function buildPlace(b: Builder, l: Lot, R: RNG) {
       L.quad(w + 0.1, 3.42, -0.4, -0.1, 3.42, -0.4, -0.1, 3.95, 5.5, w + 0.1, 3.95, 5.5, 0xb5653c);
       b.signAt(6.1, 2.62, -0.06, 1.7, 0.4, 'NHÀ SỐ 12', { bg: '#ffffff', fg: '#1e4a6a', border: '#1e4a6a' }, 0, -1, 44);
       b.door('door_nharieng', 5.2, 0.14, 1.8, 0, 0x8a5a32, 'nharieng');
+      U.box(4.7, 1.25, -0.05, 0.14, 0.26, 0.07, 0xeae6dc, 0xf7f5ef, 0.04);
+      U.box(4.7, 1.25, -0.09, 0.06, 0.08, 0.02, 0xffffff, 0xffffff);
+      b.anchor('bell_nharieng', 4.7, 1.25, -0.1, Math.PI);
       for (let i = 0; i < 3; i++) b.plant(0.9 + i * 0.45, 0.12, -0.45, R, 0.8);
       // sân gạch + xe máy + kệ giày
       U.box(7.4, 0.135, 1.1, 2.8, 0.012, 2.0, 0xd9cbb0);
@@ -287,6 +302,9 @@ export function buildPlace(b: Builder, l: Lot, R: RNG) {
       bigSign(b, w, 3.45, 'TẠP HOÁ BÌNH AN', { bg: '#1e7a4a', fg: '#fff7c2', sub: 'Bán buôn bán lẻ · Mở 6h–21h', subFg: '#ffffff' }, 0.95, 0.8, 100);
       b.awning(0.4, 5.8, 2.9, 1.2, 0x2f8fd5, 0xf7f3e6, -0.04);
       b.door('door_cuahang', 7.0, 0.14, 1.6, 0, 0x3f8a6a, 'cuahang');
+      U.box(6.55, 1.25, -0.05, 0.14, 0.26, 0.07, 0xeae6dc, 0xf7f5ef, 0.04);
+      U.box(6.55, 1.25, -0.09, 0.06, 0.08, 0.02, 0xffffff, 0xffffff);
+      b.anchor('bell_cuahang', 6.55, 1.25, -0.1, Math.PI);
       // tầng trên: dãy cửa sổ + gờ tầng cho bớt mảng tường trống
       U.box(w / 2, 3.62, -0.03, w - 0.1, 0.14, 0.1, 0xd8cbb4, 0xe6dcc8, 0.05);
       for (let i = 0; i < 3; i++) {
@@ -534,11 +552,31 @@ export function buildPlace(b: Builder, l: Lot, R: RNG) {
         U.box(w / 2, 1.3, di - 0.3, 3.2, 1.8, 0.08, 0x1b1c1f); b.cur.glow.quad(w / 2 + 1.5, 1.4, di - 0.36, w / 2 - 1.5, 1.4, di - 0.36, w / 2 - 1.5, 3.0, di - 0.36, w / 2 + 1.5, 3.0, di - 0.36, 0x6fd08a);
         for (let r = 0; r < 3; r++) for (let i = 0; i < 6; i++) plasticStool(U, 1.5 + i * 1.35, 0.13, 1.6 + r * 1.5, R.pick([0xd9463c, 0x2f8fd5, 0x3fae5a]), 0.4);
         b.anchor('tv_bongda', w / 2, 0.13, 3, 0);
+        counter(b, 0.6, di - 1.3, w - 0.6, di - 0.7, 0x8a6a4a, 1.05);
       } else {
-        for (const [x, z] of [[2, 2], [5, 2], [8, 2], [2, 5], [5, 5], [8, 5]] as const) { U.cyl(x, 0.13, z, 0.04, 0.62, 0x3a2a22, 6); U.cyl(x, 0.75, z, 0.4, 0.04, 0x8a5a3a, 10); for (const s of [-0.65, 0.65]) U.box(x + s, 0.13, z, 0.4, 0.42, 0.4, 0xd9b88a, 0xe9c8a0, 0.1); b.circle(x, z, 0.42); }
+        const tables = [[2, 2], [5, 2], [8, 2], [2, 5], [5, 5], [8, 5]] as const;
+        tables.forEach(([x, z], ti) => {
+          U.cyl(x, 0.13, z, 0.04, 0.62, 0x3a2a22, 6); U.cyl(x, 0.75, z, 0.4, 0.04, 0x8a5a3a, 10);
+          for (const s of [-0.78, 0.78]) U.box(x + s, 0.13, z, 0.4, 0.4, 0.4, 0xd9b88a, 0xe9c8a0, 0.1);
+          b.cafeSeat(x - 0.78, 0.13, z, Math.PI / 2, ti);
+          b.cafeSeat(x + 0.78, 0.13, z, -Math.PI / 2, ti);
+          if (ti % 2 === 0) {
+            U.cyl(x - 0.12, 0.79, z + 0.05, 0.042, 0.08, 0xf7f4ea, 8);
+            U.cyl(x + 0.11, 0.79, z - 0.06, 0.042, 0.08, 0xf7f4ea, 8);
+          }
+          b.circle(x, z, 0.42);
+        });
         for (let i = 0; i < 4; i++) b.plant(0.7 + i * (w - 1.4) / 3, 0.12, -0.5, R, 1.1);
+        // Quầy pha chế đặt lùi lên một chút để chủ quán đứng thoải mái phía sau, kèm máy pha cà phê, tủ bánh & menu
+        counter(b, 0.6, di - 1.55, w - 0.6, di - 0.95, 0x5a3a26, 1.05);
+        U.box(3.2, 1.05, di - 1.25, 0.65, 0.46, 0.44, 0x3a3d42, 0x8a8f96, 0.06);                  // máy pha cà phê
+        U.box(3.2, 1.36, di - 1.48, 0.36, 0.06, 0.02, 0x6fd08a);
+        U.box(6.8, 1.05, di - 1.25, 0.9, 0.44, 0.42, 0xcfe6f2, 0xe6f3fa, 0.05);                   // tủ kính bánh ngọt
+        for (let i = 0; i < 3; i++) U.cyl(2.1 + i * 0.15, 1.05, di - 1.25, 0.05, 0.11, 0xf7f4ea, 8);
+        b.signAt(w / 2, 2.2, di - 0.24, 3.0, 0.68, 'MENU CÀ PHÊ', { bg: '#3a2416', fg: '#ffe9c8', sub: 'Cà phê sữa · Trà đào · Bạc xỉu', subFg: '#e9c88a', border: '#8a5a3a' }, 0, -1, 56);
+        b.anchor('v_cafe', w / 2, 0.13, di - 0.58, Math.PI);
+        b.anchor('ban_cafe', 5, 0.75, 2, 0);
       }
-      counter(b, 0.6, di - 1.3, w - 0.6, di - 0.7, tv ? 0x8a6a4a : 0x5a3a26, 1.05);
       for (const x of [w * 0.3, w * 0.7]) ceilLight(b, x, 3.26, 3, 1.6);
       break;
     }

@@ -213,6 +213,7 @@ input[type=range] { width: 100%; accent-color: var(--red); pointer-events: auto;
 #ui.cooking #hud-tl { top: 2.9em; } #ui.cooking #hud-tl .row:nth-child(2), #ui.cooking #stats, #ui.cooking #wx { display: none; }
 #ui.cooking #toasts { left: 50%; transform: translateX(-50%); top: 5.7em; width: min(62vw, 30em); align-items: center; }
 #ui.cooking .toast { font-size: .78em; padding: .08em .6em; max-width: 100%; } #ui.cooking .toast span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } #ui.cooking .toast:not(:last-child) { display: none; }
+#hitflash { position: fixed; inset: 0; pointer-events: none; z-index: 45; opacity: 0; background: radial-gradient(circle at center, rgba(217, 70, 60, 0) 35%, rgba(217, 45, 35, .82) 100%); transition: opacity .4s ease-out; }
 .flt.stars .ic, #grade .ic { width: 1em; height: 1em; }
 
 /* ───── Sắp xếp nút: lớp phủ mờ, mỗi nhóm nút có một khung kéo được ───── */

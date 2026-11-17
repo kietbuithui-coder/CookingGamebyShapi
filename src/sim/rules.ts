@@ -6,11 +6,11 @@ import { INGS } from '../data/ingredients';
 import { SHOPS, ShopDef } from '../data/shops';
 import { RECIPES, RecipeDef, fuelPerPortion, toolsFor, RECIPE_LIST } from '../data/recipes';
 import { GEAR, HOUSING, LENDERS, TIERS, JUNK } from '../data/gear';
-import { ARCH, ArchDef, HELPER_POOL, HelperDef, LINES, FIXED, FIXED_ROLE } from '../data/people';
+import { ARCH, ArchDef, HELPER_POOL, HelperDef, SOUS_POOL, SousDef, LINES, FIXED, FIXED_ROLE, NAMES } from '../data/people';
 import { EVENTS, EVENT_LIST, EventDef, WEATHER, WeatherDef, WeatherId, floodZone, hourCurve } from '../data/world';
 import { EXPR } from '../data/expr';
 import { District, DISTRICT, SPOTS, districtAt, spotById } from '../world/layout';
-import { Game, Stack, Helper, STAT_MAX, absMin, addStack, countOf, hourOf, newLedger, purge, spoil, takeFrom, weightOf, junkWeight, emptyStall, Debt, coldWeightOf } from './state';
+import { Game, Stack, Helper, Booking, STAT_MAX, absMin, addStack, countOf, hourOf, newLedger, purge, spoil, takeFrom, weightOf, junkWeight, emptyStall, Debt, coldWeightOf } from './state';
 import * as PH from './phone';
 
 export { STAT_MAX };
@@ -19,10 +19,12 @@ export { STAT_MAX };
 export const wx = (g: Game): WeatherDef => WEATHER[g.weather.now];
 export const level = (g: Game) => Math.min(10, Math.floor(Math.sqrt(g.xp / 30)));
 export const tier = (g: Game) => TIERS[g.stall.tier];
-/** Chỗ ngồi ăn tại chỗ: quán ăn nhỏ (bậc 4) bốn ghế nhựa, quán có chỗ ngồi (bậc 5) sáu ghế bàn gỗ. */
-export const seatCount = (g: Game) => (g.stall.tier >= 5 ? 6 : g.stall.tier >= 4 ? 4 : 0);
-/** Quán đã có chỗ ngồi trong nhà chưa (bậc 5): khách ăn lâu hơn và gọi thêm tráng miệng. */
+/** Chỗ ngồi ăn tại chỗ: quán ăn nhỏ (bậc 4) 4 ghế, quán có chỗ ngồi (bậc 5) 6 ghế, nhà hàng bình dân (bậc 6) 8 ghế (4 bàn). */
+export const seatCount = (g: Game) => (g.stall.tier >= 6 ? 8 : g.stall.tier >= 5 ? 6 : g.stall.tier >= 4 ? 4 : 0);
+/** Quán đã có chỗ ngồi trong nhà chưa (bậc 5+): khách ăn lâu hơn và gọi thêm tráng miệng. */
 export const dineIn = (g: Game) => g.stall.tier >= 5;
+/** Đã lên Nhà hàng bình dân (bậc 6) chưa: nội thất trong nhà kín, phòng bếp riêng, đặt bàn trước, phụ bếp và khách đoàn. */
+export const isRestaurant = (g: Game) => g.stall.tier >= 6;
 /** Bốn buổi trong ngày, khớp thứ tự `RecipeDef.meal`: sáng, trưa, chiều tối, khuya. */
 export const PERIODS = ['Buổi sáng', 'Buổi trưa', 'Buổi chiều', 'Khuya'] as const;
 export const mealSlot = (h: number) => (h < 10 ? 0 : h < 14.5 ? 1 : h < 20 ? 2 : 3);
@@ -32,16 +34,19 @@ export const fitsPeriod = (r: RecipeDef, h: number) => r.meal[mealSlot(h)] >= 0.
 /** Những món đang bật của quán mà hợp với buổi hiện tại — quán có chỗ ngồi ưu tiên bán mấy món này. */
 export const periodMenu = (g: Game) => menuOf(g).filter((r) => fitsPeriod(r, hourOf(g)));
 export const has = (g: Game, gear: string) => g.gear[gear] !== undefined && g.gear[gear] > 0;
-export const stove = (g: Game): 'bepgas' | 'bepthan' | null => (has(g, 'bepgas') ? 'bepgas' : has(g, 'bepthan') ? 'bepthan' : null);
+export const stove = (g: Game): 'bepgas' | 'bepthan' | null => (has(g, 'bepgas') || has(g, 'bep_cn') ? 'bepgas' : has(g, 'bepthan') ? 'bepthan' : null);
 export const hasTool = (g: Game, t: string) => (t === 'bep' ? stove(g) !== null : has(g, t));
 export const carryCap = (g: Game) => 7 + (has(g, 'gio') ? 6 : 0);
 export const bagWeight = (g: Game) => weightOf(g.bag) + junkWeight(g) + g.meals.reduce((a, m) => a + m.n * 0.3, 0);
-export const stallRoom = (g: Game) => tier(g).cap - weightOf(g.stall.store);
+export const stallCap = (g: Game) => tier(g).cap + (has(g, 'tu_dong') ? 80 : 0);
+export const stallQueueCap = (g: Game) => tier(g).queue + (has(g, 'hopmangve') ? 2 : 0);
+export const stallTrayCap = (g: Game) => tier(g).trays + (has(g, 'tu_kinh') ? 8 : 0);
+export const stallRoom = (g: Game) => stallCap(g) - weightOf(g.stall.store);
 export const homeRoom = (g: Game) => HOUSING[g.housing].storage - weightOf(g.home);
 /** Nhà thuê theo tuần thì cắm được tủ lạnh của mình. */
 export const PLUGGABLE = ['tro', 'canho', 'nharieng', 'cuahang'];
 export const homeChilled = (g: Game) => HOUSING[g.housing].cold || (PLUGGABLE.includes(g.housing) && has(g, 'tulanh') && !blackoutAt(g, 'dancu'));
-export const stallChilled = (g: Game) => has(g, 'thungda') && countOf([g.stall.store], 'da') > 0;
+export const stallChilled = (g: Game) => (has(g, 'tu_dong') && (!g.stall.spot || !blackoutAt(g, districtAt(g.stall.x, g.stall.z)))) || (has(g, 'thungda') && countOf([g.stall.store], 'da') > 0);
 export const activeEvents = (g: Game): EventDef[] => g.ev.active.map((a) => EVENTS[a.id]).filter(Boolean);
 export const eventOn = (g: Game, id: string) => g.ev.active.some((a) => a.id === id);
 export const blackoutAt = (g: Game, d: District) => activeEvents(g).some((e) => e.blackout?.includes(d));
@@ -70,7 +75,7 @@ export function shopPrice(g: Game, shop: ShopDef, ingId: string): number {
   // giá dao động nhẹ theo ngày, cố định trong ngày
   const f = (hashStr(ingId + shop.id + g.day + g.seed) % 1000) / 1000;
   p *= 0.93 + f * 0.14;
-  if (shop.lateSale && d.shelf < 200 && hourOf(g) >= shop.open[1] - 2) p *= 0.75;   // xả hàng cuối buổi
+  if (shop.lateSale && d.shelf < 240 && hourOf(g) >= shop.open[1] - 2) p *= 0.75;   // xả hàng cuối buổi
   if (floodPct(g) > 0.5 && d.cat === 'veg') p *= 1.15;
   return Math.max(500, p >= 5000 ? round500(p) : Math.round(p / 100) * 100);
 }
@@ -79,7 +84,7 @@ export const shopHas = (g: Game, shop: ShopDef, ingId: string) => !(shop.id.star
 export function shopFresh(g: Game, shop: ShopDef, ingId: string, R: RNG = rnd): number {
   const d = INGS[ingId]; if (d.shelf > 9000) return 100;
   const t = clamp((hourOf(g) - shop.open[0]) / Math.max(1, shop.open[1] - shop.open[0]));
-  return clamp(lerp(shop.fresh[1], shop.fresh[0], t) - (d.shelf < 12 ? t * 14 : 0) + R.range(-2, 2), 30, 100);
+  return clamp(lerp(shop.fresh[1], shop.fresh[0], t) - (d.shelf < 14.4 ? t * 14 : 0) + R.range(-2, 2), 30, 100);
 }
 /** Mặc cả: trả về mức giảm giá đạt được (0 nếu thất bại). ask: 0.05–0.25 */
 export function haggle(g: Game, shop: ShopDef, ask: number, total: number, R: RNG = rnd): { ok: boolean; line: string } {
@@ -186,21 +191,25 @@ export function holdFactor(g: Game, r: RecipeDef, at: number): number {
 export function useFuel(g: Game, units = 1): boolean {
   const s = g.stall, kind = stove(g); if (!kind) return false;
   const item = kind === 'bepgas' ? 'gas' : 'than';
+  const need = units * (has(g, 'bep_cn') && item === 'gas' ? 0.65 : 1);
   if (s.fuelKind !== item) { s.fuel = 0; s.fuelKind = item; }
-  while (s.fuel < units) {
+  while (s.fuel < need) {
     const t = takeFrom(stores(g), item, 1); if (!t) return false;
     s.fuel += item === 'gas' ? 14 : 22;
   }
-  s.fuel -= units; return true;
+  s.fuel -= need; return true;
 }
 /** Tổng hợp chất lượng một mẻ: điểm thao tác + chất lượng nguyên liệu + tay nghề. */
 export function dishQuality(g: Game, r: RecipeDef, stepScore: number, ingQ: number, prepQ = 1): number {
   const mastery = clamp(g.rec[r.id].made / 60) * 0.06, char = stove(g) === 'bepthan' && r.finish.some((s) => s.t === 'grill') ? 0.04 : 0;
-  return clamp((0.55 * stepScore + 0.45 * stepScore * prepQ) * (0.35 + 0.65 * ingQ) + mastery + char, 0.02, 1);
+  const proStove = has(g, 'bep_cn') && toolsFor(r).includes('bep') ? 0.05 : 0;
+  const drinkEq = has(g, 'mayep') && (r.cat === 'nuoc' || r.cat === 'che') ? 0.08 : 0;
+  return clamp((0.55 * stepScore + 0.45 * stepScore * prepQ) * (0.35 + 0.65 * ingQ) + mastery + char + proStove + drinkEq, 0.02, 1);
 }
 /** Độ khó thao tác nấu (cửa sổ thời gian rộng hay hẹp). >1 dễ hơn. */
 export function cookEase(g: Game): number {
   let e = 1 + level(g) * 0.03;
+  if (has(g, 'bep_cn')) e *= 1.12;
   if (g.st.energy < 35) e *= 0.62 + g.st.energy / 92;      // thiếu ngủ → run tay
   if (g.st.mood < 20) e *= 0.92;
   if (g.st.hunger < 15) e *= 0.9;
@@ -220,18 +229,22 @@ export function mods(g: Game, d: District): Mods {
   return m;
 }
 export const menuOf = (g: Game): RecipeDef[] => RECIPE_LIST.filter((r) => g.rec[r.id].on && canSell(g, r));
-/** Độ hấp dẫn của quầy (0.2–2): bảng hiệu, ô dù, đèn, vệ sinh, tình trạng. */
+/** Độ hấp dẫn của quầy (0.2–2.2): bảng hiệu, ô dù, loa, tủ kính, máy lạnh, đèn, vệ sinh, tình trạng. */
 export function stallAppeal(g: Game): number {
   let a = tier(g).visible;
   if (has(g, 'bien')) a *= 1.15;
   if (has(g, 'odu')) a *= 1.06;
   if (has(g, 'ghe')) a *= 1.1;
-  if (isNight(g)) a *= has(g, 'den') ? 0.95 : 0.3;
-  if (wx(g).rain > 0.3) a *= has(g, 'odu') ? 0.95 : 0.45;
+  if (has(g, 'loa')) a *= 1.12;
+  if (has(g, 'tu_kinh')) a *= 1.12;
+  if (has(g, 'mayep') && wx(g).hot > 0.2) a *= 1.1;
+  if (has(g, 'dieu_hoa') && isRestaurant(g)) a *= 1.18;
+  if (isNight(g)) a *= isRestaurant(g) ? (has(g, 'den') ? 1.0 : 0.72) : (has(g, 'den') ? 0.95 : 0.3);
+  if (wx(g).rain > 0.3) a *= isRestaurant(g) ? 1.0 : (has(g, 'odu') ? 0.95 : 0.45);
   a *= 0.6 + 0.4 * clamp(g.stall.cond / 70);
   a *= 1 - clamp(g.stall.dirt / 100) * 0.35;
   if (g.st.hygiene < 30) a *= 0.55 + g.st.hygiene / 66;
-  return clamp(a, 0.1, 2);
+  return clamp(a, 0.1, 2.35);
 }
 /** Số khách tìm đến quầy mỗi giờ game. */
 export function arrivalRate(g: Game): number {
@@ -247,7 +260,7 @@ export function arrivalRate(g: Game): number {
   return rate;
 }
 export interface Persona { arch: ArchDef; budget: number; noise: number; regular?: string; likes?: string[]; }
-export interface Order { rid: string; n: number; price: number; ratio: number; line: string; mood: 'ok' | 'pricey' | 'cheap'; /** món gọi thêm sau khi ăn xong (quán có chỗ ngồi) */ more?: boolean; }
+export interface Order { rid: string; n: number; price: number; ratio: number; line: string; mood: 'ok' | 'pricey' | 'cheap'; /** món gọi thêm sau khi ăn xong (quán có chỗ ngồi) */ more?: boolean; /** số khách trong đoàn nếu là khách đoàn (bậc 6) */ group?: number; /** id bàn đặt trước nếu là khách đặt bàn */ bookingId?: number; }
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 export function say(tpl: string, a: ArchDef, fem: boolean, g: Game, extra: Record<string, string | number> = {}): string {
   const self = a.self[fem ? 1 : 0], you = a.you.replace('{ac}', g.ac);
@@ -297,6 +310,37 @@ export function decide(g: Game, p: Persona, fem: boolean, R: RNG = rnd): { order
   const line = say(R.pick(pool), p.arch, fem, g, { dish: r.name.toLowerCase(), n: n === 1 ? 'một' : 'hai', price: money(price) });
   return { order: { rid: r.id, n, price, ratio: br, line, mood } };
 }
+/** Quyết định gọi món cho khách đoàn (3–4 người) tại Nhà hàng bình dân: cả nhóm gọi chung một lượt. */
+export function decideGroup(g: Game, p: Persona, size: number, fem: boolean, R: RNG = rnd, preferredDish?: string): { order?: Order; leave?: string; why?: 'price' | 'none' | 'dirty' } {
+  const sp = spotById(g.stall.spot ?? ''), d = sp?.district ?? districtAt(g.stall.x, g.stall.z), w = wx(g), m = mods(g, d), h = hourOf(g);
+  if (g.st.hygiene < 18 && R.chance(0.45 - g.st.hygiene / 65)) return { leave: say(R.pick(LINES.dirty), p.arch, fem, g), why: 'dirty' };
+  const menu = menuOf(g).filter((r) => readyCount(g, r.id) + finishPossible(g, r) >= Math.min(2, size));
+  if (!menu.length) return { leave: say(R.pick(LINES.none), p.arch, fem, g), why: 'none' };
+  const slot = mealSlot(h), grpBudget = p.budget * size;
+  const cands: { r: RecipeDef; u: number; ratio: number }[] = [];
+  let sum = 0;
+  for (const r of menu) {
+    const price = g.rec[r.id].price, ratio = price / fairPrice(g, r, p, d);
+    let u = (p.arch.pref[r.cat] ?? 0.8) * (0.4 + r.meal[slot]) * (1 + 0.35 * w.hot * r.hot) * (m.demand[r.cat] ?? 1) * Math.pow(1 / ratio, 1.15) * R.range(0.75, 1.25);
+    if (r.meal[slot] >= 0.8) u *= 1.35;
+    if (preferredDish && r.id === preferredDish) u *= 2.8;
+    if (readyCount(g, r.id) + finishPossible(g, r) >= size) u *= 1.6;
+    if (price > p.budget * 1.15) u *= 0.15;
+    if (!(u > 0)) continue;
+    cands.push({ r, u, ratio }); sum += u;
+  }
+  if (!cands.length) return { leave: say(R.pick(LINES.none), p.arch, fem, g), why: 'none' };
+  let roll = R.range(0, sum), pick = cands[cands.length - 1];
+  for (const c of cands) { roll -= c.u; if (roll <= 0) { pick = c; break; } }
+  const r = pick.r, br = pick.ratio, price = g.rec[r.id].price;
+  const k = 4.6 * r.elastic * Math.sqrt(p.arch.sens), pBuy = price > p.budget * 1.3 ? 0.05 : 1 / (1 + Math.exp((br - 1.2) * k));
+  if (!R.chance(pBuy)) return { leave: say(R.pick(LINES.pricey_leave), p.arch, fem, g, { dish: r.name.toLowerCase(), price: money(price) }), why: 'price' };
+  const stock = readyCount(g, r.id) + finishPossible(g, r);
+  const n = clamp(Math.min(size, stock, Math.max(1, Math.floor(grpBudget / price))), 1, size);
+  const mood: Order['mood'] = br > 1.12 ? 'pricey' : br < 0.72 ? 'cheap' : 'ok';
+  const line = say(R.pick(LINES.order_group), p.arch, fem, g, { dish: r.name.toLowerCase(), n, price: money(price) });
+  return { order: { rid: r.id, n, price, ratio: br, line, mood, group: size } };
+}
 export interface Review { stars: number; rep: number; tip: number; line: string; face: number; back: boolean; }
 /** Khách đánh giá sau khi nhận món. quality 0–1, wait: tỉ lệ thời gian đã chờ so với sự kiên nhẫn. */
 /** Khách ngồi ăn xong có thể gọi thêm một món tráng miệng / đồ uống (chỉ quán có chỗ ngồi, bậc 5). */
@@ -316,7 +360,14 @@ export function secondOrder(g: Game, p: Persona, first: Order, fem = false, R: R
 
 export function review(g: Game, p: Persona, fem: boolean, o: Order, quality: number, wait: number, R: RNG = rnd): Review {
   const value = clamp(1.35 - o.ratio, 0, 1), hyg = (g.st.hygiene < 30 ? (30 - g.st.hygiene) / 100 : 0) + clamp(g.stall.dirt / 100) * 0.12;
-  const service = (g.st.mood < 25 ? -0.05 : g.st.mood > 70 ? 0.03 : 0) + (has(g, 'ghe') ? 0.03 : 0);
+  const service = (g.st.mood < 25 ? -0.05 : g.st.mood > 70 ? 0.03 : 0)
+    + (has(g, 'ghe') ? 0.03 : 0)
+    + (has(g, 'hopmangve') ? 0.03 : 0)
+    + (has(g, 'binh_tra') ? 0.03 : 0)
+    + (has(g, 'may_quat') ? 0.04 : 0)
+    + (has(g, 'may_tinh_tien') ? 0.04 : 0)
+    + (has(g, 'dieu_hoa') && isRestaurant(g) ? 0.06 : 0)
+    + (has(g, 'wc_lavabo') && isRestaurant(g) && (p.arch.id === 'khotinh' || p.arch.id === 'phebinh' || p.arch.id === 'nhagiau') ? 0.06 : 0);
   const picky = p.arch.id === 'khotinh' || p.arch.id === 'phebinh' ? 0.08 : 0;
   const s = clamp(0.12 + 0.63 * quality + 0.13 * (1 - clamp(wait)) + 0.12 * value + service - hyg - picky);
   const stars = clamp(1 + s * 4.3, 1, 5);
@@ -325,7 +376,8 @@ export function review(g: Game, p: Persona, fem: boolean, o: Order, quality: num
   if (p.arch.id === 'phebinh') rep = (stars - 3.6) * 7;
   if (p.arch.id === 'nhagiau' && stars > 4.2) rep += 0.6;
   let tip = 0;
-  if (stars >= 4.3 && R.chance(p.arch.tip * 2.2 + (stars - 4.3))) tip = Math.max(1000, round1k(o.price * o.n * R.range(0.06, 0.2)));
+  const posTip = has(g, 'may_tinh_tien') ? 0.08 : 0;
+  if (stars >= 4.3 && R.chance(p.arch.tip * 2.2 + (stars - 4.3) + posTip)) tip = Math.max(1000, round1k(o.price * o.n * R.range(0.06, 0.2)));
   const key = quality < 0.2 ? 'awful' : stars >= 4.5 ? 'great' : stars >= 3.7 ? 'good' : stars >= 2.8 ? 'ok' : stars >= 1.9 ? 'bad' : 'awful';
   let line = say(R.pick(LINES[key]), p.arch, fem, g);
   if (tip > 0) line += ' ' + say(R.pick(LINES.tip), p.arch, fem, g);
@@ -341,7 +393,8 @@ export function settleSale(g: Game, o: Order, cost: number, rv: Review, quality:
   g.tot.served += o.n; g.rep = clamp(g.rep + rv.rep, 0, 100);
   const rs = g.rec[o.rid]; rs.made += o.n; rs.best = Math.max(rs.best, quality);
   g.st.mood = clamp(g.st.mood + (rv.stars - 3) * 1.2, 0, STAT_MAX);
-  g.stall.dirt = clamp(g.stall.dirt + 0.8 * o.n, 0, 100);
+  const dirtMul = has(g, 'hut_mui') ? 0.45 : has(g, 'tu_kinh') ? 0.65 : 1;
+  g.stall.dirt = clamp(g.stall.dirt + 0.8 * o.n * dirtMul, 0, 100);
 }
 export function lostCustomer(g: Game, why: 'wait' | 'price' | 'none' | 'dirty') {
   g.led.lost++;
@@ -642,9 +695,25 @@ export function rentDue(g: Game): number { const h = HOUSING[g.housing]; return 
 /** Uy tín cần có để thuê chỗ này (0 nếu không đòi hỏi gì). */
 export function rentNeed(id: string): number { return HOUSING[id]?.needRep ?? 0; }
 export function canRent(g: Game, id: string): boolean { return g.rep >= rentNeed(id); }
+/** Khoảng biến thiên thời gian khách đợi (-15% tới +30%, trung bình +7,5%). */
+export const PATIENCE_RANGE: readonly [number, number] = [0.85, 1.3];
+
+export function buyHousing(g: Game, id: string): boolean {
+  const h = HOUSING[id];
+  if (!h?.buy || !canRent(g, id)) return false;
+  if (!spend(g, h.buy, 'rent')) return false;
+  g.flags['lived_' + id] = 1;
+  g.flags['owned_' + id] = 1;
+  g.housing = id;
+  g.paidUntil = 999999;
+  bus.emit('save', 'mua nha');
+  return true;
+}
+
 export function payHousing(g: Game, id: string): boolean {
   const h = HOUSING[id];
   if (!h || !canRent(g, id)) return false;
+  if (g.flags['owned_' + id]) { g.housing = id; g.paidUntil = 999999; bus.emit('save', 'cho o'); return true; }
   if (h.rent > 0 && !spend(g, h.rent, 'rent')) return false;
   if (g.housing !== id) { // chuyển nhà: đồ ở chỗ cũ theo người chơi nếu là gầm cầu thì để lại
     g.flags['lived_' + id] = 1;
@@ -654,6 +723,7 @@ export function payHousing(g: Game, id: string): boolean {
 }
 function dailyHousing(g: Game) {
   const h = HOUSING[g.housing];
+  if (g.flags['owned_' + g.housing]) return;
   if (h.per === 'tuần' && g.day >= g.paidUntil) {
     const late = g.day - g.paidUntil;
     if (late === 0) toast(`Tới hạn đóng ${money(h.rent)} tiền nhà ${h.name} tuần này. Ghé chỗ thuê để đóng.`, 'warn', 'home', true);
@@ -670,7 +740,7 @@ function dailyHousing(g: Game) {
 function hourly(g: Game, R: RNG) {
   const w = wx(g), s = g.stall;
   spoil(g.bag, 1, w.spoil, false);
-  spoil(s.store, 1, w.spoil, stallChilled(g));
+  spoil(s.store, 1, w.spoil, stallChilled(g), has(g, 'tu_dong') ? 0.35 : 1);
   spoil(g.home, 1, w.spoil * (g.housing === 'gamcau' ? 1.15 : 0.9), homeChilled(g));
   // đá tan dần
   for (const l of [s.store, g.bag, g.home]) for (const st of l) if (st.id === 'da' && st.fresh <= 0) st.n = 0;
@@ -683,8 +753,9 @@ function hourly(g: Game, R: RNG) {
     if (dmg > 0) { s.cond = clamp(s.cond - dmg, 0, 100); if (s.cond < 25 && s.open) { s.open = false; toast('Quầy hư hại nặng vì mưa gió — phải dọn hàng! Sửa ở tiệm Đồ Nghề Ba Tài.', 'bad', 'storm', true); } }
   }
   if (s.open && w.id === 'bao') { s.open = false; toast('Bão quá lớn, không thể bán tiếp!', 'bad', 'storm'); }
-  // đồ đã làm sẵn nguội dần
-  for (const rd of s.ready) { const r = RECIPES[rd.rid]; if (absMin(g) - rd.at > 90) rd.q = Math.max(0.15, rd.q - 0.06); void r; }
+  // đồ đã làm sẵn nguội dần (tủ kính giữ nóng lâu hơn)
+  const coolLimit = has(g, 'tu_kinh') ? 150 : 90;
+  for (const rd of s.ready) { const r = RECIPES[rd.rid]; if (absMin(g) - rd.at > coolLimit) rd.q = Math.max(0.15, rd.q - 0.06); void r; }
   if (g.weather.until <= absMin(g) && !activeEvents(g).some((e) => e.weather)) setWeather(g, g.weather.next, R);
 }
 // ───────────────────────── Người phụ việc ở quầy ─────────────────────────
@@ -694,33 +765,214 @@ export const HELPER_MIN_DAYS = 2;
 export const HELPER_MIN_TIER = 2;
 /** Tổng doanh thu bán hàng từ trước tới giờ (sổ của ngày hôm nay + các ngày đã khoá sổ). */
 export function stallRevenue(g: Game): number { return g.led.revenue + g.hist.reduce((a, h) => a + h.revenue, 0); }
+export const maxHelpers = (g: Game) => (isRestaurant(g) ? 2 : 1);
+export const helperCount = (g: Game) => (g.help ? 1 : 0) + (g.help2 && isRestaurant(g) ? 1 : 0);
 export interface HelperGate { ok: boolean; revenue: number; days: number; tier: boolean; why: string; }
 /** Vì sao chưa có người phụ việc — dùng cho gợi ý trong UI và cho test. */
 export function helperGate(g: Game): HelperGate {
   const revenue = stallRevenue(g), first = g.flags.firstSale, days = typeof first === 'number' ? g.day - first : 0;
   const tier = g.stall.tier >= HELPER_MIN_TIER;
-  const ok = !g.help && tier && revenue >= HELPER_MIN_REVENUE && days >= HELPER_MIN_DAYS;
-  const why = g.help ? 'Đã có người phụ quầy'
+  const full = helperCount(g) >= maxHelpers(g);
+  const ok = !full && tier && revenue >= HELPER_MIN_REVENUE && days >= HELPER_MIN_DAYS;
+  const why = full ? (isRestaurant(g) ? 'Đã đủ 2 nhân viên phục vụ' : 'Đã có người phụ quầy')
     : !tier ? 'Cần xe đẩy trở lên mới thuê được người'
     : revenue < HELPER_MIN_REVENUE ? `Doanh thu mới ${money(revenue)} — cần ${money(HELPER_MIN_REVENUE)} mới nuôi nổi người phụ`
     : days < HELPER_MIN_DAYS ? `Mới bán được ${days + 1} ngày — bán quen tay đã rồi hẵng thuê`
     : '';
   return { ok, revenue, days, tier, why };
 }
-/** Người ứng viên kế tiếp (chọn theo seed + ngày để mỗi ván mỗi khác nhưng vẫn tất định). */
-export function helperCandidate(g: Game): HelperDef { return HELPER_POOL[(Math.abs(g.seed) + g.day * 3) % HELPER_POOL.length]; }
-/** Nhận người phụ việc: ghi vào sổ, ứng lương trước một ngày. Trả về false nếu thiếu tiền. */
+/** Người ứng viên kế tiếp (chọn theo seed + ngày, tránh trùng người đang làm). */
+export function helperCandidate(g: Game): HelperDef {
+  const taken = new Set([g.help?.name, g.help2?.name].filter(Boolean));
+  const start = (Math.abs(g.seed) + g.day * 3) % HELPER_POOL.length;
+  for (let i = 0; i < HELPER_POOL.length; i++) {
+    const c = HELPER_POOL[(start + i) % HELPER_POOL.length];
+    if (!taken.has(c.name)) return c;
+  }
+  return HELPER_POOL[start];
+}
+/** Nhận người phụ việc: ghi vào sổ, ứng lương trước một ngày. Trả về false nếu thiếu tiền hoặc đã đủ chỗ. */
 export function hireHelper(g: Game, d: HelperDef = helperCandidate(g)): boolean {
-  if (g.help) return false;
+  if (helperCount(g) >= maxHelpers(g)) return false;
   if (!spend(g, d.wage, 'fees')) return false;
   const h: Helper = { name: d.name, fem: d.fem, face: d.face, hairStyle: d.hairStyle, shirt: d.shirt, pants: d.pants, hair: d.hair, skin: d.skin, wage: d.wage, since: g.day, paid: g.day, hired: true };
-  g.help = h;
+  if (!g.help) g.help = h;
+  else g.help2 = h;
   return true;
 }
-/** Cho người phụ việc nghỉ. */
-export function fireHelper(g: Game): Helper | null { const h = g.help; g.help = null; return h; }
-/** Tỉ lệ khách chờ lâu hơn nhờ có người phụ dỗ khách. */
-export function helperPatience(g: Game): number { return g.help ? 1.3 : 1; }
+/** Cho người phụ việc nghỉ (slot 1 hoặc slot 2). */
+export function fireHelper(g: Game, slot: 1 | 2 = 1): Helper | null {
+  if (slot === 2) { const h = g.help2; g.help2 = null; return h; }
+  const h = g.help; g.help = g.help2 ?? null; g.help2 = null; return h;
+}
+/** Tỉ lệ khách chờ lâu hơn nhờ có người phụ dỗ khách và tiện nghi quán. */
+export function helperPatience(g: Game): number {
+  let m = 1;
+  if (g.help) m += 0.3;
+  if (g.help2 && isRestaurant(g)) m += 0.28;
+  if (has(g, 'binh_tra')) m += 0.12;
+  if (has(g, 'wifi_nhac')) m += 0.2;
+  if (has(g, 'dieu_hoa') && isRestaurant(g)) m += 0.22;
+  else if (has(g, 'may_quat') && wx(g).hot > 0.2) m += 0.22;
+  return m;
+}
+
+// ───────────────────────── Nhân viên phụ bếp (Bậc 6) ─────────────────────────
+export const maxSous = (g: Game) => (isRestaurant(g) ? 2 : 0);
+export const sousCount = (g: Game) => (g.sous ? 1 : 0) + (g.sous2 && isRestaurant(g) ? 1 : 0);
+export interface SousGate { ok: boolean; tier: boolean; why: string; }
+export function sousGate(g: Game): SousGate {
+  const tierOk = isRestaurant(g);
+  const full = sousCount(g) >= maxSous(g);
+  const ok = !full && tierOk;
+  const why = !tierOk ? 'Cần Nhà hàng bình dân (bậc 6) mới có phòng bếp riêng cho phụ bếp' : full ? 'Đã đủ 2 phụ bếp trong phòng bếp' : '';
+  return { ok, tier: tierOk, why };
+}
+export function sousCandidate(g: Game): SousDef {
+  const taken = new Set([g.sous?.name, g.sous2?.name].filter(Boolean));
+  const start = (Math.abs(g.seed) + g.day * 5) % SOUS_POOL.length;
+  for (let i = 0; i < SOUS_POOL.length; i++) {
+    const c = SOUS_POOL[(start + i) % SOUS_POOL.length];
+    if (!taken.has(c.name)) return c;
+  }
+  return SOUS_POOL[start];
+}
+export function hireSous(g: Game, d: SousDef = sousCandidate(g)): boolean {
+  if (!isRestaurant(g) || sousCount(g) >= maxSous(g)) return false;
+  if (!spend(g, d.wage, 'fees')) return false;
+  const h: Helper = { name: d.name, fem: d.fem, face: d.face, hairStyle: d.hairStyle, shirt: d.shirt, pants: d.pants, hair: d.hair, skin: d.skin, wage: d.wage, since: g.day, paid: g.day, hired: true };
+  if (!g.sous) g.sous = h;
+  else g.sous2 = h;
+  return true;
+}
+export function fireSous(g: Game, slot: 1 | 2 = 1): Helper | null {
+  if (slot === 2) { const h = g.sous2; g.sous2 = null; return h; }
+  const h = g.sous; g.sous = g.sous2 ?? null; g.sous2 = null; return h;
+}
+function hasFuelFor(g: Game, units: number): boolean {
+  if (units <= 0) return true;
+  const kind = stove(g); if (!kind) return false;
+  const item = kind === 'bepgas' ? 'gas' : 'than', per = item === 'gas' ? 14 : 22;
+  const cur = g.stall.fuelKind === item ? g.stall.fuel : 0;
+  return cur + countOf(stores(g), item) * per >= units;
+}
+export interface SousWorkResult { kind: 'prep' | 'ready'; rid: string; n: number; }
+/** Phụ bếp tự sơ chế mẻ thiếu hoặc ra sẵn 1 phần món đang bật trong thực đơn. */
+export function sousWork(g: Game, nowMin = absMin(g)): SousWorkResult | null {
+  const s = g.stall;
+  if (!g.sous || !isRestaurant(g) || s.where !== 'placed' || !s.open) return null;
+  const menu = menuOf(g);
+  if (!menu.length) return null;
+  // Ưu tiên 1: sơ chế món có bước sơ chế khi lượng cốt < 2 phần
+  for (const r of menu) {
+    if (!hasPrep(r)) continue;
+    const prepped = s.preps.filter((p) => p.rid === r.id).reduce((a, p) => a + p.n, 0);
+    if (prepped >= 2) continue;
+    const n = prepPossible(g, r);
+    if (n <= 0) continue;
+    const needFuel = r.prep.some((st) => st.t === 'boil' || st.t === 'fry' || st.t === 'grill') ? Math.max(0.5, fuelPerPortion(r) * 0.5) : 0;
+    if (!hasFuelFor(g, needFuel) || (needFuel > 0 && !useFuel(g, needFuel))) continue;
+    const c = consumePrep(g, r, n);
+    const q = clamp(0.76 + level(g) * 0.015, 0.76, 0.92);
+    s.preps.push({ rid: r.id, n, q: clamp(q * (0.4 + 0.6 * c.q), 0.3, 0.94), at: nowMin, cost: c.cost / n });
+    return { kind: 'prep', rid: r.id, n };
+  }
+  // Ưu tiên 2: hoàn thiện sẵn 1 phần nếu khay còn chỗ và món đó hiện có < 2 phần sẵn
+  const totalTrays = s.ready.reduce((a, x) => a + x.n, 0);
+  if (totalTrays >= stallTrayCap(g)) return null;
+  for (const r of menu) {
+    if (readyCount(g, r.id) >= 2) continue;
+    if (finishPossible(g, r) < 1) continue;
+    const needFuel = toolsFor(r).includes('bep') ? fuelPerPortion(r) : 0;
+    if (!hasFuelFor(g, needFuel) || (needFuel > 0 && !useFuel(g, needFuel))) continue;
+    const c = consumeFinish(g, r, 1);
+    const q = dishQuality(g, r, clamp(0.78 + level(g) * 0.015, 0.78, 0.93), c.q, c.prepQ);
+    s.ready.push({ rid: r.id, n: 1, q, at: nowMin, cost: c.cost });
+    g.rec[r.id].made += 1;
+    g.rec[r.id].best = Math.max(g.rec[r.id].best, q);
+    return { kind: 'ready', rid: r.id, n: 1 };
+  }
+  return null;
+}
+
+// ───────────────────────── Đặt bàn trước (Bậc 6) ─────────────────────────
+export const BOOKING_MAX = 4;
+const BOOKABLE_ARCHES = ['vanphong', 'phuhuynh', 'nhagiau', 'dukhach', 'congnhan'] as const;
+/** Tạo một yêu cầu đặt bàn trước mới cho Nhà hàng bình dân. Trả về null nếu chưa đủ điều kiện hoặc đã đầy lịch. */
+export function createBooking(g: Game, R: RNG = rnd): Booking | null {
+  if (!isRestaurant(g)) return null;
+  const active = g.bookings.filter((b) => b.status === 'pending' || b.status === 'accepted');
+  if (active.length >= BOOKING_MAX) return null;
+  const archId = R.pick([...BOOKABLE_ARCHES]);
+  const fem = R.chance(ARCH[archId].fem);
+  const name = (fem ? R.pick(['Chị', 'Cô']) : R.pick(['Anh', 'Chú'])) + ' ' + R.pick(fem ? NAMES.nu : NAMES.nam);
+  const hNow = hourOf(g);
+  let day = g.day;
+  let hour: number;
+  if (hNow < 19.2) {
+    const minH = Math.max(8, Math.ceil(hNow + 1.25));
+    const maxH = 21;
+    if (minH > maxH) { day = g.day + 1; hour = R.pick([11.5, 12, 18.5, 19]); }
+    else hour = clamp(Math.round(R.range(minH, maxH) * 2) / 2, minH, maxH);
+  } else {
+    day = g.day + 1;
+    hour = R.pick([11.5, 12, 18, 19, 19.5]);
+  }
+  const size = R.pick([2, 3, 4]);
+  const menu = menuOf(g);
+  const dish = menu.length ? R.pick(menu).id : undefined;
+  const deposit = round1k(size * 12000);
+  const b: Booking = { id: g.bookSeq++, name, fem, arch: archId, size, day, hour, deposit, dish, status: 'pending' };
+  g.bookings.push(b);
+  return b;
+}
+/** Nhận đặt bàn trước: giữ chỗ cho khách vào khung giờ hẹn. */
+export function acceptBooking(g: Game, id: number): Booking | null {
+  const b = g.bookings.find((x) => x.id === id && x.status === 'pending');
+  if (!b) return null;
+  b.status = 'accepted';
+  return b;
+}
+/** Từ chối hoặc huỷ đặt bàn. Huỷ bàn đã nhận làm giảm nhẹ uy tín. */
+export function rejectBooking(g: Game, id: number): boolean {
+  const idx = g.bookings.findIndex((x) => x.id === id);
+  if (idx < 0) return false;
+  const b = g.bookings[idx];
+  if (b.status === 'accepted') g.rep = clamp(g.rep - 0.5, 0, 100);
+  g.bookings.splice(idx, 1);
+  return true;
+}
+/** Tìm bàn đặt trước đã tới giờ đón khách (trong khung -15 phút tới +60 phút quanh giờ hẹn). */
+export function dueBooking(g: Game): Booking | null {
+  const h = hourOf(g);
+  return g.bookings.find((b) => b.status === 'accepted' && b.day === g.day && h >= b.hour - 0.25 && h <= b.hour + 1.0) ?? null;
+}
+/** Số ghế đang giữ cho các bàn đặt trước sắp tới trong ±30 phút. */
+export function reservedSeats(g: Game): number {
+  const h = hourOf(g);
+  return g.bookings
+    .filter((b) => b.status === 'accepted' && b.day === g.day && Math.abs(h - b.hour) <= 0.5)
+    .reduce((a, b) => a + b.size, 0);
+}
+/** Xoá/chuyển trạng thái những bàn quá giờ hẹn. Trả về các bàn đã nhận nhưng bị lỡ hẹn. */
+export function expireBookings(g: Game): Booking[] {
+  const h = hourOf(g), missed: Booking[] = [];
+  for (const b of g.bookings) {
+    if (b.status !== 'pending' && b.status !== 'accepted') continue;
+    const overdue = g.day > b.day || (g.day === b.day && h > b.hour + 1.15);
+    if (!overdue) continue;
+    if (b.status === 'accepted') {
+      b.status = 'missed';
+      g.rep = clamp(g.rep - 0.5, 0, 100);
+      missed.push(b);
+    } else {
+      b.status = 'missed';
+    }
+  }
+  // Giữ lịch gọn: chỉ giữ bàn đang hoạt động hoặc mới kết thúc trong ngày
+  g.bookings = g.bookings.filter((b) => b.status === 'pending' || b.status === 'accepted' || b.status === 'seated' || b.day >= g.day);
+  return missed;
+}
 
 function newDay(g: Game, R: RNG) {
   // khoá sổ ngày cũ
@@ -746,8 +998,22 @@ function newDay(g: Game, R: RNG) {
   // người phụ việc: trả lương đầu ngày, không có tiền thì họ nghỉ
   if (g.help) {
     if (spend(g, g.help.wage, 'fees')) { g.help.paid = g.day; toast(`Trả lương ${money(g.help.wage)} cho ${g.help.name}.`, 'info', 'cash'); }
-    else { const n = g.help.name; g.help = null; toast(`${n} xin nghỉ vì chưa được trả lương. Quầy lại một mình.`, 'bad', 'heart', true); }
+    else { const n = g.help.name; g.help = g.help2 ?? null; g.help2 = null; toast(`${n} xin nghỉ vì chưa được trả lương. Quầy lại vắng tay.`, 'bad', 'heart', true); }
   }
+  if (g.help2) {
+    if (spend(g, g.help2.wage, 'fees')) { g.help2.paid = g.day; toast(`Trả lương ${money(g.help2.wage)} cho ${g.help2.name}.`, 'info', 'cash'); }
+    else { const n = g.help2.name; g.help2 = null; toast(`${n} xin nghỉ vì chưa được trả lương.`, 'bad', 'heart', true); }
+  }
+  // nhân viên phụ bếp (bậc 6): trả lương đầu ngày
+  if (g.sous) {
+    if (spend(g, g.sous.wage, 'fees')) { g.sous.paid = g.day; toast(`Trả lương phụ bếp ${money(g.sous.wage)} cho ${g.sous.name}.`, 'info', 'cash'); }
+    else { const n = g.sous.name; g.sous = g.sous2 ?? null; g.sous2 = null; toast(`Phụ bếp ${n} xin nghỉ vì thiếu lương.`, 'bad', 'heart', true); }
+  }
+  if (g.sous2) {
+    if (spend(g, g.sous2.wage, 'fees')) { g.sous2.paid = g.day; toast(`Trả lương phụ bếp ${money(g.sous2.wage)} cho ${g.sous2.name}.`, 'info', 'cash'); }
+    else { const n = g.sous2.name; g.sous2 = null; toast(`Phụ bếp ${n} xin nghỉ vì thiếu lương.`, 'bad', 'heart', true); }
+  }
+  expireBookings(g);
   // gửi ngân hàng có lãi nhỏ
   if (g.bank > 0) g.bank += Math.floor(g.bank * 0.0008);
   bus.emit('day', g.day);
@@ -774,9 +1040,11 @@ export function sellJunk(g: Game, where: 'scrap' | 'pawn'): number {
   if (sum > 0) { earn(g, sum, 'side'); g.tot.scrap += sum; }
   return sum;
 }
-export function buyGear(g: Game, id: string): 'ok' | 'cash' | 'have' {
+export function buyGear(g: Game, id: string): 'ok' | 'cash' | 'have' | 'tier' {
   if (has(g, id)) return 'have';
   const d = GEAR[id];
+  if (!d) return 'have';
+  if (d.minTier && g.stall.tier < d.minTier) return 'tier';
   if (!spend(g, d.price, 'gear')) return 'cash';
   if (d.kind === 'phone') { PH.activate(g, id); bus.emit('save', 'mua dien thoai'); return 'ok'; }
   g.gear[id] = 100;

@@ -11,9 +11,14 @@ import { SPOTS, DISTRICT, NAV, findPath, nearestNode, PLACES, districtAt, MAP } 
 const sold = new Set(SHOP_LIST.flatMap((s) => s.items));
 
 describe('nguyên liệu và cửa hàng', () => {
-  it('không trùng mã, giá và hạn dùng hợp lệ', () => {
+  it('không trùng mã, giá và hạn dùng hợp lệ (đã tăng 20% thời gian hỏng)', () => {
     expect(new Set(ING_LIST.map((i) => i.id)).size).toBe(ING_LIST.length);
     for (const i of ING_LIST) { expect(i.price, i.id).toBeGreaterThan(0); expect(i.shelf, i.id).toBeGreaterThan(0); expect(i.kg, i.id).toBeGreaterThanOrEqual(0); expect(i.name.length).toBeGreaterThan(0); }
+    expect(INGS.heo.shelf).toBe(12);
+    expect(INGS.tom.shelf).toBe(8.4);
+    expect(INGS.banhmi.shelf).toBe(26.4);
+    expect(INGS.da.shelf).toBe(10.8);
+    expect(INGS.gao.shelf).toBe(99999);
   });
   it('mọi mặt hàng trên kệ đều là nguyên liệu có thật', () => {
     for (const s of SHOP_LIST) { expect(s.items.length, s.id).toBeGreaterThan(0); for (const id of s.items) expect(INGS[id], `${s.id}/${id}`).toBeDefined(); expect(s.open[0]).toBeLessThan(s.open[1]); }
@@ -129,6 +134,9 @@ describe('con người', () => {
       expect(s.topics.length, id).toBeGreaterThanOrEqual(2);
       for (const t of s.topics) { expect(t.q.length, id).toBeGreaterThan(6); expect(t.a.length, id).toBeGreaterThan(50); }
     }
+    expect(FIXED.cafe.name).toBe('Anh Phong');
+    expect(FIXED_ROLE.cafe).toBe('Chủ quán cà phê');
+    expect(SIDE.cafe.topics.length).toBeGreaterThanOrEqual(2);
   });
   it('chỉ một vài nhóm người xấc xược, và có đủ lời cho từng kiểu', () => {
     const ids = Object.keys(RUDE) as ArchId[];
