@@ -1,15 +1,16 @@
 # Việc còn lại
 
-Danh sách những gì **chưa làm** tính tới lượt 16 (`main` = `f45a2f8`). Đã xong: 60/60 món · 8/8 kiểu chỗ ở ·
-5/7 bậc kinh doanh · 8 thời tiết · 22 sự kiện · 76 nguyên liệu · 14 cửa hàng · 22 món đồ nghề · 16 nhóm người ·
-11 khách quen · 39 nhân vật cố định · chuỗi 11 mục tiêu hướng dẫn · điện thoại · quán net · công an · bệnh viện ·
+Danh sách những gì **chưa làm**, rà theo mã ngày 2026-11-17 (`main` = `ca6c3d6`). Đã xong: 60/60 món · 8/8 kiểu chỗ ở ·
+6/7 bậc kinh doanh · 8 thời tiết · 22 sự kiện · 75 nguyên liệu · 12 nơi bán · 36 món đồ nghề · 16 nhóm người ·
+11 khách quen · 43 nhân vật cố định · chuỗi 11 mục tiêu hướng dẫn · điện thoại · quán net · công an · bệnh viện ·
 đua xe đạp · NPC sinh hoạt theo giờ · giao diện dễ đọc · 16 biểu cảm · 8 kiểu tóc · người phụ việc ·
 ngoại hình người chơi (góc nhìn thứ ba, cắt tóc, thời trang) · quán có chỗ ngồi (sáu ghế bàn gỗ, thực đơn theo buổi, gọi thêm) ·
-278 bài kiểm thử / 18 tệp.
+nhà hàng bình dân (8 ghế trong nhà kín, đặt bàn trước, phụ bếp, khách đoàn) ·
+322 bài kiểm thử / 24 tệp.
 
 ---
 
-## 1. Nhánh kinh doanh — còn 1 bậc
+## 1. Nhánh kinh doanh — còn 1 bậc (Chuỗi cửa hàng)
 
 | Bậc | Tên | Cần gì để làm |
 |---|---|---|
@@ -17,7 +18,7 @@ ngoại hình người chơi (góc nhìn thứ ba, cắt tóc, thời trang) · 
 | ✅ 6 | Nhà hàng bình dân | **Đã xong:** 145.000.000₫, 280 kg, 26 món, 16 khách, nội thất trong nhà kín (4 bàn 8 ghế, phòng bếp riêng có vách ngăn & cửa bếp, không ngại mưa/tối), đặt bàn trước (nhận/từ chối/giữ chỗ/tiền cọc), nhân viên phụ bếp (`sous` tự sơ chế & nấu phụ), khách đoàn 3–4 người (`decideGroup`) |
 | 7 | Chuỗi cửa hàng | Mở điểm bán thứ hai cùng lúc, quản lý từ xa (sổ sách từng điểm), thuê người trông coi |
 
-Hiện `FUTURE_TIERS` trong `src/data/gear.ts` còn 1 bậc (`Chuỗi cửa hàng`); chưa có dữ liệu, mô hình, luật đặt chỗ và kiểm thử.
+Hiện `FUTURE_TIERS` trong `src/data/gear.ts` còn đúng 1 bậc (`Chuỗi cửa hàng`); chưa có dữ liệu, mô hình, luật mở điểm bán thứ hai và kiểm thử.
 
 ## 2. Băng nhóm
 
@@ -38,9 +39,9 @@ Hiện `FUTURE_TIERS` trong `src/data/gear.ts` còn 1 bậc (`Chuỗi cửa hàn
 
 - **Chưa đo trên máy yếu thật**: người chơi báo máy chạy trên 50 khung hình/giây nhưng chưa rõ máy nào.
 - Khi cần tối ưu: gộp các khối cơ thể NPC thành một lưới, dùng instancing cho đồ vật lặp lại (ghế, cây, xe), bỏ sương mù theo điểm ảnh ở mức đồ hoạ thấp, thêm LOD cho khu ở xa.
-- **Tách gói JavaScript**: hiện một tệp khoảng 1,05 MB (nén còn ~328 kB). Nên tách phần dựng thành phố ra khỏi phần giao diện.
+- **Tách gói JavaScript**: hiện một tệp khoảng 1,23 MB (nén còn ~384 kB). Nên tách phần dựng thành phố ra khỏi phần giao diện.
 - **Chơi ngoại tuyến**: chưa có service worker; mất mạng là không mở được.
-- **Lưu đám mây**: chưa có; xoá dữ liệu trình duyệt là mất bản lưu (bản lưu v10, tự lưu sau mỗi việc quan trọng).
+- **Lưu đám mây**: chưa có; xoá dữ liệu trình duyệt là mất bản lưu (bản lưu v13, tự lưu sau mỗi việc quan trọng).
 - **Nội thất cửa hàng**: một số tiệm còn sơ sài (kệ hàng, quầy, biển giá mới ở mức khối hộp).
 
 ## 5. Cân chỉnh
@@ -48,9 +49,10 @@ Hiện `FUTURE_TIERS` trong `src/data/gear.ts` còn 1 bậc (`Chuỗi cửa hàn
 - **Âm thanh**: chưa nghe thử trên tai nghe/loa điện thoại thật để cân lại nhạc nền với hiệu ứng.
 - **Nhịp độ**: chưa chơi thử dài để cân tốc độ kiếm vốn ngày đầu, lượng khách khi uy tín thấp, độ khó các mini-game (nấu, đua xe đạp).
 - **Màn dọc**: HUD vẫn chật khi điện thoại để dọc (đã có thanh cỡ giao diện 70–160% và lời khuyên xoay ngang, nhưng chưa bố trí lại riêng cho màn dọc).
+- **Bậc 6 chưa có probe giao diện**: luật đã có test (`tests/nhahang.test.ts`), nhưng chưa chạy `tools/probe` cho nhà hàng bình dân (8 ghế, khách đoàn, bảng đặt bàn trước, phụ bếp) ở cả màn ngang và màn dọc.
 
 ## 6. Việc nhỏ đã biết
 
-- Dòng "Dụng cụ" / "Sơ chế" trong Sổ tay từng thừa dấu "·" — đã sửa khi viết lại mục công thức ở lượt 12, cần rà lại lần nữa sau khi thêm bậc 4.
+- Dòng "Dụng cụ" / "Sơ chế" trong Sổ tay từng thừa dấu "·" — đã sửa khi viết lại mục công thức ở lượt 12, cần rà lại lần nữa sau khi thêm bậc 4–6.
 - Bảng "Nợ & khách quen" chưa có nút nhắc nợ qua điện thoại (chỉ nhắc khi gặp mặt).
 - Chưa có bảng thành tích / thống kê sau khi chơi xong (mới có tổng kết cuối ngày).

@@ -19,16 +19,16 @@ Một vòng chơi trọn vẹn và thật sự chạy được: **tay trắng �
 
 Hai nguyên tắc giữ cho mã kiểm thử được:
 
-1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 278 bài kiểm thử chạy trong Node trong chưa tới 3 giây.
+1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 322 bài kiểm thử (24 tệp) chạy trong Node trong khoảng 7 giây.
 2. **Mọi ngẫu nhiên trong luật chơi nhận một `RNG` có hạt giống** làm tham số cuối, nên kết quả kiểm thử lặp lại được.
 
 Vòng lặp chính (`src/main.ts`): đọc điều khiển → `advance()` cho thời gian game trôi (0,75 phút game mỗi giây thật, một ngày = 32 phút thật; khi ngủ 48 phút game mỗi giây) → cập nhật người chơi, NPC, quầy, nấu ăn, môi trường → vẽ. `dt` bị chặn ở 50 ms nên máy rất chậm thì game chạy chậm lại chứ không nhảy cóc.
 
 ## 3. Thế giới
 
-- 3×3 ô phố, mỗi ô 46 m, đường rộng 7 m, vỉa hè 3 m; thêm dải gầm cầu vượt phía nam. 146 lô đất, 270 nút đường đi (ba công trình mới rộng hơn nên thay chỗ của ba nhà ống).
+- 3×3 ô phố, mỗi ô 46 m, đường rộng 7 m, vỉa hè 3 m; thêm dải gầm cầu vượt phía nam. 144 lô đất (121 ô đất phân biệt — vài lô bị thay khi dựng tiệm cắt tóc, tiệm thời trang và các mặt bằng lớn), 268 nút đường đi.
 - 10 khu với độ giàu và độ an toàn khác nhau; lượng người theo giờ lấy từ `hourCurve(giờ, khu)`.
-- 4 chỗ bán: Hẻm Công Nhân (miễn phí, ×0,85 người qua lại), Cổng Công Viên (20.000₫, ×1,05), Cổng Chợ (30.000₫, ×1,35), Phố Văn Phòng (60.000₫, ×1,25, cần xe đẩy).
+- 6 chỗ bán: Hẻm Công Nhân (miễn phí, ×0,85 người qua lại), Cổng Công Viên (20.000₫, ×1,05), Cổng Chợ (30.000₫, ×1,35), Phố Văn Phòng (60.000₫, ×1,25, cần xe đẩy), và hai **mặt bằng có sân** cho quán ăn nhỏ trở lên: Mặt bằng Phố Văn Phòng (160.000₫, ×1,45, cần bậc 4) và Mặt bằng Khu Căn Hộ (120.000₫, ×1,30, cần bậc 4).
 - Hình học tĩnh được gộp sẵn theo từng khu thành vài lưới lớn; biển hiệu vẽ chung vào một tấm atlas. Nhân vật là khung khối hộp có khuôn mặt vẽ từ atlas.
 - **Không để hai mặt trùng phẳng.** Hai mặt cùng hướng nằm đúng một mặt phẳng sẽ tranh nhau hiển thị (nhấp nháy). Vỏ nhà (`shell`) bỏ mặt trong của tường bao vì lớp lót nội thất đã phủ đúng chỗ đó (`MB.box(..., skip)` với các hằng `FACE`); thứ gì dán lên tường thì nhô ra ít nhất 1–2 cm; vật liệu biển hiệu dùng `polygonOffset` để thắng tấm nền khi nhìn từ xa. `tools/probe/steps/audit.mjs` dò lại toàn thành phố.
 - **Biển hiệu phải đọc được từ dưới đường.** `Builder.signAt` ghi mọi biển đủ lớn vào `Builder.signs`. Biển cửa hàng treo ở mặt trước ban công tầng 1 (nếu có) hoặc là hộp đèn nhô khỏi mép mái; biển dọc chìa ra ngoài tầm ban công. Cây vỉa hè hỏi `signTopBehind()`: sau cây có biển thì trồng dáng thân cao (tán trên 4,8 m), biển cao quá 4,78 m thì để trống chỗ đó. Cây bị bỏ vẫn tiêu đúng số lần gọi ngẫu nhiên nên phần còn lại của thành phố không đổi.
@@ -471,7 +471,7 @@ người bán. Bấm V khi chưa bật góc nhìn thứ ba thì toast nhắc —
 `TIERS[5]` (`src/data/gear.ts`): chứa 200 kg, giữ lạnh 70 kg, hàng đợi 12, bày 20 món, 40 khay, độ hiện 1,6.
 Đồ nghề `quanngoi` giá 58.000.000₫ ở tiệm Đồ Nghề Ba Tài, đòi có **quán ăn nhỏ (bậc 4)** trước. Dựng tại hai mặt
 bằng có sân (`matbang_tb` Phố Văn Phòng 160.000₫/ngày, `matbang_dc` Khu Căn Hộ 120.000₫/ngày). `FUTURE_TIERS`
-nay chỉ còn hai bậc (`Nhà hàng bình dân`, `Chuỗi cửa hàng`).
+nay chỉ còn một bậc (`Chuỗi cửa hàng`) — bậc 6 đã xong, xem mục 4.26.
 
 **Mô hình** (`StallSys.rebuild`): quầy gỗ dài 5,6 m mặt đá + yếm đỏ, hiên mái tôn xanh 6,9 × 5,9 m có diềm vàng,
 hai vách thấp hai bên, hai bồn cây phía trước chừa lối vào rộng ở giữa, nền gạch bông ca-rô đỏ–kem, quầy thu ngân
@@ -499,6 +499,45 @@ kiên nhẫn ×1,8 × `helperPatience`, câu thoại lấy từ `LINES.order_mor
 bán thêm phần tráng miệng đi!"*…). Khi giao món đầu mà khách gọi thêm thì khách **vẫn ngồi tại ghế** chờ món thứ hai;
 ăn xong món thứ hai mới đứng dậy ra về.
 
+### 4.26 Bậc 6 — nhà hàng bình dân, đặt bàn trước, phụ bếp và khách đoàn
+
+`TIERS[6]` (`src/data/gear.ts`): chứa 280 kg, giữ lạnh 100 kg, hàng đợi 16, bày 26 món, 56 khay, độ hiện 1,85.
+Đồ nghề `nhahang` giá 145.000.000₫ ở tiệm Đồ Nghề Ba Tài, đòi có **quán có chỗ ngồi (bậc 5)** trước. Dựng ở hai
+**mặt bằng** có sân như bậc 4–5 (`matbang_tb` 160.000₫/ngày, `matbang_dc` 120.000₫/ngày). `FUTURE_TIERS` còn đúng
+một bậc (`Chuỗi cửa hàng`).
+
+**Trong nhà kín.** `isRestaurant(g)` = `tier >= 6` là cờ duy nhất cho cả cụm tính năng dưới đây — đừng so sánh
+`tier === 6` rải rác. Nhờ `isRestaurant`, ban đêm không có đèn chỉ còn ×0,72 sức hút (bậc ≤ 5 là ×0,3) và trời mưa
+**không mất khách** (`stallAppeal`: `wx.rain > 0,3` ⇒ ×1,0 thay vì ×0,45); `dieu_hoa` cộng thêm ×1,18 và `wc_lavabo`
+cộng điểm hài lòng cho nhóm khó tính. `seatCount(g)` trả **8** (4 bàn), `dineIn(g)` vẫn `true` nên khách ăn tại chỗ,
+ngồi lâu ×1,9 và vẫn gọi thêm nước/tráng miệng như mục 4.25.
+
+**Nhân sự (tối đa 4 người).** `maxHelpers = 2` (phục vụ) và `maxSous = 2` (phụ bếp) khi là nhà hàng, mỗi slot lưu
+riêng (`help`/`help2`, `sous`/`sous2` trong `Game`; slot 2 chỉ có hiệu lực khi `isRestaurant`). `helperPatience`
+cộng ×0,28 khi có người phụ quầy thứ hai và ×0,22 khi có `dieu_hoa`. `sousGate(g)` chặn thuê phụ bếp dưới bậc 6 với
+lý do hiện cho người chơi; `hireSous` trừ **một ngày lương** ngay (95.000–110.000₫ tuỳ người trong `SOUS_POOL`),
+`fireSous(g, slot)` cho nghỉ sạch. Sang ngày, `newDay` trừ lương phụ bếp; thiếu tiền thì người đó nghỉ và có toast.
+
+**Phụ bếp tự làm (`sousWork`).** Gọi mỗi ~18–22 giây khi quầy đang mở: (1) ưu tiên **sơ chế** một món trong thực đơn
+có bước sơ chế mà lượng sơ chế sẵn còn dưới 2 phần, (2) nếu không thì **ra sẵn 1 phần** cho món còn dưới 2 phần trên
+khay và khay còn chỗ. Cả hai đều kiểm **nhiên liệu trước khi tiêu** (`hasFuelFor`) nên không bao giờ rò nguyên liệu
+khi hết gas/than; chất lượng do phụ bếp làm thấp hơn tay người chơi (≈0,76–0,93 nhân dần theo cấp tay nghề).
+
+**Đặt bàn trước (`createBooking`, `acceptBooking`, `rejectBooking`, `dueBooking`, `reservedSeats`, `expireBookings`).**
+Chỉ khi `isRestaurant`. Khách vãng lai gọi `createBooking` mỗi 85–135 giây nếu đang có dưới 2 phiếu; mỗi phiếu có
+tên, giới, nhóm người (văn phòng/phụ huynh/nhà giàu/du khách/công nhân), **cỡ 2–4 người**, ngày + giờ hẹn (làm tròn
+nửa giờ, trong khoảng 8h–21h), món dự kiến và **tiền cọc 12.000₫/người** (làm tròn nghìn). Trần `BOOKING_MAX = 4`
+phiếu đang mở. Người chơi **nhận** (giữ chỗ) hay **từ chối** trong Quầy › Nhân sự & Đặt bàn. `reservedSeats` trừ số
+ghế đã giữ khỏi chỗ trống khi đón khách thường, nên bàn đặt trước không bị người khác ngồi mất. Đến giờ hẹn ±(15
+phút trước, 60 phút sau) thì khách tới và được xếp vào đúng số ghế; quá hẹn mà chưa đón ⇒ `expireBookings` trả về
+phiếu lỡ, người chơi **mất 0,5 uy tín** kèm toast cảnh báo.
+
+**Khách đoàn (`decideGroup`).** Ở bậc 6, mỗi lượt sinh khách có 24% là **đoàn 3–4 người** (4 người nếu còn đủ 4 ghế
+trống và đủ hàng chờ, xác suất 45%) — nhưng chỉ khi còn ≥ 3 ghế trống sau khi trừ `reservedSeats`. Cả đoàn **gọi
+chung một lượt**: `Order.group = size`, `Order.n` = số phần gọi (kẹp theo lượng sẵn có và ngân sách nhóm
+`budget × size`), câu gọi có nhắc số người. Món nào còn đủ cho cả đoàn được nhân ưu tiên ×1,6 nên khách đoàn ít khi
+gọi món chỉ còn 1–2 phần.
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
@@ -509,7 +548,7 @@ bán thêm phần tráng miệng đi!"*…). Khi giao món đầu mà khách g�
 
 ## 6. Lưu game
 
-`localStorage`, khoá `ganhhang.save.v1` (trạng thái) và `ganhhang.settings.v1` (cài đặt). Tự lưu sau việc quan trọng, mỗi 45 giây và khi rời trang. `SAVE_VERSION = 11`; `migrate()` nạp được bản lưu cũ thiếu trường và loại bỏ nguyên liệu không còn tồn tại. Bản lưu trước v4 chưa có sổ `met` nên được coi như đã quen hết người đứng quầy. Bản lưu trước v5 (chưa có bệnh viện) được nâng sức khoẻ lên 45 nếu đang ở 0 — nếu không, mở lên là ngất liền — và thêm sổ đồ thất lạc rỗng. Bản lưu trước v6 được cấp `wanted = 0` và `jailUntil = 0` (chưa ai biết mặt). Bản lưu trước v7 chưa có điện thoại (`phone = null`). Bản lưu trước v8 chưa có sổ phút ngồi quán net (`netDay = -1`, `netMin = 0`). Bản lưu trước v9 chưa có sổ ngày đua xe đạp (`raceDay = -1`, `raceWin = 0`). Bản lưu trước v10 chưa có người phụ việc (`help = null`); dữ liệu `help` hỏng cũng bị bỏ, và bản lưu cũ đã từng bán được hàng thì được ghi mốc `firstSale = 0`. Bản lưu trước v11 chưa có ngoại hình người chơi (`Game.look`): `migrate()` cấp `defaultLook()` theo giới tính của ván, còn `look` hỏng thì `cleanLook()` kẹp lại từng trường. Cài đặt có thêm `ui` (cỡ giao diện và cách xếp nút) và `cam3` (góc nhìn thứ ba); `cleanLayout()` làm sạch dữ liệu đọc lên.
+`localStorage`, khoá `ganhhang.save.v1` (trạng thái) và `ganhhang.settings.v1` (cài đặt). Tự lưu sau việc quan trọng, mỗi 45 giây và khi rời trang. `SAVE_VERSION = 13`; `migrate()` nạp được bản lưu cũ thiếu trường và loại bỏ nguyên liệu không còn tồn tại. Bản lưu trước v4 chưa có sổ `met` nên được coi như đã quen hết người đứng quầy. Bản lưu trước v5 (chưa có bệnh viện) được nâng sức khoẻ lên 45 nếu đang ở 0 — nếu không, mở lên là ngất liền — và thêm sổ đồ thất lạc rỗng. Bản lưu trước v6 được cấp `wanted = 0` và `jailUntil = 0` (chưa ai biết mặt). Bản lưu trước v7 chưa có điện thoại (`phone = null`). Bản lưu trước v8 chưa có sổ phút ngồi quán net (`netDay = -1`, `netMin = 0`). Bản lưu trước v9 chưa có sổ ngày đua xe đạp (`raceDay = -1`, `raceWin = 0`). Bản lưu trước v10 chưa có người phụ việc (`help = null`); dữ liệu `help` hỏng cũng bị bỏ, và bản lưu cũ đã từng bán được hàng thì được ghi mốc `firstSale = 0`. Bản lưu trước v11 chưa có ngoại hình người chơi (`Game.look`): `migrate()` cấp `defaultLook()` theo giới tính của ván, còn `look` hỏng thì `cleanLook()` kẹp lại từng trường. Bản lưu trước v12 chưa có nhà hàng bình dân (`sous = null`, `bookings = []`, `bookSeq = 1`); bản lưu trước v13 chưa có slot nhân sự thứ hai (`help2 = null`, `sous2 = null`). Cài đặt có thêm `ui` (cỡ giao diện và cách xếp nút) và `cam3` (góc nhìn thứ ba); `cleanLayout()` làm sạch dữ liệu đọc lên.
 
 ## 7. Kiểm thử
 
@@ -527,6 +566,7 @@ bán thêm phần tráng miệng đi!"*…). Khi giao món đầu mà khách g�
 - `tests/net.test.ts` — quán net: giá theo phút và phụ thu phim, bốn gói giờ, hiệu ứng từng kiểu chơi, mỏi mắt sau 120 phút (tinh thần còn 45%, mất 2 sức khoẻ) và tính lại khi sang ngày, ngồi máy làm đói khát tụt sức, tinh thần không vượt 100, giờ mở cửa và số máy, sạc nhờ/nước ngọt, lô đất và ba nhân vật của quán, bản lưu v7 lên v8.
 - `tests/look.test.ts` — ngoại hình: 8 kiểu tóc liền id và giá tăng theo độ cầu kỳ, mọi bảng màu có giá dương và không trùng màu, giá trong tầm một buổi bán, `defaultLook` khác nhau nam/nữ, `cleanLook` chặn dữ liệu rác (kiểu tóc ngoài phạm vi, màu lẫn alpha, dáng người vô lý), bản lưu v10 lên v11, và hai người bán mới có đủ tên – nghề – lời thoại.
 - `tests/quanngoi.test.ts` — 18 bài về bậc 5 quán có chỗ ngồi: chỉ số `TIERS[5]` lớn hơn bậc 4, `FUTURE_TIERS` còn 2 bậc, mua chuỗi sạp → quán ăn nhỏ → quán có chỗ ngồi, dựng ở hai mặt bằng có sân, 6 ghế ăn tại chỗ (`seatCount` = 6, `dineIn` = true), bốn buổi trong ngày (`mealSlot`, `periodName`, `fitsPeriod`, `periodMenu`), khách ưu tiên món hợp buổi hơn ở bậc 5 mà vẫn giữ đa dạng thực đơn, gọi thêm nước/tráng miệng (`secondOrder`: chỉ khi ngồi ghế bậc 5, hài lòng ≥ 3,8★, đúng nhóm `drink`/`sweet`, không gọi lần 3, không áp cho nhân vật sự kiện), và nâng cấp bản lưu giữ nguyên bậc 5.
+- `tests/nhahang.test.ts` — 17 bài về bậc 6 nhà hàng bình dân: `TIERS[6]` rộng hơn bậc 5 về sức chứa/giữ lạnh/thực đơn/hàng chờ/độ hiện, `GEAR.nhahang` là đồ nghề bậc 6 đắt hơn quán có chỗ ngồi, 8 ghế (4 bàn) và cờ `isRestaurant`/`dineIn`, trong nhà kín không mất khách vì mưa và sáng hơn ban đêm, `sousGate` chỉ mở từ bậc 6, `hireSous` trừ ngày lương đầu và `fireSous` cho nghỉ sạch, `sousWork` tự sơ chế/ra món phụ và không rò nguyên liệu khi hết nhiên liệu, sang ngày trừ lương phụ bếp (thiếu tiền thì nghỉ), `createBooking`/`acceptBooking`/`reservedSeats`/`rejectBooking` và trần `BOOKING_MAX`, `decideGroup` cho đoàn 3–4 người (kể cả khi món còn ít hơn cỡ đoàn), và bản lưu v11 lên v13.
 - `tests/fun.test.ts` — bảng chỗ chơi (mã không trùng, có neo, có giờ hợp lệ, chơi lâu hơn thì lên tinh thần nhiều hơn) và thang mở công thức (cấp 1 mở đúng 1 món, cấp sau mở 2; luôn là món rẻ nhất còn thiếu; không vượt tay nghề; món sau không rẻ hơn món trước; cấp 10 mở đủ 60 món).
 
 Ba bài mới ở lượt 2: mỗi nhân vật phụ phải có tên, nhãn việc, câu mở đầu và ít nhất hai câu chuyện đủ dài; bảng `RUDE` chỉ được có tối đa 8 nhóm và phải có đủ lời cho cả năm kiểu (giấy, khạc nhổ, mắng, đuổi, khạc nhổ khi bị xin tiền); khách quen không được trùng id hay tên và phải có cả tên kiểu học sinh.
@@ -546,7 +586,7 @@ Người chơi đã thử bản đầu và gửi danh sách góp ý; việc đư
 Còn lại:
 
 1. **Đã xong 3 kiểu chỗ ở mới: căn hộ, nhà riêng, cửa hàng kiêm nhà ở** (8/8) — xem mục 4.13.
-2. **Đã xong sạp cố định (bậc 3)** — mục 4.12, **quán ăn nhỏ (bậc 4)** — mục 4.22, và **quán có chỗ ngồi (bậc 5)** — mục 4.25. Việc kế tiếp của nhánh này: nhà hàng bình dân (bậc 6), chuỗi cửa hàng (bậc 7) trong `FUTURE_TIERS`.
+2. **Đã xong sạp cố định (bậc 3)** — mục 4.12, **quán ăn nhỏ (bậc 4)** — mục 4.22, và **quán có chỗ ngồi (bậc 5)** — mục 4.25, và **nhà hàng bình dân (bậc 6)** — mục 4.26. Việc kế tiếp của nhánh này: chuỗi cửa hàng (bậc 7), bậc duy nhất còn trong `FUTURE_TIERS`.
 3. Hệ thống băng nhóm.
 4. Danh sách đầy đủ những gì còn lại nằm ở `TODO.md`.
 

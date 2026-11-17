@@ -336,7 +336,8 @@ kính đen, và ngoại hình vào bản lưu v11 — chạy cả desktop 1500×
 ## Lượt 16 — Bậc 5: quán có chỗ ngồi, thực đơn theo buổi, gọi thêm món ✅ đã xong
 
 Tiếp nhánh kinh doanh sau bậc 4 (quán ăn nhỏ): mở **bậc 5 — Quán có chỗ ngồi** (`quanngoi`, 58.000.000₫ ở tiệm
-Đồ Nghề Ba Tài, cần có quán ăn nhỏ trước). `FUTURE_TIERS` còn lại 2 bậc (`Nhà hàng bình dân`, `Chuỗi cửa hàng`).
+Đồ Nghề Ba Tài, cần có quán ăn nhỏ trước). Lúc làm lượt này `FUTURE_TIERS` còn 2 bậc; hiện chỉ còn `Chuỗi cửa hàng`
+(bậc 6 đã xong trong mã, xem mục 4.26 của `DESIGN.md`).
 
 **Chỉ số và mặt bằng.** Chứa 200 kg, giữ lạnh 70 kg, bày **20 món**, 12 khách cùng lúc, 40 khay, độ thu hút 1,6.
 Dựng tại hai mặt bằng có sân (`matbang_tb` Phố Văn Phòng 160.000₫/ngày, `matbang_dc` Khu Căn Hộ 120.000₫/ngày).
@@ -361,8 +362,21 @@ có 32–54% cơ hội ngồi lại gọi thêm một món **nước uống** ho
 nguyên liệu (`o.more = true`, kiên nhẫn ×1,8 × `helperPatience`, câu thoại riêng trong `LINES.order_more`). Giao
 xong món thứ hai khách mới đứng dậy về.
 
-**Kiểm thử:** `tests/quanngoi.test.ts` 18 bài — tổng **278 bài / 18 tệp**. Probe `tools/probe/steps/quanngoi.mjs`:
+**Kiểm thử:** `tests/quanngoi.test.ts` 18 bài — lúc đó tổng **278 bài / 18 tệp**; hiện là **322 bài / 24 tệp**. Probe `tools/probe/steps/quanngoi.mjs`:
 mua `sap → quanan → quanngoi` ở tiệm Ba Tài → dựng ở Mặt bằng Khu Căn Hộ → mở bán, 6 khách ngồi vào 3 bàn gỗ trên
 nền gạch bông ca-rô → giao món cho 4 khách, khách ngồi lại gọi thêm trà đá (`more: true`) → bảng quầy hiện nhãn
 `hợp buổi này` / `ngoài buổi` → đóng quán, kiểm bản lưu v11 giữ nguyên bậc 5 và 6 ghế.
 
+---
+
+## Lượt 17 — Bậc 6: nhà hàng bình dân (mã đã xong, ghi chép bổ sung sau)
+
+Bậc 6 (`nhahang`, 145.000.000₫ ở tiệm Đồ Nghề Ba Tài, cần quán có chỗ ngồi trước) đã nằm trong mã cùng 17 bài
+kiểm thử của `tests/nhahang.test.ts`, nhưng chưa có mục kế hoạch riêng. Tài liệu chi tiết nay ở **`DESIGN.md` mục 4.26**:
+chứa 280 kg · giữ lạnh 100 kg · 26 món · 16 khách · 56 khay, 8 ghế trong nhà kín, không mất khách vì mưa/tối,
+tối đa 2 phục vụ + 2 phụ bếp, phụ bếp tự sơ chế/ra món phụ, đặt bàn trước (cọc 12.000₫/người, trần 4 phiếu, lỡ hẹn
+−0,5 uy tín) và khách đoàn 3–4 người gọi chung một lượt.
+
+**Còn lại của bậc 6:** chạy probe giao diện thật (`tools/probe/steps/nhahang.mjs`) ở cả 844×390 và 390×844 — hiện mới
+có test luật. **Lượt kế tiếp của nhánh kinh doanh:** bậc 7 `Chuỗi cửa hàng` (điểm bán thứ hai, sổ sách từng điểm,
+người trông coi) — bậc duy nhất còn trong `FUTURE_TIERS`.
