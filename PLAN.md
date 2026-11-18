@@ -626,3 +626,29 @@ khớp danh bạ mới (1080 có sẵn; tin 1080 nay mời gọi thay vì đọc
 … trúng thưởng một xe Wave\"* và dòng **1900 1234** xuất hiện đầu danh bạ; bấm gọi mất 15.000₫, `scamTrip` chỉ về cuối khu
 chợ; đi tới nơi hiện hộp thoại **\"Bức tường cuối khu chợ\"** với đúng hai lựa chọn (quay về / vẫn tin); gọi lại thì
 `fee: 0`. Console sạch. Ảnh: `anh_ket_qua/android/12..16_*.png`.
+
+---
+
+## Lượt 28 — Sửa nút ở điểm hẹn, dời chỗ hẹn, dọn sạp quần áo vào tiệm ✅ đã xong
+
+Ba phản hồi của người chơi sau lượt 27:
+
+1. **Bỏ dòng "dây dưa mất 15 phút"** — câu mời của 1900 1234 nay chỉ còn lời của đầu dây bên kia; cước ghi gọn
+   *"cước 15.000₫"* trong danh bạ, không nhắc phút/giây nữa.
+2. **Nút ở điểm hẹn bấm không ăn.** Nguyên nhân: `ActsSys.update()` gọi `scamBust()` **mỗi khung hình**, nên hộp thoại
+   bị dựng lại liên tục và cú bấm rơi vào phần tử vừa bị xoá. Nay `scamBust()` chỉ chạy **một lần** (cờ `scamTalked`),
+   và chỉ khi **không có hộp thoại/bảng nào đang mở** (`ui.isDialogOpen()` + `ui.modalName`) — bấm là ăn ngay.
+3. **Dời chỗ hẹn cho hợp lý + thêm thùng bỏ tiền, dọn sạp quần áo đi.** Chỗ hẹn mới là **ngõ cụt ba bề tường sau dãy
+   sạp phía nam chợ Xóm Chiều** (≈ −75, 18,6): tường gạch, **cửa cuốn đóng kín** có biển *"CHỜ THỦ TỤC · Văn phòng tạm
+   đóng"*, tờ giấy dán tường, và **một cái thùng gỗ nhỏ có khe trên nắp + biển "LỆ PHÍ 5.000₫"** — nơi bỏ tiền nếu vẫn
+   tin lời. Lựa chọn thứ hai của hộp thoại đổi thành *"Vẫn tin — bỏ "lệ phí" … vào thùng"*, câu kết cũng nói tới cái thùng.
+   Sạp quần áo giữa chợ **bỏ hẳn**; Cô Ngọc dọn vào **căn nhà có sẵn ở mặt tiền tây Phố Trung Tâm** (cạnh Đồ Nghề Ba Tài),
+   thành khối dựng mới `thoitrang`: cửa cuốn, biển **"QUẦN ÁO CÔ NGỌC"**, mái hiên, hai giá treo áo dọc hai bên, bàn gấp
+   đồ + khay kính + khay giày, gương lớn áp tường, đèn trần; có neo `v_thoi_trang` mới trong tiệm nên Cô Ngọc đứng bán
+   trong nhà. Lời thoại của cô thêm một câu giải thích vì sao dọn từ chợ ra mặt tiền.
+
+**Kiểm thử:** `tests/phone4.test.ts` thêm 1 bài (vị trí ngõ cụt + thùng, câu mời không còn "dây dưa") → **8 bài**;
+`tests/look.test.ts` thêm 1 bài (lô `thoitrang` là nhà thật ở Phố Trung Tâm, mặt tiền tây) → **15 bài**. Tổng **415 bài /
+31 tệp**. Probe mới `tools/probe/steps/scamspot.mjs` (chụp ngõ cụt, cửa cuốn, thùng, mặt tiền và trong tiệm) và probe
+`hotline.mjs` nâng lên 8 bước — bấm thật vào nút **"Thôi, quay về"** thì hộp thoại **đóng hẳn**, `fee: 0`,
+`state: done`. Console sạch. Ảnh: `anh_ket_qua/android/17..21`.

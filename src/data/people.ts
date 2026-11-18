@@ -156,10 +156,11 @@ export const SIDE: Record<string, SideDef> = {
     ],
   },
   thoi_trang: {
-    intro: 'Cô Ngọc đang phủi bụi mấy cái áo treo trên giá. “Lựa đi con, áo quần cô mới về, giá mềm thôi. Mặc đẹp mà bán hàng, khách nhìn cũng thấy tin.”',
+    intro: 'Cô Ngọc đang phủi bụi mấy cái áo treo trên giá trong tiệm mới mở ở Phố Trung Tâm. “Vô trong lựa đi con, áo quần cô mới về, giá mềm thôi. Mặc đẹp mà bán hàng, khách nhìn cũng thấy tin.”',
     again: '“Ghé nữa hả? Cô mới treo thêm mấy cái áo đỏ đó, coi thử đi.”',
     topics: [
       { q: 'Cô lấy hàng ở đâu vậy?', a: 'Cô đi mối ở An Đông, sáng sớm lên lấy một bao, về treo bán lẻ. Lời mỗi cái vài ngàn, mà bán được nhiều thì cũng đủ sống. Mấy đứa bán hàng rong trong xóm toàn lấy đồ của cô đó.' },
+      { q: 'Sao cô dọn từ trong chợ ra đây?', a: 'Bán trong chợ thì đông thiệt, mà nắng mưa bay vô giá áo hoài, với lại khách lựa đồ ngại đứng giữa lối đi. Cô dành dụm mướn được căn mặt tiền này, có cửa cuốn, có tủ kính, khách vô trong ngắm thoải mái. Mỗi tháng thêm tiền thuê mà đỡ khổ hơn nhiều con ơi.' },
       { q: 'Mặc đẹp có giúp bán được hàng không?', a: 'Chớ sao không. Người ta đi ngang, thấy mình lem luốc là họ ngại ghé. Mặc đồ sạch, tóc tai gọn gàng, họ tin mình hơn — đồ ăn cũng thấy ngon hơn. Cô nói thiệt đó, không phải khoe hàng đâu.' },
     ],
   },

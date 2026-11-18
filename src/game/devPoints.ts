@@ -10,7 +10,7 @@ import * as PUI from '../ui/phoneUI';
 import * as PH from '../sim/phone';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Hai tổng đài trong danh bạ điện thoại: gọi 1080 nghe dự báo thời tiết ngày mai, gọi 1900 1234 thì bị lừa — nhưng chỉ dính một lần';
+export const DEV_BUILD_TAG = 'Điểm hẹn lừa đảo dời về ngõ cụt sau chợ có thùng bỏ lệ phí, bấm nút đã ăn, và sạp quần áo giữa chợ dọn vào tiệm QUẦN ÁO CÔ NGỌC ở Phố Trung Tâm';
 
 export interface DevAction {
   id: string;
@@ -69,7 +69,7 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Hai tổng đài trong danh bạ: 1080 và 1900 1234 (lượt 27)',
+      title: 'Mới nhất — Sửa điểm hẹn “nhận thưởng” & tiệm quần áo Cô Ngọc (lượt 28)',
       items: [
         {
           id: 'hot_wx',
@@ -107,16 +107,16 @@ export function getDevSections(): DevSection[] {
         },
         {
           id: 'hot_bust',
-          label: 'Tới “văn phòng trúng thưởng” để thấy bị lừa — và cơ hội quay về',
-          sub: 'Đã gọi 1900 1234 · tới bức tường cuối khu chợ: được một cơ hội nghe ngóng quay về, vẫn tin thì mất tiền thật',
+          label: 'Vào ngõ cụt sau chợ để thấy bị lừa — và cơ hội quay về',
+          sub: 'Đã gọi 1900 1234 · vào ngõ cụt sau chợ: được MỘT cơ hội quay về, vẫn tin thì bỏ tiền vào thùng và mất thật',
           tone: 'red',
           closePanel: false,
           run: () => {
             const g = ctx.g;
             g.cash = Math.max(g.cash, 80000);
             if (g.flags.scamCall !== 1) { g.flags.scamCall = 1; g.flags.scamDay = g.day; }
-            g.flags.scamX = -68; g.flags.scamZ = 21;
-            tpTo(g.flags.scamX, g.flags.scamZ + 2.2, Math.PI, 'Đã tới “văn phòng trúng thưởng” — chỉ có bức tường.');
+            g.flags.scamX = PH.SCAM_SPOT.x; g.flags.scamZ = PH.SCAM_SPOT.z;
+            tpTo(g.flags.scamX, g.flags.scamZ - 2.6, 0, 'Đã tới ngõ cụt sau chợ — chỉ có cửa cuốn đóng và cái thùng.');
             toast('Đi vào vòng sáng vàng ngay trước mặt: bạn sẽ thấy đúng một cơ hội quay về.', 'warn', 'way', true);
           },
         },

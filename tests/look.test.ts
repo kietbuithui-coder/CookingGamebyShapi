@@ -107,4 +107,15 @@ describe('người bán trong hai tiệm mới', () => {
     expect(lot!.bz).toBe(1);
     expect(lot!.face).toBe('S');
   });
+  it('tiệm quần áo Cô Ngọc là căn nhà thật ở mặt tiền Phố Trung Tâm, không còn sạp giữa chợ', () => {
+    const lot = LOTS.find((l) => l.id === 'thoitrang');
+    expect(lot).toBeTruthy();
+    expect(lot!.kind).toBe('thoitrang');
+    expect(lot!.district).toBe('trungtam');
+    expect(lot!.bx).toBe(1); expect(lot!.bz).toBe(1);
+    expect(lot!.face).toBe('W');           // hướng ra đường lớn phía tây, cạnh tiệm Đồ Nghề
+    expect(lot!.w).toBeGreaterThan(6);     // đủ rộng cho hai giá áo + bàn gấp đồ
+    // không còn sạp quần áo dựng giữa chợ: hết toạ độ cũ trong mã nguồn
+    expect(lot!.kind).not.toBe('house');
+  });
 });

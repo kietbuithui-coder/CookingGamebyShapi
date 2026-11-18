@@ -6,7 +6,6 @@ import { FIXED, FIXED_ROLE, REGULARS } from '../data/people';
 import { HOUSING, LENDERS } from '../data/gear';
 import { WEATHER, WeatherId } from '../data/world';
 import { clamp, money, round1k } from '../core/util';
-import { NAV, nodesByTag } from '../world/layout';
 
 /** Pin tụt bao nhiêu phần trăm mỗi giờ trong game khi chỉ để trong túi. */
 export const DRAIN_PER_HOUR = 2.2;
@@ -96,7 +95,7 @@ export function contacts(g: Game): Contact[] {
   out.unshift({ id: 'wx1080', name: 'Tổng đài 1080', where: 'Dự báo thời tiết ngày mai · 2.000₫/phút', regular: false, hot: 'wx' });
   if (knowsScam(g)) out.unshift({
     id: 'scam1900', name: '1900 1234', regular: false, hot: 'scam',
-    where: scammed(g) === 'done' ? 'Số lừa đảo — bạn đã biết rồi' : 'Số lạ gửi tin “trúng thưởng” · 5.000₫/phút, dây dưa 3 phút',
+    where: scammed(g) === 'done' ? 'Số lừa đảo — bạn đã biết rồi' : 'Số lạ gửi tin “trúng thưởng” · cước 15.000₫',
   });
   return out.sort((a, b) => Number(!!b.hot) - Number(!!a.hot) || Number(b.regular) - Number(a.regular) || a.name.localeCompare(b.name, 'vi'));
 }
@@ -174,7 +173,7 @@ export function hasScamSms(g: Game): boolean {
 }
 /** Đã từng nhận tin của 1900 1234 (hoặc đã gọi) — từ đó số này nằm luôn trong danh bạ. */
 export function knowsScam(g: Game): boolean { return g.day >= SCAM_SMS_DAY || scammed(g) !== 'none'; }
-/** Cước 1900 1234: 5.000₫/phút, dây dưa mất 3 phút. */
+/** Cước một lần gọi 1900 1234. */
 export const SCAM_FEE = 15000;
 /** Kết quả gọi 1900 1234: `'once'` nghĩa là còn một cơ hội quay lại, `'done'` là đã gọi hết. */
 export function scammed(g: Game): 'none' | 'once' | 'done' {
@@ -182,9 +181,9 @@ export function scammed(g: Game): 'none' | 'once' | 'done' {
   return n <= 0 ? 'none' : n === 1 ? 'once' : 'done';
 }
 /**
- * Gọi 1900 1234 — tổng đài "trúng thưởng". Luôn lừa: mất 15.000₫ cước cho 3 phút dây dưa và bị hẹn lên
- * một "văn phòng" ở cuối khu chợ. Tới nơi người chơi được MỘT cơ hội nghe ngóng rồi quay về (không mất gì);
- * nếu vẫn tin lời thì mất tiền thật. Chuyện chỉ xảy ra một lần — gọi lại sau đó thì đầu dây bên kia im luôn.
+ * Gọi 1900 1234 — tổng đài "trúng thưởng". Luôn lừa: mất 15.000₫ cước và bị hẹn lên một "văn phòng"
+ * ở ngõ cụt sau chợ. Tới nơi người chơi được MỘT cơ hội nghe ngóng rồi quay về (không mất gì); nếu vẫn tin
+ * lời thì bỏ tiền vào cái thùng ở đó và mất thật. Chuyện chỉ xảy ra một lần — gọi lại thì đầu dây kia im luôn.
  */
 export function callScam(g: Game): { ok: boolean; line: string; fee: number; bait?: { place: string; x: number; z: number } } {
   const st = scammed(g);
@@ -194,19 +193,21 @@ export function callScam(g: Game): { ok: boolean; line: string; fee: number; bai
   const fee = Math.min(SCAM_FEE, g.cash);
   if (fee <= 0) return { ok: false, line: 'Không còn đồng nào để trả cước — cũng may.', fee: 0 };
   g.cash -= fee; g.led.other += fee; g.flags.scamCall = 1; g.flags.scamDay = g.day; drain(g, 3);
-  // Điểm hẹn: góc xa nhất của khu chợ (đi bộ từ gầm cầu mất cả tiếng) — tới nơi thì không có ai.
-  const ids = nodesByTag('market');
-  const far = NAV[ids[Math.max(0, ids.length - 1)]];
-  const bait = { place: 'Văn phòng trúng thưởng ở cuối khu chợ', x: far?.x ?? -68, z: far?.z ?? 21 };
+  const bait = { ...SCAM_SPOT };
   g.flags.scamX = bait.x; g.flags.scamZ = bait.z;
-  return { ok: true, fee, bait, line: `Dây dưa 3 phút, hết ${money(fee)} cước. Đầu dây bên kia: “Chúc mừng quý khách trúng một xe Wave! Mời lên văn phòng nhận thưởng trước 17 giờ, mang theo 5.000₫ lệ phí.”` };
+  return { ok: true, fee, bait, line: `Đầu dây bên kia: “Chúc mừng quý khách trúng một xe Wave! Mời lên văn phòng nhận thưởng trước 17 giờ, mang theo 5.000₫ lệ phí.”` };
 }
 
 /** Đang trên đường đi nhận thưởng (đã gọi 1900 1234 và chưa tới nơi). */
 export function scamTrip(g: Game): { x: number; z: number; place: string } | null {
   if (scammed(g) !== 'once') return null;
-  return { x: g.flags.scamX ?? -68, z: g.flags.scamZ ?? 21, place: 'Văn phòng trúng thưởng ở cuối khu chợ' };
+  return { x: g.flags.scamX ?? SCAM_SPOT.x, z: g.flags.scamZ ?? SCAM_SPOT.z, place: SCAM_SPOT.place };
 }
+/**
+ * Chỗ hẹn “nhận thưởng”: một ngõ cụt sau dãy sạp phía nam chợ Xóm Chiều — tường gạch, cửa cuốn đóng,
+ * cái thùng gỗ họ bảo bỏ “lệ phí” vào. Không có văn phòng nào cả.
+ */
+export const SCAM_SPOT = { x: -75.2, z: 18.6, place: 'Ngõ cụt sau chợ Xóm Chiều' };
 /** Mức mất tiền nếu vẫn tin lời “nhận thưởng”: 40% tiền mặt, kẹp trong 20.000–200.000₫. */
 export const scamLoss = (cash: number) => clamp(round1k(cash * 0.4), 20000, 200000);
 /**
@@ -219,10 +220,10 @@ export function scamArrive(g: Game, choice: 'in' | 'back'): { lost: number; min:
   g.flags.scamCall = 2; g.flags.scamDay = g.day;
   if (choice === 'back') {
     g.st.mood = clamp(g.st.mood + 4, 0, 100);
-    return { lost: 0, min: 20, line: 'Bạn đứng ngó một lúc: không có bảng hiệu, không có ai, chỉ có tờ giấy dán tường “1900 1234 là số lừa đảo”. Quay về, trong bụng vừa may vừa tức.' };
+    return { lost: 0, min: 20, line: 'Bạn đứng ngó một lúc: cửa cuốn đóng, không một bóng người, chỉ có tờ giấy dán tường “1900 1234 là số lừa đảo”. Quay về, trong bụng vừa may vừa tức.' };
   }
   const lost = Math.min(g.cash, scamLoss(g.cash));
   g.cash -= lost; g.led.other += lost;
   g.st.mood = clamp(g.st.mood - 16, 0, 100); g.st.energy = clamp(g.st.energy - 8, 0, 100);
-  return { lost, min: 90, line: `Một người dẫn bạn lòng vòng ba cái ngõ, “làm thủ tục”, rồi biến mất cùng ${money(lost)} tiền lệ phí. Không có xe Wave nào cả — chỉ có buổi chiều mất trắng.` };
+  return { lost, min: 90, line: `Bạn bỏ ${money(lost)} vào thùng rồi đứng chờ. Chờ mãi, chờ mãi — tới khi trời tối mới hiểu: không có xe Wave nào cả, chỉ có buổi chiều mất trắng.` };
 }

@@ -236,6 +236,8 @@ export class UI {
     d.opts.forEach((o, i) => { const b = el('button', 'btn' + (o.off ? ' off' : '') + (i === 0 && d.opts.length > 1 && !o.off ? ' yellow' : ''), `<span>${esc(o.t)}</span>` + (o.sub ? `<small>${esc(o.sub)}</small>` : ''), box); b.onclick = () => { ctx.sound.play('ui'); this.closeDialog(); o.fn?.(); }; });
     this.focus(null);
   }
+  /** Hộp thoại có đang mở không (dùng cho hệ thống tự nhắc việc, đừng mở chồng lên). */
+  isDialogOpen() { return this.dlgOpen; }
   closeDialog() { if (!this.dlgOpen) return; this.dlgOpen = false; this.E.dlg.classList.add('hide'); if (ctx.mode === 'panel' && !this.modalName) ctx.mode = 'play'; }
   // ───────── bảng lớn ─────────
   /** Tham số phụ của bảng đang mở (ví dụ bảng 'errand' nhớ người được chọn, món đang chọn). */

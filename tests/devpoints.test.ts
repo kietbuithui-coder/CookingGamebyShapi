@@ -3,13 +3,13 @@ import { DEV_BUILD_TAG, getDevSections } from '../src/game/devPoints';
 
 describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
   it('chỉ gồm mục của tính năng mới nhất + nhóm địa điểm tele nhanh', () => {
-    expect(DEV_BUILD_TAG).toContain('1080');
-    expect(DEV_BUILD_TAG).toContain('1900 1234');
+    expect(DEV_BUILD_TAG).toContain('ngõ cụt');
+    expect(DEV_BUILD_TAG).toContain('QUẦN ÁO CÔ NGỌC');
     const sections = getDevSections();
     expect(sections.length).toBe(2);
-    expect(sections[0].title).toContain('1080');
-    expect(sections[0].title).toContain('1900 1234');
-    expect(sections[0].title).toContain('lượt 27');
+    expect(sections[0].title).toContain('điểm hẹn');
+    expect(sections[0].title).toContain('tiệm quần áo');
+    expect(sections[0].title).toContain('lượt 28');
     expect(sections[1].title).toContain('Địa điểm');
     const ids = new Set<string>();
     for (const sec of sections) {
@@ -22,7 +22,7 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
         expect(item.sub.length).toBeGreaterThan(3);
       }
     }
-    // mục của lượt này: gọi 1080 nghe dự báo + nhận tin rồi gọi 1900 1234 + tới điểm hẹn thấy bị lừa
+    // mục của lượt này: gọi 1080, nhận tin rồi gọi 1900 1234, vào ngõ cụt thấy bị lừa
     for (const id of ['hot_wx', 'hot_scam', 'hot_bust']) expect(ids.has(id)).toBe(true);
     // tele nhanh vẫn còn, có thêm vựa mới và cửa căn hộ
     const loc = sections[1].items.map((i) => i.id);

@@ -63,6 +63,8 @@ const HOME_TIP: Record<string, string> = {
 };
 export class Acts {
   cart: { shop: string; lines: CartLine[]; disc: number; haggled: boolean } | null = null;
+  /** Đã nói chuyện ở ngõ “nhận thưởng” chưa — mỗi lần dính lừa chỉ hỏi một lần. */
+  private scamTalked = false;
   job: { kind: 'dock'; carrying: boolean } | { kind: 'dishes' } | { kind: 'delivery'; x: number; z: number; name: string; pay: number; until: number } | null = null;
   way: Way | null = null; beacon: THREE.Mesh; ring: THREE.Mesh; /** người đứng chờ nhận hàng ở điểm giao */ private receiver: Npc | null = null; litterMesh: THREE.Mesh | null = null; private glint: THREE.Mesh | null = null; litter: { i: number; x: number; z: number; id: string }[] = []; private litterKey = '';
   private sleepUntil = 0; private sleepQ = 1; private sleepWhere = ''; private qT = 1; sheltered = false; working = 0;
@@ -908,20 +910,23 @@ export class Acts {
     if (r.fee > 0) R.advance(g, 3, this.act());
     return r.fee > 0;
   }
-  /** Tới chỗ hẹn nhận thưởng: hoá ra chỉ có bờ tường — người chơi có MỘT cơ hội để quay về. */
+  /** Đang đứng trong ngõ hẹn nhận thưởng hay không (dùng để chỉ hiện một cơ hội đúng một lần). */
+  scamHere(): boolean { const t = PH.scamTrip(this.g); return !!t && dist2(t.x, t.z, ctx.player.x, ctx.player.z) < 7 * 7; }
+  /** Vào ngõ hẹn nhận thưởng: hoá ra chỉ có tường và cái thùng — người chơi có MỘT cơ hội quay về. */
   scamBust(): void {
     const g = this.g;
-    if (!PH.scamTrip(g)) return;
+    if (!PH.scamTrip(g) || this.scamTalked) return;
+    this.scamTalked = true;
     this.way = null;
     const inCost = PH.scamLoss(g.cash);
-    this.D('Bức tường cuối khu chợ', undefined,
-      'Không có văn phòng, không có bảng hiệu, chẳng có ai đợi. Chỉ có tờ giấy dán tường: “1900 1234 là số lừa đảo — đừng đưa tiền cho ai”.',
+    this.D(PH.SCAM_SPOT.place, undefined,
+      'Ngõ cụt ba bề là tường, cửa cuốn đóng kín, chẳng có ai đợi. Trên tường dán tờ giấy: “1900 1234 là số lừa đảo — đừng bỏ tiền vào thùng cho ai”.',
       [
-        { t: 'Thôi, quay về — may mà chưa đưa tiền', sub: 'Tỉnh người ra, mất buổi đi lại', fn: () => {
+        { t: 'Thôi, quay về — may mà chưa bỏ tiền vào thùng', sub: 'Tỉnh người ra, mất buổi đi lại', fn: () => {
           const r = PH.scamArrive(g, 'back');
           toast(r.line, 'info', 'way', true); R.advance(g, r.min, this.act()); sfx('ok'); bus.emit('save', 'biet bi lua');
         } },
-        { t: `Vẫn tin — đưa “lệ phí” ${money(inCost)} để làm thủ tục`, sub: inCost >= g.cash ? 'Đưa hết tiền đang có' : 'Số tiền này sẽ mất thật', off: g.cash <= 0, fn: () => {
+        { t: `Vẫn tin — bỏ “lệ phí” ${money(inCost)} vào thùng`, sub: inCost >= g.cash ? 'Bỏ hết tiền đang có vào thùng' : 'Số tiền này sẽ mất thật', off: g.cash <= 0, fn: () => {
           const r = PH.scamArrive(g, 'in');
           toast(r.line, 'bad', 'angry', true); R.advance(g, r.min, this.act()); sfx('nope'); bus.emit('save', 'bi lua that');
         } },
@@ -1198,15 +1203,16 @@ export class Acts {
     // Vẫn còn trên đường đi “nhận thưởng” (kể cả sau khi mở lại bản lưu) thì dựng lại mũi tên chỉ đường.
     const trip = PH.scamTrip(g);
     if (trip && !this.way) this.way = { x: trip.x, z: trip.z, name: trip.place };
-    else if (!trip && this.way && this.way.name.startsWith('Văn phòng trúng thưởng')) this.way = null;
+    if (!trip) { this.scamTalked = false; if (this.way?.name === PH.SCAM_SPOT.place) this.way = null; }
     const w = this.way, on = !!w && ctx.mode === 'play';
     this.beacon.visible = on; this.ring.visible = on;
     if (w) {
       this.beacon.position.set(w.x, 15, w.z); (this.beacon.material as THREE.MeshBasicMaterial).opacity = 0.22 + Math.sin(ctx.time * 3) * 0.08;
       this.ring.position.set(w.x, 0.16, w.z); const k = 1 + Math.sin(ctx.time * 2.2) * 0.08; this.ring.scale.set(k, 1, k);
       (this.ring.material as THREE.MeshBasicMaterial).opacity = 0.4 + Math.sin(ctx.time * 2.2) * 0.15;
-      if (!j && dist2(w.x, w.z, p.x, p.z) < 9) { this.way = null; if (PH.scamTrip(g)) this.scamBust(); }
+      if (!j && dist2(w.x, w.z, p.x, p.z) < 9) this.way = null;
     }
+    if (!ctx.ui.isDialogOpen() && !ctx.ui.modalName && this.scamHere()) this.scamBust();
     // mục tiêu hướng dẫn
     this.qT -= dt; if (this.qT <= 0) { this.qT = 1; const q = g.quest, s = g.stall, sellable = RECIPE_LIST.filter((r) => R.canSell(g, r));
       const ok = [R.has(g, 'ganh') || s.tier > 0, sellable.length > 0, sellable.some((r) => (R.hasPrep(r) ? R.prepPossible(g, r) > 0 || s.preps.some((x) => x.rid === r.id) : R.finishPossible(g, r) > 0)) || s.ready.length > 0, s.where === 'placed',

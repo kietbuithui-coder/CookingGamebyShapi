@@ -5,7 +5,7 @@ import { WEATHER } from '../src/data/world';
 import {
   activate, contacts, smsList, unread, markSeen, weatherForecast, callScam, scamTrip, scamArrive,
   scammed, knowsScam, hasScamSms, scamLoss,
-  WX_FEE, WX_PER_DAY, SCAM_FEE, SCAM_SMS_DAY,
+  WX_FEE, WX_PER_DAY, SCAM_FEE, SCAM_SMS_DAY, SCAM_SPOT,
 } from '../src/sim/phone';
 import { fresh, IDLE } from './helpers';
 
@@ -112,6 +112,19 @@ describe('hai tổng đài trong danh bạ', () => {
     expect(scamArrive(g, 'in').lost).toBe(0);
     expect(callScam(g).ok).toBe(true);
     expect(g.cash).toBe(cash1 - lose.lost);
+  });
+
+  it('điểm hẹn là ngõ cụt sau chợ, có thùng bỏ tiền — không phải chỗ nào khác', () => {
+    expect(SCAM_SPOT.place).toContain('Ngõ cụt');
+    expect(SCAM_SPOT.x).toBeLessThan(-70);
+    expect(SCAM_SPOT.z).toBeGreaterThan(15);
+    const g = ready(80000); nextDay(g);
+    const r = callScam(g);
+    expect(r.bait!.x).toBe(SCAM_SPOT.x);
+    expect(r.bait!.z).toBe(SCAM_SPOT.z);
+    expect(scamTrip(g)!.place).toBe(SCAM_SPOT.place);
+    // câu mời không còn nhắc "dây dưa mấy phút" hay số cước lẻ
+    expect(r.line).not.toContain('Dây dưa');
   });
 
   it('mất tiền theo số tiền đang có, luôn trong khoảng 20.000–200.000₫', () => {

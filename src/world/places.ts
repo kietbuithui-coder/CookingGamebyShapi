@@ -425,6 +425,65 @@ export function buildPlace(b: Builder, l: Lot, R: RNG) {
       b.shutter('hot_toc', 0.45, w - 0.45, 0.1, 2.6);
       break;
     }
+    case 'thoitrang': {
+      // Tiệm quần áo Cô Ngọc — dọn từ sạp vải trong chợ vào căn nhà mặt tiền: có cửa cuốn, biển hiệu,
+      // giá treo áo dọc hai bên, bàn gấp đồ + kính + giày, và một tấm gương lớn cho khách ngắm.
+      const di = 7.4, U = b.unlit, col = 0xe7c9c0;
+      shell(b, { w, d, di, h1: 3.2, H: 6.9, col, inner: 0xf7efe4, floor: 'tile', opens: [{ x0: 0.5, x1: w - 0.5, top: 2.65 }] });
+      bigSign(b, w, 3.15, 'QUẦN ÁO CÔ NGỌC', { bg: '#7a0f2e', fg: '#ffe9c9', border: '#f5c531', sub: 'Áo · Quần · Giày dép · Kính — 12.000₫ trở lên', subFg: '#f7d9a8' }, 0.95, 0.9, 100);
+      b.awning(0.3, w - 0.3, 2.82, 1.25, 0x7a0f2e, 0xf7e9c9, -0.05);
+      for (let i = 0; i < 2; i++) b.glow.quad(w - 0.9 - i * (w / 2 - 0.25), 4.3, -0.02, w - 2.3 - i * (w / 2 - 0.25), 4.3, -0.02, w - 2.3 - i * (w / 2 - 0.25), 5.5, -0.02, w - 0.9 - i * (w / 2 - 0.25), 5.5, -0.02, i ? 0xffd98a : 0x1c2530);
+      const shirtCols = [0xc8442f, 0xd8b13a, 0x2f8fd5, 0x3fae5a, 0xe9e5da, 0xd8799c, 0x7a5ec4, 0x3a3f4a];
+      // giá treo áo bên trái: hai cột + thanh ngang dọc theo chiều sâu
+      const gx = 1.15, gz0 = 2.0, gz1 = 5.6;
+      for (const z of [gz0, gz1]) { U.cyl(gx, 0.86, z, 0.03, 1.5, 0x9aa0a6, 8); U.box(gx, 0.15, z, 0.32, 0.06, 0.32, 0x6a6e74); }
+      U.rod(gx, 1.6, (gz0 + gz1) / 2, 0.025, gz1 - gz0, 0xb9c0c6, Math.PI / 2, 0, 6);
+      for (let i = 0; i < 8; i++) {
+        const z = gz0 + 0.35 + i * 0.42, c2 = shirtCols[i];
+        U.cyl(gx, 1.55, z, 0.006, 0.1, 0xc9ced4, 4, 0.06);
+        U.box(gx, 1.34, z, 0.04, 0.3, 0.17, c2, c2, 0.02, true);
+        U.box(gx, 1.47, z, 0.05, 0.05, 0.24, c2);
+        for (const dz of [-0.095, 0.095]) U.box(gx, 1.4, z + dz, 0.032, 0.12, 0.04, shade(c2, 0.9));
+        U.box(gx, 1.17, z, 0.035, 0.025, 0.15, shade(c2, 0.78));
+      }
+      b.collide(gx - 0.22, gz0 - 0.1, gx + 0.22, gz1 + 0.1);
+      // giá thứ hai bên phải, sát tường
+      const gx2 = w - 1.15;
+      for (const z of [gz0, gz1]) { U.cyl(gx2, 0.86, z, 0.03, 1.5, 0x9aa0a6, 8); U.box(gx2, 0.15, z, 0.32, 0.06, 0.32, 0x6a6e74); }
+      U.rod(gx2, 1.6, (gz0 + gz1) / 2, 0.025, gz1 - gz0, 0xb9c0c6, Math.PI / 2, 0, 6);
+      for (let i = 0; i < 8; i++) {
+        const z = gz0 + 0.35 + i * 0.42, c2 = shirtCols[(i + 4) % shirtCols.length];
+        U.cyl(gx2, 1.55, z, 0.006, 0.1, 0xc9ced4, 4, 0.06);
+        U.box(gx2, 1.34, z, 0.04, 0.3, 0.17, c2, c2, 0.02, true);
+        U.box(gx2, 1.47, z, 0.05, 0.05, 0.24, c2);
+        U.box(gx2, 1.17, z, 0.035, 0.025, 0.15, shade(c2, 0.78));
+      }
+      b.collide(gx2 - 0.22, gz0 - 0.1, gx2 + 0.22, gz1 + 0.1);
+      // bàn gấp đồ ở giữa, chồng áo + khay kính
+      const tx = w / 2, tz = 4.0;
+      U.box(tx, 0.62, tz, 1.5, 0.06, 0.9, 0xd9dee3, 0xeef1f4, 0.02, true);
+      for (const sx of [-0.66, 0.66]) for (const sz of [-0.38, 0.38]) U.box(tx + sx, 0.32, tz + sz, 0.05, 0.6, 0.05, 0x9aa0a6);
+      for (let i = 0; i < 4; i++) U.box(tx - 0.4 + (i % 2) * 0.42, 0.68 + Math.floor(i / 2) * 0.06, tz - 0.1 + (i % 2) * 0.18, 0.34, 0.055, 0.26, shirtCols[(i + 2) % shirtCols.length]);
+      U.box(tx + 0.42, 0.68, tz + 0.28, 0.42, 0.035, 0.26, 0x2a2e3a);
+      for (let i = 0; i < 3; i++) for (const sx of [-0.06, 0.06]) U.box(tx + 0.28 + i * 0.14 + sx, 0.706, tz + 0.28, 0.08, 0.045, 0.02, i ? 0x1b1c1f : 0x6a4a32);
+      b.collide(tx - 0.78, tz - 0.48, tx + 0.78, tz + 0.48);
+      // khay giày dưới đất + tấm gương lớn áp tường cuối
+      U.box(w / 2, 0.14, di - 1.0, 2.4, 0.09, 0.6, 0xd9dee3, 0xeef1f4, 0.02, true);
+      const shoeCols = [0x2a2e3a, 0xe9e5da, 0xc8442f];
+      for (let i = 0; i < 3; i++) for (const sx of [-0.08, 0.09]) {
+        U.box(w / 2 - 0.7 + i * 0.7 + sx, 0.21, di - 1.0, 0.12, 0.06, 0.28, shoeCols[i]);
+        U.box(w / 2 - 0.7 + i * 0.7 + sx, 0.27, di - 1.06, 0.11, 0.07, 0.17, shade(shoeCols[i], 0.78));
+      }
+      b.collide(w / 2 - 1.25, di - 1.35, w / 2 + 1.25, di - 0.65);
+      U.box(w / 2 + 1.4, 1.15, di - 0.22, 1.5, 1.9, 0.06, 0x8a6a4a, 0xb99a72, 0.04);
+      U.box(w / 2 + 1.4, 1.18, di - 0.28, 1.36, 1.76, 0.02, 0xcfe0ea, 0xe8f3fa, 0.02);
+      b.signAt(w / 2 - 1.35, 1.6, di - 0.2, 1.6, 0.5, 'BẢNG GIÁ', { bg: '#fff7d6', fg: '#7a0f2e', border: '#c8102e', sub: 'Áo 25–30K · Quần 18–24K · Giày 12–45K', subFg: '#7a0f1e' }, 0, -1, 52);
+      for (const z of [2.2, 5.4]) ceilLight(b, w / 2, 3.16, z, 2.2);
+      b.anchor('v_thoi_trang', w / 2 + 0.55, 0.13, 2.5, Math.PI);   // cô đứng sau bàn, quay ra cửa
+      b.anchor('thoi_trang_gia', w / 2, 0.13, 3.35, Math.PI);        // chỗ khách đứng lựa đồ
+      b.shutter('thoi_trang', 0.5, w - 0.5, 0.1, 2.65);
+      break;
+    }
     case 'net': {
       // Quán net kiểu xóm lao động: trong tối, máy CRT sáng rực, quạt trần quay, bảng giá dán ngay cửa.
       const di = 9.4, U = b.unlit, dark = 0x2e333a;

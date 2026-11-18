@@ -62,10 +62,10 @@ export default [boot, fresh(9 * 60),
   }, wait: 700 },
   { shot: 'h4-goi-1900.png' },
 
-  { label: '⑥ tới điểm hẹn: hiện đúng MỘT cơ hội quay về', eval: async () => {
+  { label: '⑥ vào ngõ hẹn: hiện đúng MỘT cơ hội quay về', eval: async () => {
     const g = window.__game.g, G = window.__game, PH = await import('/src/sim/phone.ts');
     G.ui.closePanel();
-    G.player.place(g.flags.scamX, g.flags.scamZ + 2.0, Math.PI);
+    G.player.place(g.flags.scamX + 0.6, g.flags.scamZ - 2.4, 0);
     await new Promise((r) => setTimeout(r, 900));
     return { way: G.acts.way?.name ?? null, modal: G.ui.modalName,
       dlgOpen: G.ui.dlgOpen,
@@ -74,9 +74,17 @@ export default [boot, fresh(9 * 60),
       opts: [...document.querySelectorAll('#dlg .opts .btn')].map((o) => o.textContent.replace(/\s+/g, ' ').trim().slice(0, 100)),
       toast: (document.querySelector('#toasts')?.textContent ?? '').replace(/\s+/g, ' ').slice(-200) };
   }, wait: 1200 },
-  { shot: 'h5-diem-hen.png' },
+  { shot: 'h5-ngo-cut.png' },
+  { label: '⑦ bấm “quay về” → không mất tiền, hộp thoại đóng hẳn', eval: async () => {
+    const g = window.__game.g, G = window.__game, PH = await import('/src/sim/phone.ts');
+    const before = g.cash;
+    [...document.querySelectorAll('#dlg .opts .btn')][0]?.click();
+    await new Promise((r) => setTimeout(r, 700));
+    return { dlgOpen: G.ui.isDialogOpen(), fee: before - g.cash, state: PH.scammed(g), toast: (document.querySelector('#toasts')?.textContent ?? '').replace(/\s+/g, ' ').slice(-150) };
+  }, wait: 900 },
+  { shot: 'h6-quay-ve.png' },
 
-  { label: '⑦ gọi lại 1900 1234 sau khi đã biết: không mất thêm tiền', eval: async () => {
+  { label: '⑧ gọi lại 1900 1234 sau khi đã biết: không mất thêm tiền', eval: async () => {
     const g = window.__game.g, PH = await import('/src/sim/phone.ts');
     const before = g.cash;
     const r = PH.callScam(g);

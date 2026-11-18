@@ -883,12 +883,19 @@ vào `flags.scamX/scamZ`, và `scamTrip(g)` dựng lại mũi tên vàng **kể 
 **Đúng một cơ hội.** `scammed(g)` là máy trạng thái ba nấc qua `flags.scamCall`: `'none'` → gọi được, `'once'` → đang trên
 đường đi, `'done'` → đã biết. Tới nơi (`scamArrive(g, choice)`) hiện hộp thoại **\"Bức tường cuối khu chợ\"** với đúng hai
 lựa chọn: **quay về** (mất 20 phút đi lại, tinh thần *tăng* 4 vì may mà chưa đưa tiền) hoặc **vẫn tin** — mất
-`scamLoss(cash)` = **40% tiền mặt, kẹp 20.000–200.000₫**, tinh thần −16, sức lực −8, mất 90 phút. Dù chọn gì thì
+`scamLoss(cash)` = **40% tiền mặt, kẹp 20.000–200.000₫** (bỏ vào cái thùng gỗ ở ngõ), tinh thần −16, sức lực −8, mất 90 phút. Dù chọn gì thì
 `scamCall = 2`, nên **lần sau gọi lại chỉ nghe \"thuê bao không tồn tại\", `fee: 0`** — không bao giờ bị lừa hai lần. Số vẫn
 nằm trong danh bạ với nhãn *\"Số lừa đảo — bạn đã biết rồi\"*, còn tin nhắn lừa thì biến mất khỏi hộp thư.
 
-**Kiểm thử.** `tests/phone4.test.ts` (7 bài): danh bạ ngày 1 chỉ có 1080 và 1900 1234 chỉ hiện sau khi có tin; gọi 1080
+**Kiểm thử.** `tests/phone4.test.ts` (8 bài): danh bạ ngày 1 chỉ có 1080 và 1900 1234 chỉ hiện sau khi có tin; gọi 1080
 đúng 2.000₫ + dự báo khớp `weather.next` + đổi theo thời tiết; hết pin/hết tiền/quá 3 lần một ngày thì không gọi được;
 gọi 1900 1234 mất 15.000₫ và `scamTrip` trỏ đúng điểm hẹn; quay về thì **không mất đồng nào**, vẫn tin thì mất thật và
 **chỉ một lần**; `scamLoss` đúng khoảng 20k–200k và không bao giờ âm tiền; gọi xong thì hộp thư sạch tin lừa mà danh bạ
-vẫn giữ số. Probe `tools/probe/steps/hotline.mjs` (390×844) chạy đúng 7 bước trên bằng cú bấm thật, console sạch.
+vẫn giữ số; điểm hẹn đúng `SCAM_SPOT` và câu mời không còn nhắc "dây dưa". Probe `tools/probe/steps/hotline.mjs`
+(390×844) chạy 8 bước trên bằng cú bấm thật — bấm *"Thôi, quay về"* thì hộp thoại đóng hẳn, `fee: 0` — console sạch.
+
+**Tiệm quần áo Cô Ngọc (lượt 28).** Sạp vải dựng giữa chợ (khối `1c` trong `side.ts`) **đã bỏ**; Cô Ngọc dọn vào một căn
+nhà có sẵn ở **mặt tiền tây Phố Trung Tâm** (`LOTS` 11W, cạnh Đồ Nghề Ba Tài) — nay là `kind: 'thoitrang'` dựng trong
+`places.ts`: vỏ nhà có cửa cuốn + mái hiên + biển **QUẦN ÁO CÔ NGỌC**, hai giá treo áo dọc hai bên, bàn gấp đồ có khay
+kính, khay giày dưới đất, gương lớn áp tường, đèn trần; neo `v_thoi_trang` nằm trong tiệm nên cô đứng bán bên trong.
+`tests/look.test.ts` kiểm lô này là nhà thật (đúng ô phố, mặt tiền, đủ rộng).
