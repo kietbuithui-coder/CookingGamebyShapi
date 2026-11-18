@@ -12,6 +12,7 @@ import { WEATHER } from '../data/world';
 import { Game, Stack, LedgerDay, STAT_MAX, weightOf, moveStack, junkWeight, hourOf, purge, isSpoiled } from '../sim/state';
 import * as R from '../sim/rules';
 import * as PH from '../sim/phone';
+import * as PUI from './phoneUI';
 import { FEAT_LABEL } from '../data/phone';
 import { money, qty, clamp, round1k, dist2, hhmm } from '../core/util';
 import { toast, sfx, bus } from '../core/bus';
@@ -108,7 +109,12 @@ export function openPanel(ui: UI, name: string) {
       acts.sw = (_i, e) => { const rs = g.rec[e.dataset.k!], on = R.menuOf(g).length; if (!rs.on && on >= T.menu) { toast(`${T.name} chỉ bán được tối đa ${T.menu} món cùng lúc.`, 'warn'); return; } rs.on = !rs.on; sfx('ui'); };
       acts.pm = (_i, e) => { const rs = g.rec[e.dataset.k!]; rs.price = clamp(rs.price + +e.dataset.d!, 1000, 500000); };
       acts.sug = (_i, e) => { const r = RECIPES[e.dataset.k!]; g.rec[r.id].price = R.suggestPrice(g, r); };
-      acts.prep = (_i, e) => { const r = RECIPES[e.dataset.k!]; ui.closePanel(); ctx.cook.prep(r); };
+      // Thiếu nguyên liệu: báo ngay trên bảng (toast trôi mất, người chơi không kịp đọc) rồi mới đóng bảng.
+      acts.prep = (_i, e) => {
+        const r = RECIPES[e.dataset.k!], miss = R.missingFor(g, r, 'prep');
+        if (R.prepPossible(g, r) < 1 && miss.length) { toast(`Chưa sơ chế ${r.short.toLowerCase()} được — thiếu ${miss.map((x) => x.toLowerCase()).join(', ')}.`, 'warn', 'box'); render(); return; }
+        ui.closePanel(); ctx.cook.prep(r);
+      };
       acts.make = (_i, e) => { const r = RECIPES[e.dataset.k!]; ui.closePanel(); ctx.cook.finish(r); };
       acts.eatd = (i) => ctx.acts.eatDish(i);
       acts.toBag = (i) => { const room = R.carryCap(g) - R.bagWeight(g), k = moveStack(s.store, g.bag, i, 1e9, room); if (!k) toast('Túi đầy rồi.', 'warn'); else sfx('pick'); };
@@ -133,7 +139,10 @@ export function openPanel(ui: UI, name: string) {
       let body = '';
       if (tab === 'menu') {
         const known = RECIPE_LIST.filter((r) => g.rec[r.id].known);
-        body = `<p class="muted">Bật món muốn bán (tối đa ${T.menu} món), chỉnh giá theo giá vốn. Giá cao quá khách bỏ đi; chất lượng và uy tín càng cao thì khách càng chịu trả. Uy tín hiện tại ${Math.round(g.rep)}.</p><div class="list">` + known.map((r) => {
+        // Thiếu nguyên liệu cho món đang bật: nói thẳng thiếu gì, còn bao nhiêu, chợ nào bán, hết bao nhiêu tiền.
+        const shorts = R.stockShortages(g).filter((x) => x.dishes.some((d) => known.some((r) => r.short === d && g.rec[r.id].on)));
+        const shortBox = shorts.length ? `<div class="shortage"><b>${ic('box')} Thiếu nguyên liệu cho món đang bán</b>${shorts.slice(0, 6).map((x) => `<div class="srow"><span>${esc(x.name)} <span class="muted">còn ${qty(x.left)} ${esc(x.unit)}</span></span><b>cần thêm ${qty(x.need)} ${esc(x.unit)}</b><small>${x.shop ? `bán ở ${esc(x.shop)} · ${money(x.cost)}` : 'không chợ nào bán'}${x.dishes.length ? ` · cho ${esc(x.dishes.slice(0, 2).join(', '))}` : ''}</small></div>`).join('')}${shorts.length > 6 ? `<div class="srow"><span class="muted">… và ${shorts.length - 6} thứ nữa (xem tab Kho quầy)</span></div>` : ''}</div>` : '';
+        body = shortBox + `<p class="muted">Bật món muốn bán (tối đa ${T.menu} món), chỉnh giá theo giá vốn. Giá cao quá khách bỏ đi; chất lượng và uy tín càng cao thì khách càng chịu trả. Uy tín hiện tại ${Math.round(g.rep)}.</p><div class="list">` + known.map((r) => {
           const rs = g.rec[r.id], c = R.recipeCost(g, r), mg = R.marginOf(rs.price, c.total), miss = R.missingTools(g, r), rd = R.readyCount(g, r.id), pr = s.preps.filter((p) => p.rid === r.id).reduce((a, p) => a + p.n, 0), can = R.finishPossible(g, r), pp = R.prepPossible(g, r);
           let tags = miss.length ? `<span class="tag bad">thiếu ${miss.map((t) => (t === 'bep' ? 'bếp' : GEAR[t].name.toLowerCase())).join(', ')}</span>` : `<span class="tag ${rd ? 'good' : ''}">sẵn ${rd}</span>` + (R.hasPrep(r) ? `<span class="tag ${pr ? 'good' : 'warn'}">đã sơ chế ${pr} phần</span>` : '') + `<span class="tag ${can ? '' : 'bad'}">làm được ${can > 900 ? '—' : can} phần</span>`;
           // Quán có chỗ ngồi: đánh dấu món hợp buổi để người chơi biết nên bày gì.
@@ -142,7 +151,7 @@ export function openPanel(ui: UI, name: string) {
           return `<div class="item${miss.length ? ' off' : ''}" style="flex-wrap:wrap"><img src="${dishIcon(r)}" style="width:2.6em;height:2.6em" alt=""><div class="grow"><b>${r.name}</b><small>Vốn ${money(c.total)}/phần · thị trường ~${money(r.ref)} · <span class="${mg < 0.2 ? 'neg' : 'pos'}">lãi ${Math.round(mg * 100)}%</span></small>${tags}</div>
             <div class="price"><button class="btn small" data-a="pm" data-k="${r.id}" data-d="-1000">−</button><b>${money(rs.price)}</b><button class="btn small" data-a="pm" data-k="${r.id}" data-d="1000">+</button></div>
             <button class="sw${rs.on ? ' on' : ''}${miss.length ? ' off' : ''}" data-a="sw" data-k="${r.id}"></button>
-            <div style="flex-basis:100%;display:flex;gap:.3em;flex-wrap:wrap;justify-content:flex-end">${R.hasPrep(r) ? `<button class="btn small yellow${!placed || miss.length || pp < 1 ? ' off' : ''}" data-a="prep" data-k="${r.id}">${ic('knife')} Sơ chế ${pp || ''} phần</button>` : ''}<button class="btn small${!placed || miss.length || can < 1 ? ' off' : ''}" data-a="make" data-k="${r.id}">${ic('fire')} Làm sẵn ${Math.min(r.serve, can)}</button>${ri >= 0 ? `<button class="btn small green" data-a="eatd" data-i="${ri}">Ăn 1 phần</button>` : ''}<button class="btn small" data-a="sug" data-k="${r.id}">Giá gợi ý</button></div></div>`;
+            <div style="flex-basis:100%;display:flex;gap:.3em;flex-wrap:wrap;justify-content:flex-end">${R.hasPrep(r) ? `<button class="btn small yellow${!placed || miss.length ? ' off' : ''}${pp < 1 ? ' need' : ''}" data-a="prep" data-k="${r.id}">${ic('knife')} ${pp < 1 ? 'Thiếu đồ — xem thiếu gì' : `Sơ chế ${pp} phần`}</button>` : ''}<button class="btn small${!placed || miss.length || can < 1 ? ' off' : ''}" data-a="make" data-k="${r.id}">${ic('fire')} Làm sẵn ${Math.min(r.serve, can)}</button>${ri >= 0 ? `<button class="btn small green" data-a="eatd" data-i="${ri}">Ăn 1 phần</button>` : ''}<button class="btn small" data-a="sug" data-k="${r.id}">Giá gợi ý</button></div></div>`;
         }).join('') + '</div>' + (placed ? '' : '<p class="muted">Quầy chưa đặt ở chỗ bán nên chưa nấu được — hãy gánh tới một vòng sáng vàng.</p>');
       } else if (tab === 'store') {
         const chilled = R.stallChilled(g);
@@ -283,7 +292,7 @@ export function openPanel(ui: UI, name: string) {
         </div>`;
       }).join('');
       const body = `<p class="muted">Người làm tự canh kho và báo mỗi khi nguyên liệu cho món đang bán còn đủ nấu ≤ 1 phần. Bấm "Giao đi chợ" là họ đi mua đúng thứ còn thiếu.</p>
-        ${low ? `<p class="warn">${low} món đang bán sắp hết nguyên liệu.</p>` : ''}
+        ${low ? `<p class="warn">${low} món đang bán sắp hết nguyên liệu${R.stockShortages(g).length ? ` — thiếu ${R.stockShortages(g).slice(0, 4).map((x) => x.name.toLowerCase()).join(', ')}` : ''}.</p>` : ''}
         ${cards}
         <h4>Đặt bàn trước</h4>
         <div class="item"><div class="grow"><b>Bếp trưởng tự duyệt đặt bàn</b><small>${R.canAutoBook(g) ? 'Khách gọi đặt bàn là bếp nhận luôn (vẫn trừ uy tín nếu lỡ hẹn). Tắt thì bạn tự nhận/từ chối trong tab Nhân sự.' : 'Cần có bếp trưởng (nhà hàng bình dân) mới giao được quyền này.'}</small></div>${R.canAutoBook(g) ? `<button class="btn small${R.autoBookOn(g) ? ' green' : ''}" data-a="autoBook">${R.autoBookOn(g) ? 'Đang tự duyệt — bấm để tắt' : 'Bật tự duyệt'}</button>` : ''}</div>
@@ -321,51 +330,22 @@ export function openPanel(ui: UI, name: string) {
         draw(`${ic('shop')} Chi nhánh · ${sp?.name ?? ''}`, [['info', 'Sổ & khay']], body);
       }
     } else if (name === 'phone') {
+      // Giao diện riêng cho từng mẫu máy — xem src/ui/phoneUI.ts
       const m = PH.phone(g);
       if (!m) {
         draw(`${ic('info')} Chưa có điện thoại`, [], `<p class="muted">Trong túi chưa có máy nào. Tiệm Đồ Nghề Ba Tài ở Phố Trung Tâm bán ba mẫu: cục gạch (180.000₫), nắp gập (520.000₫) và cảm ứng (1.450.000₫).</p>`);
         return;
       }
-      const pin = Math.round(PH.battery(g)), on = PH.isOn(g);
-      const tabs: [string, string][] = [['home', 'Máy']];
-      if (m.feats.includes('ledger')) tabs.push(['led', 'Sổ thu chi']);
-      if (m.feats.includes('contacts')) tabs.push(['book', 'Danh bạ']);
-      if (m.feats.includes('sms')) tabs.push(['sms', 'Tin nhắn']);
-      if (m.feats.includes('radio') || m.feats.includes('music')) tabs.push(['fun', 'Giải trí']);
-      tabs.push(['pin', 'Pin & sạc']);
-      if (!tabs.some(([id]) => id === tab)) tab = 'home';
-      const dead = on ? '' : `<p class="neg">Máy hết pin. Ngủ ở chỗ trọ trở lên cho đầy pin, hoặc trả 5.000₫ sạc nhờ ở tạp hoá Cô Ba / MiniMart.</p>`;
-      let body = '';
-      if (tab === 'home') {
-        const un = PH.unread(g);
-        body = `<div class="grid2"><div><p style="font-family:'Patrick Hand';font-size:1.35em;margin:.2em 0">${m.name} <span class="muted">${m.brand}</span></p>
-          <div class="kv"><span>Giờ trên máy</span><b>${hhmm(g.min)} · ngày ${g.day + 1}</b></div>
-          <div class="kv"><span>Pin</span><b class="${pin < 20 ? 'neg' : 'pos'}">${pin}%</b></div>
-          <div class="kv"><span>Tiền mặt đang có</span><b>${money(g.cash)}</b></div>
-          <div class="kv"><span>Tin chưa đọc</span><b class="${un ? 'pos' : ''}">${un}</b></div>
-          <p class="muted">${m.desc}</p></div>
-          <div><h4>Chức năng</h4><div class="list">${m.feats.map((f) => `<div class="item"><div class="grow"><b>${FEAT_LABEL[f]}</b></div><button class="btn small" data-tab="${f === 'ledger' ? 'led' : f === 'contacts' ? 'book' : f === 'sms' ? 'sms' : 'fun'}">Mở</button></div>`).join('')}</div></div></div>`;
-      } else if (tab === 'led') {
-        body = ledgerBody(g);
-      } else if (tab === 'book') {
-        const list = PH.contacts(g);
-        acts.call = (i) => { const c = list[i]; if (c) ctx.acts.phoneCall(c.id); };
-        body = dead + (list.length ? `<div class="list">${list.map((c, i) => `<div class="item"><div class="grow"><b>${esc(c.name)}</b><small>${esc(c.where)}${c.regular && g.flags['call_' + c.id] === g.day ? ' · hôm nay gọi rồi' : ''}</small></div>${c.regular ? `<button class="btn small${g.cash < PH.CALL_FEE || !on ? ' off' : ''}" data-a="call" data-i="${i}">Gọi 1.000₫</button>` : ''}</div>`).join('')}</div>` : '<p class="muted">Danh bạ trống. Đi chào hỏi trong xóm rồi mở lại.</p>');
-      } else if (tab === 'sms') {
-        const seen = g.flags.smsSeen ?? 0, list = PH.smsList(g);
-        if (on) PH.markSeen(g);
-        body = dead + (list.length ? `<div class="list">${list.map((sm) => `<div class="item"><div class="grow"><b>${esc(sm.from)}${sm.at > seen ? ' <span class="tag bad">mới</span>' : ''}</b><small>${esc(sm.text)}</small><small class="muted">${hhmm(sm.at % 1440)} · ngày ${Math.floor(sm.at / 1440) + 1}</small></div></div>`).join('')}</div>` : '<p class="muted">Hộp thư trống trơn.</p>');
-      } else if (tab === 'fun') {
-        acts.fun = (i) => { ctx.acts.phoneFun((['radio', 'music', 'wap'] as const)[i]); };
-        body = dead + `<div class="list">${(['radio', 'music', 'wap'] as const).map((f, i) => { const ok = m.feats.includes(f), c = PH.FUN[f]; return `<div class="item${ok ? '' : ' off'}"><div class="grow"><b>${FEAT_LABEL[f]}</b><small>${ok ? `${c.min} phút · tinh thần +${c.mood} · pin −${c.pin}%` : 'Máy này không có chức năng này'}</small></div>${ok ? `<button class="btn small${on ? '' : ' off'}" data-a="fun" data-i="${i}">Mở</button>` : ''}</div>`; }).join('')}</div>`;
-      } else {
-        const hours = PH.battery(g) / PH.DRAIN_PER_HOUR;
-        body = `<p>Pin còn <b>${pin}%</b> · để trong túi thì dùng được khoảng <b>${hours.toFixed(1).replace('.', ',')} giờ</b> nữa. Mở radio, nhạc hay web thì tốn nhanh hơn.</p>
-          <div class="bar"><b style="width:${pin}%;background:${pin < 20 ? 'var(--red)' : pin < 50 ? '#d9a441' : 'var(--green)'}"></b></div>
-          <p class="muted">Sạc: ngủ ở phòng trọ, nhà nghỉ, căn hộ, nhà riêng, cửa hàng (có ổ điện) là đầy pin sáng hôm sau. Ở gầm cầu hay ghế đá công viên thì không có điện. Hoặc trả 5.000₫ sạc nhờ ở tạp hoá Cô Ba / MiniMart 24h.</p>
-          <p class="muted">Máy này nghe được ${m.feats.map((f) => FEAT_LABEL[f].toLowerCase()).join(', ')}.</p>`;
-      }
-      draw(`${ic('phone')} ${m.name} <span class="muted">· pin ${pin}%</span>`, tabs, body);
+      acts.phonehome = () => { if (PUI.phoneView().app === 'home') ui.closePanel(); else PUI.phoneKey('home'); };
+      acts.phoneup = () => PUI.phoneKey('up');
+      acts.phonedown = () => PUI.phoneKey('down');
+      acts.phoneok = () => PUI.phoneKey('ok');
+      acts.phonepick = (i) => PUI.phoneKey('pick', i);
+      acts.phoneopen = (_i, e) => PUI.phoneKey('open', e.dataset.k!);
+      acts.phonerow = (i) => PUI.phoneRow(i);
+      acts.phshop = (_i, e) => PUI.phoneToggleShop(e.dataset.k as 'main' | 'branch');
+      const sh = PUI.phoneShell(g, m);
+      draw(sh.title, [], sh.html, sh.foot);
     } else if (name === 'map') {
       const places = ctx.acts.places(); acts.go = (i) => { ctx.acts.way = places[i]; ui.closePanel(); toast(`Đã ghim: ${places[i].name}. Đi theo mũi tên và cột sáng vàng.`, 'info', 'pin'); }; acts.clear = () => { ctx.acts.way = null; };
       draw(`${ic('map')} Bản đồ khu phố`, [], `<div class="grid2"><canvas id="map" width="640" height="610"></canvas><div><p class="muted">Chạm một địa điểm để ghim đường đi.</p><div class="list">${places.map((p, i) => `<button class="btn small" style="justify-content:flex-start" data-a="go" data-i="${i}">${ic('pin')} ${p.name} <span class="muted">· ${Math.round(Math.hypot(p.x - ctx.player.x, p.z - ctx.player.z))} m</span></button>`).join('')}</div></div></div>`, ctx.acts.way ? `<button class="btn" data-a="clear">Bỏ ghim “${esc(ctx.acts.way.name)}”</button>` : '');

@@ -6,8 +6,11 @@ import * as R from '../sim/rules';
 import { RECIPES } from '../data/recipes';
 import { SPOTS, CORR } from '../world/layout';
 import { toast } from '../core/bus';
+import * as PUI from '../ui/phoneUI';
+import * as PH from '../sim/phone';
+const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Vựa ve chai Bà Chín bên kia thành phố · bấm chuông thì cửa căn hộ mở ra';
+export const DEV_BUILD_TAG = 'Điểm hẹn lừa đảo dời về ngõ cụt sau chợ có thùng bỏ lệ phí, bấm nút đã ăn, và sạp quần áo giữa chợ dọn vào tiệm QUẦN ÁO CÔ NGỌC ở Phố Trung Tâm';
 
 export interface DevAction {
   id: string;
@@ -66,52 +69,56 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Vựa ve chai thứ hai & bấm chuông mở cửa (lượt 21)',
+      title: 'Mới nhất — Sửa điểm hẹn “nhận thưởng” & tiệm quần áo Cô Ngọc (lượt 28)',
       items: [
         {
-          id: 'setup_vua2',
-          label: 'Tới vựa ve chai Bà Chín + cho sẵn ve chai trong túi',
-          sub: 'Khu Dân Cư (đường 21E) — bấm bán xem có ra tiền như vựa Tư Rác không',
+          id: 'hot_wx',
+          label: 'Mở danh bạ, gọi 1080 nghe dự báo thời tiết ngày mai',
+          sub: 'Có máy cảm ứng, đầy pin, 50.000₫ trong túi · cước 2.000₫/phút · tổng đài đứng đầu danh bạ',
           tone: 'green',
           closePanel: false,
           run: () => {
             const g = ctx.g;
-            for (const id of ['chai', 'lon', 'bia', 'sat']) g.junk[id] = (g.junk[id] ?? 0) + 5;
-            g.min = Math.max(g.min, 8 * 60);
-            const a = ctx.world.anchors.v_scrap2;
-            if (!a) { toast('Không tìm thấy vựa Bà Chín trên bản đồ.', 'warn'); return; }
-            tpTo(a.x, a.z + 1.6, Math.PI, 'Đã tới vựa ve chai Bà Chín — chạm Bà Chín để bán.');
+            g.cash = Math.max(g.cash, 50000);
+            if (!g.phone) { PH.activate(g, 'camung'); }
+            PH.fullCharge(g);
+            PUI.resetPhoneView();
+            PUI.phoneKey('open', 'contacts');
+            toast('Danh bạ có sẵn Tổng đài 1080. Bấm dòng đó để nghe dự báo ngày mai (2.000₫/phút, mỗi ngày 3 lần).', 'info', 'sun', true);
+            ctx.ui.closePanel(); ctx.ui.panel('phone');
           },
         },
         {
-          id: 'vua2_sell',
-          label: 'Bán hết ve chai đang có ở vựa gần nhất',
-          sub: 'Tính đúng giá từng loại rồi cộng tiền (chạy thẳng luật sellJunk, không cần đi tới)',
+          id: 'hot_scam',
+          label: 'Sang ngày 2 để nhận tin “trúng thưởng”, rồi gọi 1900 1234',
+          sub: 'Tin của số lạ tới máy thì số đó mới vào danh bạ · gọi là mất 15.000₫ cước và bị hẹn lên chỗ không có ai',
+          tone: 'yellow',
           closePanel: false,
           run: () => {
             const g = ctx.g;
-            const sum = Math.max(R.sellJunk(g, 'scrap2'), R.sellJunk(g, 'scrap'));
-            toast(sum > 0 ? `Bán ve chai được ${sum.toLocaleString('vi-VN')}₫.` : 'Túi không có ve chai nào.', sum > 0 ? 'good' : 'warn', 'coin');
+            g.cash = Math.max(g.cash, 80000);
+            if (g.day < 1) { g.day = 1; g.min = 8 * 60 + 30; }
+            if (!g.phone) PH.activate(g, 'camung');
+            PH.fullCharge(g);
+            PUI.resetPhoneView();
+            ctx.ui.closePanel(); ctx.ui.panel('phone');
+            toast('Hộp thư có tin “Chúc mừng trúng một xe Wave”. Đọc Tin nhắn xong mở Danh bạ: số 1900 1234 vừa xuất hiện.', 'info', 'gift', true);
           },
         },
         {
-          id: 'bell_canho',
-          label: 'Tới cửa căn hộ An Bình rồi bấm chuông (cửa phải mở ra)',
-          sub: 'Chờ một nhịp: cánh cửa xoay mở, Cô Hạnh bước ra nói chuyện — kể cả ngoài giờ',
-          tone: 'green',
+          id: 'hot_bust',
+          label: 'Vào ngõ cụt sau chợ để thấy bị lừa — và cơ hội quay về',
+          sub: 'Đã gọi 1900 1234 · vào ngõ cụt sau chợ: được MỘT cơ hội quay về, vẫn tin thì bỏ tiền vào thùng và mất thật',
+          tone: 'red',
           closePanel: false,
           run: () => {
-            const a = ctx.world.anchors.bell_canho;
-            if (!a) { toast('Không tìm thấy cửa căn hộ An Bình.', 'warn'); return; }
-            tpTo(a.x + Math.sin(a.yaw) * 1.9, a.z + Math.cos(a.yaw) * 1.9, a.yaw + Math.PI, 'Đứng trước cửa căn hộ — bấm chuông đi!');
+            const g = ctx.g;
+            g.cash = Math.max(g.cash, 80000);
+            if (g.flags.scamCall !== 1) { g.flags.scamCall = 1; g.flags.scamDay = g.day; }
+            g.flags.scamX = PH.SCAM_SPOT.x; g.flags.scamZ = PH.SCAM_SPOT.z;
+            tpTo(g.flags.scamX, g.flags.scamZ - 2.6, 0, 'Đã tới ngõ cụt sau chợ — chỉ có cửa cuốn đóng và cái thùng.');
+            toast('Đi vào vòng sáng vàng ngay trước mặt: bạn sẽ thấy đúng một cơ hội quay về.', 'warn', 'way', true);
           },
-        },
-        {
-          id: 'bell_now',
-          label: 'Bấm chuông căn hộ An Bình ngay (không cần đứng gần)',
-          sub: 'Gọi thẳng ringBell: cửa mở 16 giây, chủ nhà ra ngoài hiên nói chuyện',
-          closePanel: false,
-          run: () => ctx.acts.ringBell('canho', ctx.world.anchors.bell_canho),
         },
       ],
     },

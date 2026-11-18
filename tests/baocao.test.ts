@@ -153,3 +153,58 @@ describe('bếp trưởng tự duyệt đặt bàn', () => {
     expect(R.autoBookOn(m)).toBe(true);
   });
 });
+
+describe('cảnh báo sắp hết đồ nói rõ thiếu gì (lượt 26)', () => {
+  /** Quầy bậc 7 đang bán 2 món, kho trống trơn. */
+  function hungry(): Game {
+    const g = withStall(21);
+    g.stall.tier = 7; g.stall.where = 'placed'; g.stall.open = true; g.cash = 3000000; g.min = 11 * 60;
+    for (const id of ['daothot', 'bepthan', 'vi', 'noi', 'chao', 'bepgas']) g.gear[id] = 1;
+    for (const rid of ['com_suon', 'banh_xeo']) { g.rec[rid].known = true; g.rec[rid].on = true; }
+    g.stall.store = []; g.bag = []; g.stall.preps = []; g.stall.ready = [];
+    return g;
+  }
+  it('liệt kê đúng nguyên liệu thiếu, kèm còn bao nhiêu, cần mua bao nhiêu, chợ nào bán', () => {
+    const g = hungry();
+    const s = R.stockShortages(g);
+    expect(s.length).toBeGreaterThan(3);
+    const suon = s.find((x) => x.id === 'suon')!;
+    expect(suon.left).toBe(0);
+    expect(suon.need).toBeGreaterThanOrEqual(2);        // cần 2 lạng → làm tròn lên, không ra 0,06
+    expect(suon.shop).toContain('thịt');                 // sạp thịt Anh Tư
+    expect(suon.cost).toBeGreaterThan(0);
+    expect(suon.dishes.length).toBeGreaterThan(0);
+  });
+  it('đơn vị rời (chai, lon, quả) thì cần mua cả cái, không hiện 0,06', () => {
+    const g = hungry();
+    for (const x of R.stockShortages(g)) {
+      if (x.unit === 'kg' || x.unit === 'lạng') continue;
+      expect(Number.isInteger(x.need), `${x.name} cần ${x.need} ${x.unit}`).toBe(true);
+      expect(x.need).toBeGreaterThanOrEqual(1);
+    }
+  });
+  it('câu trên HUD đọc được tên nguyên liệu, không phải câu chung chung', () => {
+    const g = hungry();
+    const line = R.shortageLine(g);
+    expect(line.length).toBeGreaterThan(3);
+    expect(line).not.toContain('món');
+    expect(R.shortageLine(g, 3).split(',').length).toBeGreaterThanOrEqual(2);
+  });
+  it('đủ nguyên liệu nhưng chưa sơ chế thì HUD báo "cần sơ chế trước", không đổ lỗi thiếu đồ', () => {
+    const g = hungry();
+    const RECIPE = RECIPES.com_suon;
+    for (const id of Object.keys(RECIPE.ings)) g.stall.store.push({ id, n: 40, q: 1, cost: INGS[id].price, fresh: 100 });
+    // bỏ món thứ hai khỏi thực đơn để chỉ còn cơm sườn
+    for (const rid of Object.keys(g.rec)) if (rid !== 'com_suon') g.rec[rid].on = false;
+    expect(R.stockShortages(g).length).toBe(0);
+    expect(R.needsPrepCount(g)).toBe(1);
+  });
+  it('đủ đồ cho cả hai món thì hết cảnh báo', () => {
+    const g = hungry();
+    for (const [id, n] of ([['gao', 60], ['suon', 60], ['trung', 60], ['botmi', 60], ['nuocmam', 30], ['dauan', 30], ['hanhla', 30], ['gia', 30], ['duong', 30], ['cachua', 30], ['dualeo', 30], ['gia', 30], ['tom', 30], ['dua', 30], ['toi', 30]] as [string, number][])) {
+      if (INGS[id]) g.stall.store.push({ id, n, q: 1, cost: INGS[id].price, fresh: 100 });
+    }
+    expect(R.stockShortages(g).length).toBe(0);
+    expect(R.shortageLine(g)).toBe('');
+  });
+});

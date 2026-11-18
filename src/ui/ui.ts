@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import './style.css';
 import { ctx, MIN_PER_SEC, saveSettings } from '../game/ctx';
 import type { Npc } from '../game/npc';
+import type { Game } from '../sim/state';
 import type { Focus } from '../game/interact';
 import type { Opt } from '../game/acts';
 import { bus, Toast } from '../core/bus';
@@ -14,11 +15,18 @@ import { SHOPS } from '../data/shops';
 import { DISTRICT, districtAt } from '../world/layout';
 import { STAT_MAX, hourOf } from '../sim/state';
 import { jailLeft } from '../sim/police';
-import { activeEvents, totalDebt, level, tier, hasMet, fixedLabel, lowStockCount } from '../sim/rules';
+import { activeEvents, totalDebt, level, tier, hasMet, fixedLabel, lowStockCount, shortageLine, stockShortages, needsPrepCount } from '../sim/rules';
+/** Chú thích khi rê chuột: liệt kê từng món + nguyên liệu còn thiếu, kèm chợ nào bán. */
+const lowchipTip = (g: Game) => {
+  const l = stockShortages(g);
+  if (!l.length) return '';
+  return `data-tip="${esc(l.slice(0, 4).map((x) => `${x.name} còn ${x.left} ${x.unit}, cần ${x.need}"`).join(' · '))}"`;
+};
 import { stallHint } from '../game/stall';
 import { openPanel } from './panels';
 import * as PH from '../sim/phone';
 import { applyLayout, editLayout } from './layout';
+import * as PUI from './phoneUI';
 
 const IC: Record<string, string> = {
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/>',
@@ -126,6 +134,9 @@ export class UI {
     const sl = C.querySelector('.slider') as HTMLElement, setS = (e: PointerEvent) => { const r = sl.getBoundingClientRect(), v = clamp(1 - (e.clientY - r.top) / r.height); this.sliderV = v; (sl.firstElementChild as HTMLElement).style.bottom = v * 100 + '%'; this.onCookSlide?.(v); };
     sl.addEventListener('pointerdown', (e) => { sl.setPointerCapture(e.pointerId); setS(e); }); sl.addEventListener('pointermove', (e) => { if (e.buttons || e.pointerType === 'touch') setS(e); });
     applyLayout(); window.addEventListener('resize', () => applyLayout()); window.addEventListener('orientationchange', () => setTimeout(applyLayout, 250));
+    // Luật vừa đổi trạng thái (mở/đóng bán, khách vào, chi nhánh…) → vẽ lại bảng đang mở để nút và số liệu khớp thật.
+    const live = (n: string) => { if (this.modalName === n) this.reopenPanel(n); };
+    bus.on('ui', (what?: string) => { if (what === 'stall' || what === 'branch') { live('phone'); live('stall'); live('branch'); live('report'); } });
     bus.on('toast', (t) => this.toast(t)); bus.on('cash', () => { E.money.classList.remove('bump'); void E.money.offsetWidth; E.money.classList.add('bump'); });
     ctx.input.onStick = (on, ox, oy, dx, dy) => { const s = E.stick; s.classList.toggle('hide', !on); if (on) { s.style.left = ox + 'px'; s.style.top = oy + 'px'; (s.firstElementChild as HTMLElement).style.transform = `translate(${dx}px,${dy}px)`; } };
     ctx.input.onKey = (k) => {
@@ -139,6 +150,15 @@ export class UI {
         if (k === ' ' || k === 'e' || k === 'enter') this.onCookBtn?.('b0', true);
         else if (k >= '1' && k <= '9') this.onCookBtn?.('b' + (+k - 1), true);
         else if (k === 'escape') ctx.anim.stop();
+        return;
+      }
+      // Đang mở điện thoại: phím cứng của máy dùng luôn bàn phím (▲▼ chọn, Enter mở, Esc lùi).
+      if (this.modalName === 'phone' && ['arrowup', 'arrowdown', 'w', 's', 'enter', 'escape', 'e'].includes(k)) {
+        const P = PUI.phoneView();
+        if (k === 'escape') { if (P.app === 'home') this.closePanel(); else { PUI.phoneKey('home'); this.reopenPanel('phone'); } }
+        else if (k === 'arrowup' || k === 'w') { PUI.phoneKey('up'); this.reopenPanel('phone'); }
+        else if (k === 'arrowdown' || k === 's') { PUI.phoneKey('down'); this.reopenPanel('phone'); }
+        else { PUI.phoneKey('ok'); this.reopenPanel('phone'); }
         return;
       }
       if (k === 'e' || k === 'enter') ctx.interact.trigger();
@@ -216,11 +236,17 @@ export class UI {
     d.opts.forEach((o, i) => { const b = el('button', 'btn' + (o.off ? ' off' : '') + (i === 0 && d.opts.length > 1 && !o.off ? ' yellow' : ''), `<span>${esc(o.t)}</span>` + (o.sub ? `<small>${esc(o.sub)}</small>` : ''), box); b.onclick = () => { ctx.sound.play('ui'); this.closeDialog(); o.fn?.(); }; });
     this.focus(null);
   }
+  /** Hộp thoại có đang mở không (dùng cho hệ thống tự nhắc việc, đừng mở chồng lên). */
+  isDialogOpen() { return this.dlgOpen; }
   closeDialog() { if (!this.dlgOpen) return; this.dlgOpen = false; this.E.dlg.classList.add('hide'); if (ctx.mode === 'panel' && !this.modalName) ctx.mode = 'play'; }
   // ───────── bảng lớn ─────────
   /** Tham số phụ của bảng đang mở (ví dụ bảng 'errand' nhớ người được chọn, món đang chọn). */
   modalArg: any = null;
-  panel(name: string, arg?: any) { if (ctx.mode !== 'play' && ctx.mode !== 'panel') return; this.modalArg = arg ?? null; if (ctx.anim?.active) ctx.anim.stop(); this.closeDialog(); this.modalName = name; ctx.mode = 'panel'; ctx.input.reset(); this.E.modal.classList.remove('hide'); openPanel(this, name); }
+  panel(name: string, arg?: any) {
+    if (ctx.mode !== 'play' && ctx.mode !== 'panel') return;
+    // Mở máy mới thật sự (không phải vẽ lại) thì mới đưa điện thoại về màn hình chính
+    if (name === 'phone' && this.modalName !== 'phone') PUI.resetPhoneView();
+    this.modalArg = arg ?? null; if (ctx.anim?.active) ctx.anim.stop(); this.closeDialog(); this.modalName = name; ctx.mode = 'panel'; ctx.input.reset(); this.E.modal.classList.remove('hide'); openPanel(this, name); }
   /** Vẽ lại bảng đang mở với tham số mới (giữ nguyên tên bảng). */
   reopenPanel(name: string, arg?: any) { if (this.modalName !== name) return this.panel(name, arg); this.modalArg = arg ?? null; openPanel(this, name); }
   closePanel() { if (!this.modalName) return; this.modalName = ''; this.modalArg = null; this.E.modal.classList.add('hide'); this.E.modal.innerHTML = ''; if (ctx.mode === 'panel' && !this.dlgOpen) ctx.mode = 'play'; ctx.stall.refresh(); }
@@ -297,8 +323,14 @@ export class UI {
     E.way.classList.toggle('hide', !way); E.way.classList.toggle('giao', !!way && giaoHang);
     if (way) { const dx = way.x - p.x, dz = way.z - p.z, ang = Math.atan2(dx, dz) - p.yaw; E.way.innerHTML = `<svg class="ic" viewBox="0 0 24 24" style="transform:rotate(${(-ang * 180 / Math.PI).toFixed(0)}deg)">${IC.arrow}</svg>${giaoHang ? ic('box') : ''}${esc(way.name)} · ${Math.round(Math.hypot(dx, dz))} m`; }
     // Quầy đã dựng ở chỗ (kể cả đang tạm đóng) mà món đang bán sắp hết nguyên liệu → nhắc trên HUD.
-    const lowN = ctx.g.stall.where === 'placed' && ctx.g.stall.tier > 0 ? lowStockCount(ctx.g) : 0;
-    const evs = activeEvents(g); E.events.innerHTML = (lowN ? `<span class="chip danger" id="lowchip" style="cursor:pointer">${ic('box')}Sắp hết đồ ${lowN} món · xem báo cáo</span>` : '') + evs.map((e) => `<span class="chip${e.danger ? ' danger' : ''}">${ic(e.icon)}${esc(e.name)}</span>`).join('') + (g.flags.sick ? `<span class="chip danger">${ic('heart')}Bị cảm</span>` : '') + (g.weather.wet > 55 ? `<span class="chip">${ic('drop')}Ướt sũng</span>` : '') + (g.weather.flood > 0.35 ? `<span class="chip">${ic('drop')}Ngập khu trũng</span>` : '');
+    const onSpot = ctx.g.stall.where === 'placed' && ctx.g.stall.tier > 0;
+    const lowN = onSpot ? lowStockCount(ctx.g) : 0;
+    // Nói thẳng thiếu nguyên liệu gì (tên cụ thể) thay vì chỉ "sắp hết đồ N món" — người chơi không đoán được.
+    const shortg = onSpot ? shortageLine(ctx.g, 2) : '';
+    const needPrep = onSpot ? needsPrepCount(ctx.g) : 0;
+    const chipText = shortg ? `Thiếu ${esc(shortg)}` : needPrep ? `${needPrep} món cần sơ chế trước` : `Sắp hết đồ ${lowN} món`;
+    const lowchip = lowN ? `<span class="chip danger" id="lowchip" ${lowchipTip(ctx.g)}>${ic('box')}${chipText} · xem chi tiết</span>` : '';
+    const evs = activeEvents(g); E.events.innerHTML = lowchip + evs.map((e) => `<span class="chip${e.danger ? ' danger' : ''}">${ic(e.icon)}${esc(e.name)}</span>`).join('') + (g.flags.sick ? `<span class="chip danger">${ic('heart')}Bị cảm</span>` : '') + (g.weather.wet > 55 ? `<span class="chip">${ic('drop')}Ướt sũng</span>` : '') + (g.weather.flood > 0.35 ? `<span class="chip">${ic('drop')}Ngập khu trũng</span>` : '');
     const c = ctx.acts.cart; E.cart.classList.toggle('hide', !c); if (c) E.cart.innerHTML = `${ic('bag')}Giỏ: ${c.lines.map((l) => `${l.n} ${INGS[l.id].name.toLowerCase()}`).join(', ')} — <b>${money(ctx.acts.cartTotal())}</b> · đưa ${hasMet(g, c.shop) ? SHOPS[c.shop].vendor : fixedLabel(g, c.shop).toLowerCase()} tính tiền`;
     const s = g.stall; E.stallchip.classList.toggle('hide', s.tier === 0); if (s.tier) E.stallchip.innerHTML = `${ic('shop')}${tier(g).name}: ${stallHint(g, ctx.stall.stowed)}` + (s.open ? ` · ${ctx.stall.customers.length} khách · hôm nay ${money(g.led.revenue + g.led.tips)}` : '');
     // Thanh sức bền chỉ hiện khi đang hụt so với trần hiện tại (đang chạy hoặc đang hồi), không hiện suốt chỉ vì đói/khát làm trần tụt xuống.

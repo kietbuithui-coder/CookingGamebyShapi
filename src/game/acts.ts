@@ -63,6 +63,8 @@ const HOME_TIP: Record<string, string> = {
 };
 export class Acts {
   cart: { shop: string; lines: CartLine[]; disc: number; haggled: boolean } | null = null;
+  /** Đã nói chuyện ở ngõ “nhận thưởng” chưa — mỗi lần dính lừa chỉ hỏi một lần. */
+  private scamTalked = false;
   job: { kind: 'dock'; carrying: boolean } | { kind: 'dishes' } | { kind: 'delivery'; x: number; z: number; name: string; pay: number; until: number } | null = null;
   way: Way | null = null; beacon: THREE.Mesh; ring: THREE.Mesh; /** người đứng chờ nhận hàng ở điểm giao */ private receiver: Npc | null = null; litterMesh: THREE.Mesh | null = null; private glint: THREE.Mesh | null = null; litter: { i: number; x: number; z: number; id: string }[] = []; private litterKey = '';
   private sleepUntil = 0; private sleepQ = 1; private sleepWhere = ''; private qT = 1; sheltered = false; working = 0;
@@ -887,6 +889,49 @@ export class Acts {
     if (r.ok) { R.advance(g, 5, this.act()); sfx('ok'); }
     return r.ok;
   }
+  /** Gọi 1080: nghe dự báo thời tiết ngày mai. Tốn 2.000₫ cước và một phút. */
+  phoneWeather(): boolean {
+    const g = this.g, r = PH.weatherForecast(g);
+    toast(r.line, r.ok ? 'info' : 'warn', 'sun', true);
+    if (r.ok) { R.advance(g, 1, this.act()); sfx('ok'); bus.emit('save', 'goi 1080'); }
+    return r.ok;
+  }
+  /** Gọi 1900 1234: “trúng thưởng” — luôn là lừa, và chỉ lừa được một lần. */
+  phoneScam(): boolean {
+    const g = this.g, r = PH.callScam(g);
+    if (r.bait) {
+      this.way = { x: r.bait.x, z: r.bait.z, name: r.bait.place };
+      toast(r.line, 'good', 'gift', true);
+      toast('Đi tới điểm hẹn (mũi tên vàng trên màn hình) để nhận thưởng — nhớ kỹ chỉ có một lần.', 'info', 'way', true);
+      R.advance(g, 3, this.act()); sfx('order'); bus.emit('save', 'goi 1900');
+      return true;
+    }
+    toast(r.line, 'info', 'phone');
+    if (r.fee > 0) R.advance(g, 3, this.act());
+    return r.fee > 0;
+  }
+  /** Đang đứng trong ngõ hẹn nhận thưởng hay không (dùng để chỉ hiện một cơ hội đúng một lần). */
+  scamHere(): boolean { const t = PH.scamTrip(this.g); return !!t && dist2(t.x, t.z, ctx.player.x, ctx.player.z) < 7 * 7; }
+  /** Vào ngõ hẹn nhận thưởng: hoá ra chỉ có tường và cái thùng — người chơi có MỘT cơ hội quay về. */
+  scamBust(): void {
+    const g = this.g;
+    if (!PH.scamTrip(g) || this.scamTalked) return;
+    this.scamTalked = true;
+    this.way = null;
+    const inCost = PH.scamLoss(g.cash);
+    this.D(PH.SCAM_SPOT.place, undefined,
+      'Ngõ cụt ba bề là tường, cửa cuốn đóng kín, chẳng có ai đợi. Trên tường dán tờ giấy: “1900 1234 là số lừa đảo — đừng bỏ tiền vào thùng cho ai”.',
+      [
+        { t: 'Thôi, quay về — may mà chưa bỏ tiền vào thùng', sub: 'Tỉnh người ra, mất buổi đi lại', fn: () => {
+          const r = PH.scamArrive(g, 'back');
+          toast(r.line, 'info', 'way', true); R.advance(g, r.min, this.act()); sfx('ok'); bus.emit('save', 'biet bi lua');
+        } },
+        { t: `Vẫn tin — bỏ “lệ phí” ${money(inCost)} vào thùng`, sub: inCost >= g.cash ? 'Bỏ hết tiền đang có vào thùng' : 'Số tiền này sẽ mất thật', off: g.cash <= 0, fn: () => {
+          const r = PH.scamArrive(g, 'in');
+          toast(r.line, 'bad', 'angry', true); R.advance(g, r.min, this.act()); sfx('nope'); bus.emit('save', 'bi lua that');
+        } },
+      ]);
+  }
   /** Trả tiền sạc nhờ ở tạp hoá / siêu thị. */
   phoneCharge(shopId: string) {
     const g = this.g;
@@ -1155,6 +1200,10 @@ export class Acts {
     const j = this.job;
     if (j?.kind === 'dock') { const h = hourOf(g); if (h > 10.2 && !j.carrying) { this.job = null; this.way = null; toast('Hết giờ bốc hàng buổi sáng.', 'info'); } }
     this.deliveryCheck();
+    // Vẫn còn trên đường đi “nhận thưởng” (kể cả sau khi mở lại bản lưu) thì dựng lại mũi tên chỉ đường.
+    const trip = PH.scamTrip(g);
+    if (trip && !this.way) this.way = { x: trip.x, z: trip.z, name: trip.place };
+    if (!trip) { this.scamTalked = false; if (this.way?.name === PH.SCAM_SPOT.place) this.way = null; }
     const w = this.way, on = !!w && ctx.mode === 'play';
     this.beacon.visible = on; this.ring.visible = on;
     if (w) {
@@ -1163,6 +1212,7 @@ export class Acts {
       (this.ring.material as THREE.MeshBasicMaterial).opacity = 0.4 + Math.sin(ctx.time * 2.2) * 0.15;
       if (!j && dist2(w.x, w.z, p.x, p.z) < 9) this.way = null;
     }
+    if (!ctx.ui.isDialogOpen() && !ctx.ui.modalName && this.scamHere()) this.scamBust();
     // mục tiêu hướng dẫn
     this.qT -= dt; if (this.qT <= 0) { this.qT = 1; const q = g.quest, s = g.stall, sellable = RECIPE_LIST.filter((r) => R.canSell(g, r));
       const ok = [R.has(g, 'ganh') || s.tier > 0, sellable.length > 0, sellable.some((r) => (R.hasPrep(r) ? R.prepPossible(g, r) > 0 || s.preps.some((x) => x.rid === r.id) : R.finishPossible(g, r) > 0)) || s.ready.length > 0, s.where === 'placed',

@@ -19,7 +19,7 @@
 | Quầy hàng & nấu ở world | `src/game/stall.ts` (1.403), `src/cook/*` |
 | Hội thoại / menu NPC | `src/game/acts.ts` (1.124) |
 | HUD / bảng | `src/ui/ui.ts` (308), `src/ui/panels.ts` (297), `src/ui/style.css` |
-| Test | `tests/*.test.ts` — **28 tệp, 388 bài**, `environment: 'node'` |
+| Test | `tests/*.test.ts` — **31 tệp, 415 bài**, `environment: 'node'` |
 | Thử giao diện thật | `tools/probe/` (34 kịch bản `.mjs` trong `steps/`, Chrome headless) |
 | Bản phát hành | `docs/` — **sinh ra bởi `build:pages`, không sửa tay** |
 
@@ -131,7 +131,7 @@ xác định luật + dữ liệu (sim/data)
 
 ### 4.3 Sau khi sửa
 ```bash
-npm test            # 388 bài hiện tại; đếm lại nếu bạn thêm bài
+npm test            # 415 bài hiện tại; đếm lại nếu bạn thêm bài
 npm run typecheck
 npm run build
 git diff --check    # lỗi khoảng trắng / xung đột sót
@@ -240,16 +240,20 @@ Quy ước cập nhật: `README` = cái người chơi thấy & lệnh chạy *
 Trước đây tài liệu lệch mã khá nhiều; nay đã sửa xong cả 8 chỗ, các con số dưới là **đã khớp** với mã:
 
 1. `README.md` – **7/7 bậc** kinh doanh chơi được (bậc 6 `nhahang`, bậc 7 `chuoi`) + giao người làm đi chợ.
-2. `README.md` – số bài kiểm thử luôn theo mã: nay **388 bài / 28 tệp** (kèm 17 bài `tests/nhahang.test.ts`, 25 bài `tests/chuoi.test.ts`, 17 bài `tests/dicho.test.ts`, 12 bài `tests/baocao.test.ts`, 11 bài `tests/vua2.test.ts`).
+2. `README.md` – số bài kiểm thử luôn theo mã: nay **415 bài / 31 tệp** (kèm 17 bài `tests/nhahang.test.ts`, 25 bài `tests/chuoi.test.ts`, 17 bài `tests/dicho.test.ts`, 17 bài `tests/baocao.test.ts`, 11 bài `tests/vua2.test.ts`, 5 bài `tests/phone3.test.ts`, 8 bài `tests/shopapp.test.ts`, 8 bài `tests/phone4.test.ts`, 15 bài `tests/look.test.ts`).
 3. `README.md` – **43** nhân vật cố định (trước ghi 34 và 38 ở hai chỗ).
 4. `README.md` – số món đồ nghề / chỗ bán luôn theo mã: nay **37** món, **6** chỗ bán (4 chỗ thường + 2 mặt bằng) và **3** chỗ mở chi nhánh.
-5. `TODO.md` – đầu tệp cập nhật theo mã: 7/7 bậc · 75 nguyên liệu · 12 nơi bán · 37 đồ nghề · 44 nhân vật · 388/28; thêm mục
+5. `TODO.md` – đầu tệp cập nhật theo mã: 7/7 bậc · 75 nguyên liệu · 12 nơi bán · 37 đồ nghề · 44 nhân vật · 415/31; thêm mục
    "bậc 6 chưa có probe giao diện"; tách khỏi mâu thuẫn "bậc 6 đã xong" ở bảng bên dưới.
-6. `DESIGN.md` – 388 bài; `SAVE_VERSION = 15` kèm nhánh v12–v15; 144 lô đất / 268 nút đường đi; 6 chỗ bán;
+6. `DESIGN.md` – 415 bài; `SAVE_VERSION = 15` kèm nhánh v12–v15; 144 lô đất / 268 nút đường đi; 6 chỗ bán;
    `FUTURE_TIERS` rỗng.
 7. `DESIGN.md` – thêm **mục 4.26** cho bậc 6 (nhà hàng bình dân, đặt bàn trước, phụ bếp, khách đoàn) + dòng mô tả
    `tests/nhahang.test.ts` trong mục 7.
 8. `PLAN.md` – thêm **lượt 17** (bậc 6) và **lượt 18** (bậc 7), sửa ghi chú "278 bài / 18 tệp" thành số hiện tại.
+10. `PLAN.md` / `DESIGN.md` §4.29 – **lượt 26**: cảnh báo thiếu nguyên liệu nói rõ thiếu gì (`stockShortages`,
+   `shortageLine`, `needsPrepCount`), nút Sơ chế khi thiếu đồ vẫn bấm được (`.need`), probe `steps/shortage.mjs`.
+9. `PLAN.md` / `DESIGN.md` §4.32 – **lượt 24**: công tắc Mở/Đóng bán phải khớp trạng thái thật (ân hạn 20 giây sau khi mở,
+   có người phụ việc thì quầy không tự ngưng, `setShopOpen` trả lý do, bảng tự vẽ lại); probe mới `steps/switchfar.mjs`.
 
 **Quy tắc menu ẩn (`src/game/devPoints.ts`):** mỗi lượt làm xong thì **thay** nhóm “Mới nhất — …” bằng mục test của
 tính năng vừa làm (3–9 mục: dựng sẵn, tới chỗ, mở bảng, tua thời gian, dọn), **xoá** mục test của lượt cũ, và chỉ giữ

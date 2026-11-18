@@ -41,43 +41,8 @@ export function buildSide(b: Builder) {
     b.anchor('tra_ban', x, 0.55, z, -Math.PI / 2);
   }
 
-  // ───────── 1c. Sạp quần áo của Cô Ngọc — trong chợ, dãy phía nam ─────────
-  b.chunk('b01', -59, 0).frame({ tx: 0, tz: 0, yaw: 0 });
-  {
-    const x = -45.5, z = -8.2, d = D(), L2 = L();
-    // giá treo quần áo: hai cột sắt + thanh ngang 2 m, áo treo bằng móc
-    for (const sx of [-1.0, 1.0]) { d.cyl(x + sx, 0.86, z, 0.03, 1.5, 0x9aa0a6, 8); d.box(x + sx, 0.08, z, 0.32, 0.06, 0.32, 0x6a6e74); }
-    d.rod(x, 1.6, z, 0.025, 2.0, 0xb9c0c6, 0, Math.PI / 2, 6);
-    const shirtCols = [0xc8442f, 0xd8b13a, 0x2f8fd5, 0x3fae5a, 0xe9e5da, 0xd8799c, 0x7a5ec4, 0x3a3f4a];
-    for (let i = 0; i < 7; i++) {
-      const sx = -0.75 + i * 0.25, col = shirtCols[i];
-      d.cyl(x + sx, 1.55, z, 0.006, 0.1, 0xc9ced4, 4, 0.06);                      // móc áo
-      d.box(x + sx, 1.34, z, 0.17, 0.3, 0.04, col, col, 0.02, true);              // thân áo
-      d.box(x + sx, 1.47, z, 0.24, 0.05, 0.05, col);                              // vai + tay áo
-      for (const sx2 of [-0.095, 0.095]) d.box(x + sx + sx2, 1.4, z, 0.04, 0.12, 0.032, shadeOf(col, 0.9));
-      d.box(x + sx, 1.17, z, 0.15, 0.025, 0.035, shadeOf(col));                   // lai áo
-      d.box(x + sx, 1.48, z + 0.024, 0.05, 0.028, 0.02, 0xe9e5da);                // cổ áo
-    }
-    // bàn gấp đồ + chồng áo + giá kính
-    d.box(x + 1.62, 0.5, z - 0.2, 0.8, 0.05, 0.56, 0xd9dee3, 0xeef1f4, 0.02, true);
-    for (const sx of [-0.32, 0.32]) for (const sz of [-0.2, 0.18]) d.box(x + 1.62 + sx, 0.25, z - 0.2 + sz, 0.04, 0.48, 0.04, 0x9aa0a6);
-    for (let i = 0; i < 4; i++) d.box(x + 1.56 + (i % 2) * 0.18, 0.55 + Math.floor(i / 2) * 0.055, z - 0.28 + (i % 2) * 0.09, 0.26, 0.05, 0.2, shirtCols[(i + 3) % shirtCols.length]);
-    d.box(x + 1.36, 0.58, z + 0.05, 0.3, 0.03, 0.2, 0x2a2e3a);                    // khay kính
-    for (let i = 0; i < 2; i++) for (const sx of [-0.05, 0.05]) d.box(x + 1.36 + i * 0.12 + sx, 0.605, z + 0.05, 0.07, 0.04, 0.02, i ? 0x1b1c1f : 0x6a4a32);
-    // khay giày dưới đất: ba đôi
-    d.box(x + 1.62, 0.06, z + 0.62, 0.86, 0.08, 0.44, 0xd9dee3, 0xeef1f4, 0.02, true);
-    const shoeCols = [0x2a2e3a, 0xe9e5da, 0xc8442f];
-    for (let i = 0; i < 3; i++) for (const sx of [-0.07, 0.08]) {
-      d.box(x + 1.4 + i * 0.22 + sx, 0.13, z + 0.62, 0.11, 0.05, 0.26, shoeCols[i]);
-      d.box(x + 1.4 + i * 0.22 + sx, 0.165, z + 0.56, 0.1, 0.06, 0.16, shadeOf(shoeCols[i]));
-    }
-    b.signAt(x - 0.55, 1.82, z + 0.16, 0.86, 0.26, 'QUẦN ÁO 25.000₫', { bg: '#7a0f2e', fg: '#ffe9c9', border: '#f5c531' }, 0, 1, 44, true);
-    for (const sx of [-0.9, -0.2]) d.rod(x + sx, 2.06, z + 0.16, 0.008, 0.24, 0x9aa0a6, 0, 0, 4);
-    b.collide(x - 1.2, z - 0.22, x + 1.2, z + 0.22);
-    b.collide(x + 1.24, z - 0.52, x + 2.16, z + 0.12);
-    L2.quad(x - 1.2, 0.125, z + 1.2, x - 0.9, 0.125, z + 0.4, x + 1.2, 0.125, z + 0.4, x + 1.1, 0.125, z + 1.2, 0xb99a6a);
-    b.anchor('v_thoi_trang', x, 0.13, z - 1.05, 0);   // cô đứng phía trong sạp, sau giá áo và quay ra lối khách
-  }
+  // (Sạp quần áo của Cô Ngọc trước đây dựng giữa chợ — nay dọn vào căn nhà mặt tiền Phố Trung Tâm,
+  //  xem khối 'thoitrang' trong places.ts.)
 
   // ───────── 2. Góc nhảy đường phố dưới gầm cầu vượt (chỗ Bin tập bài) ─────────
   // Tường vẽ nằm ngay mép gầm cầu, mặt có hình hướng ra phố (phía −z); Bin nhảy trước tường, quay mặt ra đường.

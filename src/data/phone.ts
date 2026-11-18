@@ -34,3 +34,21 @@ export const PHONES: Record<string, PhoneDef> = Object.fromEntries(PHONE_LIST.ma
 export const FEAT_LABEL: Record<PhoneFeat, string> = {
   ledger: 'Sổ thu chi', contacts: 'Danh bạ', sms: 'Tin nhắn', radio: 'Radio FM', music: 'Nghe nhạc', wap: 'Lướt web',
 };
+
+/** Danh mục app trên máy — dùng cho cả ba giao diện (cục gạch, nắp gập, cảm ứng). */
+export type AppId = PhoneFeat | 'battery' | 'shop';
+export interface AppDef { id: AppId; name: string; short: string; }
+export const PHONE_APPS: AppDef[] = [
+  { id: 'ledger', name: 'Sổ thu chi', short: 'Sổ sách' },
+  { id: 'contacts', name: 'Danh bạ', short: 'Danh bạ' },
+  { id: 'sms', name: 'Tin nhắn', short: 'Tin nhắn' },
+  { id: 'radio', name: 'Radio FM', short: 'Radio' },
+  { id: 'music', name: 'Nghe nhạc', short: 'Nhạc' },
+  { id: 'wap', name: 'Lướt web', short: 'WAP' },
+  { id: 'battery', name: 'Pin & sạc', short: 'Pin' },
+  { id: 'shop', name: 'Quản lý cửa hàng', short: 'Cửa hàng' },
+];
+/** Máy này mở được app nào: theo `feats` của máy, riêng mục Pin thì máy nào cũng có. */
+/** App "Quản lý cửa hàng" mở được trên mọi máy (điện thoại nào cũng xem được quầy của mình). */
+export const ALWAYS_APPS: AppId[] = ['battery', 'shop'];
+export const appsOf = (m: PhoneDef): AppDef[] => PHONE_APPS.filter((a) => ALWAYS_APPS.includes(a.id) || m.feats.includes(a.id as PhoneFeat));

@@ -284,6 +284,34 @@ function market(b: Builder, R: RNG) {
   for (let i = 0; i < 4; i++) b.bike(-37.6, 15 + i * 1.3, R.range(-0.2, 0.2), R.pick(BIKE));
   for (const [x, z] of [[-78, 10], [-78, 18], [-42, -19], [-50, 19]] as const) b.world.litter.push([x, z]);
   b.bin(-39, 5.4); b.bin(-74.5, 17);
+  // ── ngõ cụt sau dãy sạp phía nam chợ: chỗ hẹn "nhận thưởng" của số 1900 1234 ──
+  // Ba bề là tường gạch, cuối ngõ có cửa cuốn đóng kín và một cái thùng gỗ — nơi người ta bảo bỏ "lệ phí" vào.
+  // Đi bộ từ cổng chợ vào đây mất một lúc, tới nơi thì chẳng có văn phòng nào.
+  {
+    const nx0 = -79.2, nx1 = -71.2, nzIn = 21.4, nzOut = 15.2, wc = 0xb8a99a, wtop = 0x8f8578;
+    b.wall(nx0, nzIn, nx0, nzOut, 2.6, wc, 0.3);                       // tường phía tây
+    b.wall(nx1, nzIn, nx1, nzOut, 2.6, wc, 0.3);                       // tường phía đông
+    b.wall(nx0, nzIn, nx1, nzIn, 2.9, wtop, 0.34);                     // tường cuối ngõ (mặt tiền cửa cuốn)
+    for (const [ax, az] of [[nx0, nzIn], [nx1, nzIn], [nx0, nzOut], [nx1, nzOut]] as const) L.cyl(ax, 0.12, az, 0.17, 2.7, 0x9a9188, 6);   // cột gạch ở góc
+    // cửa cuốn đóng kín trên tường cuối ngõ (mặt hướng về phía người đi vào, tức −z)
+    L.box((nx0 + nx1) / 2, 0.12, nzIn - 0.2, 6.6, 2.3, 0.06, 0x9aa4ad, 0x9aa4ad, 0.12, true);
+    for (let y = 0.32; y < 2.4; y += 0.22) D.box((nx0 + nx1) / 2, y, nzIn - 0.24, 6.5, 0.03, 0.012, 0x7d8790);
+    L.box((nx0 + nx1) / 2, 2.42, nzIn - 0.17, 6.9, 0.22, 0.24, 0x6a7078, 0x555a60, 0.04, true);   // hộp cuốn
+    b.signAt((nx0 + nx1) / 2, 2.18, nzIn - 0.25, 2.9, 0.5, 'CHỜ THỦ TỤC', { bg: '#ffffff', fg: '#7a0f1e', border: '#7a0f1e', sub: 'Văn phòng tạm đóng · Liên hệ 1900 1234', subFg: '#55585e' }, 0, -1, 56);
+    // thùng gỗ nhỏ để bỏ tiền "lệ phí", có khe trên nắp
+    const bx = (nx0 + nx1) / 2 + 2.1, bz = nzIn - 1.5;
+    D.box(bx, 0.13, bz, 0.62, 0.66, 0.5, 0x8a6a4a, 0xb99a72, 0.1, true);
+    D.box(bx, 0.82, bz, 0.68, 0.06, 0.56, 0x6f5334, 0x8a6a4a, 0.06, true);
+    D.box(bx, 0.855, bz, 0.3, 0.012, 0.06, 0x1b1c1f);
+    b.signAt(bx, 1.35, bz - 0.44, 0.62, 0.2, 'LỆ PHÍ 5.000₫', { bg: '#fff7d6', fg: '#7a0f1e', border: '#c8102e' }, 0, -1, 36);
+    L.cyl(bx, 0.12, bz, 0.05, 1.14, 0x55585e, 5); L.box(bx, 1.3, bz - 0.02, 0.5, 0.06, 0.04, 0x55585e);
+    b.collide(bx - 0.34, bz - 0.28, bx + 0.34, bz + 0.28);
+    // vài mẩu giấy dán tường + thùng rác cho ra dáng ngõ chợ
+    for (let i = 0; i < 4; i++) D.quad(bx - 3.4 + i * 0.42, 1.1 + (i % 2) * 0.3, nzIn - 0.245, bx - 3.4 + i * 0.42, 1.28 + (i % 2) * 0.3, nzIn - 0.245, bx - 3.22 + i * 0.42, 1.26 + (i % 2) * 0.3, nzIn - 0.245, bx - 3.22 + i * 0.42, 1.08 + (i % 2) * 0.3, nzIn - 0.245, i % 2 ? 0xf7e2e2 : 0xf7f4ea);
+    b.bin(nx0 - 0.9, nzOut - 0.4);
+    b.world.litter.push([nx0 + 1.2, nzOut - 1.1], [nx1 - 0.9, nzOut - 2.2]);
+    b.anchor('scam_wall', (nx0 + nx1) / 2 - 1.2, 0.13, nzIn + 1.5, Math.PI);
+  }
   // chỗ bán "Cổng Chợ"
   const sp = SPOTS.find((s) => s.id === 'cho')!; b.frame({ tx: sp.x, tz: sp.z, yaw: sp.yaw + Math.PI }); spotMark(b, 0, 0);
   b.signAt(-2.2, 1.5, 0.9, 1.5, 0.5, 'CHỖ BÁN HÀNG', { bg: '#ffd400', fg: '#1b1c1f', border: '#1b1c1f', sub: 'Phí chỗ 30.000₫/ngày', subFg: '#c8102e' }, 0, -1, 56, true); L.box(-2.2, 0, 0.9, 0.06, 1.5, 0.06, 0x55585e);

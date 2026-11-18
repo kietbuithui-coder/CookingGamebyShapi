@@ -477,3 +477,178 @@ chủ nhà bước ra ngoài hiên → tua hết 16 giây thì `want 0`, cửa �
 và sửa chuyện chủ nhà hiện ra **xuyên tường**: `ringBell` nay lấy tâm ô cửa + pháp tuyến của cánh cửa (qua
 `Interact.bellDoor`) thay vì lấy neo chuông làm tâm, nên Cô Hạnh **đi ra qua đúng ô cửa**; thời gian chờ trước khi mở
 lời thoại tăng 0,62 → 1,62 giây cho cửa kịp xoay mở.
+
+---
+
+## Lượt 22 — Ba giao diện điện thoại ✅ đã xong
+
+Trước đây cả ba mẫu máy dùng chung một bảng tab. Nay **mỗi máy một giao diện thật** (`src/ui/phoneUI.ts`), mở lên là thấy
+đúng cái máy đó và bấm theo đúng kiểu máy đó:
+
+- **Cục gạch** (180.000₫): màn xanh xám chữ mono, danh sách dòng `▸`, phím cứng **▲ OK ▼**; chỉ có Sổ thu chi, Danh bạ, Tin nhắn, Pin.
+- **Nắp gập** (520.000₫): màn màu nhỏ xoay vòng 8 icon + ô giữa là app đang chọn, **TÁCH** để mở; thêm Radio FM, Nghe nhạc.
+- **Cảm ứng** (1.450.000₫): lưới icon 3 cột, **bấm thẳng** icon, nút **●** về màn hình chính; thêm Lướt web WAP.
+
+Bàn phím máy tính cũng dùng được như phím cứng (↑ ↓ chọn, Enter mở, Esc lùi một màn). Cột bên phải hiện pin, giờ máy,
+tiền mặt, tin chưa đọc. Sửa luôn lỗi bố cục gặp trong lúc làm: khung màn hình giờ bọc **mọi** màn, không chỉ màn hình
+chính (trước đó mở app thì chữ hoà vào nền giấy).
+
+**Kiểm thử:** `tests/phone3.test.ts` 5 bài → tổng **393 bài / 29 tệp**. Probe `tools/probe/steps/phone3.mjs` ở 390×844 mở
+lần lượt cả ba máy: cục gạch bấm ▼ + OK mở Danh bạ, nắp gập TÁCH mở Sổ thu chi, cảm ứng bấm icon mở Tin nhắn rồi Sổ thu
+chi; **console sạch**.
+
+---
+
+## Lượt 23 — App Quản lý cửa hàng trên điện thoại ✅ đã xong
+
+Thêm app **Cửa hàng** cho **cả ba mẫu máy** (kể cả cục gạch): mỗi điểm bán một dòng gồm trạng thái đang bán/tạm đóng, số
+phần đang bày, số món, món sắp hết, tiền thuê chỗ, doanh thu – số phần – số khách – khách mất của hôm nay, kèm **câu
+gợi ý** đúng việc cần làm. Có **nút Mở/Đóng bán ngay trên máy** (`setShopOpen`) và mục **Bán lỗ so với giá vốn**
+(`lossDishes`, so giá bán với `recipeCost`). Luật nằm ở `shopRows/setShopOpen/lossDishes` trong `src/sim/rules.ts`, UI
+chỉ vẽ — nên test được mà không cần DOM.
+
+**Kiểm thử:** `tests/shopapp.test.ts` 7 bài → tổng **400 bài / 30 tệp**. Probe `tools/probe/steps/shopapp.mjs` ở 390×844:
+máy cảm ứng có icon Cửa hàng, mở ra thấy quầy chính + chi nhánh, bấm Đóng thì `stall.open = false`, bật chi nhánh từ
+máy thì `branch.open = true`, đặt cơm sườn 2.000₫ thì hiện "lỗ 23.426₫/phần", máy cục gạch cũng có app; **console sạch**.
+Sửa thêm một lỗi nhỏ gặp trong lúc làm: `reopenPanel` từng đưa điện thoại về màn hình chính, giờ chỉ `panel()` mới reset.
+
+---
+
+## Lượt 24 — Công tắc Mở/Đóng bán "hơi có vấn đề" trên điện thoại ✅ đã xong
+
+Người chơi báo nút Mở/Đóng trong app Cửa hàng "hơi có vấn đề". Dựng lại đúng hoàn cảnh thì **quả thật có lỗi**, ba lỗi chồng nhau:
+
+1. **Bấm Mở ở xa quầy thì 2 giây sau quầy tự tắt.** `StallSys.update()` có luật "đi xa > 40 m mà không có khách thì tự ngưng" —
+   luật này ra đời từ trước khi có app, nên bật bán từ xa chỉ sống được ~2 giây rồi `close(true)`. Nút vì thế **tự nhảy về "Mở"**
+   mà không ai bấm. Nay: cho **20 giây ân hạn** mỗi lần quầy chuyển sang mở (đặt ở `update()` nên bật ở đâu cũng tính, kể cả
+   bấm ở quầy), và **nếu có người phụ việc/nhân viên (`g.help`, `g.help2`) thì quầy cứ bán** — chỉ nhắc nhẹ mỗi 45 giây.
+   Câu toast mới nói rõ ai vắng mặt: "Bạn đi xa quá **mà không có ai bán** nên quầy tạm ngưng bán."
+2. **Bấm không ăn mà không nói vì sao.** `setShopOpen` cũ chỉ trả `true/false`. Nay trả `'ok' | lý do`, thêm `shopToggleWhy()`
+   (chưa đặt quầy, chưa bật món, quầy hư nặng, chưa có người trông coi chi nhánh) và **giới hạn giờ bán `SHOP_HOURS = [6, 22.5]`**;
+   app hiện toast đúng lý do thay vì im lặng.
+3. **Bấm xong bảng không vẽ lại.** Handler `acts.a` trong `panels.ts` chỉ `render()` khi `ui.modalName === name`, còn nút trong app
+   lại đi qua `phoneToggleShop` → không có `data-i` và không ai vẽ lại; khi luật tự đổi trạng thái (quầy tự ngưng, khách vào) bảng
+   cũng đứng im. Nay thêm `data-i="0"` cho nút, và `ui.ts` nghe `bus.on('ui', 'stall'|'branch')` → `reopenPanel` bảng đang mở
+   (`phone`, `stall`, `branch`, `report`) nên **nhãn nút luôn khớp trạng thái thật**.
+
+Thêm cảnh báo ngay trong app: `shopStaffWarn(g)` — "Quầy đang mở nhưng chỉ mình bạn bán — đi xa quá 40 m… khoảng 20 giây sau quầy
+tự ngưng. Thuê người phụ quầy để bán từ xa." (mất cảnh báo khi đã có người phụ).
+
+**Kiểm thử:** `tests/shopapp.test.ts` 8 bài (thêm bài `shopStaffWarn`) → tổng **401 bài / 30 tệp**. Probe mới
+`tools/probe/steps/switchfar.mjs` (390×844) dựng đúng ca lỗi: đứng cách quầy 85 m, bấm Mở → sau 3 s `open: true, btn: "Đóng"`;
+sau ~25 giây mô phỏng → `open: false, btn: "Mở"` (tự ngưng đúng luật, có toast); gắn người phụ việc rồi mở lại → sau 25 giây
+**vẫn bán**, chỉ có câu nhắc; console sạch. Probe `steps/shopapp.mjs` vẫn xanh toàn bộ.
+
+---
+
+## Lượt 25 — Soát giao diện trên điện thoại Android ✅ đã xong
+
+Người chơi xin "kiểm thử mọi giao diện trên Android xem có bị tràn / chật / khó chịu / đè gì không". Dựng probe đo đạc
+`tools/probe/steps/android.mjs`: chạy qua **15 màn** (HUD, Cài đặt, Túi, Sổ tay, Quầy, Báo cáo, Chi nhánh, Bản đồ, Sai vặt,
+ba mẫu điện thoại + app Cửa hàng, bảng sửa vị trí nút) ở **4 khổ 320×640 · 360×640 · 412×915 · 640×360** (máy cảm ứng thật,
+`pointer: coarse`), đo cho từng phần tử: lọt khung, nút chồng nhau (cắt theo tổ tiên `overflow` nên không báo nhầm phần tử
+đang cuộn), vùng chạm < 40×30, chữ bị cắt, phần tử dính sát mép trong vùng cử chỉ.
+
+**Tìm ra và sửa 6 lỗi thật** (đều ở `src/ui/style.css`):
+
+1. **Nút đóng bảng `.x` bị bóp còn 26×35** — tiêu đề + hàng tab dài ép nó lại. Nay `.x` có `flex: none` + `min-width`.
+2. **Tiêu đề bảng bị bóp thành cột chữ** ("Chuỗi / cửa / hàng" mỗi chữ một dòng) trên máy hẹp. Nay trên máy cảm ứng
+   `header` cho xuống hàng: tiêu đề + nút đóng một hàng, các tab xuống hàng riêng, không tab nào bị giãn hết bề ngang.
+3. **Công tắc `.sw` bị cắt** (cần 35 px, khung chỉ 32 px, núm tràn ra ngoài) — thấy ở bảng Quầy. Nay rộng 3,3 em và núm
+   đặt theo `calc(100% - 1.25em)` nên không phụ thuộc cỡ chữ.
+4. **Chữ trong điện thoại quá nhỏ trên máy thật**: 8,2 px ở máy cảm ứng, 7,3 px ở nắp gập (chỉ đọc được khi soi). Nay trên
+   máy cảm ứng màn hình máy là `1.16em`, chữ nhỏ nhất **10,4 px**; ô icon và phím cứng cũng to hơn.
+5. **Màn hình máy phình vô hạn**: app Cửa hàng dài làm cả khung máy cao quá bảng, bị cắt mất nửa dưới (thấy rõ khi nằm ngang).
+   Nay `.phonebox .ph` có `min-height: 0` + `max-height` và **tự cuộn bên trong khung máy**; nằm ngang thì máy thu nhỏ
+   (13,5 em) để cả khung lọt trong bảng. Thêm `overflow-wrap` cho dòng dài và `nowrap` cho nhãn *đang bán / tạm đóng*.
+6. **Vùng chạm nhỏ**: nút HUD 26 px, phím cứng cao 16–20 px, tab cao 23 px, `.btn.small` cao 19–22 px. Nay trên máy cảm ứng:
+   `.ib` 2,9 em (≈38 px), `.btn.small` ≥ 32 px, `.tab` 30 px, phím cứng ≥ 32 px, nút thu nhỏ ô mục tiêu 30 px.
+
+Thêm `94dvh` cho bảng (thanh địa chỉ Chrome Android ăn mất đáy) và `#hud-tr` cho phép xuống hàng với `#money` `nowrap`
+(số tiền 4.936.000₫ từng thò ra ngoài mép phải ở 412 px).
+
+**Kết quả sau khi sửa** — probe in `manHinh: 15, coVanDe: [], vungChamNho: []` ở **cả 4 khổ**. Ảnh chụp để trong
+`anh_ket_qua/android/` (8 ảnh: ba mẫu máy, app Cửa hàng, Cài đặt, Quầy, sửa vị trí HUD, Bản đồ nằm ngang).
+Menu ẩn đổi sang `and_full` (dựng cảnh đầy đủ) + `and_phone3` (đổi ba mẫu máy), giữ nguyên nhóm tele nhanh.
+
+---
+
+## Lượt 26 — Cảnh báo "sắp hết đồ" nói rõ thiếu gì ✅ đã xong
+
+Người chơi phản ánh chip đỏ *"Sắp hết đồ 2 món · xem báo cáo"* hiện ra mà **không biết thiếu cái gì**, và bấm **Sơ chế** thì
+không có phản hồi gì (khi thiếu nguyên liệu). Kiểm tra thì đúng là ba lỗi chồng nhau:
+
+1. **Câu quá chung.** `lowStockCount` chỉ đếm **số món** nấu tiếp được ≤ 1 phần, không nói nguyên liệu nào. Nay có
+   `stockShortages(g)` (từng nguyên liệu: còn bao nhiêu, cần mua bao nhiêu, chợ nào bán, hết bao nhiêu tiền, chặn món nào),
+   `shortageLine(g)` cho chip HUD ("Thiếu dầu ăn, bột mì…"), và `needsPrepCount(g)` để ca "đủ đồ nhưng chưa sơ chế" báo
+   *"N món cần sơ chế trước"* thay vì đổ lỗi thiếu nguyên liệu.
+2. **Nút Sơ chế khoá im lặng.** Khi thiếu đồ nút có class `.off` → `pointer-events: none`, bấm không ăn, không nói vì sao.
+   Nay đổi thành class `.need`: vẫn bấm được, nhãn đổi thành **"Thiếu đồ — xem thiếu gì"**, bấm là hiện toast đúng nguyên
+   liệu còn thiếu và **bảng vẫn mở** (`acts.prep` chặn trước khi đóng bảng).
+3. **Ô thiếu đồ ngay trong bảng Quầy › Thực đơn**: khung đỏ *Thiếu nguyên liệu cho món đang bán*, mỗi dòng ghi
+   *còn X đơn vị · cần thêm Y đơn vị · bán ở chợ nào · bao nhiêu tiền · cho món nào* (tối đa 6 dòng, còn lại chỉ sang tab
+   Kho quầy). Số lượng đơn vị rời (chai, lon, quả, bó…) **làm tròn lên cả cái** — trước đó ra những con số vô nghĩa như
+   "cần thêm 0,06 chai dầu ăn".
+
+Sửa thêm hai lỗi bố cục gặp trong lúc kiểm: chip cảnh báo trên HUD **chen vào giữa hàng nút** (màn dọc) — nay nằm dưới hàng
+nút, và nhãn *"đã sơ chế 0 phần"* từng **rơi vào giữa tên món** — nay là chip riêng.
+
+**Kiểm thử:** `tests/baocao.test.ts` thêm 5 bài (17 bài tổng) → tổng **406 bài / 30 tệp**. Probe mới
+`tools/probe/steps/shortage.mjs` (390×844, dựng quầy bậc 7 bán 2 món với kho trống): chip HUD ra *"Thiếu dầu ăn, bột mì…
+· xem chi tiết"*, bảng Quầy có ô thiếu đồ 6 dòng đúng định dạng, nút Sơ chế đổi nhãn **"Thiếu đồ — xem thiếu gì"**, bấm
+thì toast *"Chưa sơ chế … được — thiếu …"* và bảng còn mở; mua đủ đồ thì cảnh báo biến mất (`shorts: 0`); console sạch.
+
+---
+
+## Lượt 27 — Hai tổng đài trong danh bạ: 1080 và 1900 1234 ✅ đã xong
+
+Người chơi xin thêm hai số điện thoại trong **Danh bạ**: một số gọi để nghe **dự báo thời tiết ngày mai**, một số gọi
+để **nhận thưởng nhưng bị lừa** — và chuyện lừa chỉ được xảy ra **một lần**.
+
+**1080 — Tổng đài dự báo thời tiết.** Có sẵn trong danh bạ từ đầu (đứng trên cả người quen), cước **2.000₫/lượt**,
+mỗi ngày gọi tối đa **3 lần**. Nội dung đọc thẳng từ `WEATHER[g.weather.next]` nên **luôn đúng thời tiết kế tiếp**
+(`g.weather.next` được `setWeather` gán sẵn, đổi sau mỗi lần trời trở): tên thời tiết, câu mô tả, kèm lời khuyên bán hàng
+(trời nóng → món mát; se lạnh → món nóng; mưa to/giông → nhắc che quầy, đem ô). Tin nhắn `wx<ngày>` của 1080 cũng đổi
+theo: chỉ nói **hôm nay** ra sao rồi mời gọi 1080 để biết **ngày mai**.
+
+**1900 1234 — \"trúng thưởng\".** Ban đầu **không có trong danh bạ**. Từ **ngày thứ hai**, cứ **3 ngày một lần** số này
+nhắn tin mời gọi (\"trúng một xe Wave, gọi lại để nhận\"); **có tin nhắn thì số mới xuất hiện trong danh bạ**. Gọi là mất
+**15.000₫ cước** (5.000₫/phút × 3 phút dây dưa) và bị hẹn lên *\"văn phòng trúng thưởng ở cuối khu chợ\"* — mũi tên vàng
+dẫn tới một **bức tường**, không có ai. Tới đó người chơi được **đúng MỘT cơ hội**: nghe ngóng rồi quay về (chỉ mất thời
+gian, tinh thần nhẹ nhõm hơn) hoặc **vẫn tin** thì mất tiền thật (**40% tiền mặt, kẹp 20.000–200.000₫**) và mất buổi chiều.
+Dính một lần là xong: lần sau gọi lại thì đầu dây bên kia \"không tồn tại\", **không mất thêm đồng nào**, và danh bạ vẫn giữ
+số đó với nhãn *\"Số lừa đảo — bạn đã biết rồi\"*. Tin nhắn lừa cũng biến mất khỏi hộp thư sau khi gọi.
+
+**Kiểm thử:** tệp mới `tests/phone4.test.ts` (**7 bài**) → tổng **413 bài / 31 tệp**. `tests/phone.test.ts` sửa 2 bài cho
+khớp danh bạ mới (1080 có sẵn; tin 1080 nay mời gọi thay vì đọc dự báo hôm nay). Menu ẩn thay mục lượt 26 bằng ba mục
+`hot_wx` / `hot_scam` / `hot_bust`. Probe mới `tools/probe/steps/hotline.mjs` (390×844): ngày 1 danh bạ chỉ có
+*\"Tổng đài 1080\"*; gọi 1080 tốn đúng 2.000₫ và toast *\"Dự báo mai: nắng đẹp…\"*; sang ngày 2 hộp thư có tin *\"Chúc mừng!
+… trúng thưởng một xe Wave\"* và dòng **1900 1234** xuất hiện đầu danh bạ; bấm gọi mất 15.000₫, `scamTrip` chỉ về cuối khu
+chợ; đi tới nơi hiện hộp thoại **\"Bức tường cuối khu chợ\"** với đúng hai lựa chọn (quay về / vẫn tin); gọi lại thì
+`fee: 0`. Console sạch. Ảnh: `anh_ket_qua/android/12..16_*.png`.
+
+---
+
+## Lượt 28 — Sửa nút ở điểm hẹn, dời chỗ hẹn, dọn sạp quần áo vào tiệm ✅ đã xong
+
+Ba phản hồi của người chơi sau lượt 27:
+
+1. **Bỏ dòng "dây dưa mất 15 phút"** — câu mời của 1900 1234 nay chỉ còn lời của đầu dây bên kia; cước ghi gọn
+   *"cước 15.000₫"* trong danh bạ, không nhắc phút/giây nữa.
+2. **Nút ở điểm hẹn bấm không ăn.** Nguyên nhân: `ActsSys.update()` gọi `scamBust()` **mỗi khung hình**, nên hộp thoại
+   bị dựng lại liên tục và cú bấm rơi vào phần tử vừa bị xoá. Nay `scamBust()` chỉ chạy **một lần** (cờ `scamTalked`),
+   và chỉ khi **không có hộp thoại/bảng nào đang mở** (`ui.isDialogOpen()` + `ui.modalName`) — bấm là ăn ngay.
+3. **Dời chỗ hẹn cho hợp lý + thêm thùng bỏ tiền, dọn sạp quần áo đi.** Chỗ hẹn mới là **ngõ cụt ba bề tường sau dãy
+   sạp phía nam chợ Xóm Chiều** (≈ −75, 18,6): tường gạch, **cửa cuốn đóng kín** có biển *"CHỜ THỦ TỤC · Văn phòng tạm
+   đóng"*, tờ giấy dán tường, và **một cái thùng gỗ nhỏ có khe trên nắp + biển "LỆ PHÍ 5.000₫"** — nơi bỏ tiền nếu vẫn
+   tin lời. Lựa chọn thứ hai của hộp thoại đổi thành *"Vẫn tin — bỏ "lệ phí" … vào thùng"*, câu kết cũng nói tới cái thùng.
+   Sạp quần áo giữa chợ **bỏ hẳn**; Cô Ngọc dọn vào **căn nhà có sẵn ở mặt tiền tây Phố Trung Tâm** (cạnh Đồ Nghề Ba Tài),
+   thành khối dựng mới `thoitrang`: cửa cuốn, biển **"QUẦN ÁO CÔ NGỌC"**, mái hiên, hai giá treo áo dọc hai bên, bàn gấp
+   đồ + khay kính + khay giày, gương lớn áp tường, đèn trần; có neo `v_thoi_trang` mới trong tiệm nên Cô Ngọc đứng bán
+   trong nhà. Lời thoại của cô thêm một câu giải thích vì sao dọn từ chợ ra mặt tiền.
+
+**Kiểm thử:** `tests/phone4.test.ts` thêm 1 bài (vị trí ngõ cụt + thùng, câu mời không còn "dây dưa") → **8 bài**;
+`tests/look.test.ts` thêm 1 bài (lô `thoitrang` là nhà thật ở Phố Trung Tâm, mặt tiền tây) → **15 bài**. Tổng **415 bài /
+31 tệp**. Probe mới `tools/probe/steps/scamspot.mjs` (chụp ngõ cụt, cửa cuốn, thùng, mặt tiền và trong tiệm) và probe
+`hotline.mjs` nâng lên 8 bước — bấm thật vào nút **"Thôi, quay về"** thì hộp thoại **đóng hẳn**, `fee: 0`,
+`state: done`. Console sạch. Ảnh: `anh_ket_qua/android/17..21`.

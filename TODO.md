@@ -6,7 +6,7 @@ Danh sách những gì **chưa làm**, rà theo mã ngày 2026-11-17 (`main` = `
 đua xe đạp · NPC sinh hoạt theo giờ · giao diện dễ đọc · 16 biểu cảm · 8 kiểu tóc · người phụ việc ·
 ngoại hình người chơi (góc nhìn thứ ba, cắt tóc, thời trang) · quán có chỗ ngồi (sáu ghế bàn gỗ, thực đơn theo buổi, gọi thêm) ·
 nhà hàng bình dân (8 ghế trong nhà kín, đặt bàn trước, phụ bếp, khách đoàn) ·
-chuỗi cửa hàng (chi nhánh thứ hai, người trông coi, sổ từng điểm) · giao người làm đi chợ mua nguyên liệu · báo cáo sắp hết đồ của người làm · bếp trưởng tự duyệt đặt bàn · vựa ve chai thứ hai (Bà Chín) · bấm chuông thì cửa mở · 388 bài kiểm thử / 28 tệp.
+chuỗi cửa hàng (chi nhánh thứ hai, người trông coi, sổ từng điểm) · giao người làm đi chợ mua nguyên liệu · báo cáo sắp hết đồ của người làm · bếp trưởng tự duyệt đặt bàn · vựa ve chai thứ hai (Bà Chín) · bấm chuông thì cửa mở · ba giao diện điện thoại · app Quản lý cửa hàng (bật/tắt bán từ xa, cảnh báo bán lỗ, công tắc khớp trạng thái thật, ân hạn 20 giây) · cảnh báo thiếu nguyên liệu nói rõ thiếu gì + mua ở đâu (chip HUD, bảng Quầy, nút Sơ chế) · giao diện điện thoại Android soát bằng probe 4 khổ (không còn tràn/cắt, vùng chạm ≥ 30 px) · hai tổng đài trong danh bạ: gọi 1080 nghe dự báo thời tiết ngày mai (2.000₫/lượt, 3 lượt/ngày), gọi 1900 1234 thì bị lừa — số chỉ hiện trong danh bạ sau khi nhận tin mời gọi, và chỉ dính một lần (quay về được) · sửa nút ở điểm hẹn (hộp thoại bị dựng lại mỗi khung hình), dời chỗ hẹn vào ngõ cụt sau chợ có thùng bỏ “lệ phí”, dọn sạp quần áo giữa chợ vào tiệm QUẦN ÁO CÔ NGỌC ở mặt tiền Phố Trung Tâm · 415 bài kiểm thử / 31 tệp.
 
 ---
 
@@ -40,7 +40,7 @@ chuỗi cửa hàng (chi nhánh thứ hai, người trông coi, sổ từng đi�
 - **Chưa đo trên máy yếu thật**: người chơi báo máy chạy trên 50 khung hình/giây nhưng chưa rõ máy nào.
 - Khi cần tối ưu: gộp các khối cơ thể NPC thành một lưới, dùng instancing cho đồ vật lặp lại (ghế, cây, xe), bỏ sương mù theo điểm ảnh ở mức đồ hoạ thấp, thêm LOD cho khu ở xa.
 - **Tách gói JavaScript**: hiện một tệp khoảng 1,23 MB (nén còn ~384 kB). Nên tách phần dựng thành phố ra khỏi phần giao diện.
-- **Báo cáo của người làm**: mới báo sắp hết nguyên liệu + gợi ý đi chợ + tự duyệt đặt bàn. Còn thiếu: báo **bàn đặt trước bị trùng giờ / quá chỗ**, báo **giá bán lỗ** so với giá vốn, và tuỳ chọn **chỉ nhận bàn ≤ N người**.
+- **Báo cáo của người làm**: ✅ đã báo sắp hết nguyên liệu + gợi ý đi chợ + tự duyệt đặt bàn; ✅ app điện thoại đã báo **giá bán lỗ** so với giá vốn và bật/tắt bán từ xa. Còn thiếu: báo **bàn đặt trước bị trùng giờ / quá chỗ** và tuỳ chọn **chỉ nhận bàn ≤ N người**.
 - **Đi chợ thuê người**: mới có một kiểu chuyến (mua theo món cần, giá tốt nhất trong giờ). Còn thiếu: **mặc cả hộ** (người làm có thể trả giá theo độ thân với người bán), **mua theo danh sách tự soạn** (tự chọn từng nguyên liệu + số lượng), **đi chợ bị mưa/ kẹt xe nên về muộn**, và **mua hộ cho chi nhánh** (hiện người trông coi vẫn chất hàng về kho quầy chính).
 - **Chơi ngoại tuyến**: chưa có service worker; mất mạng là không mở được.
 - **Lưu đám mây**: chưa có; xoá dữ liệu trình duyệt là mất bản lưu (bản lưu v15, tự lưu sau mỗi việc quan trọng).
