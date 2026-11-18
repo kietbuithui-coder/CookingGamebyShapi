@@ -8,9 +8,10 @@ import { SPOTS, CORR } from '../world/layout';
 import { toast } from '../core/bus';
 import * as PUI from '../ui/phoneUI';
 import * as PH from '../sim/phone';
+import { REGULARS } from '../data/people';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Điểm hẹn lừa đảo dời về ngõ cụt sau chợ có thùng bỏ lệ phí, bấm nút đã ăn, và sạp quần áo giữa chợ dọn vào tiệm QUẦN ÁO CÔ NGỌC ở Phố Trung Tâm';
+export const DEV_BUILD_TAG = 'Điện thoại có ba bài nhạc riêng đổi được nhạc nền, sóng radio đọc tin thật trong ván và trang WAP mỗi lần lướt đưa năm tin thật kèm giá chợ đúng giá đang bán';
 
 export interface DevAction {
   id: string;
@@ -69,55 +70,118 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Sửa điểm hẹn “nhận thưởng” & tiệm quần áo Cô Ngọc (lượt 28)',
+      title: 'Mới nhất — Ba bài nhạc của máy & tin thật trên radio/WAP (lượt 30)',
       items: [
         {
-          id: 'hot_wx',
-          label: 'Mở danh bạ, gọi 1080 nghe dự báo thời tiết ngày mai',
-          sub: 'Có máy cảm ứng, đầy pin, 50.000₫ trong túi · cước 2.000₫/phút · tổng đài đứng đầu danh bạ',
+          id: 'music_bgm',
+          label: 'Bật Nghe nhạc: máy phát bài riêng và đổi luôn nhạc nền',
+          sub: 'Có máy cảm ứng, đầy pin · ba bài riêng của máy · “Bài khác” sang bài kế, “Tắt” trả nhạc nền theo ngữ cảnh',
           tone: 'green',
           closePanel: false,
           run: () => {
             const g = ctx.g;
             g.cash = Math.max(g.cash, 50000);
-            if (!g.phone) { PH.activate(g, 'camung'); }
+            if (!g.phone) PH.activate(g, 'camung');
             PH.fullCharge(g);
-            PUI.resetPhoneView();
-            PUI.phoneKey('open', 'contacts');
-            toast('Danh bạ có sẵn Tổng đài 1080. Bấm dòng đó để nghe dự báo ngày mai (2.000₫/phút, mỗi ngày 3 lần).', 'info', 'sun', true);
             ctx.ui.closePanel(); ctx.ui.panel('phone');
+            PUI.phoneKey('open', 'music');
+            PUI.phoneKey('ok');
+            ctx.ui.reopenPanel('phone');
+            toast('Máy đang phát bài đầu tiên. Bấm “Bài khác” trên máy để sang bài kế — nhạc nền đổi theo.', 'info', 'smile', true);
           },
         },
         {
-          id: 'hot_scam',
-          label: 'Sang ngày 2 để nhận tin “trúng thưởng”, rồi gọi 1900 1234',
-          sub: 'Tin của số lạ tới máy thì số đó mới vào danh bạ · gọi là mất 15.000₫ cước và bị hẹn lên chỗ không có ai',
+          id: 'news_radio',
+          label: 'Mở radio: nghe bản tin thật của ván này',
+          sub: 'Thời tiết đang có, giá chợ đúng giá sạp đang bán, sự kiện đang diễn ra · “Đổi đài” đọc sang tin khác',
           tone: 'yellow',
           closePanel: false,
           run: () => {
             const g = ctx.g;
-            g.cash = Math.max(g.cash, 80000);
-            if (g.day < 1) { g.day = 1; g.min = 8 * 60 + 30; }
+            g.cash = Math.max(g.cash, 50000);
             if (!g.phone) PH.activate(g, 'camung');
             PH.fullCharge(g);
-            PUI.resetPhoneView();
             ctx.ui.closePanel(); ctx.ui.panel('phone');
-            toast('Hộp thư có tin “Chúc mừng trúng một xe Wave”. Đọc Tin nhắn xong mở Danh bạ: số 1900 1234 vừa xuất hiện.', 'info', 'gift', true);
+            PUI.phoneKey('open', 'radio');
+            PUI.phoneKey('ok');
+            ctx.ui.reopenPanel('phone');
+            toast('Đài đang đọc tin thật: thời tiết, giá chợ, sự kiện. Bấm “Đổi đài” để nghe tin kế.', 'info', 'sun', true);
           },
         },
         {
-          id: 'hot_bust',
-          label: 'Vào ngõ cụt sau chợ để thấy bị lừa — và cơ hội quay về',
-          sub: 'Đã gọi 1900 1234 · vào ngõ cụt sau chợ: được MỘT cơ hội quay về, vẫn tin thì bỏ tiền vào thùng và mất thật',
-          tone: 'red',
+          id: 'news_wap',
+          label: 'Lướt WAP: mỗi trang 5 tin thật + bảng giá chợ',
+          sub: 'Máy cảm ứng mới lướt được WAP · “Trang khác” sang trang kế, giá đúng bằng giá các sạp đang bán hôm nay',
+          tone: 'green',
           closePanel: false,
           run: () => {
             const g = ctx.g;
-            g.cash = Math.max(g.cash, 80000);
-            if (g.flags.scamCall !== 1) { g.flags.scamCall = 1; g.flags.scamDay = g.day; }
-            g.flags.scamX = PH.SCAM_SPOT.x; g.flags.scamZ = PH.SCAM_SPOT.z;
-            tpTo(g.flags.scamX, g.flags.scamZ - 2.6, 0, 'Đã tới ngõ cụt sau chợ — chỉ có cửa cuốn đóng và cái thùng.');
-            toast('Đi vào vòng sáng vàng ngay trước mặt: bạn sẽ thấy đúng một cơ hội quay về.', 'warn', 'way', true);
+            g.cash = Math.max(g.cash, 50000);
+            if (!g.phone) PH.activate(g, 'camung');
+            PH.fullCharge(g);
+            ctx.ui.closePanel(); ctx.ui.panel('phone');
+            PUI.phoneKey('open', 'wap');
+            PUI.phoneKey('ok');
+            ctx.ui.reopenPanel('phone');
+            toast('Trang WAP đang tải năm tin thật của ván. Bấm “Trang khác” để sang trang kế.', 'info', 'wap', true);
+          },
+        },
+        {
+          id: 'anim_radio',
+          label: 'Mở Radio trên máy cảm ứng: xem màn hình máy tự chạy',
+          sub: 'Có máy cảm ứng, đầy pin · kim dò đài quét, cột sóng nhảy, dòng tin đang phát chạy ngang màn hình',
+          tone: 'green',
+          closePanel: false,
+          run: () => {
+            const g = ctx.g;
+            g.cash = Math.max(g.cash, 50000);
+            if (!g.phone) PH.activate(g, 'camung');
+            PH.fullCharge(g);
+            // mở máy trước (mở máy là về màn hình chính), rồi mới vào app Radio và bấm cho máy bắt đài
+            ctx.ui.closePanel(); ctx.ui.panel('phone');
+            PUI.phoneKey('open', 'radio');
+            PUI.phoneKey('ok');
+            ctx.ui.reopenPanel('phone');
+            toast('Màn hình máy đang bắt đài. Bấm “Đổi đài” trên máy để nghe tin khác, “Tắt” để dừng.', 'info', 'sun', true);
+          },
+        },
+        {
+          id: 'anim_wap',
+          label: 'Lướt web WAP: trang tự cuộn, thanh tải chạy',
+          sub: 'Máy cảm ứng mới lướt được WAP · địa chỉ trang, trang tin tự trôi, “Đang tải…” nhấp nháy',
+          tone: 'green',
+          closePanel: false,
+          run: () => {
+            const g = ctx.g;
+            g.cash = Math.max(g.cash, 50000);
+            if (!g.phone) PH.activate(g, 'camung');
+            PH.fullCharge(g);
+            ctx.ui.closePanel(); ctx.ui.panel('phone');
+            PUI.phoneKey('open', 'wap');
+            PUI.phoneKey('ok');
+            ctx.ui.reopenPanel('phone');
+            toast('Trang WAP đang tải ngay trên màn hình máy — chậm đúng kiểu máy đời 2005.', 'info', 'wap', true);
+          },
+        },
+        {
+          id: 'anim_call',
+          label: 'Gọi một khách quen: màn hình máy thành màn hình cuộc gọi',
+          sub: 'Có máy, có 50.000₫, một khách quen trong danh bạ · chuông lan, “Đang gọi…”, nút TẮT MÁY bấm được',
+          tone: 'yellow',
+          closePanel: false,
+          run: () => {
+            const g = ctx.g;
+            g.cash = Math.max(g.cash, 50000);
+            if (!g.phone) PH.activate(g, 'camung');
+            PH.fullCharge(g);
+            const rid = REGULARS[0].id;
+            g.rel[rid] = { v: Math.max(20, g.rel[rid]?.v ?? 0), n: Math.max(1, g.rel[rid]?.n ?? 0), last: -1 };
+            g.flags['call_' + rid] = -1;
+            ctx.ui.closePanel(); ctx.ui.panel('phone');
+            PUI.phoneKey('open', 'contacts');
+            ctx.acts.phoneCall(rid);
+            ctx.ui.reopenPanel('phone');
+            toast('Màn hình máy đang gọi. Bấm TẮT MÁY trên máy để cúp.', 'info', 'phone', true);
           },
         },
       ],

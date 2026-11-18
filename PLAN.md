@@ -568,7 +568,7 @@ Thêm `94dvh` cho bảng (thanh địa chỉ Chrome Android ăn mất đáy) và
 (số tiền 4.936.000₫ từng thò ra ngoài mép phải ở 412 px).
 
 **Kết quả sau khi sửa** — probe in `manHinh: 15, coVanDe: [], vungChamNho: []` ở **cả 4 khổ**. Ảnh chụp để trong
-`anh_ket_qua/android/` (8 ảnh: ba mẫu máy, app Cửa hàng, Cài đặt, Quầy, sửa vị trí HUD, Bản đồ nằm ngang).
+`anh_ket_qua/android/` (`01..08_dien_thoai_*/app_cua_hang/bang_cai_dat/bang_quay/sua_vi_tri_hud/ban_do_nam_ngang`).
 Menu ẩn đổi sang `and_full` (dựng cảnh đầy đủ) + `and_phone3` (đổi ba mẫu máy), giữ nguyên nhóm tele nhanh.
 
 ---
@@ -625,7 +625,7 @@ khớp danh bạ mới (1080 có sẵn; tin 1080 nay mời gọi thay vì đọc
 *\"Tổng đài 1080\"*; gọi 1080 tốn đúng 2.000₫ và toast *\"Dự báo mai: nắng đẹp…\"*; sang ngày 2 hộp thư có tin *\"Chúc mừng!
 … trúng thưởng một xe Wave\"* và dòng **1900 1234** xuất hiện đầu danh bạ; bấm gọi mất 15.000₫, `scamTrip` chỉ về cuối khu
 chợ; đi tới nơi hiện hộp thoại **\"Bức tường cuối khu chợ\"** với đúng hai lựa chọn (quay về / vẫn tin); gọi lại thì
-`fee: 0`. Console sạch. Ảnh: `anh_ket_qua/android/12..16_*.png`.
+`fee: 0`. Console sạch. Ảnh: `anh_ket_qua/android/12_danhba_1080_ngay_dau.png` … `15_goi_1900_mat_cuoc.png`.
 
 ---
 
@@ -651,4 +651,70 @@ Ba phản hồi của người chơi sau lượt 27:
 `tests/look.test.ts` thêm 1 bài (lô `thoitrang` là nhà thật ở Phố Trung Tâm, mặt tiền tây) → **15 bài**. Tổng **415 bài /
 31 tệp**. Probe mới `tools/probe/steps/scamspot.mjs` (chụp ngõ cụt, cửa cuốn, thùng, mặt tiền và trong tiệm) và probe
 `hotline.mjs` nâng lên 8 bước — bấm thật vào nút **"Thôi, quay về"** thì hộp thoại **đóng hẳn**, `fee: 0`,
-`state: done`. Console sạch. Ảnh: `anh_ket_qua/android/17..21`.
+`state: done`. Console sạch. Ảnh: `anh_ket_qua/android/17_ngo_cut_sau_cho.png` … `21_trong_tiem_quan_ao.png`.
+
+---
+
+## Lượt 29 — Hoạt ảnh ngay trên màn hình điện thoại ✅ đã xong
+
+Người chơi muốn cái máy trong game **chạy thật**: lướt web, nghe radio, tin nhắn, cuộc gọi phải có hoạt ảnh
+**hiện ngay trên màn hình điện thoại**, đúng phong cách từng mẫu máy.
+
+**Cách làm.** Thêm lớp hoạt ảnh `actOverlay()` trong `src/ui/phoneUI.ts`: khi máy "đang làm gì đó", một lớp
+phủ nằm **trong `.ph`** (khung màn hình máy), đè lên nội dung app; thanh trạng thái (giờ · pin) vẫn giữ ở trên.
+Trạng thái giữ ở `ctx._pact` (`setPhoneAct` / `phoneAct` / `endPhoneAct` / `tickPhoneAct` / `phoneActNext`),
+`ui.update(dt)` đếm ngược và vẽ lại bảng đúng lúc hoạt ảnh tắt hẳn. Toàn bộ chuyển động là **CSS keyframes**
+(`src/ui/style.css`), nên chạy mượt mà không tốn khung hình vẽ lại.
+
+* **Cuộc gọi** — chiếm cả màn hình: vòng sóng lan quanh chữ viết tắt tên người, “Đang gọi…” với ba chấm nhấp nháy,
+  thanh tiến trình, nút **Tắt máy** (bấm là cúp, lớp biến mất). Hiện khi gọi khách quen, gọi 1080, gọi 1900 1234.
+* **Radio / nghe nhạc** — thang tần số FM có **kim dò đài quét qua lại**, 16 **cột sóng nhảy** theo nhịp (CSS
+  `scaleY`), dòng tin/bài đang phát **chạy ngang** (marquee), nút **Đổi đài / Bài khác** (đổi nội dung, chạy tiếp)
+  và **Tắt**.
+* **Lướt WAP** — ô địa chỉ trang, thanh tải chạy theo độ dài lượt lướt, **trang tin tự cuộn** (10 dòng tin trong
+  game), “Đang tải…” nhấp nháy.
+* **Tin nhắn** — mở hộp thư là màn hình chạy cảnh **soạn tin trả lời** người gửi mới nhất: bong bóng chat,
+  ba chấm “đang gõ”, **bàn phím số** nhấp nháy từng phím.
+* Ba mẫu máy giữ đúng chất: cục gạch dùng nền LCD xanh + chữ đơn cách, nắp gập nền xanh nhạt, cảm ứng nền trắng;
+  nút trên lớp hoạt ảnh cao ≥ 36 px trên máy cảm ứng thật. Có `prefers-reduced-motion` để tắt chuyển động.
+* Về màn hình chính (`phoneKey('home')`) là **cúp máy / tắt đài** luôn.
+
+**Kiểm thử:** `tests/phoneanim.test.ts` (7 bài: bật/đếm ngược/tự tắt, đổi kênh, cúp máy, máy không có chức năng
+thì không chạy) → tổng **422 bài / 32 tệp**. Menu Test & Dịch chuyển ẩn đổi sang ba mục của lượt này
+(`anim_radio`, `anim_wap`, `anim_call`). Probe mới `tools/probe/steps/anim.mjs` (390×844: radio → đổi đài → WAP →
+trang tự cuộn → gọi khách quen → bấm Tắt máy → tin nhắn trên cục gạch → nhạc trên nắp gập), `animland.mjs`
+(khổ ngang), `devmenu29.mjs` (bấm menu ẩn). Console sạch, ảnh ở `anh_ket_qua/android/22_radio_tren_may.png` … `27_tat_hoat_anh.png`.
+
+---
+
+## Lượt 30 — Ba bài nhạc của máy (đổi được nhạc nền) + tin & giá thật trên radio/WAP ✅ đã xong
+
+**Ba bài nhạc riêng của điện thoại** (`src/audio/songs.ts`): *Mưa chiều miền Trung*, *Mưa rơi trên phố chiều*,
+*Chuyện người xe ôm* — mỗi bài viết tay 8 ô nhịp giai điệu + bè trầm theo ngũ cung, khác hẳn nhạc nền theo
+ngữ cảnh. Máy có loa ngoài: bật **Nghe nhạc** là `ctx.sound.bgm` đổi sang bài của máy (nhạc nền thật sự đổi),
+bấm **Bài khác** trên màn hình máy sang bài kế (hết bài cuối quay vòng), **Tắt**/về màn hình chính trả nhạc nền
+về theo ngữ cảnh. Ba bài dùng chung khuôn `Track` nên bộ tổng hợp âm thanh không phải sửa gì.
+
+**Tin thật trong ván** (`src/sim/news.ts`, mới): radio và WAP chỉ nói chuyện đang thật sự xảy ra — thời tiết đang
+có (đúng câu `WEATHER[...].say`), giá món ở chợ **đúng bằng `shopPrice`** hôm nay kèm so sánh với hôm qua (dùng
+lại cùng hàm nên không thể lệch giá), sự kiện đang diễn ra (đúng tên + lời của bảng sự kiện), sạp xả hàng cuối
+buổi, chợ hết hàng (nêu tên món), nợ quá hạn, tiền phòng tới hạn, quầy đang đóng / còn bao nhiêu phần, pin máy
+yếu, hàng trong quầy sắp hỏng, giờ mở cửa sạp. **Radio**: mỗi lần **Đổi đài** đọc sang một tin thật khác.
+**WAP**: mỗi trang **đúng 5 tin thật**, bấm **Trang khác** sang trang kế (xoay vòng hết danh sách); tin giá kèm
+bảng giá thật (món rẻ nhất + đắt nhất đang bán), và món nào đã có tin riêng trên trang thì bảng giá không nhắc lại.
+
+**Kiểm thử:** `tests/music.test.ts` (6 bài: ba bài riêng, cấu trúc bản nhạc, bộ tổng hợp nhận cả ba bài, bật nhạc
+đổi BGM, Bài khác đi hết ba bài rồi quay vòng, Tắt trả BGM về ngữ cảnh) và `tests/news.test.ts` (7 bài: tin thời
+tiết đúng ván, giá đúng `shopPrice`, sang ngày thì giá đổi và tin nói đúng lên/xuống, sự kiện vào bản tin, tin giá
+kèm bảng giá không trùng, mỗi trang WAP đúng 5 tin và sang trang là tin khác, chuyện của người chơi vào bản tin)
+→ tổng **436 bài / 34 tệp**.
+
+**Sửa ngay sau khi người chơi bắt lỗi:** bản tin có câu *“Chú Ba đứng đầu hẻm từ 5 giờ, chở hàng nặng thì nhớ trả
+thêm vài ngàn”* — **bịa**: Chú Ba xe ôm trong game chỉ là **khách quen** (`REGULARS`, giờ 11,5) thỉnh thoảng ghé
+quán ăn trưa, không có dịch vụ xe ôm nào và không có ai đứng ở hẻm. Câu đó bỏ hẳn; thay bằng tin khách quen chỉ
+xuất hiện **khi người chơi đã thực sự bán cho họ** (`g.rel[id].n > 0`), và nói đúng số lần ghé + giờ hay tới + ghi
+chú của người đó trong dữ liệu. Thêm 1 bài kiểm canh đúng lỗi này ("chưa quen ai thì bản tin không nhắc ai, không
+có 'đầu hẻm'") → **436 bài / 34 tệp**. Menu Test & Dịch chuyển ẩn thêm ba mục `music_bgm`, `news_radio`, `news_wap`.
+Probe `steps/anim30.mjs` + `animshot30.mjs` (390×844): bật nhạc → `bgm: phone_mua_chieu`, Bài khác →
+`phone_pho_chieu`, radio đọc “Thời tiết sáng: nắng đẹp…”, WAP trang 1 có 5 tin + `Giá chợ hôm nay`. Console sạch.
+Ảnh: `anh_ket_qua/android/28_nhac_tren_may.png` … `32_wap_trang_gia.png`.

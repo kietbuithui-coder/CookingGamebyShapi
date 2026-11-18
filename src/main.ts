@@ -19,6 +19,7 @@ import { Sound } from './audio/audio';
 import { Traffic } from './game/traffic';
 import { Birds } from './world/birds';
 import { UI } from './ui/ui';
+import * as PhoneUI from './ui/phoneUI';
 import { newGame, migrate, hourOf, Game } from './sim/state';
 import * as State from './sim/state';
 import * as Rules from './sim/rules';
@@ -132,6 +133,8 @@ async function boot() {
   // Cửa hậu gỡ lỗi: thêm ?debug vào địa chỉ để mở (dùng cho kiểm thử tự động).
   if (/[?&]debug/.test(location.search)) {
     const w = window as any; w.__game = ctx; w.__R = Rules; w.__S = State;
+    // màn hình điện thoại: bật/tắt hoạt ảnh để chụp ảnh kiểm tra
+    w.__PUI = PhoneUI;
     w.__cam = (px?: number, py = 0, pz = 0, lx = 0, ly = 0, lz = 0) => (px === undefined ? ctx.player.view(null) : ctx.player.view(new THREE.Vector3(px, py, pz), new THREE.Vector3(lx, ly, lz)));
     w.__xp = (n = 40) => { const g = ctx.g, l0 = g.xp; g.xp += Math.max(0, n); const lvl = Math.min(10, Math.floor(Math.sqrt(g.xp / 30))); const got = lvl > Math.min(10, Math.floor(Math.sqrt(l0 / 30))) ? Rules.unlockRecipes(g, lvl <= 1 ? 1 : 2) : []; return { xp: g.xp, lvl, got: got.map((r) => r.id) }; };
     w.__lvl = (n: number) => { const g = ctx.g; g.xp = Math.max(0, 30 * n * n - 3); Rules.addXp(g, 1); return { xp: g.xp, known: Object.values(g.rec).filter((r) => r.known).length }; };
