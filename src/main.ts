@@ -10,6 +10,8 @@ import { Input } from './game/input';
 import { Player } from './game/player';
 import { Npcs, placeOpen } from './game/npc';
 import { StallSys } from './game/stall';
+import { ShopBrowse } from './game/shopbrowse';
+import * as Life from './sim/life';
 import { Interact } from './game/interact';
 import { Acts } from './game/acts';
 import { Cook } from './cook/cook';
@@ -43,7 +45,7 @@ async function boot() {
   await fontsReady(); await new Promise((r) => setTimeout(r, 30));
   const city = (ctx.city = buildCity()); ctx.world = city.world; scene.add(city.root);
   ctx.env = new Env(scene, city); ctx.env.thunder = () => setTimeout(() => ctx.sound.play('thunder'), 300 + Math.random() * 1200);
-  ctx.player = new Player(); ctx.npcs = new Npcs(); ctx.stall = new StallSys(); ctx.cook = new Cook(); ctx.acts = new Acts(); ctx.interact = new Interact(); ctx.race = new RaceSystem(); ctx.anim = new AnimSystem();
+  ctx.player = new Player(); ctx.npcs = new Npcs(); ctx.stall = new StallSys(); ctx.browse = new ShopBrowse(); ctx.cook = new Cook(); ctx.acts = new Acts(); ctx.interact = new Interact(); ctx.race = new RaceSystem(); ctx.anim = new AnimSystem();
   ctx.traffic = new Traffic(); ctx.birds = new Birds();
   ctx.g = newGame(1);
 
@@ -66,7 +68,7 @@ async function boot() {
     ctx.anim.stop();
     ctx.g = g; ctx.mode = 'play'; ctx.speed = MIN_PER_SEC; ctx.player.place(g.pos.x, g.pos.z, g.pos.yaw, g.pos.pitch); ctx.player.eyeTarget = 1.6; ctx.player.setCarry(''); ctx.player.applyLook();
     for (const n of ctx.npcs.list.slice()) if (n.state !== 'fixed') ctx.npcs.remove(n);
-    ctx.stall.reset(); ctx.acts.cart = null; ctx.acts.job = null; ctx.acts.way = null; ctx.acts.spawnLitter(); ui.menu(null); ui.hud(true); ui.fade(false, 1.2); ctx.input.reset();
+    ctx.stall.reset(); ctx.browse.reset(); ctx.acts.cart = null; ctx.acts.job = null; ctx.acts.way = null; ctx.acts.spawnLitter(); ui.menu(null); ui.hud(true); ui.fade(false, 1.2); ctx.input.reset();
     if (fresh) {
       const you = g.ac === 'anh' ? 'anh' : 'chị';
       ui.dialog({ who: 'Gầm cầu vượt, 6 giờ sáng', text: `Tiếng xe cộ ầm ầm trên đầu đánh thức bạn dậy. Tấm bìa các-tông ẩm sương, bụng đói meo, trong túi còn đúng 18.000₫.\n\nMất việc, mất chỗ trọ, bạn chỉ còn hai bàn tay — và ký ức về gánh hàng thơm phức của mẹ ngày xưa. Biết đâu, ${you} cũng làm được?`, opts: [{ t: 'Đứng dậy thôi!', fn: () => {
@@ -102,7 +104,7 @@ async function boot() {
     if (ctx.mode !== 'menu') {
       const paused = !!ui.modalName;
       if (!paused) advance(g, dt * ctx.speed, ctx.acts.act());
-      ctx.anim.update(dt); ctx.player.update(dt); ctx.npcs.update(dt); ctx.stall.update(dt); ctx.cook.update(dt); ctx.race.update(dt); ctx.acts.update(dt); ctx.interact.update(dt);
+      ctx.anim.update(dt); ctx.player.update(dt); ctx.npcs.update(dt); ctx.stall.update(dt); ctx.browse.update(dt); ctx.cook.update(dt); ctx.race.update(dt); ctx.acts.update(dt); ctx.interact.update(dt);
       ctx.traffic.update(dt); ctx.birds.update(dt);
       saveT += dt; if ((dirty && saveT > 2) || saveT > 45) ctx.save();
       if (ctx.mode === 'play' && !ui.modalName) { if (bankrupt) { bankrupt = false; summary = false; ui.panel('bankrupt'); } else if (summary) { summary = false; ui.panel('summary'); } }
@@ -132,7 +134,7 @@ async function boot() {
   ui.loading(null); menu(); requestAnimationFrame(frame);
   // Cửa hậu gỡ lỗi: thêm ?debug vào địa chỉ để mở (dùng cho kiểm thử tự động).
   if (/[?&]debug/.test(location.search)) {
-    const w = window as any; w.__game = ctx; w.__R = Rules; w.__S = State;
+    const w = window as any; w.__game = ctx; w.__R = Rules; w.__S = State; w.__life = Life;
     // màn hình điện thoại: bật/tắt hoạt ảnh để chụp ảnh kiểm tra
     w.__PUI = PhoneUI;
     w.__cam = (px?: number, py = 0, pz = 0, lx = 0, ly = 0, lz = 0) => (px === undefined ? ctx.player.view(null) : ctx.player.view(new THREE.Vector3(px, py, pz), new THREE.Vector3(lx, ly, lz)));

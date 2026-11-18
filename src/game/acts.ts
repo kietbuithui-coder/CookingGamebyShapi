@@ -135,6 +135,8 @@ export class Acts {
     if (n.fixedId && R.meet(this.g, n.fixedId)) { toast(`Bạn vừa làm quen với ${n.name}.`, 'info', 'heart'); bus.emit('save', 'lam quen'); }
   }
   private talkTo(n: Npc) {
+    // Khách đang lựa hàng trong tiệm: nói chuyện thật với họ (nhờ lấy giùm món trên kệ cao).
+    if (n.actor === 'browse') { this.browserTalk(n); return; }
     const id = n.fixedId!, g = this.g, shop = SHOPS[id], bye: Opt = { t: 'Thôi, chào nha.' };
     // Người quen nói giọng của chính họ (mỗi người 2–3 câu riêng, xoay theo ngày) chứ không chỉ câu chung của nghề.
     ctx.npcs.say(n, ownLine(id, n, g.ac, n.id + g.day) ?? shop?.say ?? 'Sao đó?', 1.2);
@@ -386,6 +388,22 @@ export class Acts {
     const done = S.topics.every((_, i) => g.flags[`side_${id}_${i}`]);
     this.D(who(n), n, text ?? (done ? S.again : S.intro), [...opts, { t: 'Thôi, đi nha.' }]);
   }
+  /** Nói chuyện với khách đang lựa hàng: họ nhờ lấy giùm món trên kệ cao, lấy xong thì cảm ơn thật. */
+  browserTalk(n: Npc) {
+    const g = this.g, bye: Opt = { t: 'Thôi, anh/chị cứ tự nhiên.' };
+    const ask = ctx.browse.askNear();
+    if (!ask || ask.b.n !== n) { this.D(who(n), n, rnd.pick(['Tôi lựa chút đồ rồi về nấu cơm.', 'Tiệm này đủ thứ hết ha.', 'Đang coi giá, tháng này mắc quá.']), [bye]); return; }
+    this.D(who(n), n, ask.line, [
+      { t: 'Để tôi lấy giùm.', fn: () => {
+          R.advance(g, 2, this.act()); R.consume(g, { e: -1 }); ctx.player.gesture('work', 0.6);
+          g.rep = clamp(g.rep + 0.2, 0, 100);
+          ctx.npcs.say(n, rnd.pick(['Cảm ơn nhiều nghen!', 'Nhờ vậy tôi mới lấy được.', 'Thiệt tình, cảm ơn anh/chị.']), 3, EXPR.happy);
+          toast('Lấy giùm hộp đồ trên kệ cao — bà con trong xóm nể hơn chút.', 'good', 'heart');
+        } },
+      bye,
+    ]);
+  }
+
   // ───────────────────────── Ngoại hình: tiệm cắt tóc & tiệm thời trang ─────────────────────────
   /** Mua một lựa chọn ngoại hình: trừ tiền, ghi vào bản lưu, dựng lại nhân vật ngay. */
   private buyLook(n: Npc, key: 'hairStyle' | 'hair' | 'shirt' | 'pants' | 'shoe' | 'face' | 'beard' | 'shape', val: number, price: number, what: string, line: string) {

@@ -3,13 +3,12 @@ import { DEV_BUILD_TAG, getDevSections } from '../src/game/devPoints';
 
 describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
   it('chỉ gồm mục của tính năng mới nhất + nhóm địa điểm tele nhanh', () => {
-    expect(DEV_BUILD_TAG).toContain('ba bài nhạc');
-    expect(DEV_BUILD_TAG).toContain('năm tin thật');
+    expect(DEV_BUILD_TAG).toContain('dáng người');
+    expect(DEV_BUILD_TAG).toContain('ca sáng chiều');
     const sections = getDevSections();
     expect(sections.length).toBe(2);
-    expect(sections[0].title.toLowerCase()).toContain('ba bài nhạc');
-    expect(sections[0].title).toContain('tin thật');
-    expect(sections[0].title).toContain('lượt 30');
+    expect(sections[0].title.toLowerCase()).toContain('con người');
+    expect(sections[0].title).toContain('lượt 31');
     expect(sections[1].title).toContain('Địa điểm');
     const ids = new Set<string>();
     for (const sec of sections) {
@@ -22,9 +21,9 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
         expect(item.sub.length).toBeGreaterThan(3);
       }
     }
-    // mục của lượt này: nghe nhạc (đổi BGM), radio đọc tin thật, WAP năm tin thật; ba mục hoạt ảnh của lượt 29 vẫn còn
-    for (const id of ['music_bgm', 'news_radio', 'news_wap', 'anim_radio', 'anim_wap', 'anim_call']) expect(ids.has(id)).toBe(true);
-    // tele nhanh vẫn còn, có thêm vựa mới và cửa căn hộ
+    // mục của lượt này: dáng người, râu, tạp dề, thoại riêng, chia ca (xem bảng + xem ngoài quầy)
+    for (const id of ['look_shape', 'look_beard', 'look_apron', 'talk_own', 'shift_help', 'shift_watch']) expect(ids.has(id)).toBe(true);
+    // tele nhanh vẫn còn nguyên
     const loc = sections[1].items.map((i) => i.id);
     for (const id of ['tp_equip', 'tp_matbang_tb', 'tp_ongtu', 'tp_scrap2', 'tp_canho']) expect(loc).toContain(id);
     for (const id of loc) expect(id.startsWith('tp_')).toBe(true);
@@ -49,6 +48,8 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
       // lượt 26 (cảnh báo sắp hết đồ)
       'short_empty', 'short_prep',
       // lượt 27–28 (hai tổng đài + điểm hẹn lừa đảo)
-      'hot_wx', 'hot_scam', 'hot_bust']) expect(ids).not.toContain(old);
+      'hot_wx', 'hot_scam', 'hot_bust',
+      // lượt 30 (nhạc của máy + tin thật trên radio/WAP)
+      'music_bgm', 'news_radio', 'news_wap', 'anim_radio', 'anim_wap', 'anim_call']) expect(ids).not.toContain(old);
   });
 });

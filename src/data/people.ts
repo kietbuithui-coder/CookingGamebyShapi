@@ -328,6 +328,10 @@ export const LINES = {
     rain: ['Mưa vầy mà cũng đi, {you} siêng ghê.', 'Trời mưa, kiếm chỗ trú đi {you} ơi.', 'Ướt hết rồi kìa, coi chừng cảm.', 'Mưa này bán ế lắm, về sớm nghen.'],
     cold: ['Trời lạnh ghê, {you} mặc thêm áo vô.', 'Gió này tê tái luôn.', 'Lạnh quá, có gì nóng nóng ăn cho ấm.'],
     hot: ['Nắng muốn bể đầu, {you} ơi.', 'Nóng này mà đứng đường tội ghê.', 'Kiếm bóng mát mà đứng nghen {you}.'],
+    // người đi đường nhận ra người chơi đổi đời / đang túng / đang bị công an để ý
+    rich: ['Nghe nói {you} mở quán đông lắm hả?', 'Trời, giờ {you} khác hồi đó rồi nghen.', 'Cho {self} xin vía làm ăn với {you} ơi.', '{You} giờ làm chủ rồi, nhớ đừng quên người quen.'],
+    poor: ['{You} ơi, có gì ăn chưa? Nhìn hốc hác quá.', 'Ráng lên nghen {you}, ai cũng có lúc.', 'Cần gì cứ nói, trong xóm giúp nhau.'],
+    wanted: ['Đừng lại gần tui nghen, công an đang để ý đó.', 'Nghe nói {you} có chuyện với phường hả?', 'Lo mà lo chuyện của mình đi, tui không dính vô đâu.', 'Đi đứng coi chừng, mấy chú đang nhìn kìa.'],
     morning: ['Chào buổi sáng {you}.', 'Sớm ghê ta, chợ còn vắng.', 'Đi làm sớm dữ.', 'Chợ sáng đông chưa {you}?'],
     noon: ['Trưa rồi, ăn gì chưa {you}?', 'Nắng trưa đứng đường mệt lắm nghen.', 'Ghé quán ăn miếng cơm đi.'],
     evening: ['Chiều rồi, sắp tan tầm.', 'Đi về nghỉ ngơi nghen {you}.', 'Chiều mát, khách chắc đông.'],

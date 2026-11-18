@@ -90,6 +90,8 @@ export class Interact {
         if (n.state === 'fixed') { const cart = A.cart && A.cart.shop === n.fixedId; return mk(cart ? `Tính tiền — ${money(A.cartTotal())}` : `Nói chuyện với ${whoIn(n)}`, () => { ctx.player.face(n.x, n.z); A.talk(n); }); }
         const ordNpc: Npc | undefined = n.state === 'queue' && n.order ? n : (n.state === 'queue' && n.data?.leader?.order ? n.data.leader : undefined);
         if (ordNpc && ordNpc.order) { const r = RECIPES[ordNpc.order.rid], have = R.readyCount(g, r.id) >= ordNpc.order.n; return mk(have ? `Giao ${ordNpc.order.n} ${r.short}` : `Làm ${r.short} cho ${ordNpc.order.group ? `đoàn ${ordNpc.order.group} người` : 'khách'}`, () => ctx.stall.serve(ordNpc), who(ordNpc) + (ordNpc.regular && known(ordNpc) ? ' · khách quen' : '')); }
+        // Khách đang lựa hàng trong tiệm nhỏ: vẫn bấm nói chuyện được (họ nhờ lấy giùm món trên kệ cao).
+        if (n.actor === 'browse') return mk(`Nói chuyện với ${n.name}`, () => { ctx.player.face(n.x, n.z); A.talk(n); }, 'Đang lựa hàng trong tiệm');
         if (n.state === 'toStall' || n.state === 'actor' || n.state === 'queue' || n.kind === 'actor') return null;
         if (g.stall.open) return null;
         return mk(`Xin tiền ${whoIn(n)}`, () => { ctx.player.face(n.x, n.z); A.beg(n); });

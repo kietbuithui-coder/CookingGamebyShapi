@@ -8,6 +8,7 @@ import type { Player } from './player';
 import type { Input } from './input';
 import type { Npcs } from './npc';
 import type { StallSys } from './stall';
+import type { ShopBrowse } from './shopbrowse';
 import type { UI } from '../ui/ui';
 import type { Sound } from '../audio/audio';
 import type { Interact } from './interact';
@@ -49,7 +50,7 @@ export type Mode = 'menu' | 'play' | 'cook' | 'panel' | 'sleep' | 'job';
 export interface Ctx {
   g: Game; set: Settings; mode: Mode; time: number; mobile: boolean;
   renderer: THREE.WebGLRenderer; scene: THREE.Scene; camera: THREE.PerspectiveCamera;
-  city: City; world: World; env: Env; player: Player; input: Input; npcs: Npcs; stall: StallSys; ui: UI; sound: Sound; interact: Interact; cook: Cook; acts: Acts; race: RaceSystem; anim: AnimSystem;
+  city: City; world: World; env: Env; player: Player; input: Input; npcs: Npcs; stall: StallSys; browse: ShopBrowse; ui: UI; sound: Sound; interact: Interact; cook: Cook; acts: Acts; race: RaceSystem; anim: AnimSystem;
   /** xe cộ chạy trên đường và chim trời — chỉ để thành phố có sự sống */ traffic: Traffic; birds: Birds;
   /** phút game trôi thêm mỗi giây thật (ngủ thì tua nhanh) */
   speed: number;

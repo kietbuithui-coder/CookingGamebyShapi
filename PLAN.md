@@ -747,3 +747,26 @@ Probe `tools/probe/steps/nguoi31.mjs` (390×844): tiệm may có mục Dáng ng�
 `moveMul` 94% (chậm hơn thật), râu quai nón + nón lá hiện trên mặt, bảng Nhân sự 2 phụ quầy, 20h thì ca sáng
 `cóMặt: false` còn ca chiều `true · còn 120 phút`. Console `errors: none`.
 Ảnh: `anh_ket_qua/android/33_tiem_may_dang_nguoi.png`, `34_rau_quai_non_non_la.png`, `35_ca_lam_phu_quay.png`.
+
+## Lượt 32 — Menu ẩn của lượt 31 · khách lựa hàng · người đi đường nhận ra người chơi ✅ đã xong
+
+Phần còn lại của mục §5 trong `TODO.md`, cộng thêm chỗ tôi quên ở lượt 31 (menu ẩn).
+
+- **Menu ẩn** (`src/game/devPoints.ts`) đổi sang nhóm của lượt 31: `look_shape` (tiệm may + dáng + nón), `look_beard`
+  (ghế Chú Bảy + râu), `look_apron` (dựng xe đẩy để thấy tạp dề), `talk_own` (nghe câu riêng của Chú Ba Tài & Ông Bảy),
+  `shift_help` (bảng Quầy › Nhân sự lúc 20h), `shift_watch` (đứng ở quầy xem một người vắng mặt). Sáu mục của lượt 30
+  đã chuyển sang danh sách "không được còn sót" trong `tests/devpoints.test.ts`.
+- **Khách lựa hàng ở tiệm nhỏ** (`src/game/shopbrowse.ts`, mới): người đi đường ghé **tạp hoá Cô Ba** hoặc **MiniMart**,
+  đi bộ dọc hai dãy kệ (ba điểm dừng thật trong tiệm), tới quầy nói **đúng tên món và đúng giá hôm nay**
+  (`shopPrice()`), đứng một chút rồi đi ra. Người chơi đứng cạnh thì họ **nhờ lấy giùm món trên kệ cao** —
+  bấm giúp thì uy tín +0.2 và họ cảm ơn thật (`acts.browserTalk()`). Bấm vào họ để nói chuyện
+  (`interact.ts`: nhánh riêng cho `actor === 'browse'`).
+- **Người đi đường nhận ra người chơi** (`src/sim/life.ts` + `src/data/people.ts`): `greetKind()` có thêm ba kiểu
+  **`rich`** (≥ 5 triệu và uy tín > 10), **`poor`** (< 5.000₫) và **`wanted`** (bị công an để ý ≥ 45), xếp trước cả
+  "quen mặt" và thời tiết. Mỗi kiểu có 3–4 câu riêng. Không truyền `cash` (chỗ gọi cũ) thì giữ nguyên cách chào cũ.
+
+**Kiểm thử:** `tests/life.test.ts` thêm 2 bài; tổng **454 bài / 35 tệp**. `tsc` sạch, build OK.
+Probe `tools/probe/steps/nguoi32.mjs` (390×844): menu ẩn hiện đúng nhóm lượt 31 + nhóm địa điểm; khách vào tạp hoá
+(`sốKhách: 1, tiệm: kiosk`), bấm nói chuyện thì hiện “Anh ơi, lấy giùm tôi hộp … trên kệ cao với” với nút
+**“Để tôi lấy giùm.”**; `greetKind` trả `known / rich / poor / wanted` đúng bốn trường hợp. Console `errors: none`.
+Ảnh: `anh_ket_qua/android/36_menu_an_luot31.png`, `37_khach_lua_hang.png`, `38_nho_lay_giup_mon.png`.

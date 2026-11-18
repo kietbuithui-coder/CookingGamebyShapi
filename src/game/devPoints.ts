@@ -11,7 +11,7 @@ import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Điện thoại có ba bài nhạc riêng đổi được nhạc nền, sóng radio đọc tin thật trong ván và trang WAP mỗi lần lướt đưa năm tin thật kèm giá chợ đúng giá đang bán';
+export const DEV_BUILD_TAG = 'Người chơi đổi được dáng người, râu và nón; mỗi nhân vật cố định nói câu riêng của mình; hai người phụ quầy chia ca sáng chiều và ngoài ca thì không tới quầy';
 
 export interface DevAction {
   id: string;
@@ -70,118 +70,114 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Ba bài nhạc của máy & tin thật trên radio/WAP (lượt 30)',
+      title: 'Mới nhất — Con người: dáng · râu · nón · thoại riêng · ca làm (lượt 31)',
       items: [
         {
-          id: 'music_bgm',
-          label: 'Bật Nghe nhạc: máy phát bài riêng và đổi luôn nhạc nền',
-          sub: 'Có máy cảm ứng, đầy pin · ba bài riêng của máy · “Bài khác” sang bài kế, “Tắt” trả nhạc nền theo ngữ cảnh',
+          id: 'look_shape',
+          label: 'Tiệm may: đứng trước gương, đổi dáng người cho thấy khác liền',
+          sub: 'Ba dáng (gọn / vừa / đậm) — đổi cả bề ngang lẫn chiều cao, đi nhanh chậm và hao sức cũng đổi theo · bảng chọn có thêm Nón',
           tone: 'green',
           closePanel: false,
           run: () => {
-            const g = ctx.g;
-            g.cash = Math.max(g.cash, 50000);
-            if (!g.phone) PH.activate(g, 'camung');
-            PH.fullCharge(g);
-            ctx.ui.closePanel(); ctx.ui.panel('phone');
-            PUI.phoneKey('open', 'music');
-            PUI.phoneKey('ok');
-            ctx.ui.reopenPanel('phone');
-            toast('Máy đang phát bài đầu tiên. Bấm “Bài khác” trên máy để sang bài kế — nhạc nền đổi theo.', 'info', 'smile', true);
+            const g = ctx.g, a = ctx.world.anchors.v_thoi_trang;
+            g.cash = Math.max(g.cash, 200000);
+            g.min = Math.max(g.min, 10 * 60); if (g.min >= 19 * 60) g.min = 10 * 60;
+            if (a) tpTo(a.x, a.z + 1.4, Math.PI);
+            const n = ctx.npcs.fixed.get('thoi_trang');
+            if (n) ctx.acts.talk(n);
+            toast('Bảng của Cô Ngọc có mục “Dáng người” và “Nón”. Đổi xong bấm V để ngắm mình.', 'info', 'smile', true);
           },
         },
         {
-          id: 'news_radio',
-          label: 'Mở radio: nghe bản tin thật của ván này',
-          sub: 'Thời tiết đang có, giá chợ đúng giá sạp đang bán, sự kiện đang diễn ra · “Đổi đài” đọc sang tin khác',
+          id: 'look_beard',
+          label: 'Ghế Chú Bảy: cạo râu hoặc để râu quai nón',
+          sub: 'Râu mép / râu cằm / râu quai nón — chỉ nam mới có; cạo sạch 5.000₫, để râu 8.000₫',
+          tone: 'green',
+          closePanel: false,
+          run: () => {
+            const g = ctx.g, a = ctx.world.anchors.v_hot_toc;
+            g.cash = Math.max(g.cash, 200000);
+            g.min = Math.max(g.min, 10 * 60); if (g.min >= 19 * 60) g.min = 10 * 60;
+            if (a) tpTo(a.x, a.z + 1.4, Math.PI);
+            const n = ctx.npcs.fixed.get('hot_toc');
+            if (n) ctx.acts.talk(n);
+            toast('Bảng của Chú Bảy có mục “Râu”. Chọn xong bấm V để nhìn mặt.', 'info', 'smile', true);
+          },
+        },
+        {
+          id: 'look_apron',
+          label: 'Mặc tạp dề chủ quán: dựng xe đẩy rồi xem mình ở góc nhìn thứ ba',
+          sub: 'Từ xe đẩy trở lên là tự mặc tạp dề đỏ · mở góc nhìn thứ ba (V) để thấy trên người',
           tone: 'yellow',
           closePanel: false,
           run: () => {
             const g = ctx.g;
-            g.cash = Math.max(g.cash, 50000);
-            if (!g.phone) PH.activate(g, 'camung');
-            PH.fullCharge(g);
-            ctx.ui.closePanel(); ctx.ui.panel('phone');
-            PUI.phoneKey('open', 'radio');
-            PUI.phoneKey('ok');
-            ctx.ui.reopenPanel('phone');
-            toast('Đài đang đọc tin thật: thời tiết, giá chợ, sự kiện. Bấm “Đổi đài” để nghe tin kế.', 'info', 'sun', true);
+            g.cash = Math.max(g.cash, 500000);
+            for (const id of ['ganh', 'xeday', 'daothot', 'bepthan', 'vi', 'noi']) if (!R.has(g, id)) R.buyGear(g, id);
+            if (g.stall.tier < 2) { g.stall.tier = 2; g.stall.where = 'placed'; }
+            ctx.stall.refresh(); ctx.player.syncApron();
+            if (!ctx.set.cam3) ctx.ui.switchView();
+            toast('Đã có xe đẩy — tạp dề đỏ mặc lên người rồi. Xoay camera để ngắm.', 'good', 'heart', true);
           },
         },
         {
-          id: 'news_wap',
-          label: 'Lướt WAP: mỗi trang 5 tin thật + bảng giá chợ',
-          sub: 'Máy cảm ứng mới lướt được WAP · “Trang khác” sang trang kế, giá đúng bằng giá các sạp đang bán hôm nay',
-          tone: 'green',
-          closePanel: false,
-          run: () => {
-            const g = ctx.g;
-            g.cash = Math.max(g.cash, 50000);
-            if (!g.phone) PH.activate(g, 'camung');
-            PH.fullCharge(g);
-            ctx.ui.closePanel(); ctx.ui.panel('phone');
-            PUI.phoneKey('open', 'wap');
-            PUI.phoneKey('ok');
-            ctx.ui.reopenPanel('phone');
-            toast('Trang WAP đang tải năm tin thật của ván. Bấm “Trang khác” để sang trang kế.', 'info', 'wap', true);
-          },
-        },
-        {
-          id: 'anim_radio',
-          label: 'Mở Radio trên máy cảm ứng: xem màn hình máy tự chạy',
-          sub: 'Có máy cảm ứng, đầy pin · kim dò đài quét, cột sóng nhảy, dòng tin đang phát chạy ngang màn hình',
-          tone: 'green',
-          closePanel: false,
-          run: () => {
-            const g = ctx.g;
-            g.cash = Math.max(g.cash, 50000);
-            if (!g.phone) PH.activate(g, 'camung');
-            PH.fullCharge(g);
-            // mở máy trước (mở máy là về màn hình chính), rồi mới vào app Radio và bấm cho máy bắt đài
-            ctx.ui.closePanel(); ctx.ui.panel('phone');
-            PUI.phoneKey('open', 'radio');
-            PUI.phoneKey('ok');
-            ctx.ui.reopenPanel('phone');
-            toast('Màn hình máy đang bắt đài. Bấm “Đổi đài” trên máy để nghe tin khác, “Tắt” để dừng.', 'info', 'sun', true);
-          },
-        },
-        {
-          id: 'anim_wap',
-          label: 'Lướt web WAP: trang tự cuộn, thanh tải chạy',
-          sub: 'Máy cảm ứng mới lướt được WAP · địa chỉ trang, trang tin tự trôi, “Đang tải…” nhấp nháy',
-          tone: 'green',
-          closePanel: false,
-          run: () => {
-            const g = ctx.g;
-            g.cash = Math.max(g.cash, 50000);
-            if (!g.phone) PH.activate(g, 'camung');
-            PH.fullCharge(g);
-            ctx.ui.closePanel(); ctx.ui.panel('phone');
-            PUI.phoneKey('open', 'wap');
-            PUI.phoneKey('ok');
-            ctx.ui.reopenPanel('phone');
-            toast('Trang WAP đang tải ngay trên màn hình máy — chậm đúng kiểu máy đời 2005.', 'info', 'wap', true);
-          },
-        },
-        {
-          id: 'anim_call',
-          label: 'Gọi một khách quen: màn hình máy thành màn hình cuộc gọi',
-          sub: 'Có máy, có 50.000₫, một khách quen trong danh bạ · chuông lan, “Đang gọi…”, nút TẮT MÁY bấm được',
+          id: 'talk_own',
+          label: 'Nghe câu riêng của người quen: Chú Ba Tài và Ông Bảy',
+          sub: 'Mỗi nhân vật cố định có 2–3 câu riêng, xoay theo ngày — không còn câu chung của nghề',
           tone: 'yellow',
           closePanel: false,
           run: () => {
+            ctx.ui.closePanel();
+            const a = ctx.world.anchors.v_equip, b = ctx.world.anchors.v_hobo;
+            const n = a ? ctx.npcs.fixed.get('equip') : null;
+            if (n) { tpTo(a.x, a.z + 1.6, Math.PI); ctx.npcs.say(n, 'Đòn gánh, dao thớt, bếp than — thiếu món nào chú Ba Tài cũng lo được.', 4); }
+            const m = b ? ctx.npcs.fixed.get('hobo') : null;
+            if (m) ctx.npcs.say(m, 'Đời này ai cho mình cái gì thì nhớ, đừng quên.', 4.5);
+            toast('Hai người quen đang nói câu riêng của họ — mỗi ngày lại đổi câu khác.', 'info', 'chat', true);
+          },
+        },
+        {
+          id: 'shift_help',
+          label: 'Chia ca hai người phụ quầy: ca sáng / ca chiều',
+          sub: 'Mở bảng Quầy › Nhân sự · người ngoài ca KHÔNG tới quầy · nút đổi ca kèm số giờ còn lại',
+          tone: 'green',
+          closePanel: false,
+          run: () => {
             const g = ctx.g;
-            g.cash = Math.max(g.cash, 50000);
-            if (!g.phone) PH.activate(g, 'camung');
-            PH.fullCharge(g);
-            const rid = REGULARS[0].id;
-            g.rel[rid] = { v: Math.max(20, g.rel[rid]?.v ?? 0), n: Math.max(1, g.rel[rid]?.n ?? 0), last: -1 };
-            g.flags['call_' + rid] = -1;
-            ctx.ui.closePanel(); ctx.ui.panel('phone');
-            PUI.phoneKey('open', 'contacts');
-            ctx.acts.phoneCall(rid);
-            ctx.ui.reopenPanel('phone');
-            toast('Màn hình máy đang gọi. Bấm TẮT MÁY trên máy để cúp.', 'info', 'phone', true);
+            g.cash = Math.max(g.cash, 2000000);
+            g.flags.firstSale = g.day - 6; g.led.revenue = Math.max(g.led.revenue, 900000);
+            for (const id of ['ganh', 'xeday', 'sap', 'quanan', 'quanngoi', 'nhahang']) { if (!R.has(g, id)) R.buyGear(g, id); }
+            g.stall.tier = Math.max(g.stall.tier, 6);
+            g.gear.nhahang = 100;
+            if (!g.help) R.hireHelper(g); if (!g.help2) R.hireHelper(g);
+            g.helpShift = { 1: 'sang', 2: 'chieu' };
+            g.min = 20 * 60;                       // 20h: ca sáng đã hết, chỉ ca chiều còn ở quầy
+            ctx.stall.refresh();
+            ctx.ui.closePanel(); ctx.ui.panel('stall');
+            toast('Đang 20h: người ca sáng đã về, ca chiều còn 2 tiếng. Bấm nút cạnh tên để đổi ca.', 'info', 'clock', true);
+          },
+        },
+        {
+          id: 'shift_watch',
+          label: 'Đứng ở quầy xem ca làm: 20h thì một người vắng mặt',
+          sub: 'Dựng nhà hàng, thuê hai người, cho một người ca sáng một người ca chiều rồi xem quầy',
+          tone: 'yellow',
+          closePanel: false,
+          run: () => {
+            const g = ctx.g, S = ctx.stall;
+            g.cash = Math.max(g.cash, 2000000);
+            g.flags.firstSale = g.day - 6; g.led.revenue = Math.max(g.led.revenue, 900000);
+            for (const id of ['ganh', 'xeday', 'sap', 'quanan', 'quanngoi', 'nhahang']) { if (!R.has(g, id)) R.buyGear(g, id); }
+            g.stall.tier = Math.max(g.stall.tier, 6); g.gear.nhahang = 100;
+            const sp = SPOTS.find((x) => x.id === 'matbang_tb') ?? SPOTS[0];
+            if (g.stall.where !== 'placed' || g.stall.spot !== sp.id) S.placeAt(sp);
+            g.stall.open = true; g.stall.cond = 100;
+            if (!g.help) R.hireHelper(g); if (!g.help2) R.hireHelper(g);
+            g.helpShift = { 1: 'sang', 2: 'chieu' };
+            g.min = 20 * 60;
+            tpSpot(sp.id, 'mặt bằng quán');
+            ctx.stall.refresh();
+            toast('20h: quầy chỉ còn người ca chiều. Đến 14h thì ngược lại, ca sáng về trước.', 'info', 'clock', true);
           },
         },
       ],

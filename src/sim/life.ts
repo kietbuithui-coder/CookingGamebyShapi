@@ -53,11 +53,28 @@ export function routineFor(arch: ArchId, hour: number): string[] {
   }
 }
 
-export type GreetKind = 'known' | 'rain' | 'cold' | 'hot' | 'morning' | 'noon' | 'evening' | 'night';
-export interface GreetCtx { hour: number; rain: number; weather: string; rep: number; met: boolean; }
+export type GreetKind = 'known' | 'rain' | 'cold' | 'hot' | 'morning' | 'noon' | 'evening' | 'night'
+  | 'rich' | 'poor' | 'wanted';
 
-/** Kiểu câu chào: quen mặt trước, rồi tới thời tiết, rồi tới giờ trong ngày. */
+export interface GreetCtx {
+  hour: number; rain: number; weather: string; rep: number; met: boolean;
+  /** Tiền trong túi (tiền mặt + ngân hàng) — để người đi đường nhận ra ai vừa đổi đời. */
+  cash?: number;
+  /** Mức bị công an để ý 0–100 — cao thì người ta né hoặc nói xa gần. */
+  wanted?: number;
+}
+
+/**
+ * Kiểu câu chào, xếp theo mức đáng nói: bị công an để ý → vừa giàu → quen mặt → thời tiết → giờ trong ngày.
+ * Người nghèo chỉ bị nhắc khi thật sự túng (dưới 5.000₫) để không thành câu chê người chơi.
+ */
 export function greetKind(c: GreetCtx): GreetKind {
+  if ((c.wanted ?? 0) >= 45) return 'wanted';
+  // `cash` không truyền vào (chỗ gọi cũ) thì coi như "không biết", đừng đoán bừa là nghèo.
+  if (c.cash !== undefined) {
+    if (c.cash >= 5_000_000 && c.rep > 10) return 'rich';
+    if (c.cash < 5_000) return 'poor';
+  }
   if (c.met && c.rep > 6) return 'known';
   if (c.rain > 0.35) return 'rain';
   if (c.weather === 'nong') return 'hot';
