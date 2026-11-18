@@ -100,6 +100,21 @@ describe('tin trong ván: radio và WAP chỉ nói chuyện có thật', () => {
     for (const x of all) { expect(x.title.length).toBeGreaterThan(3); expect(x.body.length).toBeGreaterThan(5); }
   });
 
+  it('không bịa chuyện ngoài đường: chưa quen khách nào thì bản tin không nhắc ai, quen rồi mới nhắc đúng người', () => {
+    const g = boot();
+    for (const n of news(g)) expect(n.title).not.toContain('Xe ôm');
+    for (const n of news(g)) expect(n.body).not.toContain('đầu hẻm');
+    // quen Chú Ba xe ôm (đã ghé quán 2 lần) → bản tin nhắc anh ấy, đúng giờ trong dữ liệu khách quen
+    g.rel.chu_ba = { v: 20, n: 2, last: -1 };
+    const line = news(g).find((x) => x.title.includes('Chú Ba xe ôm'));
+    expect(line).toBeTruthy();
+    expect(line!.body).toContain('ghé 2 lần');
+    expect(line!.body).toContain('11 giờ');
+    // người chỉ mới quen (chưa ghé lần nào) thì không lên bản tin
+    g.rel.ong_sau = { v: 30, n: 0, last: -1 };
+    expect(news(g).some((x) => x.title.includes('Ông Sáu'))).toBe(false);
+  });
+
   it('chuyện của chính người chơi cũng vào bản tin: quán đóng, nợ quá hạn, máy yếu pin', () => {
     const g = boot();
     g.phone!.battery = 12;

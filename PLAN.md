@@ -707,7 +707,14 @@ bảng giá thật (món rẻ nhất + đắt nhất đang bán), và món nào 
 đổi BGM, Bài khác đi hết ba bài rồi quay vòng, Tắt trả BGM về ngữ cảnh) và `tests/news.test.ts` (7 bài: tin thời
 tiết đúng ván, giá đúng `shopPrice`, sang ngày thì giá đổi và tin nói đúng lên/xuống, sự kiện vào bản tin, tin giá
 kèm bảng giá không trùng, mỗi trang WAP đúng 5 tin và sang trang là tin khác, chuyện của người chơi vào bản tin)
-→ tổng **435 bài / 34 tệp**. Menu Test & Dịch chuyển ẩn thêm ba mục `music_bgm`, `news_radio`, `news_wap`.
+→ tổng **436 bài / 34 tệp**.
+
+**Sửa ngay sau khi người chơi bắt lỗi:** bản tin có câu *“Chú Ba đứng đầu hẻm từ 5 giờ, chở hàng nặng thì nhớ trả
+thêm vài ngàn”* — **bịa**: Chú Ba xe ôm trong game chỉ là **khách quen** (`REGULARS`, giờ 11,5) thỉnh thoảng ghé
+quán ăn trưa, không có dịch vụ xe ôm nào và không có ai đứng ở hẻm. Câu đó bỏ hẳn; thay bằng tin khách quen chỉ
+xuất hiện **khi người chơi đã thực sự bán cho họ** (`g.rel[id].n > 0`), và nói đúng số lần ghé + giờ hay tới + ghi
+chú của người đó trong dữ liệu. Thêm 1 bài kiểm canh đúng lỗi này ("chưa quen ai thì bản tin không nhắc ai, không
+có 'đầu hẻm'") → **436 bài / 34 tệp**. Menu Test & Dịch chuyển ẩn thêm ba mục `music_bgm`, `news_radio`, `news_wap`.
 Probe `steps/anim30.mjs` + `animshot30.mjs` (390×844): bật nhạc → `bgm: phone_mua_chieu`, Bài khác →
 `phone_pho_chieu`, radio đọc “Thời tiết sáng: nắng đẹp…”, WAP trang 1 có 5 tin + `Giá chợ hôm nay`. Console sạch.
 Ảnh: `anh_ket_qua/android/28..32`.

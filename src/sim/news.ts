@@ -9,6 +9,7 @@ import { WEATHER } from '../data/world';
 import { INGS } from '../data/ingredients';
 import { SHOPS, SHOP_LIST } from '../data/shops';
 import { HOUSING } from '../data/gear';
+import { REGULARS } from '../data/people';
 import { money } from '../core/util';
 import * as R from './rules';
 
@@ -125,7 +126,15 @@ export function news(g: Game): News[] {
   }
   // 9. chuyện trong xóm (đúng người, đúng giờ)
   out.push({ title: 'Chợ Xóm Chiều', body: `Chợ họp từ 4 giờ sáng, đông nhất ${h < 9 ? 'lúc này' : 'khoảng 6–8 giờ'}. Sạp rau Cô Bảy hay xả hàng cuối buổi.`, tone: 'info' });
-  out.push({ title: 'Xe ôm Chú Ba', body: `Chú Ba đứng đầu hẻm từ 5 giờ, chở hàng nặng thì nhớ trả thêm vài ngàn.`, tone: 'info' });
+  // 9b. khách quen: chỉ nói khi ĐÚNG là người đã từng ghé quán (g.rel), và nói đúng giờ/lý do của họ trong dữ liệu
+  for (const r of REGULARS) {
+    const rel = g.rel[r.id];
+    if (!rel || rel.n <= 0) continue;
+    const dueH = Math.floor(r.hour), dueM = Math.round((r.hour - dueH) * 60);
+    const when = h < r.hour ? `khoảng ${dueH} giờ ${dueM ? dueM + ' ' : ''}` : 'giờ này';
+    out.push({ title: `${r.name} quen quán`, body: `Khách quen đã ghé ${rel.n} lần, hay tới ${when}. ${r.note}`, tone: 'info' });
+    break;
+  }
   // 10. hàng trong quầy của mình có còn tươi không (món dễ hỏng nhất)
   const spoilable = [...g.stall.store, ...g.home].filter((st) => INGS[st.id] && INGS[st.id].shelf < 9000).sort((a, b) => a.fresh - b.fresh)[0];
   if (spoilable) {
