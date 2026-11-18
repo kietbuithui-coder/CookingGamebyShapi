@@ -1,7 +1,7 @@
 // Người phụ việc ở quầy: chỉ nhận khi quán đã có doanh thu và đã bán được vài ngày (yêu cầu của người chơi),
 // rồi thì ăn lương theo ngày, dỗ khách chờ lâu hơn.
 import { describe, it, expect } from 'vitest';
-import { helperGate, hireHelper, fireHelper, helperPatience, helperCandidate, stallRevenue, HELPER_MIN_REVENUE, HELPER_MIN_DAYS, advance } from '../src/sim/rules';
+import { helperGate, hireHelper, fireHelper, helperPatience, helperCandidate, stallRevenue, helperCount, errandWho, isRestaurant, HELPER_MIN_REVENUE, HELPER_MIN_DAYS, advance } from '../src/sim/rules';
 import { SAVE_VERSION, migrate, newGame } from '../src/sim/state';
 import { HELPER_POOL } from '../src/data/people';
 import { fresh, IDLE } from './helpers';
@@ -132,5 +132,25 @@ describe('bản lưu v10', () => {
     expect(back.help?.name).toBe(g.help?.name);
     expect(back.help?.wage).toBe(g.help?.wage);
     expect(back.help?.hired).toBe(true);
+  });
+});
+
+// Lỗi người chơi báo (lượt 35): quán bậc 3–5 thuê được phụ quầy nhưng bảng Quầy không có tab Nhân sự,
+// nên mất luôn nút "Giao đi chợ…". Nay tab đó hiện khi CÓ người làm, không chỉ khi là nhà hàng.
+describe('có người làm là phải có bảng nhân sự', () => {
+  const hasStaff = (g: Game) => isRestaurant(g) || helperCount(g) > 0 || g.errands.length > 0 || !!g.branch?.keeper;
+  it('quán thường chưa thuê ai thì ẩn, thuê rồi thì hiện', () => {
+    const g = stallWith(900000, 6, 5);
+    expect(hasStaff(g)).toBe(false);
+    expect(hireHelper(g, helperCandidate(g))).toBe(true);
+    expect(helperCount(g)).toBe(1);
+    expect(hasStaff(g)).toBe(true);
+    expect(errandWho(g, 0)?.role).toBe('phụ quầy');
+    expect(isRestaurant(g)).toBe(false);
+  });
+  it('còn chuyến đi chợ đang chạy thì vẫn phải giữ tab nhân sự', () => {
+    const g = stallWith(900000, 6, 4);
+    g.errands.push({ slot: 0, who: 'Ai đó', day: g.day, legs: 40, t: 0, lines: [], shop: 'cho', total: 0, back: false });
+    expect(hasStaff(g)).toBe(true);
   });
 });

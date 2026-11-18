@@ -11,7 +11,7 @@ import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Người chơi đổi được dáng người, râu và nón; mỗi nhân vật cố định nói câu riêng của mình; hai người phụ quầy chia ca sáng chiều và ngoài ca thì không tới quầy';
+export const DEV_BUILD_TAG = 'Quán thường (bậc 3–5) đã thuê phụ quầy thì bảng Quầy có tab Nhân sự và giao được người đi chợ';
 
 export interface DevAction {
   id: string;
@@ -70,114 +70,42 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Con người: dáng · râu · nón · thoại riêng · ca làm (lượt 31)',
+      title: 'Mới nhất — Quán thường cũng có bảng Nhân sự, giao được người đi chợ (lượt 35)',
       items: [
         {
-          id: 'look_shape',
-          label: 'Tiệm may: đứng trước gương, đổi dáng người cho thấy khác liền',
-          sub: 'Ba dáng (gọn / vừa / đậm) — đổi cả bề ngang lẫn chiều cao, đi nhanh chậm và hao sức cũng đổi theo · bảng chọn có thêm Nón',
-          tone: 'green',
-          closePanel: false,
-          run: () => {
-            const g = ctx.g, a = ctx.world.anchors.v_thoi_trang;
-            g.cash = Math.max(g.cash, 200000);
-            g.min = Math.max(g.min, 10 * 60); if (g.min >= 19 * 60) g.min = 10 * 60;
-            if (a) tpTo(a.x, a.z + 1.4, Math.PI);
-            const n = ctx.npcs.fixed.get('thoi_trang');
-            if (n) ctx.acts.talk(n);
-            toast('Bảng của Cô Ngọc có mục “Dáng người” và “Nón”. Đổi xong bấm V để ngắm mình.', 'info', 'smile', true);
-          },
-        },
-        {
-          id: 'look_beard',
-          label: 'Ghế Chú Bảy: cạo râu hoặc để râu quai nón',
-          sub: 'Râu mép / râu cằm / râu quai nón — chỉ nam mới có; cạo sạch 5.000₫, để râu 8.000₫',
-          tone: 'green',
-          closePanel: false,
-          run: () => {
-            const g = ctx.g, a = ctx.world.anchors.v_hot_toc;
-            g.cash = Math.max(g.cash, 200000);
-            g.min = Math.max(g.min, 10 * 60); if (g.min >= 19 * 60) g.min = 10 * 60;
-            if (a) tpTo(a.x, a.z + 1.4, Math.PI);
-            const n = ctx.npcs.fixed.get('hot_toc');
-            if (n) ctx.acts.talk(n);
-            toast('Bảng của Chú Bảy có mục “Râu”. Chọn xong bấm V để nhìn mặt.', 'info', 'smile', true);
-          },
-        },
-        {
-          id: 'look_apron',
-          label: 'Mặc tạp dề chủ quán: dựng xe đẩy rồi xem mình ở góc nhìn thứ ba',
-          sub: 'Từ xe đẩy trở lên là tự mặc tạp dề đỏ · mở góc nhìn thứ ba (V) để thấy trên người',
-          tone: 'yellow',
-          closePanel: false,
-          run: () => {
-            const g = ctx.g;
-            g.cash = Math.max(g.cash, 500000);
-            for (const id of ['ganh', 'xeday', 'daothot', 'bepthan', 'vi', 'noi']) if (!R.has(g, id)) R.buyGear(g, id);
-            if (g.stall.tier < 2) { g.stall.tier = 2; g.stall.where = 'placed'; }
-            ctx.stall.refresh(); ctx.player.syncApron();
-            if (!ctx.set.cam3) ctx.ui.switchView();
-            toast('Đã có xe đẩy — tạp dề đỏ mặc lên người rồi. Xoay camera để ngắm.', 'good', 'heart', true);
-          },
-        },
-        {
-          id: 'talk_own',
-          label: 'Nghe câu riêng của người quen: Chú Ba Tài và Ông Bảy',
-          sub: 'Mỗi nhân vật cố định có 2–3 câu riêng, xoay theo ngày — không còn câu chung của nghề',
-          tone: 'yellow',
-          closePanel: false,
-          run: () => {
-            ctx.ui.closePanel();
-            const a = ctx.world.anchors.v_equip, b = ctx.world.anchors.v_hobo;
-            const n = a ? ctx.npcs.fixed.get('equip') : null;
-            if (n) { tpTo(a.x, a.z + 1.6, Math.PI); ctx.npcs.say(n, 'Đòn gánh, dao thớt, bếp than — thiếu món nào chú Ba Tài cũng lo được.', 4); }
-            const m = b ? ctx.npcs.fixed.get('hobo') : null;
-            if (m) ctx.npcs.say(m, 'Đời này ai cho mình cái gì thì nhớ, đừng quên.', 4.5);
-            toast('Hai người quen đang nói câu riêng của họ — mỗi ngày lại đổi câu khác.', 'info', 'chat', true);
-          },
-        },
-        {
-          id: 'shift_help',
-          label: 'Chia ca hai người phụ quầy: ca sáng / ca chiều',
-          sub: 'Mở bảng Quầy › Nhân sự · người ngoài ca KHÔNG tới quầy · nút đổi ca kèm số giờ còn lại',
+          id: 'staff_shop5',
+          label: 'Quán thường (bậc 5) có phụ quầy: mở Quầy › Nhân sự, giao người đi chợ',
+          sub: 'Thuê người phụ quầy rồi mở bảng Quầy — tab Nhân sự có cả ở quán nhỏ, không chỉ nhà hàng',
           tone: 'green',
           closePanel: false,
           run: () => {
             const g = ctx.g;
-            g.cash = Math.max(g.cash, 2000000);
+            g.cash = Math.max(g.cash, 3000000);
             g.flags.firstSale = g.day - 6; g.led.revenue = Math.max(g.led.revenue, 900000);
-            for (const id of ['ganh', 'xeday', 'sap', 'quanan', 'quanngoi', 'nhahang']) { if (!R.has(g, id)) R.buyGear(g, id); }
-            g.stall.tier = Math.max(g.stall.tier, 6);
-            g.gear.nhahang = 100;
-            if (!g.help) R.hireHelper(g); if (!g.help2) R.hireHelper(g);
-            g.helpShift = { 1: 'sang', 2: 'chieu' };
-            g.min = 20 * 60;                       // 20h: ca sáng đã hết, chỉ ca chiều còn ở quầy
+            for (const id of ['ganh', 'xeday', 'sap', 'quanan']) { if (!R.has(g, id)) R.buyGear(g, id); }
+            g.stall.tier = 5; g.stall.where = 'placed'; g.gear.nhahang = 0; g.sous = null;
+            if (!g.help) R.hireHelper(g);
             ctx.stall.refresh();
             ctx.ui.closePanel(); ctx.ui.panel('stall');
-            toast('Đang 20h: người ca sáng đã về, ca chiều còn 2 tiếng. Bấm nút cạnh tên để đổi ca.', 'info', 'clock', true);
+            toast('Quán thường đã có tab Nhân sự: giao người phụ quầy đi chợ đúng món còn thiếu.', 'good', 'shop', true);
           },
         },
         {
-          id: 'shift_watch',
-          label: 'Đứng ở quầy xem ca làm: 20h thì một người vắng mặt',
-          sub: 'Dựng nhà hàng, thuê hai người, cho một người ca sáng một người ca chiều rồi xem quầy',
+          id: 'staff_rest6',
+          label: 'Lên nhà hàng bình dân (bậc 6): bảng Nhân sự có thêm Đặt bàn trước',
+          sub: 'Cùng một bảng: đặt bàn trước, bếp trưởng tự duyệt và người đi chợ nằm chung một chỗ',
           tone: 'yellow',
           closePanel: false,
           run: () => {
-            const g = ctx.g, S = ctx.stall;
-            g.cash = Math.max(g.cash, 2000000);
+            const g = ctx.g;
+            g.cash = Math.max(g.cash, 3000000);
             g.flags.firstSale = g.day - 6; g.led.revenue = Math.max(g.led.revenue, 900000);
             for (const id of ['ganh', 'xeday', 'sap', 'quanan', 'quanngoi', 'nhahang']) { if (!R.has(g, id)) R.buyGear(g, id); }
-            g.stall.tier = Math.max(g.stall.tier, 6); g.gear.nhahang = 100;
-            const sp = SPOTS.find((x) => x.id === 'matbang_tb') ?? SPOTS[0];
-            if (g.stall.where !== 'placed' || g.stall.spot !== sp.id) S.placeAt(sp);
-            g.stall.open = true; g.stall.cond = 100;
-            if (!g.help) R.hireHelper(g); if (!g.help2) R.hireHelper(g);
-            g.helpShift = { 1: 'sang', 2: 'chieu' };
-            g.min = 20 * 60;
-            tpSpot(sp.id, 'mặt bằng quán');
+            g.stall.tier = 6; g.stall.where = 'placed'; g.gear.nhahang = 100;
+            if (!g.help) R.hireHelper(g);
             ctx.stall.refresh();
-            toast('20h: quầy chỉ còn người ca chiều. Đến 14h thì ngược lại, ca sáng về trước.', 'info', 'clock', true);
+            ctx.ui.closePanel(); ctx.ui.panel('stall');
+            toast('Nhà hàng bình dân: tab Nhân sự & Đặt bàn — nhận bàn, tự duyệt, giao đi chợ.', 'info', 'star', true);
           },
         },
       ],

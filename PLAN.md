@@ -770,3 +770,31 @@ Probe `tools/probe/steps/nguoi32.mjs` (390×844): menu ẩn hiện đúng nhóm 
 (`sốKhách: 1, tiệm: kiosk`), bấm nói chuyện thì hiện “Anh ơi, lấy giùm tôi hộp … trên kệ cao với” với nút
 **“Để tôi lấy giùm.”**; `greetKind` trả `known / rich / poor / wanted` đúng bốn trường hợp. Console `errors: none`.
 Ảnh: `anh_ket_qua/android/36_menu_an_luot31.png`, `37_khach_lua_hang.png`, `38_nho_lay_giup_mon.png`.
+
+## Lượt 35 — Sửa lỗi: quán thường mất nút "Giao đi chợ…" ✅ đã xong
+
+Người chơi báo *"mất nút giao mua đồ"* trong bảng Quầy, và hỏi có phải do dev mode không. **Không phải dev mode.**
+
+- **Nguyên nhân**: tab **Nhân sự** chỉ được thêm vào bảng Quầy khi `isRestaurant(g)` (bậc ≥ 6). Nhưng từ lượt 31,
+  quán bậc 3–5 đã thuê được người phụ quầy (và phải giao được họ đi chợ) → quán nhỏ **thuê được người mà không có
+  tab nào chứa nút**. Khối `errandBlock()` thì nằm sâu trong nhánh "nhà hàng + chuỗi cửa hàng".
+- **Sửa** (`src/ui/panels.ts`): điều kiện tab đổi từ `rest` sang `hasStaff = rest || helperCount > 0 || errands.length > 0
+  || branch?.keeper`. Nhãn tab là **"Nhân sự"** ở quán thường, **"Nhân sự & Đặt bàn"** ở nhà hàng. Phần **Đặt bàn trước**
+  bọc trong `if (rest)`, khối **chi nhánh** trong `if (R.isChain(g))`, còn **đi chợ + báo cáo** nằm ngoài, luôn hiện.
+- **Bớt chữ thừa**: quán thường không còn bày mục "Nhân viên phụ bếp (0/0)" (chưa có bếp riêng) và dòng
+  "Bếp trưởng tự duyệt đặt bàn — cần có bếp trưởng (nhà hàng bình dân)" — chỉ dặn việc chưa làm được.
+- **Menu ẩn** (`devPoints.ts`) đổi sang nhóm của lượt này: `staff_shop5` (quán bậc 5 có phụ quầy → mở Quầy › Nhân sự,
+  có nút giao đi chợ) và `staff_rest6` (lên nhà hàng bình dân → thêm Đặt bàn trước). Nhóm "Địa điểm — tele nhanh" giữ nguyên.
+
+**Kiểm thử:** `tests/helper.test.ts` thêm 2 bài (`hasStaff` + chuyến đi chợ còn chạy), `tests/devpoints.test.ts` cập nhật
+→ tổng **456 bài / 35 tệp**. `tsc` sạch, `build` + `build:pages` OK.
+Probe `tools/probe/steps/checkstaff.mjs` (390×844), kết quả `đạt: true`:
+
+| Trường hợp | Tab | Có "Giao đi chợ…" | Có "Đặt bàn trước" | Tự duyệt đặt bàn |
+|---|---|---|---|---|
+| Quán thường bậc 5, 1 phụ quầy | `Nhân sự` | ✅ | ❌ (đúng) | ❌ (đúng) |
+| Nhà hàng bình dân bậc 6 | `Nhân sự & Đặt bàn` | ✅ | ✅ | có bếp trưởng mới hiện |
+
+`tools/probe/steps/checkdev35.mjs`: mở menu ẩn 8 lần bấm → bấm "Chạy" ở mục đầu → ra bảng Quầy có tab **Nhân sự** và nút
+**Giao đi chợ…** (`nútChợ: ["Giao đi chợ…"]`, `errors: none`).
+Ảnh: `anh_ket_qua/android/39_quan_thuong_co_nhan_su.png`, `40_nha_hang_nhan_su_dat_ban.png`.
