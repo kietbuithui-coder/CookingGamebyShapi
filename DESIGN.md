@@ -19,7 +19,7 @@ Một vòng chơi trọn vẹn và thật sự chạy được: **tay trắng �
 
 Hai nguyên tắc giữ cho mã kiểm thử được:
 
-1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 401 bài kiểm thử (30 tệp) chạy trong Node trong khoảng 7 giây.
+1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 406 bài kiểm thử (30 tệp) chạy trong Node trong khoảng 7 giây.
 2. **Mọi ngẫu nhiên trong luật chơi nhận một `RNG` có hạt giống** làm tham số cuối, nên kết quả kiểm thử lặp lại được.
 
 Vòng lặp chính (`src/main.ts`): đọc điều khiển → `advance()` cho thời gian game trôi (0,75 phút game mỗi giây thật, một ngày = 32 phút thật; khi ngủ 48 phút game mỗi giây) → cập nhật người chơi, NPC, quầy, nấu ăn, môi trường → vẽ. `dt` bị chặn ở 50 ms nên máy rất chậm thì game chạy chậm lại chứ không nhảy cóc.
@@ -670,7 +670,18 @@ trưởng lên trước vì đó là người lo bếp. `lowStockCount(g)` đế
 **Bảng `'report'`.** "Báo cáo & gợi ý của người làm": mỗi người một thẻ gồm câu nói, danh sách món sắp hết (kèm số
 phần còn nấu được), danh sách nguyên liệu (còn/cần), và nút **Giao … đi chợ — số tiền** mở thẳng bảng `'errand'` với
 đúng người và đúng món; cuối bảng là danh sách cả thực đơn kèm nhãn `sắp hết / ít / ok`. Vào từ 3 chỗ: chip
-**“Sắp hết đồ N món · xem báo cáo”** trên HUD (dải sự kiện), nút **Mở báo cáo** trong tab Nhân sự, và menu ẩn.
+**“Thiếu thịt heo nạc, trứng… · xem chi tiết”** trên HUD (dải sự kiện; rê chuột xem từng thứ còn bao nhiêu / cần bao nhiêu),
+nút **Mở báo cáo** trong tab Nhân sự, và menu ẩn.
+
+**Nói rõ thiếu gì (lượt 26).** Câu cũ “Sắp hết đồ N món” không cho biết thiếu gì, và con số *món* lại đến từ
+`lowStockCount` (đếm món nấu tiếp được ≤ 1 phần) nên người chơi phải mở báo cáo mới hiểu. Nay `stockShortages(g)` trả
+`{ id, name, unit, left, need, dishes, shop, cost }` cho **từng nguyên liệu** đang chặn món đã bật: còn bao nhiêu, cần
+mua thêm bao nhiêu (đơn vị rời như chai/lon/quả/bó thì **làm tròn lên cả cái**, kg/lạng một chữ số thập phân), chợ nào bán
+rẻ nhất và hết bao nhiêu tiền; `shortageLine(g)` là câu ngắn cho chip HUD. Thứ chặn nhiều món lên trước. Ca “đủ nguyên
+liệu nhưng chưa sơ chế” thì `needsPrepCount(g)` báo **“N món cần sơ chế trước”** thay vì đổ lỗi thiếu đồ. Bảng **Quầy ›
+Thực đơn** có ô đỏ *Thiếu nguyên liệu cho món đang bán* (tối đa 6 dòng + “xem tab Kho quầy”), và nút **Sơ chế** khi thiếu
+đồ **không còn bị khoá im lặng** mà đổi thành “Thiếu đồ — xem thiếu gì” (class `.need`, vẫn bấm được), bấm là hiện toast
+đúng nguyên liệu còn thiếu và bảng vẫn mở (`acts.prep` chặn trước khi đóng bảng).
 
 **Quyền tự duyệt đặt bàn.** `setAutoBook(g, on)` ghi `g.flags.autoBook` (dùng `flags` nên **không cần đổi bản lưu**),
 `autoBookOn(g)` chỉ trả `true` khi đã có bếp trưởng (`canAutoBook`). Khi bật, `createBooking` tạo phiếu ở trạng thái
@@ -837,7 +848,7 @@ Người chơi đã thử bản đầu và gửi danh sách góp ý; việc đư
 Còn lại:
 
 1. **Đã xong 3 kiểu chỗ ở mới: căn hộ, nhà riêng, cửa hàng kiêm nhà ở** (8/8) — xem mục 4.13.
-2. **Đã xong sạp cố định (bậc 3)** — mục 4.12, **quán ăn nhỏ (bậc 4)** — mục 4.22, và **quán có chỗ ngồi (bậc 5)** — mục 4.25, **nhà hàng bình dân (bậc 6)** — mục 4.26, **chuỗi cửa hàng (bậc 7)** — mục 4.27, **giao người làm đi chợ** — mục 4.28, **báo cáo sắp hết đồ + tự duyệt đặt bàn** — mục 4.29, **vựa ve chai thứ hai + bấm chuông mở cửa** — mục 4.30, **ba giao diện điện thoại** — mục 4.31, và **app Quản lý cửa hàng** — mục 4.32. Nhánh kinh doanh đã đủ **7/7 bậc**; việc kế tiếp là hệ thống băng nhóm.
+2. **Đã xong sạp cố định (bậc 3)** — mục 4.12, **quán ăn nhỏ (bậc 4)** — mục 4.22, và **quán có chỗ ngồi (bậc 5)** — mục 4.25, **nhà hàng bình dân (bậc 6)** — mục 4.26, **chuỗi cửa hàng (bậc 7)** — mục 4.27, **giao người làm đi chợ** — mục 4.28, **báo cáo sắp hết đồ + tự duyệt đặt bàn** — mục 4.29, **vựa ve chai thứ hai + bấm chuông mở cửa** — mục 4.30, **ba giao diện điện thoại** — mục 4.31, **app Quản lý cửa hàng** — mục 4.32, **cảnh báo thiếu nguyên liệu nói rõ thiếu gì** — mục 4.29. Nhánh kinh doanh đã đủ **7/7 bậc**; việc kế tiếp là hệ thống băng nhóm.
 3. Hệ thống băng nhóm.
 4. Danh sách đầy đủ những gì còn lại nằm ở `TODO.md`.
 

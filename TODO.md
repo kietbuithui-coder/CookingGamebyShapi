@@ -6,7 +6,7 @@ Danh sách những gì **chưa làm**, rà theo mã ngày 2026-11-17 (`main` = `
 đua xe đạp · NPC sinh hoạt theo giờ · giao diện dễ đọc · 16 biểu cảm · 8 kiểu tóc · người phụ việc ·
 ngoại hình người chơi (góc nhìn thứ ba, cắt tóc, thời trang) · quán có chỗ ngồi (sáu ghế bàn gỗ, thực đơn theo buổi, gọi thêm) ·
 nhà hàng bình dân (8 ghế trong nhà kín, đặt bàn trước, phụ bếp, khách đoàn) ·
-chuỗi cửa hàng (chi nhánh thứ hai, người trông coi, sổ từng điểm) · giao người làm đi chợ mua nguyên liệu · báo cáo sắp hết đồ của người làm · bếp trưởng tự duyệt đặt bàn · vựa ve chai thứ hai (Bà Chín) · bấm chuông thì cửa mở · ba giao diện điện thoại · app Quản lý cửa hàng (bật/tắt bán từ xa, cảnh báo bán lỗ, công tắc khớp trạng thái thật, ân hạn 20 giây) · giao diện điện thoại Android soát bằng probe 4 khổ (không còn tràn/cắt, vùng chạm ≥ 30 px) · 401 bài kiểm thử / 30 tệp.
+chuỗi cửa hàng (chi nhánh thứ hai, người trông coi, sổ từng điểm) · giao người làm đi chợ mua nguyên liệu · báo cáo sắp hết đồ của người làm · bếp trưởng tự duyệt đặt bàn · vựa ve chai thứ hai (Bà Chín) · bấm chuông thì cửa mở · ba giao diện điện thoại · app Quản lý cửa hàng (bật/tắt bán từ xa, cảnh báo bán lỗ, công tắc khớp trạng thái thật, ân hạn 20 giây) · cảnh báo thiếu nguyên liệu nói rõ thiếu gì + mua ở đâu (chip HUD, bảng Quầy, nút Sơ chế) · giao diện điện thoại Android soát bằng probe 4 khổ (không còn tràn/cắt, vùng chạm ≥ 30 px) · 406 bài kiểm thử / 30 tệp.
 
 ---
 

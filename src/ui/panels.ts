@@ -109,7 +109,12 @@ export function openPanel(ui: UI, name: string) {
       acts.sw = (_i, e) => { const rs = g.rec[e.dataset.k!], on = R.menuOf(g).length; if (!rs.on && on >= T.menu) { toast(`${T.name} chỉ bán được tối đa ${T.menu} món cùng lúc.`, 'warn'); return; } rs.on = !rs.on; sfx('ui'); };
       acts.pm = (_i, e) => { const rs = g.rec[e.dataset.k!]; rs.price = clamp(rs.price + +e.dataset.d!, 1000, 500000); };
       acts.sug = (_i, e) => { const r = RECIPES[e.dataset.k!]; g.rec[r.id].price = R.suggestPrice(g, r); };
-      acts.prep = (_i, e) => { const r = RECIPES[e.dataset.k!]; ui.closePanel(); ctx.cook.prep(r); };
+      // Thiếu nguyên liệu: báo ngay trên bảng (toast trôi mất, người chơi không kịp đọc) rồi mới đóng bảng.
+      acts.prep = (_i, e) => {
+        const r = RECIPES[e.dataset.k!], miss = R.missingFor(g, r, 'prep');
+        if (R.prepPossible(g, r) < 1 && miss.length) { toast(`Chưa sơ chế ${r.short.toLowerCase()} được — thiếu ${miss.map((x) => x.toLowerCase()).join(', ')}.`, 'warn', 'box'); render(); return; }
+        ui.closePanel(); ctx.cook.prep(r);
+      };
       acts.make = (_i, e) => { const r = RECIPES[e.dataset.k!]; ui.closePanel(); ctx.cook.finish(r); };
       acts.eatd = (i) => ctx.acts.eatDish(i);
       acts.toBag = (i) => { const room = R.carryCap(g) - R.bagWeight(g), k = moveStack(s.store, g.bag, i, 1e9, room); if (!k) toast('Túi đầy rồi.', 'warn'); else sfx('pick'); };
@@ -134,7 +139,10 @@ export function openPanel(ui: UI, name: string) {
       let body = '';
       if (tab === 'menu') {
         const known = RECIPE_LIST.filter((r) => g.rec[r.id].known);
-        body = `<p class="muted">Bật món muốn bán (tối đa ${T.menu} món), chỉnh giá theo giá vốn. Giá cao quá khách bỏ đi; chất lượng và uy tín càng cao thì khách càng chịu trả. Uy tín hiện tại ${Math.round(g.rep)}.</p><div class="list">` + known.map((r) => {
+        // Thiếu nguyên liệu cho món đang bật: nói thẳng thiếu gì, còn bao nhiêu, chợ nào bán, hết bao nhiêu tiền.
+        const shorts = R.stockShortages(g).filter((x) => x.dishes.some((d) => known.some((r) => r.short === d && g.rec[r.id].on)));
+        const shortBox = shorts.length ? `<div class="shortage"><b>${ic('box')} Thiếu nguyên liệu cho món đang bán</b>${shorts.slice(0, 6).map((x) => `<div class="srow"><span>${esc(x.name)} <span class="muted">còn ${qty(x.left)} ${esc(x.unit)}</span></span><b>cần thêm ${qty(x.need)} ${esc(x.unit)}</b><small>${x.shop ? `bán ở ${esc(x.shop)} · ${money(x.cost)}` : 'không chợ nào bán'}${x.dishes.length ? ` · cho ${esc(x.dishes.slice(0, 2).join(', '))}` : ''}</small></div>`).join('')}${shorts.length > 6 ? `<div class="srow"><span class="muted">… và ${shorts.length - 6} thứ nữa (xem tab Kho quầy)</span></div>` : ''}</div>` : '';
+        body = shortBox + `<p class="muted">Bật món muốn bán (tối đa ${T.menu} món), chỉnh giá theo giá vốn. Giá cao quá khách bỏ đi; chất lượng và uy tín càng cao thì khách càng chịu trả. Uy tín hiện tại ${Math.round(g.rep)}.</p><div class="list">` + known.map((r) => {
           const rs = g.rec[r.id], c = R.recipeCost(g, r), mg = R.marginOf(rs.price, c.total), miss = R.missingTools(g, r), rd = R.readyCount(g, r.id), pr = s.preps.filter((p) => p.rid === r.id).reduce((a, p) => a + p.n, 0), can = R.finishPossible(g, r), pp = R.prepPossible(g, r);
           let tags = miss.length ? `<span class="tag bad">thiếu ${miss.map((t) => (t === 'bep' ? 'bếp' : GEAR[t].name.toLowerCase())).join(', ')}</span>` : `<span class="tag ${rd ? 'good' : ''}">sẵn ${rd}</span>` + (R.hasPrep(r) ? `<span class="tag ${pr ? 'good' : 'warn'}">đã sơ chế ${pr} phần</span>` : '') + `<span class="tag ${can ? '' : 'bad'}">làm được ${can > 900 ? '—' : can} phần</span>`;
           // Quán có chỗ ngồi: đánh dấu món hợp buổi để người chơi biết nên bày gì.
@@ -143,7 +151,7 @@ export function openPanel(ui: UI, name: string) {
           return `<div class="item${miss.length ? ' off' : ''}" style="flex-wrap:wrap"><img src="${dishIcon(r)}" style="width:2.6em;height:2.6em" alt=""><div class="grow"><b>${r.name}</b><small>Vốn ${money(c.total)}/phần · thị trường ~${money(r.ref)} · <span class="${mg < 0.2 ? 'neg' : 'pos'}">lãi ${Math.round(mg * 100)}%</span></small>${tags}</div>
             <div class="price"><button class="btn small" data-a="pm" data-k="${r.id}" data-d="-1000">−</button><b>${money(rs.price)}</b><button class="btn small" data-a="pm" data-k="${r.id}" data-d="1000">+</button></div>
             <button class="sw${rs.on ? ' on' : ''}${miss.length ? ' off' : ''}" data-a="sw" data-k="${r.id}"></button>
-            <div style="flex-basis:100%;display:flex;gap:.3em;flex-wrap:wrap;justify-content:flex-end">${R.hasPrep(r) ? `<button class="btn small yellow${!placed || miss.length || pp < 1 ? ' off' : ''}" data-a="prep" data-k="${r.id}">${ic('knife')} Sơ chế ${pp || ''} phần</button>` : ''}<button class="btn small${!placed || miss.length || can < 1 ? ' off' : ''}" data-a="make" data-k="${r.id}">${ic('fire')} Làm sẵn ${Math.min(r.serve, can)}</button>${ri >= 0 ? `<button class="btn small green" data-a="eatd" data-i="${ri}">Ăn 1 phần</button>` : ''}<button class="btn small" data-a="sug" data-k="${r.id}">Giá gợi ý</button></div></div>`;
+            <div style="flex-basis:100%;display:flex;gap:.3em;flex-wrap:wrap;justify-content:flex-end">${R.hasPrep(r) ? `<button class="btn small yellow${!placed || miss.length ? ' off' : ''}${pp < 1 ? ' need' : ''}" data-a="prep" data-k="${r.id}">${ic('knife')} ${pp < 1 ? 'Thiếu đồ — xem thiếu gì' : `Sơ chế ${pp} phần`}</button>` : ''}<button class="btn small${!placed || miss.length || can < 1 ? ' off' : ''}" data-a="make" data-k="${r.id}">${ic('fire')} Làm sẵn ${Math.min(r.serve, can)}</button>${ri >= 0 ? `<button class="btn small green" data-a="eatd" data-i="${ri}">Ăn 1 phần</button>` : ''}<button class="btn small" data-a="sug" data-k="${r.id}">Giá gợi ý</button></div></div>`;
         }).join('') + '</div>' + (placed ? '' : '<p class="muted">Quầy chưa đặt ở chỗ bán nên chưa nấu được — hãy gánh tới một vòng sáng vàng.</p>');
       } else if (tab === 'store') {
         const chilled = R.stallChilled(g);
@@ -284,7 +292,7 @@ export function openPanel(ui: UI, name: string) {
         </div>`;
       }).join('');
       const body = `<p class="muted">Người làm tự canh kho và báo mỗi khi nguyên liệu cho món đang bán còn đủ nấu ≤ 1 phần. Bấm "Giao đi chợ" là họ đi mua đúng thứ còn thiếu.</p>
-        ${low ? `<p class="warn">${low} món đang bán sắp hết nguyên liệu.</p>` : ''}
+        ${low ? `<p class="warn">${low} món đang bán sắp hết nguyên liệu${R.stockShortages(g).length ? ` — thiếu ${R.stockShortages(g).slice(0, 4).map((x) => x.name.toLowerCase()).join(', ')}` : ''}.</p>` : ''}
         ${cards}
         <h4>Đặt bàn trước</h4>
         <div class="item"><div class="grow"><b>Bếp trưởng tự duyệt đặt bàn</b><small>${R.canAutoBook(g) ? 'Khách gọi đặt bàn là bếp nhận luôn (vẫn trừ uy tín nếu lỡ hẹn). Tắt thì bạn tự nhận/từ chối trong tab Nhân sự.' : 'Cần có bếp trưởng (nhà hàng bình dân) mới giao được quyền này.'}</small></div>${R.canAutoBook(g) ? `<button class="btn small${R.autoBookOn(g) ? ' green' : ''}" data-a="autoBook">${R.autoBookOn(g) ? 'Đang tự duyệt — bấm để tắt' : 'Bật tự duyệt'}</button>` : ''}</div>

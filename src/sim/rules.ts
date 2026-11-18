@@ -3,7 +3,7 @@
 import { clamp, RNG, rnd, round1k, round500, hashStr, money, lerp } from '../core/util';
 import { bus, toast } from '../core/bus';
 import { INGS } from '../data/ingredients';
-import { SHOPS, ShopDef } from '../data/shops';
+import { SHOPS, SHOP_LIST, ShopDef } from '../data/shops';
 import { RECIPES, RecipeDef, fuelPerPortion, toolsFor, RECIPE_LIST } from '../data/recipes';
 import { GEAR, HOUSING, LENDERS, TIERS, JUNK, junkAt, BRANCH_SITES, BRANCH_WAGE, BranchSite } from '../data/gear';
 import { ARCH, ArchDef, HELPER_POOL, HelperDef, SOUS_POOL, SousDef, KEEPER_POOL, LINES, FIXED, FIXED_ROLE, NAMES } from '../data/people';
@@ -1092,6 +1092,74 @@ export function staffReports(g: Game): StaffReport[] {
     if (r) out.push(r);
   }
   return out;
+}
+export interface StockShortage {
+  /** Nguyên liệu còn thiếu (hoặc sắp hết) để nấu tiếp món đang bán. */
+  id: string; name: string; unit: string;
+  /** Còn bao nhiêu trong quầy + túi. */
+  left: number;
+  /** Cần thêm bao nhiêu cho đủ một mẻ nữa của món cần nhiều nhất. */
+  need: number;
+  /** Món nào đang bị vì thiếu thứ này. */
+  dishes: string[];
+  /** Chợ gần nhất có bán (rỗng nếu không chợ nào bán). */
+  shop: string;
+  /** Giá chợ rẻ nhất cho số lượng cần (đã tính giá chợ). */
+  cost: number;
+}
+/**
+ * Soát kho cho người chơi: món nào đang bán mà **không nấu tiếp được**, thiếu đúng nguyên liệu gì, còn bao nhiêu,
+ * cần thêm bao nhiêu, chợ nào bán và hết bao nhiêu tiền. Dùng cho chip trên HUD, bảng Quầy và báo cáo của người làm —
+ * để "sắp hết đồ" không còn là câu chung chung mà nói thẳng thiếu gì.
+ */
+export function stockShortages(g: Game): StockShortage[] {
+  const menu = menuOf(g);
+  if (!menu.length) return [];
+  const map = new Map<string, StockShortage>();
+  for (const r of menu) {
+    if (finishPossible(g, r) > 1) continue;
+    // đang có phần sơ chế sẵn cho món này thì không tính nguyên liệu sơ chế nữa
+    const prepared = hasPrep(r) && g.stall.preps.some((x) => x.rid === r.id && x.n > 0);
+    for (const [id, q] of Object.entries(r.ings)) {
+      if (prepared && !r.fin.includes(id)) continue;   // đã sơ chế sẵn thì chỉ còn thiếu đồ bước hoàn thiện
+      const left = countOf(stores(g), id);
+      if (left >= q * 2 - 1e-6) continue;
+      // Cần mua bao nhiêu: đơn vị rời (chai, lon, quả, bó…) thì làm tròn LÊN 1 đơn vị vì phải mua cả cái;
+      // đơn vị cân (kg, lạng) thì một chữ số thập phân là đủ.
+      const raw = Math.max(0, q * 2 - left);
+      const loose = INGS[id].unit === 'kg' ? 1 : INGS[id].unit === 'lạng' ? 10 : 1;
+      const need = loose === 1 ? Math.ceil(raw - 1e-6) : Math.ceil(raw * loose - 1e-6) / loose;
+      const cur = map.get(id);
+      if (cur) { cur.need = Math.max(cur.need, need); cur.dishes.push(r.short); continue; }
+      map.set(id, { id, name: INGS[id].name, unit: INGS[id].unit, left, need, dishes: [r.short], shop: '', cost: 0 });
+    }
+  }
+  const out = [...map.values()];
+  for (const s of out) {
+    const def = INGS[s.id];
+    const shops = SHOP_LIST.filter((sh) => sh.items.includes(s.id));
+    // chợ gần nhất theo giá: ưu tiên chợ rẻ, cùng giá thì chợ mở cả ngày
+    const best = shops.slice().sort((a, b) => a.priceMul - b.priceMul || b.open[1] - a.open[1])[0];
+    s.shop = best ? best.name : '';
+    s.cost = Math.round(def.price * (best?.priceMul ?? 1) * Math.max(s.need, 1));
+  }
+  // thiếu thứ ảnh hưởng nhiều món lên trước, cùng số món thì thứ đã cạn lên trước
+  return out.sort((a, b) => (b.dishes.length - a.dishes.length) || (a.left - b.left) || a.name.localeCompare(b.name));
+}
+/**
+ * Bao nhiêu món đang bán mà **kho đủ nguyên liệu nhưng chưa sơ chế** (nên chưa làm ra phần nào).
+ * Ca này hay bị hiểu nhầm là "thiếu đồ" — HUD nói rõ "cần sơ chế trước" thay vì đổ lỗi cho nguyên liệu.
+ */
+export function needsPrepCount(g: Game): number {
+  if (!menuOf(g).length) return 0;
+  return menuOf(g).filter((r) => hasPrep(r) && finishPossible(g, r) <= 1 && prepPossible(g, r) >= 1).length;
+}
+/** Câu ngắn để hiện trên HUD: "Thiếu thịt heo nạc, trứng". Rỗng nếu kho còn đủ. */
+export function shortageLine(g: Game, max = 2): string {
+  const l = stockShortages(g);
+  if (!l.length) return '';
+  const names = l.slice(0, max).map((x) => x.name.toLowerCase()).join(', ');
+  return l.length > max ? `${names}…` : names;
 }
 /** Bao nhiêu món đang bán có nguy cơ hết nguyên liệu (dùng cho chấm đỏ trên HUD). */
 export function lowStockCount(g: Game): number {

@@ -9,7 +9,7 @@ import { toast } from '../core/bus';
 import * as PUI from '../ui/phoneUI';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Soát giao diện điện thoại Android: hết tràn/cắt, vùng chạm ≥ 30 px, tiêu đề bảng và máy nằm ngang không còn bị bóp';
+export const DEV_BUILD_TAG = 'Cảnh báo sắp hết đồ: chip HUD nói thẳng thiếu nguyên liệu gì, bảng Quầy có ô thiếu gì + chợ nào bán, bấm Sơ chế khi thiếu đồ thì báo ngay';
 
 export interface DevAction {
   id: string;
@@ -68,41 +68,38 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Soát giao diện điện thoại Android (lượt 25)',
+      title: 'Mới nhất — Cảnh báo sắp hết đồ nói rõ thiếu gì (lượt 26)',
       items: [
         {
-          id: 'and_full',
-          label: 'Dựng cảnh đầy đủ để soi giao diện: bậc 7 + chi nhánh + điện thoại + 2 món sẵn',
-          sub: 'Quầy đang bán, chi nhánh có người trông coi, máy cảm ứng — mở sẵn để xem HUD và các bảng trên màn hình hẹp',
+          id: 'short_empty',
+          label: 'Dựng quầy bậc 7 đang bán 2 món nhưng kho TRỐNG để xem cảnh báo thiếu đồ',
+          sub: 'Chip đỏ trên HUD nói thiếu nguyên liệu gì · bảng Quầy có ô Thiếu nguyên liệu cho món đang bán kèm chợ nào bán',
           tone: 'green',
           closePanel: false,
           run: () => {
             const g = ctx.g;
             g.cash = Math.max(g.cash, 3000000); g.stall.tier = 7; g.stall.where = 'placed'; g.stall.spot = 'cho';
             for (const id of ['daothot', 'bepthan', 'vi', 'noi', 'chao', 'bepgas']) if (!R.has(g, id)) R.buyGear(g, id);
-            for (const rid of ['com_suon', 'tra_da']) { g.rec[rid].known = true; g.rec[rid].on = true; g.rec[rid].price = R.suggestPrice(g, RECIPES[rid]); }
-            g.stall.ready = [{ rid: 'com_suon', n: 5, q: 1, at: 0, cost: 12000 }, { rid: 'tra_da', n: 1, q: 1, at: 0, cost: 3000 }];
-            if (!g.branch) R.openBranch(g, 'cho');
-            if (g.branch && !g.branch.keeper) R.hireKeeper(g);
-            if (g.branch) R.moveToBranch(g, 'com_suon', 3);
-            g.gear.camung = 100; g.phone = { id: 'camung', battery: 72 };
-            ctx.stall.refresh(); ctx.stall.open();
-            toast('Xoay máy dọc rồi mở Cài đặt, Túi, Sổ, Bản đồ, Quầy, và cả ba mẫu điện thoại để soi bố cục.', 'info', 'shop', true);
+            for (const rid of ['com_suon', 'banh_xeo']) if (g.rec[rid]) { g.rec[rid].known = true; g.rec[rid].on = true; }
+            g.stall.store = []; g.bag = []; g.stall.preps = []; g.stall.ready = [];
+            ctx.stall.refresh();
+            toast('Kho trống mà vẫn bật 2 món — nhìn chip đỏ trên HUD rồi mở Quầy › Thực đơn xem thiếu gì.', 'warn', 'box', true);
             ctx.ui.closePanel();
           },
         },
         {
-          id: 'and_phone3',
-          label: 'Mở điện thoại — đổi qua lại ba mẫu máy để soi bố cục',
-          sub: 'Cảm ứng (lưới icon) → nắp gập (4 phím) → cục gạch (danh sách chữ); máy cảm ứng mở luôn app Cửa hàng',
+          id: 'short_prep',
+          label: 'Bấm "Sơ chế" khi thiếu nguyên liệu → xem báo thiếu gì',
+          sub: 'Nút không còn bị khoá im lặng: đổi sang "Thiếu đồ — xem thiếu gì", bấm là hiện đúng nguyên liệu còn thiếu',
+          tone: 'yellow',
           closePanel: false,
           run: () => {
             const g = ctx.g;
-            if (!g.phone) { g.gear.camung = 100; g.phone = { id: 'camung', battery: 72 }; }
-            ctx.ui.closePanel(); ctx.ui.panel('phone');
-            const P = PUIphone();
-            if (g.phone.id === 'camung') P.phoneKey('open', 'shop');
-            ctx.ui.reopenPanel('phone');
+            g.stall.tier = 7; g.stall.where = 'placed'; g.stall.spot = 'cho';
+            g.stall.store = []; g.bag = []; g.stall.preps = []; g.stall.ready = [];
+            for (const rid of ['com_suon', 'banh_xeo']) if (g.rec[rid]) { g.rec[rid].known = true; g.rec[rid].on = true; }
+            ctx.stall.refresh();
+            ctx.ui.closePanel(); ctx.ui.panel('stall');
           },
         },
       ],

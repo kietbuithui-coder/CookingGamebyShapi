@@ -3,12 +3,12 @@ import { DEV_BUILD_TAG, getDevSections } from '../src/game/devPoints';
 
 describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
   it('chỉ gồm mục của tính năng mới nhất + nhóm địa điểm tele nhanh', () => {
-    expect(DEV_BUILD_TAG).toContain('giao diện');
-    expect(DEV_BUILD_TAG).toContain('Android');
+    expect(DEV_BUILD_TAG).toContain('sắp hết đồ');
+    expect(DEV_BUILD_TAG).toContain('thiếu nguyên liệu');
     const sections = getDevSections();
     expect(sections.length).toBe(2);
-    expect(sections[0].title).toContain('Android');
-    expect(sections[0].title).toContain('lượt 25');
+    expect(sections[0].title).toContain('sắp hết đồ');
+    expect(sections[0].title).toContain('lượt 26');
     expect(sections[1].title).toContain('Địa điểm');
     const ids = new Set<string>();
     for (const sec of sections) {
@@ -21,8 +21,8 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
         expect(item.sub.length).toBeGreaterThan(3);
       }
     }
-    // mục của lượt này: dựng cảnh đầy đủ + mở ba mẫu điện thoại để soi bố cục
-    for (const id of ['and_full', 'and_phone3']) expect(ids.has(id)).toBe(true);
+    // mục của lượt này: kho trống để xem cảnh báo thiếu đồ + bấm Sơ chế khi thiếu
+    for (const id of ['short_empty', 'short_prep']) expect(ids.has(id)).toBe(true);
     // tele nhanh vẫn còn, có thêm vựa mới và cửa căn hộ
     const loc = sections[1].items.map((i) => i.id);
     for (const id of ['tp_equip', 'tp_matbang_tb', 'tp_ongtu', 'tp_scrap2', 'tp_canho']) expect(loc).toContain(id);
@@ -42,6 +42,8 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
       // lượt 22 (ba giao diện điện thoại)
       'phone_cucgach', 'phone_napgap', 'phone_camung', 'phone_unread',
       // lượt 23–24 (app Cửa hàng + công tắc bán)
-      'setup_shopapp', 'shopapp_open', 'shopapp_loss', 'shopapp_far']) expect(ids).not.toContain(old);
+      'setup_shopapp', 'shopapp_open', 'shopapp_loss', 'shopapp_far',
+      // lượt 25 (soát giao diện Android)
+      'and_full', 'and_phone3']) expect(ids).not.toContain(old);
   });
 });

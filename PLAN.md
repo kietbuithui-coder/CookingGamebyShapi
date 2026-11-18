@@ -507,7 +507,7 @@ gợi ý** đúng việc cần làm. Có **nút Mở/Đóng bán ngay trên máy
 (`lossDishes`, so giá bán với `recipeCost`). Luật nằm ở `shopRows/setShopOpen/lossDishes` trong `src/sim/rules.ts`, UI
 chỉ vẽ — nên test được mà không cần DOM.
 
-**Kiểm thử:** `tests/shopapp.test.ts` 8 bài → tổng **401 bài / 30 tệp**. Probe `tools/probe/steps/shopapp.mjs` ở 390×844:
+**Kiểm thử:** `tests/shopapp.test.ts` 7 bài → tổng **400 bài / 30 tệp**. Probe `tools/probe/steps/shopapp.mjs` ở 390×844:
 máy cảm ứng có icon Cửa hàng, mở ra thấy quầy chính + chi nhánh, bấm Đóng thì `stall.open = false`, bật chi nhánh từ
 máy thì `branch.open = true`, đặt cơm sườn 2.000₫ thì hiện "lỗ 23.426₫/phần", máy cục gạch cũng có app; **console sạch**.
 Sửa thêm một lỗi nhỏ gặp trong lúc làm: `reopenPanel` từng đưa điện thoại về màn hình chính, giờ chỉ `panel()` mới reset.
@@ -570,3 +570,30 @@ Thêm `94dvh` cho bảng (thanh địa chỉ Chrome Android ăn mất đáy) và
 **Kết quả sau khi sửa** — probe in `manHinh: 15, coVanDe: [], vungChamNho: []` ở **cả 4 khổ**. Ảnh chụp để trong
 `anh_ket_qua/android/` (8 ảnh: ba mẫu máy, app Cửa hàng, Cài đặt, Quầy, sửa vị trí HUD, Bản đồ nằm ngang).
 Menu ẩn đổi sang `and_full` (dựng cảnh đầy đủ) + `and_phone3` (đổi ba mẫu máy), giữ nguyên nhóm tele nhanh.
+
+---
+
+## Lượt 26 — Cảnh báo "sắp hết đồ" nói rõ thiếu gì ✅ đã xong
+
+Người chơi phản ánh chip đỏ *"Sắp hết đồ 2 món · xem báo cáo"* hiện ra mà **không biết thiếu cái gì**, và bấm **Sơ chế** thì
+không có phản hồi gì (khi thiếu nguyên liệu). Kiểm tra thì đúng là ba lỗi chồng nhau:
+
+1. **Câu quá chung.** `lowStockCount` chỉ đếm **số món** nấu tiếp được ≤ 1 phần, không nói nguyên liệu nào. Nay có
+   `stockShortages(g)` (từng nguyên liệu: còn bao nhiêu, cần mua bao nhiêu, chợ nào bán, hết bao nhiêu tiền, chặn món nào),
+   `shortageLine(g)` cho chip HUD ("Thiếu dầu ăn, bột mì…"), và `needsPrepCount(g)` để ca "đủ đồ nhưng chưa sơ chế" báo
+   *"N món cần sơ chế trước"* thay vì đổ lỗi thiếu nguyên liệu.
+2. **Nút Sơ chế khoá im lặng.** Khi thiếu đồ nút có class `.off` → `pointer-events: none`, bấm không ăn, không nói vì sao.
+   Nay đổi thành class `.need`: vẫn bấm được, nhãn đổi thành **"Thiếu đồ — xem thiếu gì"**, bấm là hiện toast đúng nguyên
+   liệu còn thiếu và **bảng vẫn mở** (`acts.prep` chặn trước khi đóng bảng).
+3. **Ô thiếu đồ ngay trong bảng Quầy › Thực đơn**: khung đỏ *Thiếu nguyên liệu cho món đang bán*, mỗi dòng ghi
+   *còn X đơn vị · cần thêm Y đơn vị · bán ở chợ nào · bao nhiêu tiền · cho món nào* (tối đa 6 dòng, còn lại chỉ sang tab
+   Kho quầy). Số lượng đơn vị rời (chai, lon, quả, bó…) **làm tròn lên cả cái** — trước đó ra những con số vô nghĩa như
+   "cần thêm 0,06 chai dầu ăn".
+
+Sửa thêm hai lỗi bố cục gặp trong lúc kiểm: chip cảnh báo trên HUD **chen vào giữa hàng nút** (màn dọc) — nay nằm dưới hàng
+nút, và nhãn *"đã sơ chế 0 phần"* từng **rơi vào giữa tên món** — nay là chip riêng.
+
+**Kiểm thử:** `tests/baocao.test.ts` thêm 5 bài (17 bài tổng) → tổng **406 bài / 30 tệp**. Probe mới
+`tools/probe/steps/shortage.mjs` (390×844, dựng quầy bậc 7 bán 2 món với kho trống): chip HUD ra *"Thiếu dầu ăn, bột mì…
+· xem chi tiết"*, bảng Quầy có ô thiếu đồ 6 dòng đúng định dạng, nút Sơ chế đổi nhãn **"Thiếu đồ — xem thiếu gì"**, bấm
+thì toast *"Chưa sơ chế … được — thiếu …"* và bảng còn mở; mua đủ đồ thì cảnh báo biến mất (`shorts: 0`); console sạch.
