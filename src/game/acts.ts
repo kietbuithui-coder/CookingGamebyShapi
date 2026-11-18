@@ -887,6 +887,46 @@ export class Acts {
     if (r.ok) { R.advance(g, 5, this.act()); sfx('ok'); }
     return r.ok;
   }
+  /** Gọi 1080: nghe dự báo thời tiết ngày mai. Tốn 2.000₫ cước và một phút. */
+  phoneWeather(): boolean {
+    const g = this.g, r = PH.weatherForecast(g);
+    toast(r.line, r.ok ? 'info' : 'warn', 'sun', true);
+    if (r.ok) { R.advance(g, 1, this.act()); sfx('ok'); bus.emit('save', 'goi 1080'); }
+    return r.ok;
+  }
+  /** Gọi 1900 1234: “trúng thưởng” — luôn là lừa, và chỉ lừa được một lần. */
+  phoneScam(): boolean {
+    const g = this.g, r = PH.callScam(g);
+    if (r.bait) {
+      this.way = { x: r.bait.x, z: r.bait.z, name: r.bait.place };
+      toast(r.line, 'good', 'gift', true);
+      toast('Đi tới điểm hẹn (mũi tên vàng trên màn hình) để nhận thưởng — nhớ kỹ chỉ có một lần.', 'info', 'way', true);
+      R.advance(g, 3, this.act()); sfx('order'); bus.emit('save', 'goi 1900');
+      return true;
+    }
+    toast(r.line, 'info', 'phone');
+    if (r.fee > 0) R.advance(g, 3, this.act());
+    return r.fee > 0;
+  }
+  /** Tới chỗ hẹn nhận thưởng: hoá ra chỉ có bờ tường — người chơi có MỘT cơ hội để quay về. */
+  scamBust(): void {
+    const g = this.g;
+    if (!PH.scamTrip(g)) return;
+    this.way = null;
+    const inCost = PH.scamLoss(g.cash);
+    this.D('Bức tường cuối khu chợ', undefined,
+      'Không có văn phòng, không có bảng hiệu, chẳng có ai đợi. Chỉ có tờ giấy dán tường: “1900 1234 là số lừa đảo — đừng đưa tiền cho ai”.',
+      [
+        { t: 'Thôi, quay về — may mà chưa đưa tiền', sub: 'Tỉnh người ra, mất buổi đi lại', fn: () => {
+          const r = PH.scamArrive(g, 'back');
+          toast(r.line, 'info', 'way', true); R.advance(g, r.min, this.act()); sfx('ok'); bus.emit('save', 'biet bi lua');
+        } },
+        { t: `Vẫn tin — đưa “lệ phí” ${money(inCost)} để làm thủ tục`, sub: inCost >= g.cash ? 'Đưa hết tiền đang có' : 'Số tiền này sẽ mất thật', off: g.cash <= 0, fn: () => {
+          const r = PH.scamArrive(g, 'in');
+          toast(r.line, 'bad', 'angry', true); R.advance(g, r.min, this.act()); sfx('nope'); bus.emit('save', 'bi lua that');
+        } },
+      ]);
+  }
   /** Trả tiền sạc nhờ ở tạp hoá / siêu thị. */
   phoneCharge(shopId: string) {
     const g = this.g;
@@ -1155,13 +1195,17 @@ export class Acts {
     const j = this.job;
     if (j?.kind === 'dock') { const h = hourOf(g); if (h > 10.2 && !j.carrying) { this.job = null; this.way = null; toast('Hết giờ bốc hàng buổi sáng.', 'info'); } }
     this.deliveryCheck();
+    // Vẫn còn trên đường đi “nhận thưởng” (kể cả sau khi mở lại bản lưu) thì dựng lại mũi tên chỉ đường.
+    const trip = PH.scamTrip(g);
+    if (trip && !this.way) this.way = { x: trip.x, z: trip.z, name: trip.place };
+    else if (!trip && this.way && this.way.name.startsWith('Văn phòng trúng thưởng')) this.way = null;
     const w = this.way, on = !!w && ctx.mode === 'play';
     this.beacon.visible = on; this.ring.visible = on;
     if (w) {
       this.beacon.position.set(w.x, 15, w.z); (this.beacon.material as THREE.MeshBasicMaterial).opacity = 0.22 + Math.sin(ctx.time * 3) * 0.08;
       this.ring.position.set(w.x, 0.16, w.z); const k = 1 + Math.sin(ctx.time * 2.2) * 0.08; this.ring.scale.set(k, 1, k);
       (this.ring.material as THREE.MeshBasicMaterial).opacity = 0.4 + Math.sin(ctx.time * 2.2) * 0.15;
-      if (!j && dist2(w.x, w.z, p.x, p.z) < 9) this.way = null;
+      if (!j && dist2(w.x, w.z, p.x, p.z) < 9) { this.way = null; if (PH.scamTrip(g)) this.scamBust(); }
     }
     // mục tiêu hướng dẫn
     this.qT -= dt; if (this.qT <= 0) { this.qT = 1; const q = g.quest, s = g.stall, sellable = RECIPE_LIST.filter((r) => R.canSell(g, r));

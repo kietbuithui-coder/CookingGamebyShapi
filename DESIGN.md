@@ -19,7 +19,7 @@ Một vòng chơi trọn vẹn và thật sự chạy được: **tay trắng �
 
 Hai nguyên tắc giữ cho mã kiểm thử được:
 
-1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 406 bài kiểm thử (30 tệp) chạy trong Node trong khoảng 7 giây.
+1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 413 bài kiểm thử (31 tệp) chạy trong Node trong khoảng 7 giây.
 2. **Mọi ngẫu nhiên trong luật chơi nhận một `RNG` có hạt giống** làm tham số cuối, nên kết quả kiểm thử lặp lại được.
 
 Vòng lặp chính (`src/main.ts`): đọc điều khiển → `advance()` cho thời gian game trôi (0,75 phút game mỗi giây thật, một ngày = 32 phút thật; khi ngủ 48 phút game mỗi giây) → cập nhật người chơi, NPC, quầy, nấu ăn, môi trường → vẽ. `dt` bị chặn ở 50 ms nên máy rất chậm thì game chạy chậm lại chứ không nhảy cóc.
@@ -848,7 +848,7 @@ Người chơi đã thử bản đầu và gửi danh sách góp ý; việc đư
 Còn lại:
 
 1. **Đã xong 3 kiểu chỗ ở mới: căn hộ, nhà riêng, cửa hàng kiêm nhà ở** (8/8) — xem mục 4.13.
-2. **Đã xong sạp cố định (bậc 3)** — mục 4.12, **quán ăn nhỏ (bậc 4)** — mục 4.22, và **quán có chỗ ngồi (bậc 5)** — mục 4.25, **nhà hàng bình dân (bậc 6)** — mục 4.26, **chuỗi cửa hàng (bậc 7)** — mục 4.27, **giao người làm đi chợ** — mục 4.28, **báo cáo sắp hết đồ + tự duyệt đặt bàn** — mục 4.29, **vựa ve chai thứ hai + bấm chuông mở cửa** — mục 4.30, **ba giao diện điện thoại** — mục 4.31, **app Quản lý cửa hàng** — mục 4.32, **cảnh báo thiếu nguyên liệu nói rõ thiếu gì** — mục 4.29. Nhánh kinh doanh đã đủ **7/7 bậc**; việc kế tiếp là hệ thống băng nhóm.
+2. **Đã xong sạp cố định (bậc 3)** — mục 4.12, **quán ăn nhỏ (bậc 4)** — mục 4.22, và **quán có chỗ ngồi (bậc 5)** — mục 4.25, **nhà hàng bình dân (bậc 6)** — mục 4.26, **chuỗi cửa hàng (bậc 7)** — mục 4.27, **giao người làm đi chợ** — mục 4.28, **báo cáo sắp hết đồ + tự duyệt đặt bàn** — mục 4.29, **vựa ve chai thứ hai + bấm chuông mở cửa** — mục 4.30, **ba giao diện điện thoại** — mục 4.31, **app Quản lý cửa hàng** — mục 4.32, **cảnh báo thiếu nguyên liệu nói rõ thiếu gì** — mục 4.29, **hai tổng đài 1080 & 1900 1234 trong danh bạ** — mục 4.33. Nhánh kinh doanh đã đủ **7/7 bậc**; việc kế tiếp là hệ thống băng nhóm.
 3. Hệ thống băng nhóm.
 4. Danh sách đầy đủ những gì còn lại nằm ở `TODO.md`.
 
@@ -860,3 +860,35 @@ Còn lại:
 - Kỹ thuật: tách gói JavaScript (hiện một tệp khoảng 930 kB, nén còn 280 kB), service worker để chơi ngoại tuyến, nội thất cửa hàng chi tiết hơn.
 
 Lỗi nhỏ đã biết: dòng "Dụng cụ" và "Sơ chế" trong Sổ tay còn thừa dấu "·" ở cuối; ở màn dọc HUD chật (game khuyên xoay ngang).
+
+### 4.33 Hai tổng đài trong danh bạ: 1080 (dự báo mai) và 1900 1234 (lừa đảo, một lần)
+
+Danh bạ điện thoại trước đây chỉ có người quen và khách quen. Nay có thêm **số tổng đài** — `Contact.hot` đánh dấu
+`'wx' | 'scam'`, và `contacts(g)` **luôn xếp số tổng đài lên đầu** (trước cả khách quen), vì đó là số người chơi mở ra
+để *dùng*, không phải để chào hỏi.
+
+**1080 — dự báo thời tiết ngày mai.** Có sẵn từ đầu. `weatherForecast(g)` đọc thẳng `g.weather.next` (đã được `setWeather`
+gán sẵn sau mỗi lần trời trở) nên **không bao giờ nói sai**; câu trả lời = tên thời tiết + `WEATHER[id].say` + một câu
+khuyên bán hàng suy ra từ chính các hệ số của thời tiết đó (`hot < -0.3` → món nóng dễ bán, `hot > 0.3` → món mát,
+`rain > 0.5` → nhắc ô dù/che quầy, `wind > 0.6` → nhắc bếp lửa). Cước **`WX_FEE = 2.000₫`** trừ thẳng vào `cash`/`led.other`,
+mỗi ngày **`WX_PER_DAY = 3` lần** (đếm theo `flags.wxDay` + `flags.wxCall`, sang ngày tự reset) — gọi quá thì tổng đài từ
+chối chứ không im lặng trừ tiền. Tin nhắn `wx<ngày>` đổi nội dung cho khớp: **hôm nay** thế nào, muốn biết **mai** thì gọi 1080.
+
+**1900 1234 — \"trúng thưởng\".** Không nằm trong danh bạ lúc đầu. `SCAM_SMS_DAY = 1` và `SCAM_SMS_EVERY = 3`: từ ngày thứ
+hai, **cách ba ngày** số này nhắn một tin mời gọi (`hasScamSms`); **có tin mới có số** — `knowsScam(g)` là điều kiện để
+`contacts` thêm dòng `1900 1234`. Gọi (`callScam`) là mất **`SCAM_FEE = 15.000₫`** cho 3 phút dây dưa và bị hẹn lên
+*\"văn phòng trúng thưởng ở cuối khu chợ\"*: toạ độ lấy từ **nút đường đi xa nhất của khu chợ** (`nodesByTag('market')`), lưu
+vào `flags.scamX/scamZ`, và `scamTrip(g)` dựng lại mũi tên vàng **kể cả sau khi mở lại bản lưu** (trong `ActsSys.update`).
+
+**Đúng một cơ hội.** `scammed(g)` là máy trạng thái ba nấc qua `flags.scamCall`: `'none'` → gọi được, `'once'` → đang trên
+đường đi, `'done'` → đã biết. Tới nơi (`scamArrive(g, choice)`) hiện hộp thoại **\"Bức tường cuối khu chợ\"** với đúng hai
+lựa chọn: **quay về** (mất 20 phút đi lại, tinh thần *tăng* 4 vì may mà chưa đưa tiền) hoặc **vẫn tin** — mất
+`scamLoss(cash)` = **40% tiền mặt, kẹp 20.000–200.000₫**, tinh thần −16, sức lực −8, mất 90 phút. Dù chọn gì thì
+`scamCall = 2`, nên **lần sau gọi lại chỉ nghe \"thuê bao không tồn tại\", `fee: 0`** — không bao giờ bị lừa hai lần. Số vẫn
+nằm trong danh bạ với nhãn *\"Số lừa đảo — bạn đã biết rồi\"*, còn tin nhắn lừa thì biến mất khỏi hộp thư.
+
+**Kiểm thử.** `tests/phone4.test.ts` (7 bài): danh bạ ngày 1 chỉ có 1080 và 1900 1234 chỉ hiện sau khi có tin; gọi 1080
+đúng 2.000₫ + dự báo khớp `weather.next` + đổi theo thời tiết; hết pin/hết tiền/quá 3 lần một ngày thì không gọi được;
+gọi 1900 1234 mất 15.000₫ và `scamTrip` trỏ đúng điểm hẹn; quay về thì **không mất đồng nào**, vẫn tin thì mất thật và
+**chỉ một lần**; `scamLoss` đúng khoảng 20k–200k và không bao giờ âm tiền; gọi xong thì hộp thư sạch tin lừa mà danh bạ
+vẫn giữ số. Probe `tools/probe/steps/hotline.mjs` (390×844) chạy đúng 7 bước trên bằng cú bấm thật, console sạch.

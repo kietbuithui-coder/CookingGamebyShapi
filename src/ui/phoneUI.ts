@@ -46,6 +46,8 @@ const GLYPH: Record<string, string> = {
   music: '<path d="M9 18V6l9-2v12"/><circle cx="7" cy="18" r="2.2"/><circle cx="16" cy="16" r="2.2"/>',
   wap: '<circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c4 5 4 11 0 16M12 4c-4 5-4 11 0 16"/>',
   battery: '<rect x="3" y="7" width="15" height="10" rx="2"/><path d="M20 10v4"/><path d="M6 10h6v4H6z" fill="currentColor" stroke="none"/>',
+  wx: '<circle cx="12" cy="12" r="5"/><path d="M12 2v2.6M12 19.4V22M2 12h2.6M19.4 12H22M5 5l1.8 1.8M17.2 17.2L19 19M19 5l-1.8 1.8M6.8 17.2L5 19"/>',
+  scam: '<path d="M12 3l8 4v5c0 4.4-3.2 7.7-8 9-4.8-1.3-8-4.6-8-9V7z"/><path d="M12 8v4M12 15.4v.6"/>',
   shop: '<path d="M4 9l1-4h14l1 4M5 9v11h14V9M4 9h16"/><path d="M9.5 20v-5h5v5"/>',
 };
 const GLYPH_OLD: Record<string, string> = {
@@ -67,10 +69,14 @@ function rowsOf(g: Game, m: PhoneDef, app: PhoneApp): { b: string; s: string; ac
   void dra;
   if (app === 'contacts') {
     const list = PH.contacts(g);
-    return list.map((c: Contact) => ({
-      b: c.name, s: c.where + (c.regular && g.flags['call_' + c.id] === g.day ? ' · hôm nay gọi rồi' : ''),
-      act: c.regular ? 'call' : undefined, k: c.id, off: c.regular && (!on || g.cash < PH.CALL_FEE || g.flags['call_' + c.id] === g.day),
-    }));
+    return list.map((c: Contact) => {
+      if (c.hot === 'wx') return { b: c.name, s: c.where, act: 'hotwx', k: 'wx', off: !on || g.cash < PH.WX_FEE };
+      if (c.hot === 'scam') return { b: c.name, s: c.where, act: 'hotscam', k: 'scam', off: !on || g.cash < 5000 };
+      return {
+        b: c.name, s: c.where + (c.regular && g.flags['call_' + c.id] === g.day ? ' · hôm nay gọi rồi' : ''),
+        act: c.regular ? 'call' : undefined, k: c.id, off: c.regular && (!on || g.cash < PH.CALL_FEE || g.flags['call_' + c.id] === g.day),
+      };
+    });
   }
   if (app === 'sms') {
     if (on) PH.markSeen(g);
@@ -93,6 +99,8 @@ const PH_FEAT_NAME: Record<string, string> = { radio: 'Radio FM', music: 'Nghe n
 export function runRow(app: PhoneApp, row: { act?: string; k?: string }) {
   const g = ctx.g;
   if (row.act === 'call' && row.k) { ctx.acts.phoneCall(row.k); return true; }
+  if (row.act === 'hotwx') { ctx.acts.phoneWeather(); return true; }
+  if (row.act === 'hotscam') { ctx.acts.phoneScam(); return true; }
   if (row.act === 'fun' && row.k) { ctx.acts.phoneFun(row.k as 'radio' | 'music' | 'wap'); return true; }
   if (row.act === 'shopopen' && row.k) { return R.setShopOpen(g, row.k as 'main' | 'branch', !(row.k === 'main' ? g.stall.open : !!g.branch?.open)) === 'ok'; }
   if (row.act === 'charge') { ctx.ui.closePanel(); ctx.ui.panel('map'); return true; }

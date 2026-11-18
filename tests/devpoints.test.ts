@@ -3,12 +3,13 @@ import { DEV_BUILD_TAG, getDevSections } from '../src/game/devPoints';
 
 describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
   it('chỉ gồm mục của tính năng mới nhất + nhóm địa điểm tele nhanh', () => {
-    expect(DEV_BUILD_TAG).toContain('sắp hết đồ');
-    expect(DEV_BUILD_TAG).toContain('thiếu nguyên liệu');
+    expect(DEV_BUILD_TAG).toContain('1080');
+    expect(DEV_BUILD_TAG).toContain('1900 1234');
     const sections = getDevSections();
     expect(sections.length).toBe(2);
-    expect(sections[0].title).toContain('sắp hết đồ');
-    expect(sections[0].title).toContain('lượt 26');
+    expect(sections[0].title).toContain('1080');
+    expect(sections[0].title).toContain('1900 1234');
+    expect(sections[0].title).toContain('lượt 27');
     expect(sections[1].title).toContain('Địa điểm');
     const ids = new Set<string>();
     for (const sec of sections) {
@@ -21,8 +22,8 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
         expect(item.sub.length).toBeGreaterThan(3);
       }
     }
-    // mục của lượt này: kho trống để xem cảnh báo thiếu đồ + bấm Sơ chế khi thiếu
-    for (const id of ['short_empty', 'short_prep']) expect(ids.has(id)).toBe(true);
+    // mục của lượt này: gọi 1080 nghe dự báo + nhận tin rồi gọi 1900 1234 + tới điểm hẹn thấy bị lừa
+    for (const id of ['hot_wx', 'hot_scam', 'hot_bust']) expect(ids.has(id)).toBe(true);
     // tele nhanh vẫn còn, có thêm vựa mới và cửa căn hộ
     const loc = sections[1].items.map((i) => i.id);
     for (const id of ['tp_equip', 'tp_matbang_tb', 'tp_ongtu', 'tp_scrap2', 'tp_canho']) expect(loc).toContain(id);
@@ -44,6 +45,8 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
       // lượt 23–24 (app Cửa hàng + công tắc bán)
       'setup_shopapp', 'shopapp_open', 'shopapp_loss', 'shopapp_far',
       // lượt 25 (soát giao diện Android)
-      'and_full', 'and_phone3']) expect(ids).not.toContain(old);
+      'and_full', 'and_phone3',
+      // lượt 26 (cảnh báo sắp hết đồ)
+      'short_empty', 'short_prep']) expect(ids).not.toContain(old);
   });
 });

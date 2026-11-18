@@ -7,9 +7,10 @@ import { RECIPES } from '../data/recipes';
 import { SPOTS, CORR } from '../world/layout';
 import { toast } from '../core/bus';
 import * as PUI from '../ui/phoneUI';
+import * as PH from '../sim/phone';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Cảnh báo sắp hết đồ: chip HUD nói thẳng thiếu nguyên liệu gì, bảng Quầy có ô thiếu gì + chợ nào bán, bấm Sơ chế khi thiếu đồ thì báo ngay';
+export const DEV_BUILD_TAG = 'Hai tổng đài trong danh bạ điện thoại: gọi 1080 nghe dự báo thời tiết ngày mai, gọi 1900 1234 thì bị lừa — nhưng chỉ dính một lần';
 
 export interface DevAction {
   id: string;
@@ -68,38 +69,55 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Cảnh báo sắp hết đồ nói rõ thiếu gì (lượt 26)',
+      title: 'Mới nhất — Hai tổng đài trong danh bạ: 1080 và 1900 1234 (lượt 27)',
       items: [
         {
-          id: 'short_empty',
-          label: 'Dựng quầy bậc 7 đang bán 2 món nhưng kho TRỐNG để xem cảnh báo thiếu đồ',
-          sub: 'Chip đỏ trên HUD nói thiếu nguyên liệu gì · bảng Quầy có ô Thiếu nguyên liệu cho món đang bán kèm chợ nào bán',
+          id: 'hot_wx',
+          label: 'Mở danh bạ, gọi 1080 nghe dự báo thời tiết ngày mai',
+          sub: 'Có máy cảm ứng, đầy pin, 50.000₫ trong túi · cước 2.000₫/phút · tổng đài đứng đầu danh bạ',
           tone: 'green',
           closePanel: false,
           run: () => {
             const g = ctx.g;
-            g.cash = Math.max(g.cash, 3000000); g.stall.tier = 7; g.stall.where = 'placed'; g.stall.spot = 'cho';
-            for (const id of ['daothot', 'bepthan', 'vi', 'noi', 'chao', 'bepgas']) if (!R.has(g, id)) R.buyGear(g, id);
-            for (const rid of ['com_suon', 'banh_xeo']) if (g.rec[rid]) { g.rec[rid].known = true; g.rec[rid].on = true; }
-            g.stall.store = []; g.bag = []; g.stall.preps = []; g.stall.ready = [];
-            ctx.stall.refresh();
-            toast('Kho trống mà vẫn bật 2 món — nhìn chip đỏ trên HUD rồi mở Quầy › Thực đơn xem thiếu gì.', 'warn', 'box', true);
-            ctx.ui.closePanel();
+            g.cash = Math.max(g.cash, 50000);
+            if (!g.phone) { PH.activate(g, 'camung'); }
+            PH.fullCharge(g);
+            PUI.resetPhoneView();
+            PUI.phoneKey('open', 'contacts');
+            toast('Danh bạ có sẵn Tổng đài 1080. Bấm dòng đó để nghe dự báo ngày mai (2.000₫/phút, mỗi ngày 3 lần).', 'info', 'sun', true);
+            ctx.ui.closePanel(); ctx.ui.panel('phone');
           },
         },
         {
-          id: 'short_prep',
-          label: 'Bấm "Sơ chế" khi thiếu nguyên liệu → xem báo thiếu gì',
-          sub: 'Nút không còn bị khoá im lặng: đổi sang "Thiếu đồ — xem thiếu gì", bấm là hiện đúng nguyên liệu còn thiếu',
+          id: 'hot_scam',
+          label: 'Sang ngày 2 để nhận tin “trúng thưởng”, rồi gọi 1900 1234',
+          sub: 'Tin của số lạ tới máy thì số đó mới vào danh bạ · gọi là mất 15.000₫ cước và bị hẹn lên chỗ không có ai',
           tone: 'yellow',
           closePanel: false,
           run: () => {
             const g = ctx.g;
-            g.stall.tier = 7; g.stall.where = 'placed'; g.stall.spot = 'cho';
-            g.stall.store = []; g.bag = []; g.stall.preps = []; g.stall.ready = [];
-            for (const rid of ['com_suon', 'banh_xeo']) if (g.rec[rid]) { g.rec[rid].known = true; g.rec[rid].on = true; }
-            ctx.stall.refresh();
-            ctx.ui.closePanel(); ctx.ui.panel('stall');
+            g.cash = Math.max(g.cash, 80000);
+            if (g.day < 1) { g.day = 1; g.min = 8 * 60 + 30; }
+            if (!g.phone) PH.activate(g, 'camung');
+            PH.fullCharge(g);
+            PUI.resetPhoneView();
+            ctx.ui.closePanel(); ctx.ui.panel('phone');
+            toast('Hộp thư có tin “Chúc mừng trúng một xe Wave”. Đọc Tin nhắn xong mở Danh bạ: số 1900 1234 vừa xuất hiện.', 'info', 'gift', true);
+          },
+        },
+        {
+          id: 'hot_bust',
+          label: 'Tới “văn phòng trúng thưởng” để thấy bị lừa — và cơ hội quay về',
+          sub: 'Đã gọi 1900 1234 · tới bức tường cuối khu chợ: được một cơ hội nghe ngóng quay về, vẫn tin thì mất tiền thật',
+          tone: 'red',
+          closePanel: false,
+          run: () => {
+            const g = ctx.g;
+            g.cash = Math.max(g.cash, 80000);
+            if (g.flags.scamCall !== 1) { g.flags.scamCall = 1; g.flags.scamDay = g.day; }
+            g.flags.scamX = -68; g.flags.scamZ = 21;
+            tpTo(g.flags.scamX, g.flags.scamZ + 2.2, Math.PI, 'Đã tới “văn phòng trúng thưởng” — chỉ có bức tường.');
+            toast('Đi vào vòng sáng vàng ngay trước mặt: bạn sẽ thấy đúng một cơ hội quay về.', 'warn', 'way', true);
           },
         },
       ],

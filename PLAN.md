@@ -597,3 +597,32 @@ nút, và nhãn *"đã sơ chế 0 phần"* từng **rơi vào giữa tên món*
 `tools/probe/steps/shortage.mjs` (390×844, dựng quầy bậc 7 bán 2 món với kho trống): chip HUD ra *"Thiếu dầu ăn, bột mì…
 · xem chi tiết"*, bảng Quầy có ô thiếu đồ 6 dòng đúng định dạng, nút Sơ chế đổi nhãn **"Thiếu đồ — xem thiếu gì"**, bấm
 thì toast *"Chưa sơ chế … được — thiếu …"* và bảng còn mở; mua đủ đồ thì cảnh báo biến mất (`shorts: 0`); console sạch.
+
+---
+
+## Lượt 27 — Hai tổng đài trong danh bạ: 1080 và 1900 1234 ✅ đã xong
+
+Người chơi xin thêm hai số điện thoại trong **Danh bạ**: một số gọi để nghe **dự báo thời tiết ngày mai**, một số gọi
+để **nhận thưởng nhưng bị lừa** — và chuyện lừa chỉ được xảy ra **một lần**.
+
+**1080 — Tổng đài dự báo thời tiết.** Có sẵn trong danh bạ từ đầu (đứng trên cả người quen), cước **2.000₫/lượt**,
+mỗi ngày gọi tối đa **3 lần**. Nội dung đọc thẳng từ `WEATHER[g.weather.next]` nên **luôn đúng thời tiết kế tiếp**
+(`g.weather.next` được `setWeather` gán sẵn, đổi sau mỗi lần trời trở): tên thời tiết, câu mô tả, kèm lời khuyên bán hàng
+(trời nóng → món mát; se lạnh → món nóng; mưa to/giông → nhắc che quầy, đem ô). Tin nhắn `wx<ngày>` của 1080 cũng đổi
+theo: chỉ nói **hôm nay** ra sao rồi mời gọi 1080 để biết **ngày mai**.
+
+**1900 1234 — \"trúng thưởng\".** Ban đầu **không có trong danh bạ**. Từ **ngày thứ hai**, cứ **3 ngày một lần** số này
+nhắn tin mời gọi (\"trúng một xe Wave, gọi lại để nhận\"); **có tin nhắn thì số mới xuất hiện trong danh bạ**. Gọi là mất
+**15.000₫ cước** (5.000₫/phút × 3 phút dây dưa) và bị hẹn lên *\"văn phòng trúng thưởng ở cuối khu chợ\"* — mũi tên vàng
+dẫn tới một **bức tường**, không có ai. Tới đó người chơi được **đúng MỘT cơ hội**: nghe ngóng rồi quay về (chỉ mất thời
+gian, tinh thần nhẹ nhõm hơn) hoặc **vẫn tin** thì mất tiền thật (**40% tiền mặt, kẹp 20.000–200.000₫**) và mất buổi chiều.
+Dính một lần là xong: lần sau gọi lại thì đầu dây bên kia \"không tồn tại\", **không mất thêm đồng nào**, và danh bạ vẫn giữ
+số đó với nhãn *\"Số lừa đảo — bạn đã biết rồi\"*. Tin nhắn lừa cũng biến mất khỏi hộp thư sau khi gọi.
+
+**Kiểm thử:** tệp mới `tests/phone4.test.ts` (**7 bài**) → tổng **413 bài / 31 tệp**. `tests/phone.test.ts` sửa 2 bài cho
+khớp danh bạ mới (1080 có sẵn; tin 1080 nay mời gọi thay vì đọc dự báo hôm nay). Menu ẩn thay mục lượt 26 bằng ba mục
+`hot_wx` / `hot_scam` / `hot_bust`. Probe mới `tools/probe/steps/hotline.mjs` (390×844): ngày 1 danh bạ chỉ có
+*\"Tổng đài 1080\"*; gọi 1080 tốn đúng 2.000₫ và toast *\"Dự báo mai: nắng đẹp…\"*; sang ngày 2 hộp thư có tin *\"Chúc mừng!
+… trúng thưởng một xe Wave\"* và dòng **1900 1234** xuất hiện đầu danh bạ; bấm gọi mất 15.000₫, `scamTrip` chỉ về cuối khu
+chợ; đi tới nơi hiện hộp thoại **\"Bức tường cuối khu chợ\"** với đúng hai lựa chọn (quay về / vẫn tin); gọi lại thì
+`fee: 0`. Console sạch. Ảnh: `anh_ket_qua/android/12..16_*.png`.

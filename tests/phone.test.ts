@@ -99,7 +99,7 @@ describe('điện thoại', () => {
     expect(from).toContain('Ngân hàng Sao Vàng');
     expect(from).toContain('Chủ trọ');
     expect(from).toContain('Tổng đài 1080');
-    expect(list.some((s) => s.text.includes('trúng thưởng'))).toBe(true);
+    expect(list.some((s) => s.from === 'Tổng đài 1080' && s.text.includes('gọi 1080'))).toBe(true);
     // tin nào cũng có thời điểm không ở tương lai
     for (const s of list) expect(s.at).toBeLessThanOrEqual(absMin(g));
   });
@@ -115,15 +115,19 @@ describe('điện thoại', () => {
     expect(unread(g)).toBeGreaterThan(0);
   });
 
-  it('danh bạ chỉ có người đã quen, khách quen xếp trước', () => {
+  it('danh bạ: tổng đài 1080 có sẵn, người quen và khách quen xếp sau', () => {
     const g = fresh();
-    expect(contacts(g)).toHaveLength(0);
+    const first = contacts(g);
+    expect(first).toHaveLength(1);
+    expect(first[0].name).toBe('Tổng đài 1080');
+    expect(first[0].hot).toBe('wx');
     g.met['kiosk'] = 0;
     g.rel['chu_ba'] = { v: 40, n: 3, last: 0 };
     const list = contacts(g);
-    expect(list).toHaveLength(2);
-    expect(list[0].regular).toBe(true);
-    expect(list[1].name).toBe('Cô Ba');
+    expect(list).toHaveLength(3);
+    expect(list[0].name).toBe('Tổng đài 1080');   // tổng đài luôn đứng đầu
+    expect(list[1].regular).toBe(true);           // rồi tới khách quen
+    expect(list[2].name).toBe('Cô Ba');
   });
 
   it('gọi khách quen: mỗi người một lần một ngày, tốn cước, thân hơn', () => {
