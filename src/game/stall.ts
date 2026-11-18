@@ -6,7 +6,7 @@ import { ganhModel, cartModel, charcoalStove, gasStove, boardModel, knifeModel, 
 import { takeawayBag, servingTray, Look } from '../gfx/people';
 import { SPOTS, Spot, spotById, groundY, NAV_BLOCK, CORNER, edgeKey } from '../world/layout';
 import { Game, Helper, Booking, STAT_MAX, absMin, hourOf, addStack } from '../sim/state';
-import { branchTick, errandWho, arrivalRate, has, tier, menuOf, available, decide, decideGroup, review, settleSale, lostCustomer, readyCount, finishPossible, spend, earn, stove, changeRel, meet, wx, eventOn, Persona, addXp, canSell, missingFor, hasPrep, stallRoom, stallQueueCap, isNight, level, stallRent, payStallRent, helperGate, hireHelper, fireHelper, helperCandidate, helperPatience, sousCandidate, sousWork, createBooking, dueBooking, reservedSeats, expireBookings, staffReports, lowStockCount, autoBookOn, seatCount, dineIn, isRestaurant, secondOrder, periodName, PATIENCE_RANGE } from '../sim/rules';
+import { branchTick, errandWho, arrivalRate, has, tier, menuOf, available, decide, decideGroup, review, settleSale, lostCustomer, readyCount, finishPossible, spend, earn, stove, changeRel, meet, wx, eventOn, Persona, addXp, canSell, missingFor, hasPrep, stallRoom, stallQueueCap, isNight, level, stallRent, payStallRent, helperGate, hireHelper, fireHelper, helperCandidate, helperPatience, sousCandidate, sousWork, createBooking, dueBooking, reservedSeats, expireBookings, staffReports, lowStockCount, autoBookOn, seatCount, dineIn, isRestaurant, secondOrder, periodName, PATIENCE_RANGE, onShift } from '../sim/rules';
 import { RECIPES, RecipeDef } from '../data/recipes';
 import { INGS } from '../data/ingredients';
 import { ARCH, HelperDef, LINES, REGULARS, RegularDef } from '../data/people';
@@ -1050,8 +1050,9 @@ export class StallSys {
         });
       }
     };
-    stepHelper(1, !!g.help && s.open && !this.errandHide(1));
-    stepHelper(2, !!g.help2 && isRestaurant(g) && s.open && !this.errandHide(2));
+    // Người phụ quầy chỉ có mặt đúng ca của mình — hết ca thì chào về, sang ca thì tới.
+    stepHelper(1, !!g.help && s.open && onShift(g, 1) && !this.errandHide(1));
+    stepHelper(2, !!g.help2 && isRestaurant(g) && s.open && onShift(g, 2) && !this.errandHide(2));
     if (this.offerNpc && (!s.open || this.offerNpc.state === 'gone')) this.offerNpc = null;
     this.offerHelper(dt);
     this.updateKeeper(dt);

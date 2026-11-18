@@ -19,8 +19,8 @@
 | Quầy hàng & nấu ở world | `src/game/stall.ts` (1.403), `src/cook/*` |
 | Hội thoại / menu NPC | `src/game/acts.ts` (1.124) |
 | HUD / bảng | `src/ui/ui.ts` (308), `src/ui/panels.ts` (297), `src/ui/style.css` |
-| Test | `tests/*.test.ts` — **34 tệp, 436 bài**, `environment: 'node'` |
-| Thử giao diện thật | `tools/probe/` (34 kịch bản `.mjs` trong `steps/`, Chrome headless) |
+| Test | `tests/*.test.ts` — **35 tệp, 456 bài**, `environment: 'node'` |
+| Thử giao diện thật | `tools/probe/` (53 kịch bản `.mjs` trong `steps/`, Chrome headless) |
 | Bản phát hành | `docs/` — **sinh ra bởi `build:pages`, không sửa tay** |
 
 Trạng thái đo được hôm nay: **typecheck ✅ · 322/322 test ✅ · build ✅ · build:pages ✅**.
@@ -131,7 +131,7 @@ xác định luật + dữ liệu (sim/data)
 
 ### 4.3 Sau khi sửa
 ```bash
-npm test            # 436 bài hiện tại; đếm lại nếu bạn thêm bài
+npm test            # 456 bài hiện tại; đếm lại nếu bạn thêm bài
 npm run typecheck
 npm run build
 git diff --check    # lỗi khoảng trắng / xung đột sót
@@ -225,7 +225,7 @@ Những test "gác cổng" dễ bị quên:
 | Tệp | Vai trò | Chú ý |
 |---|---|---|
 | `README.md` | người chơi: cách chơi, điều khiển, đã có gì, đã kiểm gì | số liệu đã khớp mã (§9); thêm tính năng người chơi thấy ⇒ sửa ở đây |
-| `DESIGN.md` | kiến trúc, luật & con số cân bằng, save, kiểm thử | mục 4.26 là bậc 6; mục 6 ghi `SAVE_VERSION = 15` |
+| `DESIGN.md` | kiến trúc, luật & con số cân bằng, save, kiểm thử | mục 4.26 là bậc 6; mục 6 ghi `SAVE_VERSION = 16` |
 | `TODO.md` | việc **còn** thiếu tại thời điểm viết | chỉ giữ việc chưa xong; xoá mục khi làm xong thay vì đánh dấu ✅ |
 | `PLAN.md` | lộ trình theo lượt, mỗi lượt có kết quả & test | tới lượt 30; mỗi lượt mới thêm một mục `## Lượt N` |
 | `PLAYBOOK.md` | tệp này: quy trình + bản đồ + bất biến | cập nhật khi số liệu nền đổi |
@@ -239,12 +239,12 @@ Quy ước cập nhật: `README` = cái người chơi thấy & lệnh chạy *
 Trước đây tài liệu lệch mã khá nhiều; nay đã sửa xong cả 8 chỗ, các con số dưới là **đã khớp** với mã:
 
 1. `README.md` – **7/7 bậc** kinh doanh chơi được (bậc 6 `nhahang`, bậc 7 `chuoi`) + giao người làm đi chợ.
-2. `README.md` – số bài kiểm thử luôn theo mã: nay **436 bài / 34 tệp** (kèm 17 bài `tests/nhahang.test.ts`, 25 bài `tests/chuoi.test.ts`, 17 bài `tests/dicho.test.ts`, 17 bài `tests/baocao.test.ts`, 11 bài `tests/vua2.test.ts`, 5 bài `tests/phone3.test.ts`, 8 bài `tests/shopapp.test.ts`, 8 bài `tests/phone4.test.ts`, 15 bài `tests/look.test.ts`).
+2. `README.md` – số bài kiểm thử luôn theo mã: nay **456 bài / 35 tệp** (kèm 17 bài `tests/nhahang.test.ts`, 25 bài `tests/chuoi.test.ts`, 17 bài `tests/dicho.test.ts`, 17 bài `tests/baocao.test.ts`, 11 bài `tests/vua2.test.ts`, 5 bài `tests/phone3.test.ts`, 8 bài `tests/shopapp.test.ts`, 8 bài `tests/phone4.test.ts`, 15 bài `tests/look.test.ts`).
 3. `README.md` – **43** nhân vật cố định (trước ghi 34 và 38 ở hai chỗ).
 4. `README.md` – số món đồ nghề / chỗ bán luôn theo mã: nay **37** món, **6** chỗ bán (4 chỗ thường + 2 mặt bằng) và **3** chỗ mở chi nhánh.
 5. `TODO.md` – đầu tệp cập nhật theo mã: 7/7 bậc · 75 nguyên liệu · 12 nơi bán · 37 đồ nghề · 44 nhân vật · 422/32; thêm mục
    "bậc 6 chưa có probe giao diện"; tách khỏi mâu thuẫn "bậc 6 đã xong" ở bảng bên dưới.
-6. `DESIGN.md` – 436 bài; `SAVE_VERSION = 15` kèm nhánh v12–v15; 144 lô đất / 268 nút đường đi; 6 chỗ bán;
+6. `DESIGN.md` – 456 bài; `SAVE_VERSION = 16` kèm nhánh v12–v16; 144 lô đất / 268 nút đường đi; 6 chỗ bán;
    `FUTURE_TIERS` rỗng.
 7. `DESIGN.md` – thêm **mục 4.26** cho bậc 6 (nhà hàng bình dân, đặt bàn trước, phụ bếp, khách đoàn) + dòng mô tả
    `tests/nhahang.test.ts` trong mục 7.

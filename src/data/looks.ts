@@ -3,6 +3,8 @@
 export interface PlayerLookData {
   face: number; fem: boolean; hairStyle: number; hair: number; shirt: number; pants: number;
   skin: number; shoe: number; hat: number; hatCol: number; fat: number; h: number;
+  /** Râu mép / râu cằm: 0 sạch sẽ, 1 râu mép, 2 râu cằm, 3 râu quai nón (chỉ nam). */
+  beard: number;
 }
 export interface LookOption { name: string; price: number; note?: string; }
 export interface HairStyleDef extends LookOption { id: number; }
@@ -50,11 +52,27 @@ export const GLASSES: LookOption[] = [
   { name: 'Kính cận gọng đen', price: 45000 },
   { name: 'Kính đen giang hồ', price: 60000 },
 ];
+/** Ba dáng người bán ở tiệm may: gọn, vừa, đậm. Đổi được cả chiều cao lẫn bề ngang. */
+export interface ShapeDef extends LookOption { fat: number; h: number; }
+export const SHAPES: ShapeDef[] = [
+  { name: 'Gọn gàng', fat: 0.9, h: 0.96, price: 15000 },
+  { name: 'Vừa vặn', fat: 1, h: 1, price: 15000 },
+  { name: 'Đậm người', fat: 1.12, h: 1.03, price: 18000 },
+];
+/** Nón thêm ngoài mái tóc: 0 không đội, (1 nón lá, 2 nón lưỡi trai, 3 bảo hiểm, 4 mũ vải đã có sẵn trong hình). */
+export const HATS: ColorDef[] = [
+  { name: 'Không đội', col: 0, price: 0 },
+  { name: 'Nón lá', col: 0xe6d6a0, price: 20000 },
+  { name: 'Nón lưỡi trai', col: 0x2f6fb5, price: 28000 },
+  { name: 'Nón bảo hiểm', col: 0xf5c531, price: 55000 },
+];
+/** Bộ đồ nghề: mặc vào là thấy mình dân làm ăn (không đổi chỉ số, chỉ đổi hình). */
+export const OUTFIT_NOTE = 'Bộ đồ nghề: tạp dề quán ăn. Không đổi chỉ số, chỉ đổi hình.';
 /** Ngoại hình mặc định của ván mới (chỉ khác nhau ở nam/nữ). */
 export function defaultLook(fem: boolean): PlayerLookData {
   return {
     face: fem ? 1 : 0, fem, hairStyle: fem ? 7 : 0, hair: 0x1e1a18, shirt: fem ? 0xe86f9a : 0x2f8fd5,
-    pants: 0x2a2e3a, skin: fem ? 0xf6d6b6 : 0xf2c9a4, shoe: 0x2a2a2e, hat: 0, hatCol: 0x2f6fb5, fat: fem ? 0.94 : 1, h: 1,
+    pants: 0x2a2e3a, skin: fem ? 0xf6d6b6 : 0xf2c9a4, shoe: 0x2a2a2e, hat: 0, hatCol: 0x2f6fb5, fat: fem ? 0.94 : 1, h: 1, beard: 0,
   };
 }
 /** Chỉnh lại dữ liệu đọc từ bản lưu cho khỏi vỡ hình. */
@@ -67,5 +85,7 @@ export function cleanLook(raw: any, fem: boolean): PlayerLookData {
     hair: col(raw?.hair, d.hair), shirt: col(raw?.shirt, d.shirt), pants: col(raw?.pants, d.pants), skin: col(raw?.skin, d.skin),
     shoe: col(raw?.shoe, d.shoe), hat: Math.round(n(raw?.hat, d.hat, 0, 4)), hatCol: col(raw?.hatCol, d.hatCol),
     fat: n(raw?.fat, d.fat, 0.8, 1.3), h: n(raw?.h, d.h, 0.85, 1.12),
+    // râu chỉ dành cho nam; bản lưu cũ chưa có trường này thì mặc định sạch sẽ.
+    beard: raw?.fem === true || (raw?.fem === undefined && fem) ? 0 : Math.round(n(raw?.beard, d.beard, 0, 3)),
   };
 }

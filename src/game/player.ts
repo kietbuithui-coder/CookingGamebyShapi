@@ -76,13 +76,22 @@ export class Player {
   /** Dựng lại nhân vật theo ngoại hình đang lưu (sau khi cắt tóc, mua đồ, mở bản lưu). */
   applyLook() {
     const d = ctx.g?.look; if (!d) return;
-    this.look = { face: d.face, fem: d.fem, shirt: d.shirt, pants: d.pants, hair: d.hair, hat: d.hat, hairStyle: d.hairStyle, fat: d.fat, h: d.h, skin: d.skin, bag: 0, hatCol: d.hatCol, long: false, apron: 0, shoe: d.shoe };
+    // Có quán (từ xe đẩy trở lên) thì mặc tạp dề đỏ của người bán — thấy mình "ra dáng chủ quán" ở góc nhìn thứ ba.
+    const apron = (ctx.g?.stall?.tier ?? 0) >= 2 ? 0xc9473f : 0;
+    this.look = { face: d.face, fem: d.fem, shirt: d.shirt, pants: d.pants, hair: d.hair, hat: d.hat, hairStyle: d.hairStyle, fat: d.fat, h: d.h, skin: d.skin, bag: 0, hatCol: d.hatCol, long: false, apron, shoe: d.shoe, beard: d.beard ?? 0 };
     this.rig.setLook(this.look); this.rig.root.visible = !!ctx.set.cam3;
+  }
+  /** Tạp dề chỉ đổi khi quán lên bậc — dựng lại hình nếu vừa mở quán/xe đẩy. */
+  private apronOn = 0;
+  syncApron() {
+    const want = (ctx.g?.stall?.tier ?? 0) >= 2 ? 0xc9473f : 0;
+    if (want !== this.apronOn) { this.apronOn = want; this.applyLook(); }
   }
   /** Bật/tắt góc nhìn thứ ba; trả về trạng thái mới. */
   toggleView(): boolean { ctx.set.cam3 = !ctx.set.cam3; this.camOn = false; this.rig.root.visible = !!ctx.set.cam3; return ctx.set.cam3; }
   get fwd(): [number, number] { return [Math.sin(this.yaw), Math.cos(this.yaw)]; }
   update(dt: number) {
+    this.syncApron();
     const g = ctx.g, inp = ctx.input, s = ctx.set;
     if (this.hitCd > 0) this.hitCd = Math.max(0, this.hitCd - dt);
     if (this.stunT > 0) this.stunT = Math.max(0, this.stunT - dt);

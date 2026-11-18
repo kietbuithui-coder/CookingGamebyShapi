@@ -1,8 +1,7 @@
 // Lượt 11 — sinh hoạt của phố: giờ cao điểm, chỗ đông theo giờ, lịch của từng nhóm người, câu chào.
 import { describe, it, expect } from 'vitest';
 import { GREET_GAP, GREET_NEAR, RUSH, crowdWeight, greetKind, routineFor, rushMul, voicePitch } from '../src/sim/life';
-import { ARCH } from '../src/data/people';
-import { LINES } from '../src/data/people';
+import { ARCH, LINES } from '../src/data/people';
 
 describe('sinh hoạt của phố', () => {
   it('giờ cao điểm đi nhanh hơn, khuya thì lững thững', () => {
@@ -53,6 +52,29 @@ describe('sinh hoạt của phố', () => {
     expect(greetKind({ hour: 12, rain: 0, weather: 'nang', rep: 0, met: false })).toBe('noon');
     expect(greetKind({ hour: 17, rain: 0, weather: 'nang', rep: 0, met: false })).toBe('evening');
     expect(greetKind({ hour: 21, rain: 0, weather: 'nang', rep: 0, met: false })).toBe('night');
+  });
+
+  it('người đi đường nhận ra người chơi vừa giàu lên, đang túng, hoặc đang bị công an để ý', () => {
+    const base = { hour: 12, rain: 0, weather: 'nang', rep: 30, met: true };
+    // bị công an để ý thì nói xa gần, kể cả khi quen mặt và đang giàu
+    expect(greetKind({ ...base, wanted: 60, cash: 9_000_000 })).toBe('wanted');
+    expect(greetKind({ ...base, wanted: 10, cash: 9_000_000 })).toBe('rich');
+    // vừa giàu nhưng uy tín còn thấp thì chưa ai biết: vẫn chào theo giờ như thường
+    expect(greetKind({ ...base, rep: 5, cash: 9_000_000 })).toBe('noon');
+    // uy tín đủ cao (trên 10) mà tiền chưa tới mức "đổi đời" thì chỉ là quen mặt
+    expect(greetKind({ ...base, rep: 12, cash: 400_000 })).toBe('known');
+    // túng quá thì người ta thương, nói trước cả khi quen
+    expect(greetKind({ ...base, met: false, cash: 1200 })).toBe('poor');
+    // không truyền cash (chỗ gọi cũ) thì giữ nguyên cách chào như trước
+    expect(greetKind({ ...base, met: false })).toBe('noon');
+    expect(greetKind({ ...base, met: false, cash: 300_000 })).toBe('noon');
+  });
+
+  it('mỗi kiểu chào mới đều có câu thật, không sót kiểu nào không lời', () => {
+    for (const k of ['rich', 'poor', 'wanted']) {
+      expect(LINES.greet[k].length).toBeGreaterThanOrEqual(3);
+      for (const t of LINES.greet[k]) expect(t.length).toBeGreaterThan(8);
+    }
   });
 
   it('câu chào có đủ cho tám kiểu, câu nào cũng dùng được cho mọi nhóm người', () => {

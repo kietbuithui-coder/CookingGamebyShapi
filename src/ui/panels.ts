@@ -11,6 +11,10 @@ import { REGULARS, FIXED } from '../data/people';
 import { WEATHER } from '../data/world';
 import { Game, Stack, LedgerDay, STAT_MAX, weightOf, moveStack, junkWeight, hourOf, purge, isSpoiled } from '../sim/state';
 import * as R from '../sim/rules';
+/** Nhãn ca làm — dùng chung cho bảng Quầy. */
+const SHIFT_LABEL: Record<string, string> = { sang: 'Ca sáng 5–14h', chieu: 'Ca chiều 14–22h', full: 'Cả ngày 5–22h' };
+/** Nút bấm để chuyển sang ca kế tiếp. */
+const SHIFT_NEXT: Record<string, string> = { sang: 'Sang ca chiều', chieu: 'Làm cả ngày', full: 'Về ca sáng' };
 import * as PH from '../sim/phone';
 import * as PUI from './phoneUI';
 import { FEAT_LABEL } from '../data/phone';
@@ -38,8 +42,8 @@ function autoBookBlock(g: Game): string {
   const low = R.lowStockCount(g);
   return `<h4 style="margin-top:.8em">Báo cáo & đặt bàn</h4>` +
     `<div class="item"><div class="grow"><b>Báo cáo của người làm</b><small>${low ? `${low} món sắp hết nguyên liệu — xem gợi ý đi chợ` : 'Kho còn đủ cho món đang bán'}</small></div><button class="btn small${low ? ' yellow' : ''}" data-a="reportOpen">Mở báo cáo</button></div>` +
-    `<div class="item"><div class="grow"><b>Bếp trưởng tự duyệt đặt bàn</b><small>${can ? (on ? 'Đang bật: khách đặt là bếp nhận luôn' : 'Đang tắt: bạn tự nhận / từ chối') : 'Cần có bếp trưởng (nhà hàng bình dân)'}</small></div>` +
-    (can ? `<button class="btn small${on ? ' green' : ''}" data-a="autoBook2">${on ? 'Đang tự duyệt' : 'Bật tự duyệt'}</button>` : '') + `</div>`;
+    // Không có bếp trưởng thì giấu hẳn dòng này: quán nhỏ không có đặt bàn, bày ra chỉ là lời dặn thừa.
+    (can ? `<div class="item"><div class="grow"><b>Bếp trưởng tự duyệt đặt bàn</b><small>${on ? 'Đang bật: khách đặt là bếp nhận luôn' : 'Đang tắt: bạn tự nhận / từ chối'}</small></div><button class="btn small${on ? ' green' : ''}" data-a="autoBook2">${on ? 'Đang tự duyệt' : 'Bật tự duyệt'}</button></div>` : '');
 }
 
 /** Khối "giao đi chợ" dùng trong tab Nhân sự: ai đang đi, giao cho ai, huỷ chuyến. */
@@ -103,7 +107,9 @@ export function openPanel(ui: UI, name: string) {
       draw(`${ic('bag')} Túi đồ`, [['bag', 'Nguyên liệu'], ['gear', 'Dụng cụ']], body, `<span class="muted">Tiền mặt ${money(g.cash)}${g.bank ? ' · ngân hàng ' + money(g.bank) : ''}</span>`);
     } else if (name === 'stall') {
       const rest = R.isRestaurant(g);
-      const validTabs = rest ? ['menu', 'store', 'staff', 'info'] : ['menu', 'store', 'info'];
+      // Nhân sự không chỉ có ở nhà hàng: từ bậc 3 đã thuê được người phụ quầy và phải giao họ đi chợ được.
+      const hasStaff = rest || R.helperCount(g) > 0 || g.errands.length > 0 || !!g.branch?.keeper;
+      const validTabs = hasStaff ? ['menu', 'store', 'staff', 'info'] : ['menu', 'store', 'info'];
       if (!validTabs.includes(tab)) tab = 'menu';
       const placed = s.where === 'placed';
       acts.sw = (_i, e) => { const rs = g.rec[e.dataset.k!], on = R.menuOf(g).length; if (!rs.on && on >= T.menu) { toast(`${T.name} chỉ bán được tối đa ${T.menu} món cùng lúc.`, 'warn'); return; } rs.on = !rs.on; sfx('ui'); };
@@ -127,6 +133,13 @@ export function openPanel(ui: UI, name: string) {
       acts.fireSous = (i) => { const old = R.fireSous(g, i === 2 ? 2 : 1); if (old) toast(`Đã cho phụ bếp ${old.name} nghỉ việc.`, 'info', 'heart'); };
       acts.hireHelp = () => { const c = R.helperCandidate(g); if (!R.hireHelper(g, c)) { toast(`Không đủ ${money(c.wage)} trả ngày lương đầu cho ${c.name}.`, 'bad', 'cash'); return; } sfx('coin'); toast(`Đã thuê phục vụ ${c.name} (${money(c.wage)}/ngày).`, 'good', 'heart'); };
       acts.fireHelp = (i) => { const old = R.fireHelper(g, i === 2 ? 2 : 1); if (old) toast(`Đã cho nhân viên phục vụ ${old.name} nghỉ việc.`, 'info', 'heart'); };
+      // Đổi ca: sáng → chiều → cả ngày → sáng. Người ngoài ca không tới quầy.
+      acts.shiftHelp = (i) => {
+        const slot: 1 | 2 = i === 2 ? 2 : 1, cur = g.helpShift[slot];
+        const next = cur === 'sang' ? 'chieu' : cur === 'chieu' ? 'full' : 'sang';
+        g.helpShift[slot] = next;
+        toast(`Ca của ${(slot === 2 ? g.help2 : g.help)?.name ?? 'nhân viên'}: ${SHIFT_LABEL[next].toLowerCase()}.`, 'info', 'clock');
+      };
       acts.accBook = (_i, e) => { const b = R.acceptBooking(g, +e.dataset.k!); if (b) { sfx('coin'); toast(`Đã nhận đặt bàn của ${b.name} (${b.size} người).`, 'good', 'star'); } };
       acts.rejBook = (_i, e) => { R.rejectBooking(g, +e.dataset.k!); sfx('ui'); toast('Đã huỷ / từ chối đặt bàn.', 'info'); };
       acts.hireKeeper = () => { const c = R.keeperCandidate(g); if (!R.hireKeeper(g, c)) { toast(`Không đủ ${money(c.wage)} trả ngày lương đầu cho ${c.name}.`, 'bad', 'cash'); return; } sfx('coin'); toast(`Đã thuê ${c.name} trông coi chi nhánh (${money(c.wage)}/ngày).`, 'good', 'heart'); };
@@ -165,27 +178,40 @@ export function openPanel(ui: UI, name: string) {
         const helpList = [g.help, g.help2].map((x, idx) => x ? { slot: idx + 1, h: x } : null).filter(Boolean) as { slot: number; h: NonNullable<typeof g.help> }[];
         const activeBooks = g.bookings.filter((b) => b.status === 'pending' || b.status === 'accepted' || b.status === 'seated');
         const fmtHour = (h: number) => `${Math.floor(h)}h${Math.round((h - Math.floor(h)) * 60) ? String(Math.round((h - Math.floor(h)) * 60)).padStart(2, '0') : '00'}`;
-        body = `<div class="grid2"><div><h4>Nhân viên phụ bếp (${R.sousCount(g)}/${R.maxSous(g)})</h4>` +
+        const sousCol = R.maxSous(g) ? `<h4>Nhân viên phụ bếp (${R.sousCount(g)}/${R.maxSous(g)})</h4>` +
           sousList.map(({ slot, h }) => `<div class="item"><div class="grow"><b>${h.name}</b><small>Đứng phòng bếp riêng, tự sơ chế & nấu sẵn món thiếu · lương ${money(h.wage)}/ngày</small></div><span class="tag good">bếp ${slot}</span><button class="btn small" data-a="fireSous" data-i="${slot}">Cho nghỉ</button></div>`).join('') +
           (R.sousCount(g) < R.maxSous(g)
             ? `<div class="item"><div class="grow"><b>${cand.name}</b><small>${cand.ask.replace('{ac}', g.ac)} · tốc độ ×${cand.speed.toFixed(2).replace('.', ',')}</small></div><button class="btn small green${g.cash < cand.wage ? ' off' : ''}" data-a="hireSous">Thuê — ${money(cand.wage)}/ngày</button></div>`
-            : '') +
-          `<h4>Nhân viên phục vụ (${R.helperCount(g)}/${R.maxHelpers(g)})</h4>` +
-          helpList.map(({ slot, h }) => `<div class="item"><div class="grow"><b>${h.name}</b><small>Tiếp khách, lau bàn, dỗ khách chờ · lương ${money(h.wage)}/ngày</small></div><span class="tag good">bàn ${slot}</span><button class="btn small" data-a="fireHelp" data-i="${slot}">Cho nghỉ</button></div>`).join('') +
+            : '') : '';
+        const staffCol = sousCol + `<h4>Nhân viên phục vụ (${R.helperCount(g)}/${R.maxHelpers(g)})</h4>` +
+          helpList.map(({ slot, h }) => {
+            const sh = g.helpShift[slot === 2 ? 2 : 1], on = R.onShift(g, slot === 2 ? 2 : 1), left = R.shiftLeft(g, slot === 2 ? 2 : 1);
+            // Không có dòng chú thích dài: ca + số giờ còn lại + tiền lương là đủ hiểu.
+            return `<div class="item"><div class="grow"><b>${h.name}</b><small>${SHIFT_LABEL[sh]} · ${on ? `còn ${Math.floor(left / 60)}h${String(left % 60).padStart(2, '0')}` : 'chưa tới ca'}</small><small>${money(h.wage)}/ngày</small></div><span class="tag ${on ? 'good' : ''}">bàn ${slot}</span><button class="btn small" data-a="shiftHelp" data-i="${slot}">${SHIFT_NEXT[sh]}</button><button class="btn small" data-a="fireHelp" data-i="${slot}">Cho nghỉ</button></div>`;
+          }).join('') +
           (R.helperCount(g) < R.maxHelpers(g)
             ? `<div class="item"><div class="grow"><b>${hCand.name}</b><small>${hCand.ask.replace('{ac}', g.ac)}</small></div><button class="btn small green${g.cash < hCand.wage ? ' off' : ''}" data-a="hireHelp">Thuê — ${money(hCand.wage)}/ngày</button></div>`
-            : '') +
-          `</div><div><h4>Đặt bàn trước (${activeBooks.length}/${R.BOOKING_MAX})</h4>` +
-          (activeBooks.length ? `<div class="list">${activeBooks.map((b) => `<div class="item"><div class="grow"><b>${b.name} · ${b.size} người</b><small>${b.day > g.day ? 'Ngày mai ' : 'Hôm nay '}${fmtHour(b.hour)} · cọc ${money(b.deposit)}${b.dish && RECIPES[b.dish] ? ' · thích ' + RECIPES[b.dish].short.toLowerCase() : ''}</small></div>` +
-            (b.status === 'pending' ? `<button class="btn small green" data-a="accBook" data-k="${b.id}">Nhận bàn</button><button class="btn small" data-a="rejBook" data-k="${b.id}">Từ chối</button>`
-              : b.status === 'accepted' ? `<span class="tag good">đã nhận</span><button class="btn small" data-a="rejBook" data-k="${b.id}">Huỷ</button>`
-              : `<span class="tag warn">đang ngồi</span>`) + `</div>`).join('')}</div>`
-            : '<p class="muted">Chưa có bàn đặt trước nào. Khách quen hoặc dân văn phòng sẽ gửi yêu cầu khi nhà hàng hoạt động.</p>') +
-          `<div style="margin-top:.5em"><button class="btn small${activeBooks.length >= R.BOOKING_MAX ? ' off' : ''}" data-a="findBook">Nhận thêm khách đặt bàn</button></div>` +
-          (R.isChain(g) ? `<h4 style="margin-top:.8em">Chi nhánh (chuỗi cửa hàng)</h4>` + (g.branch
-            ? `<div class="item"><div class="grow"><b>${SPOTS.find((x) => x.id === g.branch!.spot)?.name ?? ''}</b><small>${g.branch.keeper ? g.branch.keeper.name + ' trông coi · ' + (g.branch.open ? 'đang bán' : 'đang đóng cửa') : 'Chưa có người trông coi'} · ${R.branchStock(g)} phần sẵn</small></div><button class="btn small" data-tab="branch">Mở sổ</button></div>`
-            : `<p class="muted">Đã có bảng hiệu chuỗi nhưng chưa thuê chi nhánh. Ghé tiệm Ba Tài mở thêm điểm bán thứ hai.</p>`) +
-          errandBlock(g) + autoBookBlock(g) + `</div></div>` : `</div></div>`);
+            : '');
+        // Cột phải: đặt bàn trước chỉ có ở nhà hàng bình dân; chi nhánh thì chuỗi nào cũng có.
+        let besideCol = '';
+        if (rest) {
+          besideCol +=
+            `<h4>Đặt bàn trước (${activeBooks.length}/${R.BOOKING_MAX})</h4>` +
+            (activeBooks.length ? `<div class="list">${activeBooks.map((b) => `<div class="item"><div class="grow"><b>${b.name} · ${b.size} người</b><small>${b.day > g.day ? 'Ngày mai ' : 'Hôm nay '}${fmtHour(b.hour)} · cọc ${money(b.deposit)}${b.dish && RECIPES[b.dish] ? ' · thích ' + RECIPES[b.dish].short.toLowerCase() : ''}</small></div>` +
+              (b.status === 'pending' ? `<button class="btn small green" data-a="accBook" data-k="${b.id}">Nhận bàn</button><button class="btn small" data-a="rejBook" data-k="${b.id}">Từ chối</button>`
+                : b.status === 'accepted' ? `<span class="tag good">đã nhận</span><button class="btn small" data-a="rejBook" data-k="${b.id}">Huỷ</button>`
+                : `<span class="tag warn">đang ngồi</span>`) + `</div>`).join('')}</div>`
+              : '<p class="muted">Chưa có bàn đặt trước nào. Khách quen hoặc dân văn phòng sẽ gửi yêu cầu khi nhà hàng hoạt động.</p>') +
+            `<div style="margin-top:.5em"><button class="btn small${activeBooks.length >= R.BOOKING_MAX ? ' off' : ''}" data-a="findBook">Nhận thêm khách đặt bàn</button></div>`
+        }
+        if (R.isChain(g)) {
+          besideCol +=
+            `<h4 style="margin-top:.8em">Chi nhánh (chuỗi cửa hàng)</h4>` + (g.branch
+              ? `<div class="item"><div class="grow"><b>${SPOTS.find((x) => x.id === g.branch!.spot)?.name ?? ''}</b><small>${g.branch.keeper ? g.branch.keeper.name + ' trông coi · ' + (g.branch.open ? 'đang bán' : 'đang đóng cửa') : 'Chưa có người trông coi'} · ${R.branchStock(g)} phần sẵn</small></div><button class="btn small" data-tab="branch">Mở sổ</button></div>`
+              : `<p class="muted">Đã có bảng hiệu chuỗi nhưng chưa thuê chi nhánh. Ghé tiệm Ba Tài mở thêm điểm bán thứ hai.</p>`);
+        }
+        body = (besideCol ? `<div class="grid2"><div>${staffCol}</div><div>${besideCol}</div></div>` : staffCol) +
+          errandBlock(g) + autoBookBlock(g);
       } else {
         const sp = ctx.stall.spot(), rate = R.arrivalRate(g);
         const seatLabel = R.isRestaurant(g) ? `${R.seatCount(g)} ghế trong nhà kín (4 bàn · phòng bếp riêng)` : `${R.seatCount(g)} ghế${R.dineIn(g) ? ' trong nhà' : ' nhựa ngoài sân'}`;
@@ -196,7 +222,9 @@ export function openPanel(ui: UI, name: string) {
           (ownedUpg.length ? `<h4>Tiện nghi & thiết bị đã lắp (${ownedUpg.length}/${upgList.length})</h4><p>${ownedUpg.map((x) => `<span class="tag good">${x.name}</span>`).join(' ')}</p>` : `<p class="muted">Chưa lắp thêm tiện nghi nâng cấp nào (${upgList.length} món có thể mua ở tiệm Ba Tài).</p>`) +
           (T.tier >= 3 && g.flags.sapNo ? '<p class="neg">Đang nợ phí chỗ — mở bán sẽ trừ tiền trước.</p>' : '') + `<div style="display:flex;gap:.4em;flex-wrap:wrap"><button class="btn${s.dirt < 3 ? ' off' : ''}" data-a="clean">Lau dọn quầy (12 phút)</button><button class="btn${s.ready.length || s.store.some(isSpoiled) ? '' : ' off'}" data-a="dump">Đổ bỏ đồ ế, đồ hỏng</button></div></div></div>`;
       }
-      const stallTabs: [string, string][] = rest ? [['menu', 'Thực đơn'], ['store', 'Kho quầy'], ['staff', 'Nhân sự & Đặt bàn'], ['info', 'Quầy']] : [['menu', 'Thực đơn'], ['store', 'Kho quầy'], ['info', 'Quầy']];
+      const stallTabs: [string, string][] = hasStaff
+        ? [['menu', 'Thực đơn'], ['store', 'Kho quầy'], ['staff', rest ? 'Nhân sự & Đặt bàn' : 'Nhân sự'], ['info', 'Quầy']]
+        : [['menu', 'Thực đơn'], ['store', 'Kho quầy'], ['info', 'Quầy']];
       draw(`${ic('shop')} ${T.name}`, stallTabs, body, placed ? `<button class="btn ${s.open ? 'red' : 'green'}" data-a="open">${s.open ? 'Đóng quầy' : 'MỞ BÁN'}</button>${T.tier < 3 ? `<button class="btn" data-a="pack">Dọn hàng, mang đi</button>` : ''}<span class="muted">Hôm nay: ${g.led.sold} phần · ${money(g.led.revenue + g.led.tips)}</span>` : T.tier < 3 ? `<button class="btn" data-a="pack">Mang quầy đi</button>` : `<span class="muted">Chạm vào vòng sáng vàng ngoài phố để đặt sạp.</span>`);
     } else if (name === 'home') {
       const h = HOUSING[g.housing];

@@ -405,8 +405,18 @@ export function lostCustomer(g: Game, why: 'wait' | 'price' | 'none' | 'dirty') 
 // ───────────────────────── Chỉ số sinh tồn ─────────────────────────
 export interface Activity { moving: boolean; running: boolean; sleeping: boolean; sheltered: boolean; working: boolean; load: number; sleepQ: number; }
 export const staminaMax = (g: Game) => clamp(0.35 + 0.65 * Math.min(g.st.hunger, g.st.thirst) / 55, 0.35, 1);
+/** Thể trạng cơ thể: 0 gọn gàng (đi nhanh, mau đói), 1 vừa, 2 đậm (chậm hơn nhưng lì sức). Đổi ở tiệm may. */
+export function bodyType(g: Game): 0 | 1 | 2 {
+  const fat = g.look.fat;
+  return fat < 0.98 ? 0 : fat > 1.06 ? 2 : 1;
+}
+/** Hệ số tốc độ đi bộ theo thể trạng — gọn thì nhanh hơn đậm khoảng 6%. */
+export const BODY_SPEED = [1.06, 1, 0.94] as const;
+/** Hệ số hao sức khi làm việc theo thể trạng — đậm thì lì hơn, gọn mau đuối. */
+export const BODY_DRAIN = [1.12, 1, 0.9] as const;
+
 export function moveMul(g: Game, x: number, z: number): number {
-  let m = wx(g).walk;
+  let m = wx(g).walk * BODY_SPEED[bodyType(g)];
   if (g.st.health < 45) m *= 0.62 + 0.38 * g.st.health / 45;          // bị thương/ốm → đi chậm
   if (g.st.energy < 12) m *= 0.8;
   if (floodPct(g) > 0.35 && floodZone(x, z)) m *= lerp(1, 0.55, clamp((floodPct(g) - 0.35) * 2.5));
@@ -415,7 +425,7 @@ export function moveMul(g: Game, x: number, z: number): number {
 export const floodPct = (g: Game) => clamp(g.weather.flood);
 export function tickStats(g: Game, dm: number, a: Activity) {
   const s = g.st, w = wx(g);
-  const work = a.running ? 1.7 : a.working ? 1.35 : a.moving ? 1.1 : 1, load = 1 + clamp(a.load) * 0.5;
+  const work = (a.running ? 1.7 : a.working ? 1.35 : a.moving ? 1.1 : 1) * (a.sleeping ? 1 : BODY_DRAIN[bodyType(g)]), load = 1 + clamp(a.load) * 0.5;
   if (a.sleeping) {
     s.energy += dm * 0.215 * a.sleepQ; s.hunger -= dm * 0.045; s.thirst -= dm * 0.06;
     s.health += dm * 0.03 * a.sleepQ; s.mood += dm * 0.02 * (a.sleepQ - 0.7);
@@ -767,6 +777,15 @@ export const HELPER_MIN_TIER = 2;
 export function stallRevenue(g: Game): number { return g.led.revenue + g.hist.reduce((a, h) => a + h.revenue, 0); }
 export const maxHelpers = (g: Game) => (isRestaurant(g) ? 2 : 1);
 export const helperCount = (g: Game) => (g.help ? 1 : 0) + (g.help2 && isRestaurant(g) ? 1 : 0);
+/** Ca đang trong giờ: sáng 5–14h, chiều 14–22h, cả ngày 5–22h. Trả về số phút còn lại của ca (0 = hết ca). */
+export function shiftLeft(g: Game, slot: 1 | 2): number {
+  const h = hourOf(g), sh = g.helpShift?.[slot] ?? 'full';
+  const from = sh === 'chieu' ? 14 : 5, to = sh === 'sang' ? 14 : 22;
+  if (h < from || h >= to) return 0;
+  return Math.round((to - h) * 60);
+}
+/** Người ở ca này có đang trong giờ làm không. Người không có ca (bản lưu cũ) coi như cả ngày. */
+export const onShift = (g: Game, slot: 1 | 2) => shiftLeft(g, slot) > 0;
 export interface HelperGate { ok: boolean; revenue: number; days: number; tier: boolean; why: string; }
 /** Vì sao chưa có người phụ việc — dùng cho gợi ý trong UI và cho test. */
 export function helperGate(g: Game): HelperGate {
@@ -774,7 +793,7 @@ export function helperGate(g: Game): HelperGate {
   const tier = g.stall.tier >= HELPER_MIN_TIER;
   const full = helperCount(g) >= maxHelpers(g);
   const ok = !full && tier && revenue >= HELPER_MIN_REVENUE && days >= HELPER_MIN_DAYS;
-  const why = full ? (isRestaurant(g) ? 'Đã đủ 2 nhân viên phục vụ' : 'Đã có người phụ quầy')
+  const why = full ? (isRestaurant(g) ? 'Đã đủ 2 người phụ quầy' : 'Đã có người phụ quầy')
     : !tier ? 'Cần xe đẩy trở lên mới thuê được người'
     : revenue < HELPER_MIN_REVENUE ? `Doanh thu mới ${money(revenue)} — cần ${money(HELPER_MIN_REVENUE)} mới nuôi nổi người phụ`
     : days < HELPER_MIN_DAYS ? `Mới bán được ${days + 1} ngày — bán quen tay đã rồi hẵng thuê`

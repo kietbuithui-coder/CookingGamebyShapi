@@ -718,3 +718,83 @@ có 'đầu hẻm'") → **436 bài / 34 tệp**. Menu Test & Dịch chuyển �
 Probe `steps/anim30.mjs` + `animshot30.mjs` (390×844): bật nhạc → `bgm: phone_mua_chieu`, Bài khác →
 `phone_pho_chieu`, radio đọc “Thời tiết sáng: nắng đẹp…”, WAP trang 1 có 5 tin + `Giá chợ hôm nay`. Console sạch.
 Ảnh: `anh_ket_qua/android/28_nhac_tren_may.png` … `32_wap_trang_gia.png`.
+
+## Lượt 31 — Con người: dáng người · râu · nón · thoại riêng · ca làm ✅ đã xong
+
+Mục §5 trong `TODO.md` (dòng "Còn thiếu: gương ở nhà, đổi dáng người – chiều cao, mũ/nón, bộ đồ riêng theo nghề;
+râu, kính, mũ đa dạng hơn; bộ thoại riêng cho từng nhân vật cố định...; nhiều người phụ việc, chia ca sáng/tối").
+
+- **Dáng người** (`SHAPES` trong `src/data/looks.ts`, mua ở tiệm Quần áo Cô Ngọc): gọn gàng / vừa vặn / đậm người,
+  15.000–18.000₫, đổi **cả bề ngang lẫn chiều cao**. Có tác dụng thật, không chỉ đổi hình: `bodyType()` + `BODY_SPEED`
+  (±6% tốc độ đi) và `BODY_DRAIN` (±12% hao sức) trong `src/sim/rules.ts` — người chơi cảm thấy khác ngay dưới chân.
+- **Râu** (`beard` 0–3: sạch / mép / cằm / quai nón) vẽ thêm trong `buildBody` (`src/gfx/people.ts`), mua ở ghế Chú Bảy
+  (cạo 5.000₫, để râu 8.000₫). Chỉ nam; nữ và bản lưu cũ luôn là 0.
+- **Nón** (`HATS`: nón lá / lưỡi trai / bảo hiểm, 20.000–55.000₫) ở tiệm may, đội lên thấy ngay trên đầu.
+- **Thoại riêng**: `LINES.own` + `fillLine()`/`ownLine()` (`src/data/people.ts`) — 15 nhân vật cố định có 1–3 câu
+  riêng, xoay theo ngày, thay cho câu chung của nghề. `{you}`/`{self}` điền đúng cách gọi.
+- **Ca làm của người phụ quầy**: `Shift = 'sang' | 'chieu' | 'full'` (5–14h / 14–22h / 5–22h) trong `state.ts`,
+  `shiftLeft()`/`onShift()` trong `rules.ts`; ai ngoài ca thì **không tới quầy** (`src/game/stall.ts`), bảng Quầy ›
+  Nhân sự có nút **Sang ca chiều / Làm cả ngày / Về ca sáng** + số giờ còn lại. Bản lưu **v16** (migration: người 1 cả
+  ngày, người 2 ca sáng — y như hành vi cũ).
+- **Bớt chữ thừa theo góp ý "UI đừng như app do AI làm"**: bỏ 10 dòng `sub` giải thích lại đúng điều nút đã nói
+  ("Xem gánh, xe đẩy, sạp…", "Sáu màu, vải mát", "Tốn sức, nhớ ăn uống đầy đủ", "No bụng, ấm lòng"…). Bảng chọn
+  giờ chỉ nói giá + tình trạng thật; chỗ nào cần cảnh báo mới có chữ nhỏ.
+- **Bộ đồ theo nghề**: từ xe đẩy trở lên người chơi tự mặc **tạp dề đỏ** của người bán (`Player.syncApron()`), thấy rõ
+  ở góc nhìn thứ ba; quán lên bậc nào là hình đổi theo bậc đó.
+
+**Kiểm thử:** `tests/nguoi.test.ts` (16 bài) → tổng **452 bài / 35 tệp**. `tsc` sạch, `build` + `build:pages` OK.
+Probe `tools/probe/steps/nguoi31.mjs` (390×844): tiệm may có mục Dáng người/Nón, đặt `fat 1.12` → `bodyType 2`,
+`moveMul` 94% (chậm hơn thật), râu quai nón + nón lá hiện trên mặt, bảng Nhân sự 2 phụ quầy, 20h thì ca sáng
+`cóMặt: false` còn ca chiều `true · còn 120 phút`. Console `errors: none`.
+Ảnh: `anh_ket_qua/android/33_tiem_may_dang_nguoi.png`, `34_rau_quai_non_non_la.png`, `35_ca_lam_phu_quay.png`.
+
+## Lượt 32 — Menu ẩn của lượt 31 · khách lựa hàng · người đi đường nhận ra người chơi ✅ đã xong
+
+Phần còn lại của mục §5 trong `TODO.md`, cộng thêm chỗ tôi quên ở lượt 31 (menu ẩn).
+
+- **Menu ẩn** (`src/game/devPoints.ts`) đổi sang nhóm của lượt 31: `look_shape` (tiệm may + dáng + nón), `look_beard`
+  (ghế Chú Bảy + râu), `look_apron` (dựng xe đẩy để thấy tạp dề), `talk_own` (nghe câu riêng của Chú Ba Tài & Ông Bảy),
+  `shift_help` (bảng Quầy › Nhân sự lúc 20h), `shift_watch` (đứng ở quầy xem một người vắng mặt). Sáu mục của lượt 30
+  đã chuyển sang danh sách "không được còn sót" trong `tests/devpoints.test.ts`.
+- **Khách lựa hàng ở tiệm nhỏ** (`src/game/shopbrowse.ts`, mới): người đi đường ghé **tạp hoá Cô Ba** hoặc **MiniMart**,
+  đi bộ dọc hai dãy kệ (ba điểm dừng thật trong tiệm), tới quầy nói **đúng tên món và đúng giá hôm nay**
+  (`shopPrice()`), đứng một chút rồi đi ra. Người chơi đứng cạnh thì họ **nhờ lấy giùm món trên kệ cao** —
+  bấm giúp thì uy tín +0.2 và họ cảm ơn thật (`acts.browserTalk()`). Bấm vào họ để nói chuyện
+  (`interact.ts`: nhánh riêng cho `actor === 'browse'`).
+- **Người đi đường nhận ra người chơi** (`src/sim/life.ts` + `src/data/people.ts`): `greetKind()` có thêm ba kiểu
+  **`rich`** (≥ 5 triệu và uy tín > 10), **`poor`** (< 5.000₫) và **`wanted`** (bị công an để ý ≥ 45), xếp trước cả
+  "quen mặt" và thời tiết. Mỗi kiểu có 3–4 câu riêng. Không truyền `cash` (chỗ gọi cũ) thì giữ nguyên cách chào cũ.
+
+**Kiểm thử:** `tests/life.test.ts` thêm 2 bài; tổng **454 bài / 35 tệp**. `tsc` sạch, build OK.
+Probe `tools/probe/steps/nguoi32.mjs` (390×844): menu ẩn hiện đúng nhóm lượt 31 + nhóm địa điểm; khách vào tạp hoá
+(`sốKhách: 1, tiệm: kiosk`), bấm nói chuyện thì hiện “Anh ơi, lấy giùm tôi hộp … trên kệ cao với” với nút
+**“Để tôi lấy giùm.”**; `greetKind` trả `known / rich / poor / wanted` đúng bốn trường hợp. Console `errors: none`.
+Ảnh: `anh_ket_qua/android/36_menu_an_luot31.png`, `37_khach_lua_hang.png`, `38_nho_lay_giup_mon.png`.
+
+## Lượt 35 — Sửa lỗi: quán thường mất nút "Giao đi chợ…" ✅ đã xong
+
+Người chơi báo *"mất nút giao mua đồ"* trong bảng Quầy, và hỏi có phải do dev mode không. **Không phải dev mode.**
+
+- **Nguyên nhân**: tab **Nhân sự** chỉ được thêm vào bảng Quầy khi `isRestaurant(g)` (bậc ≥ 6). Nhưng từ lượt 31,
+  quán bậc 3–5 đã thuê được người phụ quầy (và phải giao được họ đi chợ) → quán nhỏ **thuê được người mà không có
+  tab nào chứa nút**. Khối `errandBlock()` thì nằm sâu trong nhánh "nhà hàng + chuỗi cửa hàng".
+- **Sửa** (`src/ui/panels.ts`): điều kiện tab đổi từ `rest` sang `hasStaff = rest || helperCount > 0 || errands.length > 0
+  || branch?.keeper`. Nhãn tab là **"Nhân sự"** ở quán thường, **"Nhân sự & Đặt bàn"** ở nhà hàng. Phần **Đặt bàn trước**
+  bọc trong `if (rest)`, khối **chi nhánh** trong `if (R.isChain(g))`, còn **đi chợ + báo cáo** nằm ngoài, luôn hiện.
+- **Bớt chữ thừa**: quán thường không còn bày mục "Nhân viên phụ bếp (0/0)" (chưa có bếp riêng) và dòng
+  "Bếp trưởng tự duyệt đặt bàn — cần có bếp trưởng (nhà hàng bình dân)" — chỉ dặn việc chưa làm được.
+- **Menu ẩn** (`devPoints.ts`) đổi sang nhóm của lượt này: `staff_shop5` (quán bậc 5 có phụ quầy → mở Quầy › Nhân sự,
+  có nút giao đi chợ) và `staff_rest6` (lên nhà hàng bình dân → thêm Đặt bàn trước). Nhóm "Địa điểm — tele nhanh" giữ nguyên.
+
+**Kiểm thử:** `tests/helper.test.ts` thêm 2 bài (`hasStaff` + chuyến đi chợ còn chạy), `tests/devpoints.test.ts` cập nhật
+→ tổng **456 bài / 35 tệp**. `tsc` sạch, `build` + `build:pages` OK.
+Probe `tools/probe/steps/checkstaff.mjs` (390×844), kết quả `đạt: true`:
+
+| Trường hợp | Tab | Có "Giao đi chợ…" | Có "Đặt bàn trước" | Tự duyệt đặt bàn |
+|---|---|---|---|---|
+| Quán thường bậc 5, 1 phụ quầy | `Nhân sự` | ✅ | ❌ (đúng) | ❌ (đúng) |
+| Nhà hàng bình dân bậc 6 | `Nhân sự & Đặt bàn` | ✅ | ✅ | có bếp trưởng mới hiện |
+
+`tools/probe/steps/checkdev35.mjs`: mở menu ẩn 8 lần bấm → bấm "Chạy" ở mục đầu → ra bảng Quầy có tab **Nhân sự** và nút
+**Giao đi chợ…** (`nútChợ: ["Giao đi chợ…"]`, `errors: none`).
+Ảnh: `anh_ket_qua/android/39_quan_thuong_co_nhan_su.png`, `40_nha_hang_nhan_su_dat_ban.png`.

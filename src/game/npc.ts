@@ -441,8 +441,9 @@ export class Npcs {
         n.greetT -= dt;
         if (n.greetT <= 0) {
           n.greetT = GREET_GAP * R.range(0.7, 1.4);
-          const kind = greetKind({ hour: h, rain: w.rain, weather: w.id, rep: g.rep, met: !!n.met });
-          const ex = kind === 'known' ? EXPR.smile : kind === 'rain' ? EXPR.annoyed : kind === 'hot' ? EXPR.sleepy : kind === 'cold' ? EXPR.pout : kind === 'night' ? EXPR.sleepy : EXPR.smile;
+          const kind = greetKind({ hour: h, rain: w.rain, weather: w.id, rep: g.rep, met: !!n.met, cash: g.cash + g.bank, wanted: g.wanted });
+          const ex = kind === 'known' ? EXPR.smile : kind === 'rich' ? EXPR.smile : kind === 'poor' ? EXPR.pout : kind === 'wanted' ? EXPR.annoyed
+            : kind === 'rain' ? EXPR.annoyed : kind === 'hot' ? EXPR.sleepy : kind === 'cold' ? EXPR.pout : kind === 'night' ? EXPR.sleepy : EXPR.smile;
           this.say(n, say(R.pick(LINES.greet[kind] ?? LINES.greet.morning), n.arch, n.fem, g), 2.8, ex);
         }
       }
