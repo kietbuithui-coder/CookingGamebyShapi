@@ -568,7 +568,7 @@ Thêm `94dvh` cho bảng (thanh địa chỉ Chrome Android ăn mất đáy) và
 (số tiền 4.936.000₫ từng thò ra ngoài mép phải ở 412 px).
 
 **Kết quả sau khi sửa** — probe in `manHinh: 15, coVanDe: [], vungChamNho: []` ở **cả 4 khổ**. Ảnh chụp để trong
-`anh_ket_qua/android/` (8 ảnh: ba mẫu máy, app Cửa hàng, Cài đặt, Quầy, sửa vị trí HUD, Bản đồ nằm ngang).
+`anh_ket_qua/android/` (`01..08_dien_thoai_*/app_cua_hang/bang_cai_dat/bang_quay/sua_vi_tri_hud/ban_do_nam_ngang`).
 Menu ẩn đổi sang `and_full` (dựng cảnh đầy đủ) + `and_phone3` (đổi ba mẫu máy), giữ nguyên nhóm tele nhanh.
 
 ---
@@ -625,7 +625,7 @@ khớp danh bạ mới (1080 có sẵn; tin 1080 nay mời gọi thay vì đọc
 *\"Tổng đài 1080\"*; gọi 1080 tốn đúng 2.000₫ và toast *\"Dự báo mai: nắng đẹp…\"*; sang ngày 2 hộp thư có tin *\"Chúc mừng!
 … trúng thưởng một xe Wave\"* và dòng **1900 1234** xuất hiện đầu danh bạ; bấm gọi mất 15.000₫, `scamTrip` chỉ về cuối khu
 chợ; đi tới nơi hiện hộp thoại **\"Bức tường cuối khu chợ\"** với đúng hai lựa chọn (quay về / vẫn tin); gọi lại thì
-`fee: 0`. Console sạch. Ảnh: `anh_ket_qua/android/12..16_*.png`.
+`fee: 0`. Console sạch. Ảnh: `anh_ket_qua/android/12_danhba_1080_ngay_dau.png` … `15_goi_1900_mat_cuoc.png`.
 
 ---
 
@@ -651,7 +651,7 @@ Ba phản hồi của người chơi sau lượt 27:
 `tests/look.test.ts` thêm 1 bài (lô `thoitrang` là nhà thật ở Phố Trung Tâm, mặt tiền tây) → **15 bài**. Tổng **415 bài /
 31 tệp**. Probe mới `tools/probe/steps/scamspot.mjs` (chụp ngõ cụt, cửa cuốn, thùng, mặt tiền và trong tiệm) và probe
 `hotline.mjs` nâng lên 8 bước — bấm thật vào nút **"Thôi, quay về"** thì hộp thoại **đóng hẳn**, `fee: 0`,
-`state: done`. Console sạch. Ảnh: `anh_ket_qua/android/17..21`.
+`state: done`. Console sạch. Ảnh: `anh_ket_qua/android/17_ngo_cut_sau_cho.png` … `21_trong_tiem_quan_ao.png`.
 
 ---
 
@@ -717,4 +717,4 @@ chú của người đó trong dữ liệu. Thêm 1 bài kiểm canh đúng lỗ
 có 'đầu hẻm'") → **436 bài / 34 tệp**. Menu Test & Dịch chuyển ẩn thêm ba mục `music_bgm`, `news_radio`, `news_wap`.
 Probe `steps/anim30.mjs` + `animshot30.mjs` (390×844): bật nhạc → `bgm: phone_mua_chieu`, Bài khác →
 `phone_pho_chieu`, radio đọc “Thời tiết sáng: nắng đẹp…”, WAP trang 1 có 5 tin + `Giá chợ hôm nay`. Console sạch.
-Ảnh: `anh_ket_qua/android/28..32`.
+Ảnh: `anh_ket_qua/android/28_nhac_tren_may.png` … `32_wap_trang_gia.png`.

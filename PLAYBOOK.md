@@ -225,10 +225,9 @@ Những test "gác cổng" dễ bị quên:
 | Tệp | Vai trò | Chú ý |
 |---|---|---|
 | `README.md` | người chơi: cách chơi, điều khiển, đã có gì, đã kiểm gì | số liệu đã khớp mã (§9); thêm tính năng người chơi thấy ⇒ sửa ở đây |
-| `DESIGN.md` | kiến trúc, luật & con số cân bằng, save, kiểm thử | mục 4.26 là bậc 6; mục 6 ghi `SAVE_VERSION = 13` |
+| `DESIGN.md` | kiến trúc, luật & con số cân bằng, save, kiểm thử | mục 4.26 là bậc 6; mục 6 ghi `SAVE_VERSION = 15` |
 | `TODO.md` | việc **còn** thiếu tại thời điểm viết | chỉ giữ việc chưa xong; xoá mục khi làm xong thay vì đánh dấu ✅ |
-| `PLAN.md` | lộ trình theo lượt, mỗi lượt có kết quả & test | tới lượt 17 (bậc 6); mỗi lượt mới thêm một mục `## Lượt N` |
-| `HANDOFF.md` | bàn giao một lượt cụ thể (cờ vua, 292 test) | là ảnh chụp lịch sử, **không** phải trạng thái hiện tại |
+| `PLAN.md` | lộ trình theo lượt, mỗi lượt có kết quả & test | tới lượt 30; mỗi lượt mới thêm một mục `## Lượt N` |
 | `PLAYBOOK.md` | tệp này: quy trình + bản đồ + bất biến | cập nhật khi số liệu nền đổi |
 
 Quy ước cập nhật: `README` = cái người chơi thấy & lệnh chạy **đã xác nhận** · `DESIGN` = số liệu & luật · `TODO` = chỉ việc còn lại (xoá mục đã xong) · `PLAN` = theo lượt · hai tài liệu bất đồng ⇒ xác minh bằng mã/test rồi sửa tài liệu sai, **không chép mù số cũ**.
