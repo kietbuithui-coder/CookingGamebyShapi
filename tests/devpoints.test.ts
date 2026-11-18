@@ -3,13 +3,13 @@ import { DEV_BUILD_TAG, getDevSections } from '../src/game/devPoints';
 
 describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
   it('chỉ gồm mục của tính năng mới nhất + nhóm địa điểm tele nhanh', () => {
-    expect(DEV_BUILD_TAG).toContain('ngõ cụt');
-    expect(DEV_BUILD_TAG).toContain('QUẦN ÁO CÔ NGỌC');
+    expect(DEV_BUILD_TAG).toContain('radio');
+    expect(DEV_BUILD_TAG).toContain('WAP');
     const sections = getDevSections();
     expect(sections.length).toBe(2);
-    expect(sections[0].title).toContain('điểm hẹn');
-    expect(sections[0].title).toContain('tiệm quần áo');
-    expect(sections[0].title).toContain('lượt 28');
+    expect(sections[0].title).toContain('Hoạt ảnh');
+    expect(sections[0].title).toContain('màn hình điện thoại');
+    expect(sections[0].title).toContain('lượt 29');
     expect(sections[1].title).toContain('Địa điểm');
     const ids = new Set<string>();
     for (const sec of sections) {
@@ -22,8 +22,8 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
         expect(item.sub.length).toBeGreaterThan(3);
       }
     }
-    // mục của lượt này: gọi 1080, nhận tin rồi gọi 1900 1234, vào ngõ cụt thấy bị lừa
-    for (const id of ['hot_wx', 'hot_scam', 'hot_bust']) expect(ids.has(id)).toBe(true);
+    // mục của lượt này: radio, lướt WAP, cuộc gọi — đều phải bật được hoạt ảnh trên màn hình máy
+    for (const id of ['anim_radio', 'anim_wap', 'anim_call']) expect(ids.has(id)).toBe(true);
     // tele nhanh vẫn còn, có thêm vựa mới và cửa căn hộ
     const loc = sections[1].items.map((i) => i.id);
     for (const id of ['tp_equip', 'tp_matbang_tb', 'tp_ongtu', 'tp_scrap2', 'tp_canho']) expect(loc).toContain(id);
@@ -47,6 +47,8 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
       // lượt 25 (soát giao diện Android)
       'and_full', 'and_phone3',
       // lượt 26 (cảnh báo sắp hết đồ)
-      'short_empty', 'short_prep']) expect(ids).not.toContain(old);
+      'short_empty', 'short_prep',
+      // lượt 27–28 (hai tổng đài + điểm hẹn lừa đảo)
+      'hot_wx', 'hot_scam', 'hot_bust']) expect(ids).not.toContain(old);
   });
 });

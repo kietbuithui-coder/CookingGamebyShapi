@@ -652,3 +652,35 @@ Ba phản hồi của người chơi sau lượt 27:
 31 tệp**. Probe mới `tools/probe/steps/scamspot.mjs` (chụp ngõ cụt, cửa cuốn, thùng, mặt tiền và trong tiệm) và probe
 `hotline.mjs` nâng lên 8 bước — bấm thật vào nút **"Thôi, quay về"** thì hộp thoại **đóng hẳn**, `fee: 0`,
 `state: done`. Console sạch. Ảnh: `anh_ket_qua/android/17..21`.
+
+---
+
+## Lượt 29 — Hoạt ảnh ngay trên màn hình điện thoại ✅ đã xong
+
+Người chơi muốn cái máy trong game **chạy thật**: lướt web, nghe radio, tin nhắn, cuộc gọi phải có hoạt ảnh
+**hiện ngay trên màn hình điện thoại**, đúng phong cách từng mẫu máy.
+
+**Cách làm.** Thêm lớp hoạt ảnh `actOverlay()` trong `src/ui/phoneUI.ts`: khi máy "đang làm gì đó", một lớp
+phủ nằm **trong `.ph`** (khung màn hình máy), đè lên nội dung app; thanh trạng thái (giờ · pin) vẫn giữ ở trên.
+Trạng thái giữ ở `ctx._pact` (`setPhoneAct` / `phoneAct` / `endPhoneAct` / `tickPhoneAct` / `phoneActNext`),
+`ui.update(dt)` đếm ngược và vẽ lại bảng đúng lúc hoạt ảnh tắt hẳn. Toàn bộ chuyển động là **CSS keyframes**
+(`src/ui/style.css`), nên chạy mượt mà không tốn khung hình vẽ lại.
+
+* **Cuộc gọi** — chiếm cả màn hình: vòng sóng lan quanh chữ viết tắt tên người, “Đang gọi…” với ba chấm nhấp nháy,
+  thanh tiến trình, nút **Tắt máy** (bấm là cúp, lớp biến mất). Hiện khi gọi khách quen, gọi 1080, gọi 1900 1234.
+* **Radio / nghe nhạc** — thang tần số FM có **kim dò đài quét qua lại**, 16 **cột sóng nhảy** theo nhịp (CSS
+  `scaleY`), dòng tin/bài đang phát **chạy ngang** (marquee), nút **Đổi đài / Bài khác** (đổi nội dung, chạy tiếp)
+  và **Tắt**.
+* **Lướt WAP** — ô địa chỉ trang, thanh tải chạy theo độ dài lượt lướt, **trang tin tự cuộn** (10 dòng tin trong
+  game), “Đang tải…” nhấp nháy.
+* **Tin nhắn** — mở hộp thư là màn hình chạy cảnh **soạn tin trả lời** người gửi mới nhất: bong bóng chat,
+  ba chấm “đang gõ”, **bàn phím số** nhấp nháy từng phím.
+* Ba mẫu máy giữ đúng chất: cục gạch dùng nền LCD xanh + chữ đơn cách, nắp gập nền xanh nhạt, cảm ứng nền trắng;
+  nút trên lớp hoạt ảnh cao ≥ 36 px trên máy cảm ứng thật. Có `prefers-reduced-motion` để tắt chuyển động.
+* Về màn hình chính (`phoneKey('home')`) là **cúp máy / tắt đài** luôn.
+
+**Kiểm thử:** `tests/phoneanim.test.ts` (7 bài: bật/đếm ngược/tự tắt, đổi kênh, cúp máy, máy không có chức năng
+thì không chạy) → tổng **422 bài / 32 tệp**. Menu Test & Dịch chuyển ẩn đổi sang ba mục của lượt này
+(`anim_radio`, `anim_wap`, `anim_call`). Probe mới `tools/probe/steps/anim.mjs` (390×844: radio → đổi đài → WAP →
+trang tự cuộn → gọi khách quen → bấm Tắt máy → tin nhắn trên cục gạch → nhạc trên nắp gập), `animland.mjs`
+(khổ ngang), `devmenu29.mjs` (bấm menu ẩn). Console sạch, ảnh ở `anh_ket_qua/android/22_radio_tren_may.png` … `27_tat_hoat_anh.png`.

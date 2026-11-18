@@ -284,6 +284,8 @@ export class UI {
   hud(on: boolean) { for (const k of ['hud-tl', 'hud-tr', 'quest', 'act', 'runb', 'act2', 'cross', 'focus', 'events', 'way', 'cart', 'stallchip', 'toasts', 'stam']) this.E[k].style.display = on ? '' : 'none'; }
 
   update(dt: number) {
+    // Màn hình điện thoại: đếm ngược hoạt ảnh đang chạy để vẽ lại đúng lúc nó tắt hẳn.
+    if (PUI.tickPhoneAct(dt) && this.modalName === 'phone') this.reopenPanel('phone');
     this.atts = this.atts.filter((a) => this.place(a, dt));
     if (this.gradeT > 0) { this.gradeT -= dt; if (this.gradeT <= 0) this.E.grade.classList.add('hide'); }
     // FPS đo theo đồng hồ thật (dt của game bị chặn ở 50 ms nên không dùng để đo được)

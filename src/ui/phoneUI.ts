@@ -37,6 +37,40 @@ export const phoneView = (): PhoneView => {
 };
 export const resetPhoneView = () => { const v = phoneView(); v.app = 'home'; v.idx = 0; v.sel = 0; v.sub = ''; };
 
+// ───────────────────────── Hoạt ảnh ngay trên màn hình máy ─────────────────────────
+// Đang nghe radio / phát nhạc / lướt WAP / soạn tin / gọi điện thì trên màn hình máy hiện một dải đang chạy
+// (gọi điện thì chiếm cả màn hình như máy thật). Chỉ là hiệu ứng cho thấy "máy đang làm gì" — luật chơi
+// (thời gian trôi, pin tụt) vẫn do src/sim/phone.ts quyết định ở acts.phoneFun / phoneCall.
+export type PhoneAct = 'radio' | 'music' | 'wap' | 'call' | 'sms';
+export interface ActState {
+  /** Việc máy đang làm. */
+  k: PhoneAct;
+  /** Còn chạy bao nhiêu giây thật. */
+  t: number;
+  /** Tổng thời gian (để thanh tiến trình chạy đúng nhịp). */
+  dur: number;
+  /** Dòng phụ: tên người được gọi, tên bài, địa chỉ trang… */
+  line: string;
+  /** Người đang gọi (nếu là cuộc gọi). */
+  who: string;
+}
+const actSlot = () => ctx as unknown as { _pact?: ActState };
+/** Việc máy đang làm, hoặc `null`. */
+export const phoneAct = (): ActState | null => { const a = actSlot()._pact; return a && a.t > 0 ? a : null; };
+/** Cho màn hình máy "chạy" một việc trong `secs` giây thật. */
+export function setPhoneAct(k: PhoneAct, secs: number, line = '', who = '') {
+  actSlot()._pact = { k, t: secs, dur: secs, line, who };
+}
+/** Tắt ngay (bấm "Tắt máy" trên màn hình cuộc gọi). */
+export function endPhoneAct() { const a = actSlot()._pact; if (a) a.t = 0; }
+/** Đếm ngược; trả `true` đúng lúc vừa hết để lớp bảng vẽ lại cho sạch. */
+export function tickPhoneAct(dt: number): boolean {
+  const a = actSlot()._pact; if (!a || a.t <= 0) return false;
+  a.t -= dt;
+  if (a.t > 0) return false;
+  a.t = 0; return true;
+}
+
 // ───────────────────────── Biểu tượng: mỗi mẫu máy một kiểu vẽ ─────────────────────────
 const GLYPH: Record<string, string> = {
   ledger: '<path d="M6 4h9l3 3v13H6z"/><path d="M9 9h6M9 12h6M9 15h4"/>',
@@ -175,6 +209,88 @@ export function appScreen(g: Game, m: PhoneDef, app: PhoneApp): string {
 }
 const FEAT = (f: PhoneFeat) => ({ ledger: 'Sổ thu chi', contacts: 'Danh bạ', sms: 'Tin nhắn', radio: 'Radio FM', music: 'Nghe nhạc', wap: 'Lướt web' } as Record<PhoneFeat, string>)[f];
 
+// ───────────────────────── Vẽ hoạt ảnh lên màn hình máy ─────────────────────────
+/** Chữ chạy trên màn hình máy theo từng việc — đổi kênh thì đổi câu. */
+const RADIO_LINES = [
+  'Đài Sài Gòn 99,9 · bản tin 6 giờ sáng',
+  '“Mưa chiều miền Trung” — bolero theo yêu cầu',
+  'Quảng cáo: nước tương Hiệp Thành, mua 2 tặng 1',
+  'Đài Tiếng nói nhân dân: giá rau sáng nay giảm',
+];
+const MUSIC_LINES = [
+  'Mưa rơi trên phố chiều · 3:42',
+  'Thà rằng như thế · 4:05',
+  'Chuyện người đàn bà · 3:18',
+];
+const WAP_PAGES = ['wap.vinaphone.vn/tin-tuc', 'wap.vietbao.vn/the-thao', 'wap.24h.vn/gia-vang'];
+let actIdx = 0;
+/** Đổi nội dung đang phát (đổi đài / đổi bài / sang trang khác) rồi vẽ lại màn hình. */
+export function phoneActNext(): boolean {
+  const a = phoneAct(); if (!a) return false;
+  actIdx++;
+  if (a.k === 'radio') a.line = RADIO_LINES[actIdx % RADIO_LINES.length];
+  else if (a.k === 'music') a.line = MUSIC_LINES[actIdx % MUSIC_LINES.length];
+  else if (a.k === 'wap') a.line = WAP_PAGES[actIdx % WAP_PAGES.length];
+  else return false;
+  a.t = a.dur;   // đổi kênh thì máy "chạy" tiếp từ đầu
+  return true;
+}
+
+/** Lớp hoạt ảnh phủ lên màn hình máy. Rỗng khi máy không làm gì. */
+export function actOverlay(g: Game, m: PhoneDef): string {
+  const a = phoneAct(); if (!a) return '';
+  const mono = m.id === 'cucgach';
+  const bar = (label: string) => `<div class="pactbar" title="${esc(label)}"><i style="animation-duration:${a.dur.toFixed(2)}s"></i></div>`;
+  if (a.k === 'call') {
+    const name = a.who || 'Số lạ';
+    return `<div class="pact call${mono ? ' mono' : ''}">
+      <div class="pcalltop"><span class="psig"></span><span>${esc(HOT_OR_CALL)}</span></div>
+      <div class="pcallmid">
+        <div class="pcallav"><i></i><b>${esc(name.slice(0, 2).toUpperCase())}</b></div>
+        <div class="pcallwho">${esc(name)}</div>
+        <div class="pcallst">Đang gọi<span class="pdots"><i></i><i></i><i></i></span></div>
+        <div class="pcallhint">giữ máy sát tai · cước tính theo phút</div>
+      </div>
+      ${bar('Đang gọi')}
+      <div class="pcallbtns"><button class="phang" data-a="phoneactoff">Tắt máy</button></div>
+    </div>`;
+  }
+  if (a.k === 'sms') {
+    return `<div class="pact sms${mono ? ' mono' : ''}">
+      <div class="psmsfrom">Đang soạn tin cho <b>${esc(a.who || 'khách quen')}</b></div>
+      <div class="pbub me">Dạ, mai em mở quầy từ 5 giờ sáng, cô ghé nghen<span class="pdots"><i></i><i></i><i></i></span></div>
+      <div class="pkeypad">${'123456789*0#'.split('').map((k) => `<i>${k}</i>`).join('')}</div>
+      ${bar('Đang gửi')}
+    </div>`;
+  }
+  if (a.k === 'wap') {
+    return `<div class="pact wap${mono ? ' mono' : ''}">
+      <div class="purl">${esc(a.line || WAP_PAGES[0])}</div>
+      ${bar('Đang tải trang')}
+      <div class="pwin"><div class="pwscroll">
+        ${['TIN NHANH TRONG NGÀY', 'Giá vàng SJC tăng 40.000đ/chỉ', 'Chợ Xóm Chiều họp từ 4 giờ sáng', 'Xăng A92 tăng 320đ/lít từ 15 giờ', 'Tuyển thợ phụ quán ăn sáng, bao ăn ở', 'Nhạc chuông HOT: Mưa chiều miền Trung', 'Rao vặt: xe đạp cũ 350.000đ, còn tốt', 'Bảng giá rau củ chợ đầu mối Bình Điền', 'Dự báo thời tiết 3 ngày tới', 'Tin giật gân: “trúng thưởng 1900 1234” là lừa'].map((l, i) => `<p class="${i % 4 === 0 ? 'h' : ''}">${esc(l)}</p>`).join('')}
+      </div></div>
+      <div class="ploading">Đang tải<span class="pdots"><i></i><i></i><i></i></span></div>
+    </div>`;
+  }
+  const isRadio = a.k === 'radio';
+  const line = a.line || (isRadio ? RADIO_LINES[0] : MUSIC_LINES[0]);
+  return `<div class="pact ${isRadio ? 'radio' : 'music'}${mono ? ' mono' : ''}">
+    <div class="pmid">
+    <div class="ptuner">
+      <div class="pticks">${Array.from({ length: 21 }, (_, i) => `<i class="${i % 5 === 0 ? 't' : ''}"></i>`).join('')}</div>
+      <span class="pneedle"></span>
+      <span class="pmark l">87,5</span><span class="pmark r">108,0</span>
+    </div>
+    <div class="pwave">${Array.from({ length: 16 }, (_, i) => `<i style="animation-delay:${(i * 0.09).toFixed(2)}s"></i>`).join('')}</div>
+    <div class="pmq"><span class="prun"><i class="pspeaker"></i>${esc(line)}</span></div>
+    </div>
+    <div class="pactbtns"><button class="pbtn" data-a="phoneactnext">${isRadio ? 'Đổi đài' : 'Bài khác'}</button><button class="pbtn off2" data-a="phoneactoff">Tắt</button></div>
+  </div>`;
+}
+/** Nhãn nhỏ trên màn hình cuộc gọi. */
+const HOT_OR_CALL = 'ĐANG GỌI · 1.000₫/phút';
+
 /** Toàn bộ thân máy (khung viền + màn hình + phím cứng tuỳ mẫu). Thay cho `.body` của bảng. */
 export function phoneShell(g: Game, m: PhoneDef): { title: string; html: string; foot: string } {
   const v = phoneView(), apps = appsOf(m), a = v.app === 'home' ? null : v.app;
@@ -186,7 +302,9 @@ export function phoneShell(g: Game, m: PhoneDef): { title: string; html: string;
     : m.id === 'napgap' ? `<div class="pkeys"><button class="key" data-a="phoneup">▲</button><button class="key mid" data-a="phoneok">TÁCH</button><button class="key" data-a="phonedown">▼</button></div>`
       : `<div class="pkeys touch"><button class="key home" data-a="phonehome">●</button></div>`;
   const title = a ? `${icPhone()} ${m.name} · ${up?.name ?? a}` : `${icPhone()} ${m.name}`;
-  const html = `<div class="phonewrap"><div class="phonebox ${m.id}"><div class="ph ${m.id}">${inner}</div>${keys}</div>
+  // Hoạt ảnh (sóng radio, trang WAP đang tải, cuộc gọi…) nằm ngay trong màn hình máy, đè lên nội dung app.
+  const act = actOverlay(g, m);
+  const html = `<div class="phonewrap"><div class="phonebox ${m.id}"><div class="ph ${m.id}${act ? ' busy' : ''}">${inner}${act}</div>${keys}</div>
     <div class="phoneside"><p class="muted">${m.desc}</p>
       <div class="kv"><span>Pin</span><b>${Math.round(PH.battery(g))}%</b></div>
       <div class="kv"><span>Giờ máy</span><b>${hhmm(g.min)} · ngày ${g.day + 1}</b></div>
@@ -198,13 +316,26 @@ export function phoneShell(g: Game, m: PhoneDef): { title: string; html: string;
 }
 const icPhone = () => '<svg class="ic" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M10.5 5.5h3M11 18.5h2"/></svg>';
 
+/** Mở hộp thư: màn hình máy chạy cảnh soạn tin trả lời người gửi mới nhất (bàn phím + dấu chấm đang gõ). */
+function smsAct(g: Game) {
+  if (!PH.isOn(g)) return;
+  const list = PH.smsList(g);
+  if (list.length) setPhoneAct('sms', 10, '', list[0].from);
+}
+
 /** Xử lý phím cứng / icon của từng mẫu máy. Trả `true` nếu cần vẽ lại. */
 export function phoneKey(k: 'up' | 'down' | 'ok' | 'home' | 'pick' | 'open', arg?: string | number): boolean {
   const v = phoneView(), g = ctx.g, m = PH.phone(g);
   if (!m) return false;
   const apps = appsOf(m);
-  if (k === 'home') { v.app = 'home'; v.sel = 0; v.sub = ''; return true; }
-  if (k === 'open' && typeof arg === 'string') { v.app = arg as PhoneApp; v.sel = 0; v.sub = ''; return true; }
+  // Về màn hình chính là cúp máy / tắt đài — màn hình trở lại bình thường.
+  if (k === 'home') { v.app = 'home'; v.sel = 0; v.sub = ''; endPhoneAct(); return true; }
+  if (k === 'open' && typeof arg === 'string') {
+    v.app = arg as PhoneApp; v.sel = 0; v.sub = '';
+    // Mở hộp thư còn tin chưa đọc: màn hình máy chạy cảnh soạn tin trả lời (bàn phím + dấu chấm đang gõ).
+    if (v.app === 'sms') smsAct(g);
+    return true;
+  }
   if (k === 'pick' && typeof arg === 'number') { v.idx = arg; return true; }
   if (k === 'up' || k === 'down') {
     const step = k === 'up' ? -1 : 1;
@@ -214,7 +345,12 @@ export function phoneKey(k: 'up' | 'down' | 'ok' | 'home' | 'pick' | 'open', arg
     v.sel = (v.sel + step + rows.length) % rows.length; return true;
   }
   if (k === 'ok') {
-    if (v.app === 'home') { const pick = apps[v.idx]; if (!pick) return false; v.app = pick.id; v.sel = 0; return true; }
+    if (v.app === 'home') {
+      const pick = apps[v.idx]; if (!pick) return false;
+      v.app = pick.id; v.sel = 0;
+      if (pick.id === 'sms') smsAct(g);
+      return true;
+    }
     const rows = rowsOf(g, m, v.app as PhoneApp), row = rows[v.sel];
     if (row && !row.off) return runRow(v.app as PhoneApp, row);
     return false;
