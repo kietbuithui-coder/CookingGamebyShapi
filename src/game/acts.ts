@@ -19,6 +19,8 @@ import * as R from '../sim/rules';
 import * as P from '../sim/police';
 import * as PH from '../sim/phone';
 import * as PUI from '../ui/phoneUI';
+import * as NEWS from '../sim/news';
+import { SONGS } from '../audio/songs';
 import * as N from '../sim/net';
 import * as RC from '../sim/race';
 import { bus, toast, sfx } from '../core/bus';
@@ -880,10 +882,25 @@ export class Acts {
       return false;
     }
     R.advance(g, c.min, this.act()); R.consume(g, { m: c.mood });
-    sfx('good'); toast(c.line, 'info', 'smile', true); bus.emit('save', 'dien thoai');
-    // Màn hình máy chạy hoạt ảnh đúng việc vừa làm: sóng radio / cột nhạc / trang WAP đang tải.
-    // WAP: ô địa chỉ phải là địa chỉ trang, không phải câu mô tả của app.
-    PUI.setPhoneAct(f, Math.min(24, Math.max(6, c.min * 1.6)), f === 'wap' ? '' : c.line);
+    const secs = Math.min(24, Math.max(6, c.min * 1.6));
+    // Máy có loa ngoài: bật "Nghe nhạc" là đổi luôn nhạc nền sang bài của máy (bấm "Bài khác" để sang bài kế).
+    if (f === 'music') {
+      const next = PUI.phoneAct()?.k === 'music' && PUI.phoneSong() ? PUI.phoneSong() : 'phone_' + SONGS[0].id;
+      const song = SONGS.find((x) => 'phone_' + x.id === next) ?? SONGS[0];
+      ctx.sound.bgm = 'phone_' + song.id;
+      PUI.setPhoneAct('music', secs, `${song.name} — ${song.by}`, '', 'phone_' + song.id);
+      toast(`Máy đang phát “${song.name}” ${song.by} — nhạc nền đổi theo. Bấm “Bài khác” trên máy để sang bài khác.`, 'info', 'smile', true);
+    } else if (f === 'radio') {
+      // đài đọc tin thật trong ván (thời tiết, giá chợ, sự kiện đang diễn ra…)
+      const line = NEWS.radioLines(g)[0];
+      PUI.setPhoneAct('radio', secs, line);
+      toast(`${c.line} Đài đang đọc: ${line}`, 'info', 'smile', true);
+    } else {
+      const p1 = NEWS.priceLine(g);
+      PUI.setPhoneAct('wap', secs, '', '', '', 0);
+      toast(`${c.line}${p1 ? ` Trang đầu có tin giá ${p1.name.toLowerCase()} ${money(p1.now)}/${p1.unit}.` : ''}`, 'info', 'smile', true);
+    }
+    sfx('good'); bus.emit('save', 'dien thoai');
     return true;
   }
   /** Gọi cho khách quen: tốn cước, thân hơn một chút, mỗi ngày một lần. */

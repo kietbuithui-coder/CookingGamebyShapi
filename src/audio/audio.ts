@@ -1,6 +1,7 @@
 // ÂM THANH — tổng hợp hoàn toàn bằng Web Audio (không dùng tệp ghi âm): hiệu ứng, tiếng môi trường (phố xá, mưa, gió,
 // đám đông rì rầm) và 6 bản nhạc nền tự soạn theo ngũ cung, tự chuyển theo ngữ cảnh chơi.
 import { clamp } from '../core/util';
+import { SONG_TRACKS } from './songs';
 
 type Wave = OscillatorType;
 interface Track { bpm: number; scale: number[]; root: number; lead: string[]; bass: string[]; perc: string; inst: 'pluck' | 'flute' | 'bell'; pad: boolean; swing?: number; }
@@ -33,6 +34,8 @@ export const TRACKS: Record<string, Track> = {
     lead: ['4.5.7.5.4.2.4.5.', '7.9.7.5.4...4...', '4.5.7.5.4.2.0.2.', '4.2.0.2.4...-...', '7.7.9.7.5.5.7.5.', '4.4.5.4.2.2.4.2.', '7.9.a.9.7.5.4.5.', '7.5.4.2.0...0...'],
     bass: ['0.4.0.4.', '3.4.3.4.', '0.4.0.4.', '2.4.0.4.', '3.3.4.4.', '1.1.2.2.', '3.4.3.4.', '0.4.0.0.'] },
 };
+// Ba bài của chiếc điện thoại (src/audio/songs.ts): bật "Nghe nhạc" trên máy là nhạc nền đổi sang bài này.
+for (const k of Object.keys(SONG_TRACKS)) TRACKS[k] = SONG_TRACKS[k];
 const midi = (n: number) => 440 * Math.pow(2, (n - 69) / 12);
 const deg = (t: Track, ch: string, oct = 0) => { const d = parseInt(ch, 16), n = t.scale.length; return t.root + t.scale[d % n] + 12 * Math.floor(d / n) + oct * 12; };
 
@@ -160,7 +163,11 @@ export class Sound {
     else { const f = 2300 + Math.random() * 1300, n = 2 + Math.floor(Math.random() * 4); for (let i = 0; i < n; i++) this.tone(f * (1 + i * 0.07), 0.07, 'sine', v * 0.7, i * 0.1, 1.3, this.ambG); }
   }
   // ───────── nhạc nền ─────────
-  music(want: string) { this.want = want; }
+  /** Bài do người chơi chọn trên điện thoại (rỗng = nhạc tự đổi theo ngữ cảnh). */
+  bgm = '';
+  music(want: string) { this.want = this.bgm || want; }
+  /** Nhạc nền đang thật sự phát (đổi bài có độ trễ cho tiếng cũ tắt dần) — màn hình điện thoại đọc để hiện tên bài. */
+  get playing() { return this.track; }
   private note(t: Track, n: number, when: number, dur: number, vol: number, inst: Track['inst']) {
     const ac = this.ac!, f = midi(n), g = ac.createGain(), o = ac.createOscillator(); g.connect(this.trackG!);
     if (inst === 'pluck') { o.type = 'triangle'; const o2 = ac.createOscillator(); o2.type = 'sawtooth'; o2.frequency.value = f * 2.003; const g2 = ac.createGain(); g2.gain.setValueAtTime(vol * 0.22, when); g2.gain.exponentialRampToValueAtTime(0.0005, when + 0.12); o2.connect(g2); g2.connect(this.trackG!); o2.start(when); o2.stop(when + 0.16);

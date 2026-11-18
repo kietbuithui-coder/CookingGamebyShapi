@@ -15,6 +15,8 @@ import type { Contact } from '../sim/phone';
 import { ledgerBody } from './panels';
 import { RECIPES } from '../data/recipes';
 import { toast } from '../core/bus';
+import * as NEWS from '../sim/news';
+import { SONGS, SONG_BY_ID, songOf } from '../audio/songs';
 
 export type PhoneApp = 'ledger' | 'contacts' | 'sms' | 'radio' | 'music' | 'wap' | 'battery' | 'shop';
 
@@ -53,14 +55,20 @@ export interface ActState {
   line: string;
   /** Người đang gọi (nếu là cuộc gọi). */
   who: string;
+  /** Bài nhạc đang phát trên máy (khi `k === 'music'`) — khoá trong bảng nhạc nền. */
+  song: string;
+  /** Trang WAP đang mở (0, 1, 2…) — mỗi lần bấm "Trang khác" là sang trang kế, năm tin mỗi trang. */
+  page: number;
 }
 const actSlot = () => ctx as unknown as { _pact?: ActState };
 /** Việc máy đang làm, hoặc `null`. */
 export const phoneAct = (): ActState | null => { const a = actSlot()._pact; return a && a.t > 0 ? a : null; };
 /** Cho màn hình máy "chạy" một việc trong `secs` giây thật. */
-export function setPhoneAct(k: PhoneAct, secs: number, line = '', who = '') {
-  actSlot()._pact = { k, t: secs, dur: secs, line, who };
+export function setPhoneAct(k: PhoneAct, secs: number, line = '', who = '', song = '', page = 0) {
+  actSlot()._pact = { k, t: secs, dur: secs, line, who, song, page };
 }
+/** Bài nhạc đang phát trên máy (null nếu máy không mở nhạc). */
+export const phoneSong = (): string => phoneAct()?.song ?? '';
 /** Tắt ngay (bấm "Tắt máy" trên màn hình cuộc gọi). */
 export function endPhoneAct() { const a = actSlot()._pact; if (a) a.t = 0; }
 /** Đếm ngược; trả `true` đúng lúc vừa hết để lớp bảng vẽ lại cho sạch. */
@@ -118,7 +126,8 @@ function rowsOf(g: Game, m: PhoneDef, app: PhoneApp): { b: string; s: string; ac
   }
   if (app === 'radio' || app === 'music' || app === 'wap') {
     const f = PH.FUN[app];
-    return [{ b: PH_FEAT_NAME[app], s: `${f.min} phút · tinh thần +${f.mood} · pin −${f.pin}% · ${on ? 'mở được' : 'máy hết pin'}`, act: 'fun', k: app, off: !on || !m.feats.includes(app) }];
+    const extra = app === 'music' ? ' · bật là đổi nhạc nền, bấm “Bài khác” để sang bài kế' : app === 'wap' ? ' · mỗi trang 5 tin thật trong ván' : '';
+    return [{ b: PH_FEAT_NAME[app], s: `${f.min} phút · tinh thần +${f.mood} · pin −${f.pin}% · ${on ? 'mở được' : 'máy hết pin'}${extra}`, act: 'fun', k: app, off: !on || !m.feats.includes(app) }];
   }
   if (app === 'battery') {
     const pin = Math.round(PH.battery(g));
@@ -211,30 +220,43 @@ const FEAT = (f: PhoneFeat) => ({ ledger: 'Sổ thu chi', contacts: 'Danh bạ',
 
 // ───────────────────────── Vẽ hoạt ảnh lên màn hình máy ─────────────────────────
 /** Chữ chạy trên màn hình máy theo từng việc — đổi kênh thì đổi câu. */
-const RADIO_LINES = [
-  'Đài Sài Gòn 99,9 · bản tin 6 giờ sáng',
-  '“Mưa chiều miền Trung” — bolero theo yêu cầu',
-  'Quảng cáo: nước tương Hiệp Thành, mua 2 tặng 1',
-  'Đài Tiếng nói nhân dân: giá rau sáng nay giảm',
-];
-const MUSIC_LINES = [
-  'Mưa rơi trên phố chiều · 3:42',
-  'Thà rằng như thế · 4:05',
-  'Chuyện người đàn bà · 3:18',
-];
-const WAP_PAGES = ['wap.vinaphone.vn/tin-tuc', 'wap.vietbao.vn/the-thao', 'wap.24h.vn/gia-vang'];
+// Năm tin của một trang WAP là **năm tin thật trong ván** (src/sim/news.ts): thời tiết, giá chợ, sự kiện,
+// nợ, chuyện quán… Mỗi lần bấm "Trang khác" là sang một trang khác, vẫn lấy từ danh sách tin đó.
+const WAP_PAGES = ['wap.vinaphone.vn/tin-tuc', 'wap.vietbao.vn/gia-ca', 'wap.24h.vn/cho-xom-chieu'];
+/** Trang WAP đang mở: địa chỉ + năm tin (+ bảng giá thật ở trang giá cả). */
+export function wapPage(g: Game): { url: string; news: NEWS.News[] } {
+  const page = phoneAct()?.page ?? 0;
+  return { url: WAP_PAGES[page % WAP_PAGES.length], news: NEWS.wapNews(g, page * 5, 5) };
+}
 let actIdx = 0;
 /** Đổi nội dung đang phát (đổi đài / đổi bài / sang trang khác) rồi vẽ lại màn hình. */
 export function phoneActNext(): boolean {
   const a = phoneAct(); if (!a) return false;
   actIdx++;
-  if (a.k === 'radio') a.line = RADIO_LINES[actIdx % RADIO_LINES.length];
-  else if (a.k === 'music') a.line = MUSIC_LINES[actIdx % MUSIC_LINES.length];
-  else if (a.k === 'wap') a.line = WAP_PAGES[actIdx % WAP_PAGES.length];
-  else return false;
+  if (a.k === 'radio') {
+    // đổi đài: đọc sang tin thật khác trong ván
+    const lines = ctx.g ? NEWS.radioLines(ctx.g) : ['Đài Sài Gòn 99,9 · bản tin buổi sáng'];
+    a.line = lines[actIdx % lines.length];
+  } else if (a.k === 'music') {
+    // đổi bài: sang bài kế trong ba bài của máy, và đổi luôn nhạc nền
+    const i = Math.max(0, SONGS.findIndex((x) => 'phone_' + x.id === a.song));
+    const s = SONGS[(i + 1) % SONGS.length];
+    a.song = 'phone_' + s.id; a.line = `${s.name} — ${s.by}`;
+    playSong(a.song);
+  } else if (a.k === 'wap') {
+    // trang kế: năm tin khác trong ván
+    a.page++;
+  } else return false;
   a.t = a.dur;   // đổi kênh thì máy "chạy" tiếp từ đầu
   return true;
 }
+
+/** Đổi nhạc nền sang bài của máy; chuỗi rỗng là trả về nhạc theo ngữ cảnh của game. */
+function playSong(key: string) { if (ctx.sound) ctx.sound.bgm = key; }
+/** Bấm "Tắt" trên máy (dùng cho nút trên lớp hoạt ảnh). */
+export function stopPhoneAct() { stopAct(); }
+/** Tắt việc máy đang làm: đang phát nhạc thì trả nhạc nền về theo ngữ cảnh. */
+function stopAct() { if (phoneAct()?.k === 'music' && ctx.sound) ctx.sound.bgm = ''; endPhoneAct(); }
 
 /** Lớp hoạt ảnh phủ lên màn hình máy. Rỗng khi máy không làm gì. */
 export function actOverlay(g: Game, m: PhoneDef): string {
@@ -264,19 +286,26 @@ export function actOverlay(g: Game, m: PhoneDef): string {
     </div>`;
   }
   if (a.k === 'wap') {
+    const page = wapPage(g);
+    const items = page.news;
     return `<div class="pact wap${mono ? ' mono' : ''}">
-      <div class="purl">${esc(a.line || WAP_PAGES[0])}</div>
+      <div class="purl">${esc(page.url)}</div>
       ${bar('Đang tải trang')}
       <div class="pwin"><div class="pwscroll">
-        ${['TIN NHANH TRONG NGÀY', 'Giá vàng SJC tăng 40.000đ/chỉ', 'Chợ Xóm Chiều họp từ 4 giờ sáng', 'Xăng A92 tăng 320đ/lít từ 15 giờ', 'Tuyển thợ phụ quán ăn sáng, bao ăn ở', 'Nhạc chuông HOT: Mưa chiều miền Trung', 'Rao vặt: xe đạp cũ 350.000đ, còn tốt', 'Bảng giá rau củ chợ đầu mối Bình Điền', 'Dự báo thời tiết 3 ngày tới', 'Tin giật gân: “trúng thưởng 1900 1234” là lừa'].map((l, i) => `<p class="${i % 4 === 0 ? 'h' : ''}">${esc(l)}</p>`).join('')}
+        <p class="h">${esc('TIN TRONG NGÀY · ' + items.length + ' tin')}</p>
+        ${items.map((n) => `<p class="nw ${n.tone}"><b>${esc(n.title)}</b>${esc(n.body)}</p>`).join('')}
       </div></div>
       <div class="ploading">Đang tải<span class="pdots"><i></i><i></i><i></i></span></div>
+      <div class="pactbtns"><button class="pbtn" data-a="phoneactnext">Trang khác</button><button class="pbtn off2" data-a="phoneactoff">Tắt</button></div>
     </div>`;
   }
   const isRadio = a.k === 'radio';
-  const line = a.line || (isRadio ? RADIO_LINES[0] : MUSIC_LINES[0]);
+  const song = SONG_BY_ID[a.song.replace(/^phone_/, '')];
+  const line = a.line || (isRadio ? NEWS.radioLines(g)[0] : song ? `${song.name} — ${song.by}` : 'Mưa rơi trên phố chiều');
   return `<div class="pact ${isRadio ? 'radio' : 'music'}${mono ? ' mono' : ''}">
     <div class="pmid">
+    ${isRadio ? `<div class="pch">ĐÀI SÀI GÒN · FM 99,9</div>`
+      : `<div class="psong"><b>${esc(song?.name ?? 'Mưa rơi trên phố chiều')}</b><span>${esc(song?.by ?? '')} · đang phát trên máy</span></div>`}
     <div class="ptuner">
       <div class="pticks">${Array.from({ length: 21 }, (_, i) => `<i class="${i % 5 === 0 ? 't' : ''}"></i>`).join('')}</div>
       <span class="pneedle"></span>
@@ -329,7 +358,7 @@ export function phoneKey(k: 'up' | 'down' | 'ok' | 'home' | 'pick' | 'open', arg
   if (!m) return false;
   const apps = appsOf(m);
   // Về màn hình chính là cúp máy / tắt đài — màn hình trở lại bình thường.
-  if (k === 'home') { v.app = 'home'; v.sel = 0; v.sub = ''; endPhoneAct(); return true; }
+  if (k === 'home') { v.app = 'home'; v.sel = 0; v.sub = ''; stopAct(); return true; }
   if (k === 'open' && typeof arg === 'string') {
     v.app = arg as PhoneApp; v.sel = 0; v.sub = '';
     // Mở hộp thư còn tin chưa đọc: màn hình máy chạy cảnh soạn tin trả lời (bàn phím + dấu chấm đang gõ).

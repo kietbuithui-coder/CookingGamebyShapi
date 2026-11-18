@@ -684,3 +684,30 @@ thì không chạy) → tổng **422 bài / 32 tệp**. Menu Test & Dịch chuy�
 (`anim_radio`, `anim_wap`, `anim_call`). Probe mới `tools/probe/steps/anim.mjs` (390×844: radio → đổi đài → WAP →
 trang tự cuộn → gọi khách quen → bấm Tắt máy → tin nhắn trên cục gạch → nhạc trên nắp gập), `animland.mjs`
 (khổ ngang), `devmenu29.mjs` (bấm menu ẩn). Console sạch, ảnh ở `anh_ket_qua/android/22_radio_tren_may.png` … `27_tat_hoat_anh.png`.
+
+---
+
+## Lượt 30 — Ba bài nhạc của máy (đổi được nhạc nền) + tin & giá thật trên radio/WAP ✅ đã xong
+
+**Ba bài nhạc riêng của điện thoại** (`src/audio/songs.ts`): *Mưa chiều miền Trung*, *Mưa rơi trên phố chiều*,
+*Chuyện người xe ôm* — mỗi bài viết tay 8 ô nhịp giai điệu + bè trầm theo ngũ cung, khác hẳn nhạc nền theo
+ngữ cảnh. Máy có loa ngoài: bật **Nghe nhạc** là `ctx.sound.bgm` đổi sang bài của máy (nhạc nền thật sự đổi),
+bấm **Bài khác** trên màn hình máy sang bài kế (hết bài cuối quay vòng), **Tắt**/về màn hình chính trả nhạc nền
+về theo ngữ cảnh. Ba bài dùng chung khuôn `Track` nên bộ tổng hợp âm thanh không phải sửa gì.
+
+**Tin thật trong ván** (`src/sim/news.ts`, mới): radio và WAP chỉ nói chuyện đang thật sự xảy ra — thời tiết đang
+có (đúng câu `WEATHER[...].say`), giá món ở chợ **đúng bằng `shopPrice`** hôm nay kèm so sánh với hôm qua (dùng
+lại cùng hàm nên không thể lệch giá), sự kiện đang diễn ra (đúng tên + lời của bảng sự kiện), sạp xả hàng cuối
+buổi, chợ hết hàng (nêu tên món), nợ quá hạn, tiền phòng tới hạn, quầy đang đóng / còn bao nhiêu phần, pin máy
+yếu, hàng trong quầy sắp hỏng, giờ mở cửa sạp. **Radio**: mỗi lần **Đổi đài** đọc sang một tin thật khác.
+**WAP**: mỗi trang **đúng 5 tin thật**, bấm **Trang khác** sang trang kế (xoay vòng hết danh sách); tin giá kèm
+bảng giá thật (món rẻ nhất + đắt nhất đang bán), và món nào đã có tin riêng trên trang thì bảng giá không nhắc lại.
+
+**Kiểm thử:** `tests/music.test.ts` (6 bài: ba bài riêng, cấu trúc bản nhạc, bộ tổng hợp nhận cả ba bài, bật nhạc
+đổi BGM, Bài khác đi hết ba bài rồi quay vòng, Tắt trả BGM về ngữ cảnh) và `tests/news.test.ts` (7 bài: tin thời
+tiết đúng ván, giá đúng `shopPrice`, sang ngày thì giá đổi và tin nói đúng lên/xuống, sự kiện vào bản tin, tin giá
+kèm bảng giá không trùng, mỗi trang WAP đúng 5 tin và sang trang là tin khác, chuyện của người chơi vào bản tin)
+→ tổng **435 bài / 34 tệp**. Menu Test & Dịch chuyển ẩn thêm ba mục `music_bgm`, `news_radio`, `news_wap`.
+Probe `steps/anim30.mjs` + `animshot30.mjs` (390×844): bật nhạc → `bgm: phone_mua_chieu`, Bài khác →
+`phone_pho_chieu`, radio đọc “Thời tiết sáng: nắng đẹp…”, WAP trang 1 có 5 tin + `Giá chợ hôm nay`. Console sạch.
+Ảnh: `anh_ket_qua/android/28..32`.

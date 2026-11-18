@@ -346,7 +346,7 @@ export function openPanel(ui: UI, name: string) {
       acts.phshop = (_i, e) => PUI.phoneToggleShop(e.dataset.k as 'main' | 'branch');
       // nút trên lớp hoạt ảnh của màn hình máy: đổi kênh cho màn hình chạy tiếp / tắt hẳn
       acts.phoneactnext = () => { PUI.phoneActNext(); };
-      acts.phoneactoff = () => { PUI.endPhoneAct(); };
+      acts.phoneactoff = () => { PUI.stopPhoneAct(); };
       const sh = PUI.phoneShell(g, m);
       draw(sh.title, [], sh.html, sh.foot);
     } else if (name === 'map') {

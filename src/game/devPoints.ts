@@ -11,7 +11,7 @@ import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Màn hình điện thoại biết chạy: sóng radio nhảy, trang WAP tự cuộn, tin nhắn đang gõ, cuộc gọi có chuông và nút tắt máy — ngay trên khung máy trong game';
+export const DEV_BUILD_TAG = 'Điện thoại có ba bài nhạc riêng đổi được nhạc nền, sóng radio đọc tin thật trong ván và trang WAP mỗi lần lướt đưa năm tin thật kèm giá chợ đúng giá đang bán';
 
 export interface DevAction {
   id: string;
@@ -70,8 +70,62 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Hoạt ảnh ngay trên màn hình điện thoại (lượt 29)',
+      title: 'Mới nhất — Ba bài nhạc của máy & tin thật trên radio/WAP (lượt 30)',
       items: [
+        {
+          id: 'music_bgm',
+          label: 'Bật Nghe nhạc: máy phát bài riêng và đổi luôn nhạc nền',
+          sub: 'Có máy cảm ứng, đầy pin · ba bài riêng của máy · “Bài khác” sang bài kế, “Tắt” trả nhạc nền theo ngữ cảnh',
+          tone: 'green',
+          closePanel: false,
+          run: () => {
+            const g = ctx.g;
+            g.cash = Math.max(g.cash, 50000);
+            if (!g.phone) PH.activate(g, 'camung');
+            PH.fullCharge(g);
+            ctx.ui.closePanel(); ctx.ui.panel('phone');
+            PUI.phoneKey('open', 'music');
+            PUI.phoneKey('ok');
+            ctx.ui.reopenPanel('phone');
+            toast('Máy đang phát bài đầu tiên. Bấm “Bài khác” trên máy để sang bài kế — nhạc nền đổi theo.', 'info', 'smile', true);
+          },
+        },
+        {
+          id: 'news_radio',
+          label: 'Mở radio: nghe bản tin thật của ván này',
+          sub: 'Thời tiết đang có, giá chợ đúng giá sạp đang bán, sự kiện đang diễn ra · “Đổi đài” đọc sang tin khác',
+          tone: 'yellow',
+          closePanel: false,
+          run: () => {
+            const g = ctx.g;
+            g.cash = Math.max(g.cash, 50000);
+            if (!g.phone) PH.activate(g, 'camung');
+            PH.fullCharge(g);
+            ctx.ui.closePanel(); ctx.ui.panel('phone');
+            PUI.phoneKey('open', 'radio');
+            PUI.phoneKey('ok');
+            ctx.ui.reopenPanel('phone');
+            toast('Đài đang đọc tin thật: thời tiết, giá chợ, sự kiện. Bấm “Đổi đài” để nghe tin kế.', 'info', 'sun', true);
+          },
+        },
+        {
+          id: 'news_wap',
+          label: 'Lướt WAP: mỗi trang 5 tin thật + bảng giá chợ',
+          sub: 'Máy cảm ứng mới lướt được WAP · “Trang khác” sang trang kế, giá đúng bằng giá các sạp đang bán hôm nay',
+          tone: 'green',
+          closePanel: false,
+          run: () => {
+            const g = ctx.g;
+            g.cash = Math.max(g.cash, 50000);
+            if (!g.phone) PH.activate(g, 'camung');
+            PH.fullCharge(g);
+            ctx.ui.closePanel(); ctx.ui.panel('phone');
+            PUI.phoneKey('open', 'wap');
+            PUI.phoneKey('ok');
+            ctx.ui.reopenPanel('phone');
+            toast('Trang WAP đang tải năm tin thật của ván. Bấm “Trang khác” để sang trang kế.', 'info', 'wap', true);
+          },
+        },
         {
           id: 'anim_radio',
           label: 'Mở Radio trên máy cảm ứng: xem màn hình máy tự chạy',
