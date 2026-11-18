@@ -9,6 +9,8 @@ import type { ArchDef, FixedNpcDef } from '../data/people';
 export interface Look {
   face: number; fem: boolean; shirt: number; pants: number; hair: number; hat: number; hairStyle: number; fat: number; h: number;
   skin: number; bag: number; hatCol: number; long: boolean; apron: number; shoe: number;
+  /** Râu: 0 sạch sẽ, 1 râu mép, 2 râu cằm, 3 râu quai nón. Không có thì coi như 0. */
+  beard?: number;
 }
 export const SKINS = [0xf2c9a4, 0xecbe94, 0xe0aa7c, 0xf6d6b6, 0xd49a6a];
 export type Pose = 'idle' | 'walk' | 'sit' | 'talk' | 'work' | 'carry' | 'wave' | 'lie' | 'angry' | 'dance' | 'ride' | 'read' | 'drink' | 'chat' | 'punch' | 'rummage' | 'serve' | 'wipe';
@@ -99,6 +101,16 @@ function buildBody(l: Look): THREE.BufferGeometry {
   else if (l.hat === 2) { m.sph(0, top - 0.06, -0.01, HRX * 1.1, 0.11, HRX * 1.1, l.hatCol, 8); m.box(0, top - 0.075, 0.2, 0.2, 0.02, 0.16, l.hatCol, shade(l.hatCol, 1.15), 0, true); }
   else if (l.hat === 3) { m.sph(0, top - 0.09, -0.005, HRX * 1.17, 0.16, HRX * 1.2, l.hatCol, 9, shade(l.hatCol, 1.3)); m.box(0, top - 0.11, 0.19, 0.2, 0.02, 0.07, 0x1e2024, 0x2a2c30, 0, true); }
   else if (l.hat === 4) { m.cyl(0, top - 0.09, 0, HRX * 1.08, 0.12, l.hatCol, 9, HRX * 0.95); m.cyl(0, top - 0.1, 0, 0.27, 0.018, shade(l.hatCol, 0.9), 10, 0.2); }
+  // râu — vẽ sau cùng để nằm trên da mặt, dưới vành nón
+  const bd = l.beard ?? 0;
+  if (bd) {
+    const bc = mix(hc, 0x17120f, 0.4), bcy = HEAD_Y;
+    // z phải lớn hơn mặt cầu đầu (HRX = 0.168) thì râu mới nổi lên khỏi da, không bị chôn bên trong.
+    // Vừa phải: râu mép mảnh ngay dưới mũi, râu cằm nhỏ, quai nón mảnh sát mang tai — không lem kín mặt.
+    if (bd === 1 || bd === 3) m.box(0, bcy - 0.058, 0.169, 0.062, 0.014, 0.014, bc, shade(bc, 1.2), 0, true);
+    if (bd === 2 || bd === 3) m.sph(0, bcy - 0.132, 0.132, 0.045, 0.034, 0.028, shade(bc, 0.98), 5, shade(bc, 1.14));
+    if (bd === 3) for (const s of [-1, 1]) m.sph(s * 0.146, bcy - 0.032, 0.055, 0.022, 0.052, 0.03, shade(bc, 0.92), 4);
+  }
   if (l.bag) { m.box(0, 0.86, -0.135 * f - 0.07, 0.25, 0.34, 0.13, l.bag, shade(l.bag, 1.2), 0.1, true); for (const s of [-1, 1]) m.box(s * 0.11, 0.98, 0.0, 0.035, 0.24, 0.27 * f + 0.02, shade(l.bag, 0.8)); }
   return m.build();
 }

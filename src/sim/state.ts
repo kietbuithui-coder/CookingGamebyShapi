@@ -7,7 +7,7 @@ import type { WeatherId } from '../data/world';
 import { PLACES } from '../world/layout';
 import { PlayerLookData, defaultLook, cleanLook } from '../data/looks';
 
-export const SAVE_VERSION = 15;
+export const SAVE_VERSION = 16;
 /** Một lô nguyên liệu. fresh 0–100, q chất lượng 0–1, cost giá vốn mỗi đơn vị. */
 export interface Stack { id: string; n: number; fresh: number; q: number; cost: number; }
 /** Mẻ sơ chế sẵn ("cốt" món). */
@@ -30,6 +30,8 @@ export interface Stall {
   cond: number; open: boolean; store: Stack[]; preps: Prep[]; ready: Ready[]; fuel: number; fuelKind: string; paidDay: number; dirt: number;
 }
 /** Người phụ việc ở quầy: chỉ nhận sau khi quán đã có doanh thu và bán được vài ngày (xem helperGate). */
+/** Ca làm của người phụ quầy. */
+export type Shift = 'sang' | 'chieu' | 'full';
 export interface Helper {
   name: string; fem: boolean; face: number; hairStyle: number; shirt: number; pants: number; hair: number; skin: number;
   /** Lương mỗi ngày (trừ vào sáng hôm sau) và ngày bắt đầu làm, ngày đã trả lương gần nhất. */
@@ -105,6 +107,8 @@ export interface Game {
   help: Helper | null;
   /** Người phụ việc thứ 2 cho Nhà hàng bình dân (bậc 6). */
   help2: Helper | null;
+  /** Ca của người phụ quầy: 'sang' 5–14h, 'chieu' 14–22h, 'full' cả ngày. Người nghỉ ca thì không tới. */
+  helpShift: { 1: Shift; 2: Shift };
   /** Nhân viên phụ bếp đứng phòng bếp riêng ở bậc 6 (null = chưa thuê). */
   sous: Helper | null;
   /** Nhân viên phụ bếp thứ 2 trong phòng bếp riêng (bậc 6). */
@@ -148,7 +152,7 @@ export function newGame(seed = (Math.random() * 1e9) | 0, ac: 'anh' | 'chị' = 
     st: { hunger: 58, thirst: 55, energy: 82, health: 92, hygiene: 42, mood: 45 }, rep: 0, xp: 0,
     pos: { x: PLACES.camp.x, z: PLACES.camp.z - 1.2, yaw: Math.PI, pitch: 0 },
     bag: [], junk: {}, meals: [], lostBag: [], lostDay: -1, wanted: 0, jailUntil: 0, gear: {}, phone: null, housing: 'gamcau', paidUntil: 0, home: [],
-    stall: emptyStall(), help: null, help2: null, sous: null, sous2: null, branch: null, errands: [], bookings: [], bookSeq: 1, rec, debts: [], debtSeq: 1, credit: 0,
+    stall: emptyStall(), helpShift: { 1: 'full', 2: 'sang' }, help: null, help2: null, sous: null, sous2: null, branch: null, errands: [], bookings: [], bookSeq: 1, rec, debts: [], debtSeq: 1, credit: 0,
     led: newLedger(0), hist: [], rel: {}, met: {}, flags: {},
     weather: { now: 'nang', until: 6 * 60 + 10 + 420, next: 'nang', flood: 0, wet: 0 },
     ev: { active: [], last: {}, check: 9 * 60, lastStart: -999 },
@@ -258,6 +262,10 @@ export function migrate(raw: any): Game | null {
   // v14: chi nhánh của Chuỗi cửa hàng (bậc 7). Bản lưu cũ chưa có chi nhánh nào.
   if ((raw.v ?? 0) < 14 || !raw.branch) g.branch = null;
   else g.branch = cleanBranch(raw.branch);
+  // v16: ca làm của hai người phụ quầy (sáng / chiều / cả ngày). Bản lưu cũ: người thứ nhất cả ngày, người thứ hai ca sáng.
+  const sh = raw.helpShift;
+  const okShift = (v: any): v is Shift => v === 'sang' || v === 'chieu' || v === 'full';
+  g.helpShift = { 1: okShift(sh?.[1]) ? sh[1] : 'full', 2: okShift(sh?.[2]) ? sh[2] : 'sang' };
   // v15: giao người làm đi chợ (phụ quầy / bếp trưởng / người trông coi chi nhánh). Bản lưu cũ chưa có chuyến nào.
   g.errands = (raw.v ?? 0) < 15 || !Array.isArray(raw.errands) ? [] : cleanErrands(raw.errands);
   if (typeof g.flags.firstSale !== 'number' && (g.hist.some((h) => h.revenue > 0) || g.led.revenue > 0)) g.flags.firstSale = 0;

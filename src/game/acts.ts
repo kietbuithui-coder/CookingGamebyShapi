@@ -10,9 +10,13 @@ import { SHOPS, ShopDef } from '../data/shops';
 import { INGS } from '../data/ingredients';
 import { GEAR, GEAR_LIST, HOUSING, LENDERS, JUNK, JUNK_LIST, junkAt, TIERS, BRANCH_SITES } from '../data/gear';
 import { RECIPE_LIST, RECIPES, toolsFor } from '../data/recipes';
-import { FIXED, LINES, SIDE } from '../data/people';
+import { FIXED, LINES, SIDE, ownLine } from '../data/people';
 import { FunDef, funHoursText, funOpenAt } from '../data/fun';
-import { HAIR_STYLES, HAIR_COLORS, SHIRT_COLORS, PANTS_COLORS, SHOE_COLORS, GLASSES, ColorDef } from '../data/looks';
+import { HAIR_STYLES, HAIR_COLORS, SHIRT_COLORS, PANTS_COLORS, SHOE_COLORS, GLASSES, SHAPES, HATS, ColorDef } from '../data/looks';
+/** Tên ba dáng người — dùng cho thông báo và bảng chọn ở tiệm may. */
+const DÁNG = ['dáng gọn gàng', 'dáng vừa vặn', 'dáng đậm người'];
+/** Tên bốn kiểu râu ở ghế Chú Bảy (0 là cạo sạch, xử riêng trong bảng chọn). */
+const RÂU = ['', 'râu mép', 'râu cằm', 'râu quai nón'];
 import { EXPR } from '../data/expr';
 import { Game, STAT_MAX, addStack, hourOf, absMin, Stack, weightOf } from '../sim/state';
 import * as R from '../sim/rules';
@@ -132,14 +136,15 @@ export class Acts {
   }
   private talkTo(n: Npc) {
     const id = n.fixedId!, g = this.g, shop = SHOPS[id], bye: Opt = { t: 'Thôi, chào nha.' };
-    ctx.npcs.say(n, shop?.say ?? 'Sao đó?', 1.2);
+    // Người quen nói giọng của chính họ (mỗi người 2–3 câu riêng, xoay theo ngày) chứ không chỉ câu chung của nghề.
+    ctx.npcs.say(n, ownLine(id, n, g.ac, n.id + g.day) ?? shop?.say ?? 'Sao đó?', 1.2);
     if (shop) return this.shopTalk(n, shop);
     if (SIDE[id]) return this.sideMenu(n, id);
     switch (id) {
       case 'equip': {
         const rc = R.repairCost(g), opts: Opt[] = [];
         if (g.stall.tier > 0 && g.stall.cond < 96) opts.push({ t: `Sửa quầy — ${money(rc)}`, sub: `Tình trạng hiện tại ${Math.round(g.stall.cond)}%`, off: g.cash < rc, fn: () => { R.spend(g, rc, 'gear'); g.stall.cond = 100; sfx('fix'); toast('Quầy đã được sửa như mới.', 'good', 'tool'); } });
-        opts.push({ t: 'Nâng cấp quán & mặt bằng', sub: 'Xem gánh, xe đẩy, sạp, quán ăn, nhà hàng bình dân', fn: () => {
+        opts.push({ t: 'Nâng cấp quán & mặt bằng', fn: () => {
           const tiers = GEAR_LIST.filter((x) => x.kind === 'stall');
           this.D(who(n), n, 'Từ cặp gánh tới nhà hàng bình dân, muốn lên đời cỡ nào chú cũng có mối lo giấy tờ mặt bằng cho.', [
             ...tiers.map((x) => ({
@@ -151,7 +156,7 @@ export class Acts {
             bye,
           ]);
         } });
-        opts.push({ t: 'Đồ tiện lợi cho quầy & quán nhỏ', sub: 'Loa rao, hộp mang về, máy ép, bình trà, tủ kính, quạt mát', fn: () => {
+        opts.push({ t: 'Đồ tiện lợi cho quầy & quán nhỏ', fn: () => {
           const items = GEAR_LIST.filter((x) => (x.minTier ?? 0) >= 1 && (x.minTier ?? 0) <= 4);
           this.D(who(n), n, 'Mấy món gọn nhẹ này gắn lên gánh, xe đẩy hay quán nhỏ đều đắt khách hơn hẳn.', [
             ...items.map((x) => ({
@@ -163,7 +168,7 @@ export class Acts {
             bye,
           ]);
         } });
-        opts.push({ t: 'Thiết bị công nghiệp & tiện nghi nhà hàng', sub: 'Bếp Á, tủ đông, POS, Wifi nhạc, lavabo, hút mùi, máy lạnh', fn: () => {
+        opts.push({ t: 'Thiết bị công nghiệp & tiện nghi nhà hàng', fn: () => {
           const items = GEAR_LIST.filter((x) => (x.minTier ?? 0) >= 5);
           this.D(who(n), n, 'Lên quán lớn hay nhà hàng bình dân rồi thì sắm dàn bếp công nghiệp với máy lạnh, bồn rửa tay cho bài bản.', [
             ...items.map((x) => ({
@@ -202,7 +207,7 @@ export class Acts {
       }
       case 'eatery': {
         const h = hourOf(g), wash = (h >= 10 && h < 14.5) || (h >= 17.5 && h < 21), opts: Opt[] = [
-          { t: 'Ăn dĩa cơm bình dân — 25.000₫', sub: 'No bụng, ấm lòng', off: g.cash < 25000, fn: () => { R.spend(g, 25000, 'food'); R.consume(g, { h: 60, t: 12, m: 6 }); sfx('eat'); R.advance(g, 15, this.act()); toast('Một dĩa cơm thịt kho nóng hổi. No căng bụng!', 'good', 'dish'); } },
+          { t: 'Ăn dĩa cơm bình dân — 25.000₫', off: g.cash < 25000, fn: () => { R.spend(g, 25000, 'food'); R.consume(g, { h: 60, t: 12, m: 6 }); sfx('eat'); R.advance(g, 15, this.act()); toast('Một dĩa cơm thịt kho nóng hổi. No căng bụng!', 'good', 'dish'); } },
           { t: 'Xin rửa chén thuê', sub: wash ? (g.wd.plates >= 2 ? 'Hôm nay rửa đủ rồi' : 'Được 4.000₫ mỗi cái đĩa + một bữa cơm') : 'Chỉ cần người lúc 10–14h30 và 17h30–21h', off: !wash || g.wd.plates >= 2, fn: () => { this.job = { kind: 'dishes' }; this.setWay('sink', 'Bồn rửa chén'); this.D(who(n), n, 'Ừ, vô bếp phía sau đi con. Chồng đĩa dơ ở cạnh bồn rửa đó. Rửa cho sạch nghen!', [{ t: 'Dạ, con làm liền.' }]); } },
           ...this.learnOpts('eatery', n)];
         this.D(who(n), n, 'Quán cơm Bà Tư đây. Ăn gì con? Hay kiếm việc?', [...opts, bye]); break;
@@ -216,7 +221,7 @@ export class Acts {
       case 'dock': {
         const on = this.job?.kind === 'dock';
         this.D(who(n), n, on ? `Vác được ${g.wd.sacks} bao rồi. Còn sức thì làm tiếp!` : g.wd.sacks >= 12 ? 'Hôm nay hết hàng rồi em. Mai ra sớm nha.' : 'Cần người vác bao từ xe tải vô sạp gạo Bà Hai. 6.000₫ một bao, vác được bao nhiêu trả bấy nhiêu. Làm không?',
-          [on ? { t: 'Em nghỉ, cảm ơn anh.', fn: () => { this.job = null; ctx.player.setCarry(''); this.way = null; } } : { t: 'Dạ làm!', sub: 'Tốn sức, nhớ ăn uống đầy đủ', off: g.wd.sacks >= 12, fn: () => { this.job = { kind: 'dock', carrying: false }; this.setWay('dock', 'Xe tải — lấy bao hàng'); toast('Ra đuôi xe tải lấy bao hàng, vác tới sạp gạo Bà Hai.', 'info', 'box', true); } },
+          [on ? { t: 'Em nghỉ, cảm ơn anh.', fn: () => { this.job = null; ctx.player.setCarry(''); this.way = null; } } : { t: 'Dạ làm!', off: g.wd.sacks >= 12, fn: () => { this.job = { kind: 'dock', carrying: false }; this.setWay('dock', 'Xe tải — lấy bao hàng'); toast('Ra đuôi xe tải lấy bao hàng, vác tới sạp gạo Bà Hai.', 'info', 'box', true); } },
             { t: 'Có ca bốc cá không anh? — 110 phút', sub: `Trả 52.000–68.000₫ · cần sức khoẻ tốt · 4h30–10h`, off: this.g.st.energy < 35 || hourOf(this.g) < 4.5 || hourOf(this.g) >= 10, fn: () => this.dockShift() }, bye]); break;
       }
       case 'hobo': {
@@ -383,14 +388,54 @@ export class Acts {
   }
   // ───────────────────────── Ngoại hình: tiệm cắt tóc & tiệm thời trang ─────────────────────────
   /** Mua một lựa chọn ngoại hình: trừ tiền, ghi vào bản lưu, dựng lại nhân vật ngay. */
-  private buyLook(n: Npc, key: 'hairStyle' | 'hair' | 'shirt' | 'pants' | 'shoe' | 'face', val: number, price: number, what: string, line: string) {
+  private buyLook(n: Npc, key: 'hairStyle' | 'hair' | 'shirt' | 'pants' | 'shoe' | 'face' | 'beard' | 'shape', val: number, price: number, what: string, line: string) {
     const g = this.g;
     if (price > 0 && !R.spend(g, price, 'other')) { toast('Không đủ tiền.', 'bad', 'cash'); return false; }
-    (g.look as any)[key] = val; ctx.player.applyLook();
+    // 'shape' đổi cả bề ngang lẫn chiều cao nên phải ghi hai trường.
+    if (key === 'shape') { const sh = SHAPES[val]; g.look.fat = sh.fat; g.look.h = sh.h; if (g.look.fem) g.look.fat *= 0.94; }
+    else (g.look as any)[key] = val;
+    // Đổi hình thì phải đổi luôn tốc độ đi & độ hao sức — người chơi cảm thấy khác ngay dưới chân.
+    ctx.player.applyLook();
     R.advance(g, 15, this.act()); R.consume(g, { m: 4 }); sfx('coin');
     ctx.npcs.say(n, line, 3, EXPR.happy);
     toast(`Đã đổi ${what} (${money(price)}).` + (ctx.set.cam3 ? '' : ' Bấm V để ngắm mình ở góc nhìn thứ ba.'), 'good', 'heart');
     return true;
+  }
+  /** Dáng người: chọn ở tiệm may. Ba mức, đổi luôn tốc độ đi và độ hao sức. */
+  private shopShape(n: Npc) {
+    const g = this.g, cur = R.bodyType(g);
+    const opts: Opt[] = SHAPES.map((sh, i) => ({
+      t: `${sh.name} — ${money(sh.price)}`, off: i === cur || g.cash < sh.price,
+      fn: () => { if (this.buyLook(n, 'shape', i, sh.price, DÁNG[i], 'Đứng thẳng lên coi, được đó.')) this.shopShape(n); },
+    }));
+    this.D(who(n), n, 'Cô Ngọc lấy thước dây ra: “Con muốn may dáng nào?”', [...opts, { t: 'Thôi, giữ dáng này.' }]);
+  }
+  /** Râu: chỉ nam mới có, ngồi ghế Chú Bảy cạo hoặc để. */
+  private barberBeard(n: Npc) {
+    const g = this.g, cur = g.look.fem ? -1 : g.look.beard;
+    if (g.look.fem) { this.D(who(n), n, 'Chú Bảy cười: “Con gái thì để vậy cho gọn.”', [{ t: 'Dạ.' }]); return; }
+    const opts: Opt[] = [0, 1, 2, 3].map((b) => ({
+      t: b === 0 ? 'Cạo sạch — 5.000₫' : `${RÂU[b]} — 8.000₫`, off: b === cur || g.cash < (b ? 8000 : 5000),
+      fn: () => { if (this.buyLook(n, 'beard', b, b ? 8000 : 5000, b ? RÂU[b].toLowerCase() : 'râu sạch sẽ', b ? 'Để vậy nhìn có uy hơn đó.' : 'Cạo xong nhìn trẻ ra hẳn.')) this.barberBeard(n); },
+    }));
+    this.D(who(n), n, 'Chú Bảy mài dao cạo: “Râu kẽm còn không?”', [...opts, { t: 'Thôi, để vậy.' }]);
+  }
+  /** Nón: mua ở tiệm may. Đội lên là thấy liền. */
+  private shopHats(n: Npc) {
+    const g = this.g, cur = g.look.hatCol;
+    const opts: Opt[] = HATS.map((ht) => ({
+      t: ht.col ? `${ht.name} — ${money(ht.price)}` : 'Không đội — miễn phí', off: (ht.col === 0 ? !g.look.hatCol : g.look.hat === ht.col) || g.cash < ht.price,
+      fn: () => {
+        if (ht.price > 0 && !R.spend(g, ht.price, 'other')) { toast('Không đủ tiền.', 'bad', 'cash'); return; }
+        // HATS[1] nón lá → hat 1, HATS[2] lưỡi trai → 2, HATS[3] bảo hiểm → 3 (khớp cách vẽ trong gfx/people).
+        const shape = HATS.findIndex((x) => x.col === ht.col);
+        g.look.hat = ht.col ? Math.min(3, Math.max(1, shape)) : 0;
+        g.look.hatCol = ht.col; ctx.player.applyLook(); sfx('coin');
+        toast(ht.col ? `Đội ${ht.name.toLowerCase()} lên rồi.` : 'Bỏ nón ra, đầu nhẹ hẳn.', 'good', 'heart');
+        this.shopHats(n);
+      },
+    }));
+    this.D(who(n), n, 'Cô Ngọc chỉ dãy nón trên kệ: “Nắng này đội một cái cho đỡ.”', [...opts, { t: 'Thôi, đầu trần cho mát.' }]);
   }
   /** Ngồi vào ghế của Chú Bảy (neo `hot_toc_ghe`): chào một câu rồi mở bảng kiểu tóc. */
   barberChair(n: Npc) {
@@ -468,28 +513,32 @@ export class Acts {
         ];
       }
       case 'hat_rong': return [
-        { t: 'Ngồi nghe một bài', sub: '10 phút, tinh thần dễ chịu', fn: () => { R.advance(g, 10, this.act()); R.consume(g, { m: 8 }); sfx('good'); say('Cảm ơn con nghe hết bài. Người ta dừng lại nghe là cô vui rồi.'); ctx.anim.startBusker(n); } },
+        { t: 'Ngồi nghe một bài', fn: () => { R.advance(g, 10, this.act()); R.consume(g, { m: 8 }); sfx('good'); say('Cảm ơn con nghe hết bài. Người ta dừng lại nghe là cô vui rồi.'); ctx.anim.startBusker(n); } },
         { t: 'Bỏ vào thùng 5.000₫', off: g.cash < 5000, fn: () => { if (!R.spend(g, 5000, 'other')) return; g.rep = clamp(g.rep + 0.3, 0, 100); R.consume(g, { m: 2 }); sfx('coin'); say('Trời, con khéo quá. Cô chúc con buôn may bán đắt.'); } },
       ];
       case 'danh_co': return [
-        { t: 'Chơi một ván cờ', sub: g.st.energy < 10 ? 'Đang mệt, chơi không nổi' : '25 phút, đầu óc thư giãn', off: g.st.energy < 10,
+        { t: 'Chơi một ván cờ', sub: g.st.energy < 10 ? 'Đang mệt, chơi không nổi' : undefined, off: g.st.energy < 10,
           fn: () => { R.advance(g, 25, this.act()); R.consume(g, { e: -4, t: -4, m: 6 }); sfx('ok'); say('Hay lắm! Con đi xe pháo này là tui chịu rồi. Mai chơi tiếp nghen.'); ctx.anim.startChess(n); } },
         { t: 'Hỏi thăm sức khoẻ ông', fn: () => this.D(who(n), n, 'Ông Tư xoa đầu gối: “Lưng còn đau, mà ngồi đây có người nói chuyện là khoẻ hơn thuốc. Con lo làm ăn đi, đừng lo cho tui.”', [{ t: 'Ông giữ sức nghen.' }]) },
       ];
       case 'hot_toc': {
-        const cur = g.look.hairStyle;
+        // Bảng chọn tự nói giá và tình trạng hiện tại; chỉ chỗ cần cảnh báo mới có chữ nhỏ.
+        const cur = g.look.hairStyle, beard = g.look.beard;
         return [
-          { t: 'Cắt kiểu mới — 12.000–45.000₫', sub: `Đang để: ${HAIR_STYLES[cur]?.name.toLowerCase() ?? 'tóc ngắn'}`, fn: () => this.barberStyles(n) },
-          { t: 'Nhuộm tóc — 10.000–30.000₫', sub: 'Bốn màu, nhuộm nhanh 15 phút', fn: () => this.barberColors(n) },
-          { t: 'Bật gương — xem mình ở góc nhìn thứ ba', sub: ctx.set.cam3 ? 'Đang bật rồi' : 'Phím tắt: V', off: ctx.set.cam3, fn: () => { ctx.ui.switchView(); } },
+          { t: 'Cắt kiểu mới — 12.000–45.000₫', sub: HAIR_STYLES[cur]?.name, fn: () => this.barberStyles(n) },
+          { t: 'Nhuộm tóc — 10.000–30.000₫', fn: () => this.barberColors(n) },
+          { t: g.look.fem ? 'Cạo râu' : `Râu — ${beard ? RÂU[beard] : 'đang cạo sạch'}`, sub: g.look.fem ? 'Không có gì để cạo' : undefined, off: g.look.fem, fn: () => this.barberBeard(n) },
+          { t: ctx.set.cam3 ? 'Đang nhìn mình' : 'Soi gương', off: ctx.set.cam3, fn: () => { ctx.ui.switchView(); } },
         ];
       }
       case 'thoi_trang': return [
-        { t: 'Áo — 25.000–30.000₫', sub: 'Sáu màu, vải mát', fn: () => this.shopColors(n, 'shirt', SHIRT_COLORS, 'cái áo') },
-        { t: 'Quần — 18.000–24.000₫', sub: 'Năm màu', fn: () => this.shopColors(n, 'pants', PANTS_COLORS, 'cái quần') },
-        { t: 'Giày dép — 12.000–45.000₫', sub: 'Dép nhựa, giày vải, giày thể thao', fn: () => this.shopColors(n, 'shoe', SHOE_COLORS, 'đôi giày') },
-        { t: 'Kính — 45.000–60.000₫', sub: 'Kính cận gọng đen, kính đen', fn: () => this.shopGlasses(n) },
-        { t: 'Bật gương — xem mình ở góc nhìn thứ ba', sub: ctx.set.cam3 ? 'Đang bật rồi' : 'Phím tắt: V', off: ctx.set.cam3, fn: () => { ctx.ui.switchView(); } },
+        { t: 'Áo — 25.000–30.000₫', fn: () => this.shopColors(n, 'shirt', SHIRT_COLORS, 'cái áo') },
+        { t: 'Quần — 18.000–24.000₫', fn: () => this.shopColors(n, 'pants', PANTS_COLORS, 'cái quần') },
+        { t: 'Giày dép — 12.000–45.000₫', fn: () => this.shopColors(n, 'shoe', SHOE_COLORS, 'đôi giày') },
+        { t: 'Kính — 45.000–60.000₫', fn: () => this.shopGlasses(n) },
+        { t: 'Dáng người — 15.000–18.000₫', sub: SHAPES[R.bodyType(g)].name, fn: () => this.shopShape(n) },
+        { t: 'Nón — 20.000–55.000₫', fn: () => this.shopHats(n) },
+        { t: ctx.set.cam3 ? 'Đang nhìn mình' : 'Soi gương', off: ctx.set.cam3, fn: () => { ctx.ui.switchView(); } },
       ];
       case 'danh_giay': return [
         { t: 'Đánh giày — 5.000₫', sub: `Vệ sinh hiện tại ${Math.round(g.st.hygiene)}/${STAT_MAX}`, off: g.cash < 5000,
@@ -767,8 +816,8 @@ export class Acts {
         sfx('coin'); this.D(who(n), n, d, [{ t: 'Dạ, cảm ơn bác sĩ.', fn: () => this.hospitalMenu(n) }]);
       } },
       { t: 'Nằm phòng hồi sức', sub: `Hồi sức tính theo giờ · ${money(R.RECOVER_FEE)}/giờ`, fn: () => this.hospitalRest(n) },
-      { t: 'Quầy thuốc ở đâu bác?', sub: 'Ngay bên phải cửa ra vào', fn: () => this.D(who(n), n, 'Quầy thuốc ngay bên phải cửa ra vào đó con. Thuốc cảm, bông băng, thuốc bổ đều có — mua xong uống liền tại chỗ.', [{ t: 'Dạ, con ra liền.' }]) },
-      ...(g.lostBag.length && g.lostDay === g.day ? [{ t: 'Hỏi đồ thất lạc', sub: 'Hôm nay có người nhặt được đồ của bạn', fn: () => {
+      { t: 'Quầy thuốc ở đâu bác?', fn: () => this.D(who(n), n, 'Quầy thuốc ngay bên phải cửa ra vào đó con. Thuốc cảm, bông băng, thuốc bổ đều có — mua xong uống liền tại chỗ.', [{ t: 'Dạ, con ra liền.' }]) },
+      ...(g.lostBag.length && g.lostDay === g.day ? [{ t: 'Hỏi đồ thất lạc', fn: () => {
         const items = R.claimLost(g);
         if (!items.length) { toast('Không có gì ở quầy thất lạc.', 'info'); return; }
         sfx('coin'); toast(`Nhận lại ${items.reduce((a, x) => a + x.n, 0)} phần đồ: ${items.map((x) => INGS[x.id]?.name ?? x.id).join(', ')}.`, 'good', 'bag', true);

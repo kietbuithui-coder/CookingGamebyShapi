@@ -718,3 +718,32 @@ có 'đầu hẻm'") → **436 bài / 34 tệp**. Menu Test & Dịch chuyển �
 Probe `steps/anim30.mjs` + `animshot30.mjs` (390×844): bật nhạc → `bgm: phone_mua_chieu`, Bài khác →
 `phone_pho_chieu`, radio đọc “Thời tiết sáng: nắng đẹp…”, WAP trang 1 có 5 tin + `Giá chợ hôm nay`. Console sạch.
 Ảnh: `anh_ket_qua/android/28_nhac_tren_may.png` … `32_wap_trang_gia.png`.
+
+## Lượt 31 — Con người: dáng người · râu · nón · thoại riêng · ca làm ✅ đã xong
+
+Mục §5 trong `TODO.md` (dòng "Còn thiếu: gương ở nhà, đổi dáng người – chiều cao, mũ/nón, bộ đồ riêng theo nghề;
+râu, kính, mũ đa dạng hơn; bộ thoại riêng cho từng nhân vật cố định...; nhiều người phụ việc, chia ca sáng/tối").
+
+- **Dáng người** (`SHAPES` trong `src/data/looks.ts`, mua ở tiệm Quần áo Cô Ngọc): gọn gàng / vừa vặn / đậm người,
+  15.000–18.000₫, đổi **cả bề ngang lẫn chiều cao**. Có tác dụng thật, không chỉ đổi hình: `bodyType()` + `BODY_SPEED`
+  (±6% tốc độ đi) và `BODY_DRAIN` (±12% hao sức) trong `src/sim/rules.ts` — người chơi cảm thấy khác ngay dưới chân.
+- **Râu** (`beard` 0–3: sạch / mép / cằm / quai nón) vẽ thêm trong `buildBody` (`src/gfx/people.ts`), mua ở ghế Chú Bảy
+  (cạo 5.000₫, để râu 8.000₫). Chỉ nam; nữ và bản lưu cũ luôn là 0.
+- **Nón** (`HATS`: nón lá / lưỡi trai / bảo hiểm, 20.000–55.000₫) ở tiệm may, đội lên thấy ngay trên đầu.
+- **Thoại riêng**: `LINES.own` + `fillLine()`/`ownLine()` (`src/data/people.ts`) — 15 nhân vật cố định có 1–3 câu
+  riêng, xoay theo ngày, thay cho câu chung của nghề. `{you}`/`{self}` điền đúng cách gọi.
+- **Ca làm của người phụ quầy**: `Shift = 'sang' | 'chieu' | 'full'` (5–14h / 14–22h / 5–22h) trong `state.ts`,
+  `shiftLeft()`/`onShift()` trong `rules.ts`; ai ngoài ca thì **không tới quầy** (`src/game/stall.ts`), bảng Quầy ›
+  Nhân sự có nút **Sang ca chiều / Làm cả ngày / Về ca sáng** + số giờ còn lại. Bản lưu **v16** (migration: người 1 cả
+  ngày, người 2 ca sáng — y như hành vi cũ).
+- **Bớt chữ thừa theo góp ý "UI đừng như app do AI làm"**: bỏ 10 dòng `sub` giải thích lại đúng điều nút đã nói
+  ("Xem gánh, xe đẩy, sạp…", "Sáu màu, vải mát", "Tốn sức, nhớ ăn uống đầy đủ", "No bụng, ấm lòng"…). Bảng chọn
+  giờ chỉ nói giá + tình trạng thật; chỗ nào cần cảnh báo mới có chữ nhỏ.
+- **Bộ đồ theo nghề**: từ xe đẩy trở lên người chơi tự mặc **tạp dề đỏ** của người bán (`Player.syncApron()`), thấy rõ
+  ở góc nhìn thứ ba; quán lên bậc nào là hình đổi theo bậc đó.
+
+**Kiểm thử:** `tests/nguoi.test.ts` (16 bài) → tổng **452 bài / 35 tệp**. `tsc` sạch, `build` + `build:pages` OK.
+Probe `tools/probe/steps/nguoi31.mjs` (390×844): tiệm may có mục Dáng người/Nón, đặt `fat 1.12` → `bodyType 2`,
+`moveMul` 94% (chậm hơn thật), râu quai nón + nón lá hiện trên mặt, bảng Nhân sự 2 phụ quầy, 20h thì ca sáng
+`cóMặt: false` còn ca chiều `true · còn 120 phút`. Console `errors: none`.
+Ảnh: `anh_ket_qua/android/33_tiem_may_dang_nguoi.png`, `34_rau_quai_non_non_la.png`, `35_ca_lam_phu_quay.png`.

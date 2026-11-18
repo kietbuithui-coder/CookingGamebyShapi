@@ -230,6 +230,18 @@ export const SIDE: Record<string, SideDef> = {
 
 // ───────────────────────── Lời thoại ─────────────────────────
 // {self}: NPC tự xưng · {you}: gọi người chơi · {dish}: tên món · {price}: giá · {n}: số lượng
+/** Điền chỗ trống trong câu nói: `{you}` = cách gọi người chơi, `{self}` = cách nhân vật tự gọi. */
+export function fillLine(t: string, n: { fem: boolean; arch: ArchDef }, ac: string): string {
+  return t.replace(/\{you\}/g, n.arch.you.replace('{ac}', ac))
+    .replace(/\{Self\}/g, n.arch.self[n.fem ? 1 : 0]).replace(/\{self\}/g, n.arch.self[n.fem ? 1 : 0]);
+}
+/** Một câu riêng của nhân vật cố định (nếu có), đã điền chỗ trống. Dùng để người quen nói giọng của họ. */
+export function ownLine(id: string | undefined, n: { fem: boolean; arch: ArchDef }, ac: string, k: number): string | null {
+  const a = id ? LINES.own[id] : undefined;
+  if (!a || !a.length) return null;
+  return fillLine(a[Math.abs(k) % a.length], n, ac);
+}
+
 export const LINES = {
   order: ['Cho {self} {n} {dish} nha {you}.', '{You} ơi, {n} {dish}!', 'Bán {self} {n} {dish} đi {you}.', 'Lấy {self} {n} {dish} nghen.', '{n} {dish}, làm lẹ giùm {self} nha.', 'Ở đây có {dish} hả? Cho {self} {n} phần.'],
   order_regular: ['Như mọi khi nha {you}, {n} {dish}.', '{Self} lại ghé nè. {n} {dish} nhé!', 'Nhớ quán {you} quá, cho {self} {n} {dish}.'],
@@ -261,6 +273,25 @@ export const LINES = {
   beg_annoyed: ['Đừng có kéo áo tui!', 'Phiền quá nha!', 'Tui kêu công an bây giờ!', 'Tránh ra coi!'],
   beg_chat: ['Chợ Xóm Chiều sáng sớm hay cần người bốc vác đó, {you} ra thử coi.', 'Quán cơm Bà Tư đang kiếm người rửa chén kìa.', 'Vựa ve chai mua lon với chai nhựa đó — Tư Rác ở Xóm Lao Động, Bà Chín ở Khu Dân Cư, lượm đem bán cũng có tiền.',
     'Hồi đó {self} cũng trắng tay. Bán gánh hàng rong mấy năm là có vốn liền.', 'Trời sắp mưa đó, kiếm chỗ trú đi {you}.', 'Ở hẻm Công Nhân bán đồ ăn sáng đắt lắm nghen.', 'Muốn buôn bán thì ghé tiệm Đồ Nghề Ba Tài mua cặp quang gánh.'],
+  /** Câu riêng của từng nhân vật cố định — chen vào lúc họ chào hoặc nói vu vơ, để mỗi người có một giọng.
+   *  Chỗ trống `{you}` là cách gọi người chơi (anh/chị), `{self}` là cách họ tự gọi. */
+  own: {
+    hot_toc: ['Tóc con khô lắm rồi đó, hớt sơ là gọn liền.', 'Chú Bảy Kéo này cắt mấy chục năm, chưa ai chê.', 'Ngồi ghế này là thấy đời nhẹ hẳn.'],
+    thoi_trang: ['Cô Ngọc mới về lô hàng vải mát, mặc là biết liền.', 'Đồ đẹp thì bán hàng cũng tự tin hơn con ạ.'],
+    equip: ['Đòn gánh, dao thớt, bếp than — thiếu món nào chú Ba Tài cũng lo được.', 'Làm ăn thì đồ phải chắc, đừng tiếc tiền.'],
+    eatery: ['Cơm Bà Tư nấu bằng than, thơm từ ngoài ngõ.', 'Rửa chén xong má cho ăn một dĩa, khỏi trả tiền.'],
+    hobo: ['Gầm cầu này là nhà của Bảy, hai chục năm rồi.', 'Đời này ai cho mình cái gì thì nhớ, đừng quên.'],
+    police: ['Đi đứng cho đàng hoàng nghen.'],
+    dock: ['Bao gạo nặng đó, cúi lưng xuống mà vác.', 'Sáng sớm là đông người làm nhất.'],
+    shark: ['Nợ thì nhớ trả đúng hẹn. Hùng Sẹo không thích nhắc lần hai.'],
+    tra_da: ['Trà đá cô pha, nước đầu đổ đi, nước hai mới ngon.'],
+    sua_xe: ['Xích chùng thì tra dầu, bánh mềm thì bơm. Đơn giản vậy thôi.'],
+    danh_co: ['Cờ hay là cờ tính trước ba nước.'],
+    hat_rong: ['Cô hát cho người ta nghe, ai thương thì cho đồng lẻ.'],
+    danh_giay: ['Đôi giày sạch làm người ta nhìn mình khác liền.'],
+    net_bi: ['Vô đây chơi chút rồi về lo làm ăn nghen em.'],
+    cafe: ['Cà phê ở đây rang tại chỗ, thơm lắm.'],
+  } as Record<string, string[]>,
   // lời vu vơ khi đi ngang
   bark: {
     congnhan: ['Mệt bở hơi tai.', 'Trưa nay ăn gì ta?', 'Lương chưa về nữa…', 'Ráng xong ca này.'],

@@ -11,6 +11,10 @@ import { REGULARS, FIXED } from '../data/people';
 import { WEATHER } from '../data/world';
 import { Game, Stack, LedgerDay, STAT_MAX, weightOf, moveStack, junkWeight, hourOf, purge, isSpoiled } from '../sim/state';
 import * as R from '../sim/rules';
+/** Nhãn ca làm — dùng chung cho bảng Quầy. */
+const SHIFT_LABEL: Record<string, string> = { sang: 'Ca sáng 5–14h', chieu: 'Ca chiều 14–22h', full: 'Cả ngày 5–22h' };
+/** Nút bấm để chuyển sang ca kế tiếp. */
+const SHIFT_NEXT: Record<string, string> = { sang: 'Sang ca chiều', chieu: 'Làm cả ngày', full: 'Về ca sáng' };
 import * as PH from '../sim/phone';
 import * as PUI from './phoneUI';
 import { FEAT_LABEL } from '../data/phone';
@@ -127,6 +131,13 @@ export function openPanel(ui: UI, name: string) {
       acts.fireSous = (i) => { const old = R.fireSous(g, i === 2 ? 2 : 1); if (old) toast(`Đã cho phụ bếp ${old.name} nghỉ việc.`, 'info', 'heart'); };
       acts.hireHelp = () => { const c = R.helperCandidate(g); if (!R.hireHelper(g, c)) { toast(`Không đủ ${money(c.wage)} trả ngày lương đầu cho ${c.name}.`, 'bad', 'cash'); return; } sfx('coin'); toast(`Đã thuê phục vụ ${c.name} (${money(c.wage)}/ngày).`, 'good', 'heart'); };
       acts.fireHelp = (i) => { const old = R.fireHelper(g, i === 2 ? 2 : 1); if (old) toast(`Đã cho nhân viên phục vụ ${old.name} nghỉ việc.`, 'info', 'heart'); };
+      // Đổi ca: sáng → chiều → cả ngày → sáng. Người ngoài ca không tới quầy.
+      acts.shiftHelp = (i) => {
+        const slot: 1 | 2 = i === 2 ? 2 : 1, cur = g.helpShift[slot];
+        const next = cur === 'sang' ? 'chieu' : cur === 'chieu' ? 'full' : 'sang';
+        g.helpShift[slot] = next;
+        toast(`Ca của ${(slot === 2 ? g.help2 : g.help)?.name ?? 'nhân viên'}: ${SHIFT_LABEL[next].toLowerCase()}.`, 'info', 'clock');
+      };
       acts.accBook = (_i, e) => { const b = R.acceptBooking(g, +e.dataset.k!); if (b) { sfx('coin'); toast(`Đã nhận đặt bàn của ${b.name} (${b.size} người).`, 'good', 'star'); } };
       acts.rejBook = (_i, e) => { R.rejectBooking(g, +e.dataset.k!); sfx('ui'); toast('Đã huỷ / từ chối đặt bàn.', 'info'); };
       acts.hireKeeper = () => { const c = R.keeperCandidate(g); if (!R.hireKeeper(g, c)) { toast(`Không đủ ${money(c.wage)} trả ngày lương đầu cho ${c.name}.`, 'bad', 'cash'); return; } sfx('coin'); toast(`Đã thuê ${c.name} trông coi chi nhánh (${money(c.wage)}/ngày).`, 'good', 'heart'); };
@@ -171,7 +182,11 @@ export function openPanel(ui: UI, name: string) {
             ? `<div class="item"><div class="grow"><b>${cand.name}</b><small>${cand.ask.replace('{ac}', g.ac)} · tốc độ ×${cand.speed.toFixed(2).replace('.', ',')}</small></div><button class="btn small green${g.cash < cand.wage ? ' off' : ''}" data-a="hireSous">Thuê — ${money(cand.wage)}/ngày</button></div>`
             : '') +
           `<h4>Nhân viên phục vụ (${R.helperCount(g)}/${R.maxHelpers(g)})</h4>` +
-          helpList.map(({ slot, h }) => `<div class="item"><div class="grow"><b>${h.name}</b><small>Tiếp khách, lau bàn, dỗ khách chờ · lương ${money(h.wage)}/ngày</small></div><span class="tag good">bàn ${slot}</span><button class="btn small" data-a="fireHelp" data-i="${slot}">Cho nghỉ</button></div>`).join('') +
+          helpList.map(({ slot, h }) => {
+            const sh = g.helpShift[slot === 2 ? 2 : 1], on = R.onShift(g, slot === 2 ? 2 : 1), left = R.shiftLeft(g, slot === 2 ? 2 : 1);
+            // Không có dòng chú thích dài: ca + số giờ còn lại + tiền lương là đủ hiểu.
+            return `<div class="item"><div class="grow"><b>${h.name}</b><small>${SHIFT_LABEL[sh]} · ${on ? `còn ${Math.floor(left / 60)}h${String(left % 60).padStart(2, '0')}` : 'chưa tới ca'}</small><small>${money(h.wage)}/ngày</small></div><span class="tag ${on ? 'good' : ''}">bàn ${slot}</span><button class="btn small" data-a="shiftHelp" data-i="${slot}">${SHIFT_NEXT[sh]}</button><button class="btn small" data-a="fireHelp" data-i="${slot}">Cho nghỉ</button></div>`;
+          }).join('') +
           (R.helperCount(g) < R.maxHelpers(g)
             ? `<div class="item"><div class="grow"><b>${hCand.name}</b><small>${hCand.ask.replace('{ac}', g.ac)}</small></div><button class="btn small green${g.cash < hCand.wage ? ' off' : ''}" data-a="hireHelp">Thuê — ${money(hCand.wage)}/ngày</button></div>`
             : '') +
