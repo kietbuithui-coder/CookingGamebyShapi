@@ -3,12 +3,12 @@ import { DEV_BUILD_TAG, getDevSections } from '../src/game/devPoints';
 
 describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
   it('chỉ gồm mục của tính năng mới nhất + nhóm địa điểm tele nhanh', () => {
-    expect(DEV_BUILD_TAG).toContain('Cửa hàng');
-    expect(DEV_BUILD_TAG).toContain('ân hạn');
+    expect(DEV_BUILD_TAG).toContain('giao diện');
+    expect(DEV_BUILD_TAG).toContain('Android');
     const sections = getDevSections();
     expect(sections.length).toBe(2);
-    expect(sections[0].title).toContain('Quản lý cửa hàng');
-    expect(sections[0].title).toContain('lượt 24');
+    expect(sections[0].title).toContain('Android');
+    expect(sections[0].title).toContain('lượt 25');
     expect(sections[1].title).toContain('Địa điểm');
     const ids = new Set<string>();
     for (const sec of sections) {
@@ -21,8 +21,8 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
         expect(item.sub.length).toBeGreaterThan(3);
       }
     }
-    // mục của lượt này: vựa ve chai thứ hai + bấm chuông mở cửa
-    for (const id of ['setup_shopapp', 'shopapp_open', 'shopapp_loss', 'shopapp_far']) expect(ids.has(id)).toBe(true);
+    // mục của lượt này: dựng cảnh đầy đủ + mở ba mẫu điện thoại để soi bố cục
+    for (const id of ['and_full', 'and_phone3']) expect(ids.has(id)).toBe(true);
     // tele nhanh vẫn còn, có thêm vựa mới và cửa căn hộ
     const loc = sections[1].items.map((i) => i.id);
     for (const id of ['tp_equip', 'tp_matbang_tb', 'tp_ongtu', 'tp_scrap2', 'tp_canho']) expect(loc).toContain(id);
@@ -40,6 +40,8 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
       // lượt 21 (vựa ve chai + bấm chuông)
       'setup_vua2', 'vua2_sell', 'bell_canho', 'bell_now',
       // lượt 22 (ba giao diện điện thoại)
-      'phone_cucgach', 'phone_napgap', 'phone_camung', 'phone_unread']) expect(ids).not.toContain(old);
+      'phone_cucgach', 'phone_napgap', 'phone_camung', 'phone_unread',
+      // lượt 23–24 (app Cửa hàng + công tắc bán)
+      'setup_shopapp', 'shopapp_open', 'shopapp_loss', 'shopapp_far']) expect(ids).not.toContain(old);
   });
 });

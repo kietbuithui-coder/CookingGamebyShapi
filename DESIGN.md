@@ -791,6 +791,7 @@ dòng "Cửa hàng" trong danh sách; **console sạch**.
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
+- **Máy cảm ứng thật (`pointer: coarse`, lượt 25):** mọi vùng chạm ≥ 30 px (`.ib` 2,9 em, `.btn.small` ≥ 32 px, tab 30 px, phím cứng ≥ 32 px), tiêu đề bảng cho xuống hàng thay vì bóp thành cột chữ, và màn hình điện thoại tự cuộn trong khung máy (`max-height` + `min-height: 0`) nên app dài không đẩy khung máy ra ngoài bảng; nằm ngang thì máy thu nhỏ để cả khung lọt. Bảng dùng `94dvh`. Probe `tools/probe/steps/android.mjs` đo 15 màn ở 4 khổ (320×640 · 360×640 · 412×915 · 640×360) và phải ra `coVanDe: []`.
 - **Chạm nhanh** (nhấc tay trong 0,6 giây, xê dịch dưới 14 px) ở bất kỳ đâu = chạm vào vật gần điểm chạm nhất trong bán kính `max(64 px, 11% chiều cao)`. Thời lượng đo bằng mốc thời gian của chính sự kiện nên máy giật vẫn nhận đúng.
 - Nút tròn vàng thực hiện hành động với vật đang ở giữa màn hình.
 - Trong mini-game, mọi thao tác trỏ được chuyển thẳng cho mini-game.

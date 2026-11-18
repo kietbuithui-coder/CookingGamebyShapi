@@ -43,6 +43,8 @@ Sổ tay (nút hình cuốn sổ) có công thức, sổ sách lời lỗ, nợ 
 **Tự xếp nút:** vào Cài đặt › *Sắp xếp vị trí, độ lớn các nút* để kéo nút tương tác, nút chạy, hàng nút góc trên và các nút khi nấu ăn tới chỗ vừa tay, phóng to hay thu nhỏ từng nút (60–180%). Màn ngang và màn dọc lưu riêng. Thanh *Cỡ chữ và nút của cả màn hình* phóng cả giao diện (80–140%).
 
 Nên **xoay ngang** điện thoại và bấm **Toàn màn hình** ở màn hình chính (Android). Trên iPhone, dùng "Thêm vào Màn hình chính" để chơi toàn màn hình.
+Giao diện đã soát trên khổ điện thoại Android (320×640 · 360×640 · 412×915 · 640×360): không tràn ngang, không nút chồng nhau,
+mọi vùng chạm ≥ 30 px, chữ trong điện thoại ≥ 10 px, màn hình máy tự cuộn nên app dài không đẩy khung máy ra ngoài bảng.
 
 ## Đã có trong bản này
 

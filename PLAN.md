@@ -538,3 +538,35 @@ tự ngưng. Thuê người phụ quầy để bán từ xa." (mất cảnh báo
 `tools/probe/steps/switchfar.mjs` (390×844) dựng đúng ca lỗi: đứng cách quầy 85 m, bấm Mở → sau 3 s `open: true, btn: "Đóng"`;
 sau ~25 giây mô phỏng → `open: false, btn: "Mở"` (tự ngưng đúng luật, có toast); gắn người phụ việc rồi mở lại → sau 25 giây
 **vẫn bán**, chỉ có câu nhắc; console sạch. Probe `steps/shopapp.mjs` vẫn xanh toàn bộ.
+
+---
+
+## Lượt 25 — Soát giao diện trên điện thoại Android ✅ đã xong
+
+Người chơi xin "kiểm thử mọi giao diện trên Android xem có bị tràn / chật / khó chịu / đè gì không". Dựng probe đo đạc
+`tools/probe/steps/android.mjs`: chạy qua **15 màn** (HUD, Cài đặt, Túi, Sổ tay, Quầy, Báo cáo, Chi nhánh, Bản đồ, Sai vặt,
+ba mẫu điện thoại + app Cửa hàng, bảng sửa vị trí nút) ở **4 khổ 320×640 · 360×640 · 412×915 · 640×360** (máy cảm ứng thật,
+`pointer: coarse`), đo cho từng phần tử: lọt khung, nút chồng nhau (cắt theo tổ tiên `overflow` nên không báo nhầm phần tử
+đang cuộn), vùng chạm < 40×30, chữ bị cắt, phần tử dính sát mép trong vùng cử chỉ.
+
+**Tìm ra và sửa 6 lỗi thật** (đều ở `src/ui/style.css`):
+
+1. **Nút đóng bảng `.x` bị bóp còn 26×35** — tiêu đề + hàng tab dài ép nó lại. Nay `.x` có `flex: none` + `min-width`.
+2. **Tiêu đề bảng bị bóp thành cột chữ** ("Chuỗi / cửa / hàng" mỗi chữ một dòng) trên máy hẹp. Nay trên máy cảm ứng
+   `header` cho xuống hàng: tiêu đề + nút đóng một hàng, các tab xuống hàng riêng, không tab nào bị giãn hết bề ngang.
+3. **Công tắc `.sw` bị cắt** (cần 35 px, khung chỉ 32 px, núm tràn ra ngoài) — thấy ở bảng Quầy. Nay rộng 3,3 em và núm
+   đặt theo `calc(100% - 1.25em)` nên không phụ thuộc cỡ chữ.
+4. **Chữ trong điện thoại quá nhỏ trên máy thật**: 8,2 px ở máy cảm ứng, 7,3 px ở nắp gập (chỉ đọc được khi soi). Nay trên
+   máy cảm ứng màn hình máy là `1.16em`, chữ nhỏ nhất **10,4 px**; ô icon và phím cứng cũng to hơn.
+5. **Màn hình máy phình vô hạn**: app Cửa hàng dài làm cả khung máy cao quá bảng, bị cắt mất nửa dưới (thấy rõ khi nằm ngang).
+   Nay `.phonebox .ph` có `min-height: 0` + `max-height` và **tự cuộn bên trong khung máy**; nằm ngang thì máy thu nhỏ
+   (13,5 em) để cả khung lọt trong bảng. Thêm `overflow-wrap` cho dòng dài và `nowrap` cho nhãn *đang bán / tạm đóng*.
+6. **Vùng chạm nhỏ**: nút HUD 26 px, phím cứng cao 16–20 px, tab cao 23 px, `.btn.small` cao 19–22 px. Nay trên máy cảm ứng:
+   `.ib` 2,9 em (≈38 px), `.btn.small` ≥ 32 px, `.tab` 30 px, phím cứng ≥ 32 px, nút thu nhỏ ô mục tiêu 30 px.
+
+Thêm `94dvh` cho bảng (thanh địa chỉ Chrome Android ăn mất đáy) và `#hud-tr` cho phép xuống hàng với `#money` `nowrap`
+(số tiền 4.936.000₫ từng thò ra ngoài mép phải ở 412 px).
+
+**Kết quả sau khi sửa** — probe in `manHinh: 15, coVanDe: [], vungChamNho: []` ở **cả 4 khổ**. Ảnh chụp để trong
+`anh_ket_qua/android/` (8 ảnh: ba mẫu máy, app Cửa hàng, Cài đặt, Quầy, sửa vị trí HUD, Bản đồ nằm ngang).
+Menu ẩn đổi sang `and_full` (dựng cảnh đầy đủ) + `and_phone3` (đổi ba mẫu máy), giữ nguyên nhóm tele nhanh.

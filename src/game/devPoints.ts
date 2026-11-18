@@ -9,7 +9,7 @@ import { toast } from '../core/bus';
 import * as PUI from '../ui/phoneUI';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Công tắc bán trong app Cửa hàng: bật từ xa là mở thật (ân hạn 20 giây), không còn tự tắt im lặng; lý do không bật được thì nói thẳng';
+export const DEV_BUILD_TAG = 'Soát giao diện điện thoại Android: hết tràn/cắt, vùng chạm ≥ 30 px, tiêu đề bảng và máy nằm ngang không còn bị bóp';
 
 export interface DevAction {
   id: string;
@@ -68,12 +68,12 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Công tắc bán trong app Quản lý cửa hàng (lượt 24)',
+      title: 'Mới nhất — Soát giao diện điện thoại Android (lượt 25)',
       items: [
         {
-          id: 'setup_shopapp',
-          label: 'Dựng nhà hàng bậc 7 + quầy đang bán + chi nhánh có người trông coi, mở app',
-          sub: 'Bày 2 món sẵn (một món còn đúng 1 phần), chi nhánh có 3 phần — xem app báo gì',
+          id: 'and_full',
+          label: 'Dựng cảnh đầy đủ để soi giao diện: bậc 7 + chi nhánh + điện thoại + 2 món sẵn',
+          sub: 'Quầy đang bán, chi nhánh có người trông coi, máy cảm ứng — mở sẵn để xem HUD và các bảng trên màn hình hẹp',
           tone: 'green',
           closePanel: false,
           run: () => {
@@ -82,65 +82,26 @@ export function getDevSections(): DevSection[] {
             for (const id of ['daothot', 'bepthan', 'vi', 'noi', 'chao', 'bepgas']) if (!R.has(g, id)) R.buyGear(g, id);
             for (const rid of ['com_suon', 'tra_da']) { g.rec[rid].known = true; g.rec[rid].on = true; g.rec[rid].price = R.suggestPrice(g, RECIPES[rid]); }
             g.stall.ready = [{ rid: 'com_suon', n: 5, q: 1, at: 0, cost: 12000 }, { rid: 'tra_da', n: 1, q: 1, at: 0, cost: 3000 }];
-            if (!g.branch) { R.openBranch(g, 'cho'); if (g.branch) R.hireKeeper(g); }
+            if (!g.branch) R.openBranch(g, 'cho');
             if (g.branch && !g.branch.keeper) R.hireKeeper(g);
             if (g.branch) R.moveToBranch(g, 'com_suon', 3);
             g.gear.camung = 100; g.phone = { id: 'camung', battery: 72 };
-            ctx.stall.refresh();
+            ctx.stall.refresh(); ctx.stall.open();
+            toast('Xoay máy dọc rồi mở Cài đặt, Túi, Sổ, Bản đồ, Quầy, và cả ba mẫu điện thoại để soi bố cục.', 'info', 'shop', true);
+            ctx.ui.closePanel();
+          },
+        },
+        {
+          id: 'and_phone3',
+          label: 'Mở điện thoại — đổi qua lại ba mẫu máy để soi bố cục',
+          sub: 'Cảm ứng (lưới icon) → nắp gập (4 phím) → cục gạch (danh sách chữ); máy cảm ứng mở luôn app Cửa hàng',
+          closePanel: false,
+          run: () => {
+            const g = ctx.g;
+            if (!g.phone) { g.gear.camung = 100; g.phone = { id: 'camung', battery: 72 }; }
             ctx.ui.closePanel(); ctx.ui.panel('phone');
-            // mở thẳng app Cửa hàng
             const P = PUIphone();
-            P.phoneKey('open', 'shop');
-            ctx.ui.reopenPanel('phone');
-          },
-        },
-        {
-          id: 'shopapp_open',
-          label: 'Mở thẳng app Quản lý cửa hàng (máy cảm ứng)',
-          sub: 'Xem quầy chính + chi nhánh, số phần đang bày, tiền thuê, doanh thu hôm nay và câu gợi ý',
-          closePanel: false,
-          run: () => {
-            const g = ctx.g;
-            if (!g.phone) { g.gear.camung = 100; g.phone = { id: 'camung', battery: 72 }; }
-            ctx.ui.closePanel(); ctx.ui.panel('phone');
-            PUIphone().phoneKey('open', 'shop');
-            ctx.ui.reopenPanel('phone');
-          },
-        },
-        {
-          id: 'shopapp_loss',
-          label: 'Đặt giá cơm sườn xuống 2.000₫ để xem cảnh báo bán lỗ',
-          sub: 'App so giá bán với giá vốn thật của món rồi báo lỗ bao nhiêu một phần',
-          tone: 'yellow',
-          closePanel: false,
-          run: () => {
-            const g = ctx.g, rid = 'com_suon';
-            if (!g.rec[rid]) { toast('Chưa có món cơm sườn.', 'warn'); return; }
-            g.rec[rid].price = 2000; g.rec[rid].on = true;
-            toast('Giá cơm sườn giờ còn 2.000₫ — mở app xem cảnh báo bán lỗ.', 'info', 'cash');
-            ctx.ui.closePanel(); ctx.ui.panel('phone');
-            PUIphone().phoneKey('open', 'shop');
-            ctx.ui.reopenPanel('phone');
-          },
-        },
-        {
-          id: 'shopapp_far',
-          label: 'Thử công tắc ở xa quầy: tele ra xa 60 m rồi bật bán trên điện thoại',
-          sub: 'Quầy mở ngay, giữ 20 giây ân hạn, sau đó tự ngưng kèm lời giải thích — nút không nhảy mà không báo',
-          tone: 'yellow',
-          closePanel: false,
-          run: () => {
-            const g = ctx.g;
-            g.cash = Math.max(g.cash, 3000000); g.stall.tier = 7; g.stall.where = 'placed'; g.stall.spot = 'cho';
-            for (const id of ['daothot', 'bepthan', 'vi', 'noi', 'chao', 'bepgas']) if (!R.has(g, id)) R.buyGear(g, id);
-            for (const rid of ['com_suon', 'tra_da']) { g.rec[rid].known = true; g.rec[rid].on = true; }
-            g.stall.ready = [{ rid: 'com_suon', n: 5, q: 1, at: 0, cost: 12000 }];
-            ctx.stall.refresh();
-            ctx.player.place(g.stall.x + 42, g.stall.z + 42, 0);
-            if (!g.phone) { g.gear.camung = 100; g.phone = { id: 'camung', battery: 72 }; }
-            toast('Đang đứng cách quầy khoảng 60 m. Bật bán trong app rồi xem quầy có tự ngưng không.', 'info', 'shop');
-            ctx.ui.closePanel(); ctx.ui.panel('phone');
-            PUIphone().phoneKey('open', 'shop');
+            if (g.phone.id === 'camung') P.phoneKey('open', 'shop');
             ctx.ui.reopenPanel('phone');
           },
         },
