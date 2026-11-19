@@ -3,12 +3,13 @@ import { DEV_BUILD_TAG, getDevSections } from '../src/game/devPoints';
 
 describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
   it('chỉ gồm mục của tính năng mới nhất + nhóm địa điểm tele nhanh', () => {
-    expect(DEV_BUILD_TAG).toContain('Cao');
-    expect(DEV_BUILD_TAG).toContain('đau bụng');
+    expect(DEV_BUILD_TAG).toContain('Nhảy');
+    expect(DEV_BUILD_TAG).toContain('vật thấp');
+    expect(DEV_BUILD_TAG).toContain('tường');
     const sections = getDevSections();
     expect(sections.length).toBe(2);
-    expect(sections[0].title.toLowerCase()).toContain('rau củ');
-    expect(sections[0].title).toContain('lượt 41');
+    expect(sections[0].title.toLowerCase()).toContain('nhảy');
+    expect(sections[0].title).toContain('lượt 42');
     expect(sections[1].title).toContain('Địa điểm');
     const ids = new Set<string>();
     for (const sec of sections) {
@@ -21,8 +22,8 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
         expect(item.sub.length).toBeGreaterThan(3);
       }
     }
-    // mục của lượt này: rau củ lâu hỏng + thử bệnh đau bụng và mua thuốc
-    for (const id of ['cao_that_su', 'rau_lau_hong', 'thit_lau_hong', 'dau_bung']) expect(ids.has(id)).toBe(true);
+    // mục của lượt này: nhảy thử qua ghế đá + đếm vật thấp nhảy qua được
+    for (const id of ['nhay_thu', 'nhay_dem']) expect(ids.has(id)).toBe(true);
     // tele nhanh vẫn còn nguyên
     const loc = sections[1].items.map((i) => i.id);
     for (const id of ['tp_equip', 'tp_matbang_tb', 'tp_ongtu', 'tp_scrap2', 'tp_canho']) expect(loc).toContain(id);
@@ -54,6 +55,8 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
       // lượt 39 (hạn dùng đồ nguội)
       'spoil_all', 'spoil_meat',
       // lượt 40 (FPS + offline)
-      'perf_now', 'offline_try']) expect(ids).not.toContain(old);
+      'perf_now', 'offline_try',
+      // lượt 41 (lâu hỏng + đau bụng + mức Cao)
+      'rau_lau_hong', 'thit_lau_hong', 'dau_bung', 'cao_that_su']) expect(ids).not.toContain(old);
   });
 });

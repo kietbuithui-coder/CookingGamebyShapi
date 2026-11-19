@@ -14,6 +14,16 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 42',
+    tag: 'Nhảy giờ thật sự vượt được vật thấp',
+    items: [
+      'Nhảy cao hơn (0,99 m thay vì 0,46 m): vượt được ghế đá công viên, bàn nhựa trà đá, bàn cờ ông Tư, thùng rác, băng ngồi, kệ thấp và lề đường.',
+      'Có 97 vật thấp nhảy qua được trong thành phố, khai báo đúng chiều cao thật của từng món.',
+      'Tường nhà, cột, vách vẫn chặn tuyệt đối — bay cao bao nhiêu cũng không lọt vào trong.',
+      'Rơi trúng nóc vật thấp thì đứng trên đó được, bước ra mép là rơi xuống đất, không bị kẹt trong đồ.',
+    ],
+  },
+  {
     v: 'Lượt 41',
     tag: 'Rau củ để được lâu, ăn quán no lâu, và bệnh đau bụng có thuốc chữa',
     items: [
@@ -84,15 +94,6 @@ export const CHANGELOG: LogEntry[] = [
       'Quán bậc 3–5 thuê người phụ quầy là mở được tab “Nhân sự” — không còn cảnh thuê người mà không có nút “Giao đi chợ…”.',
       'Nhà hàng bình dân vẫn có “Nhân sự & Đặt bàn” như cũ.',
       'Bớt hai dòng thừa ở quán nhỏ: “Nhân viên phụ bếp (0/0)” và “Bếp trưởng tự duyệt đặt bàn” khi chưa có bếp trưởng.',
-    ],
-  },
-  {
-    v: 'Lượt 32',
-    tag: 'Khách lựa hàng · người đi đường nhận ra người chơi',
-    items: [
-      'Tạp hoá Cô Ba và MiniMart có khách thật vào lựa hàng: đi dọc kệ, nói đúng tên món và đúng giá hôm nay, có khi nhờ bạn lấy giùm món trên kệ cao.',
-      'Người đi đường chào theo hoàn cảnh: bạn giàu, bạn đang túng, hay bạn đang bị công an để ý.',
-      'Menu Test & Dịch chuyển (ẩn) có thêm nhóm của lượt 31.',
     ],
   },
 ];

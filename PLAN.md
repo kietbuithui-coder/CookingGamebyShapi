@@ -1000,3 +1000,29 @@ Cài đặt hiện đúng nút "Cao ← đang chọn". Ảnh: `anh_ket_qua/andro
 - Probe `rau41.mjs` (`errors: none`): sau 12 giờ trong kho quầy còn `raumuong 113 · rauthom 91 · xalach 113 · carot 389 · cachua 233 · bapcai 389`, khoai tây/hành tây 324, **thịt heo 4 giờ**; một dĩa cơm 20 → 125 độ no; uống nước vòi 12 % (26/200 lần); đau bụng 90 → 87 máu sau 1 giờ, chip “Đau bụng 3h”, mua thuốc 12.000₫ là `còn đau = false`.
 - Nhật ký trong game: bản **Lượt 41** ở đầu (bỏ bản 31 cho đúng trần 8 bản).
 - Ảnh: `anh_ket_qua/android/56_nhat_ky_41.png`, `57_dau_bung.png`.
+
+### 42 — nút nhảy thật sự vượt được vật thấp (người chơi: *"làm nút nhảy có thể thật sự chạy qua các vật hoặc cấu trúc thấp"*)
+Người chơi chọn **mức 1** (nhảy cao + bỏ va chạm khi đang bay) và **tất cả vật thấp dưới ~1 m**, kể cả nội thất trong nhà.
+Không làm mức 2 (đứng/đi trên nóc vật) và mức 3 (trèo mái nhà) — đã nói thẳng là quá phức tạp và không cần.
+
+Va chạm trước đây là 2D hoàn toàn nên `Box2` không có chiều cao. Nay:
+```ts
+export interface Box2 { x0: number; z0: number; x1: number; z1: number; top?: number }   // top bỏ trống = tường vô hạn
+const over = (o: Box2 | Circ, feet: number) => o.top !== undefined && feet >= o.top - 0.02;
+```
+`world.resolve(x, z, r, out, feet = 0)` bỏ qua vật nào `over()`; thêm `lowTopAt(x, z)` (nóc vật thấp dưới chân) và `isLow()`.
+`Builder.collide(..., top?)` và `wall()` nay tự gắn `top` cho thanh thấp dưới 1,4 m.
+
+Nhảy `vy 3.4 → 4.86` → đỉnh **0,99 m** (công thức `vy²/(2·12.5)`). Vòng lặp di chuyển truyền `this.jumpY` vào `resolve`, và
+đáp xuống nóc vật thấp thì đứng trên đó (`jumpY = top`), bước ra mép là rơi — nhờ vậy rơi trúng đồ không bị kẹt.
+
+**Đã khai báo `top` cho 97 vật**: ghế đá 0,6 · thùng rác 0,93 · bàn nhựa trà đá 0,5 · két nước 0,45 · bàn cờ ông Tư 0,52 ·
+băng ngồi chợ 0,45 · kệ/bàn/quầy thấp trong nhà 0,83–0,89 · lề đường theo chiều cao thật của nó.
+Đo trên 390×844 DPR 2 (`nhay42.mjs`, `errors: none`): đỉnh nhảy **0,99 m**; ghế đá đẩy ra 0,55 m khi đứng dưới đất, đang bay 0,9 m thì lệch 0,000;
+tường nhà thử ở độ cao 0 · 1 · 5 · 20 m đều **không lọt vào**; 97 vật thấp / 652 tường cao.
+
+### Kiểm chứng
+- `tests/nhay42.test.ts` — **7 bài mới**: nhảy qua ghế đá, vẫn chặn khi chưa đủ cao, tường cao chặn ở mọi độ cao, `lowTopAt` đúng.
+- Tổng **506 bài / 40 tệp** pass; `tsc` sạch; `npm run build` OK.
+- Nhật ký trong game: bản **Lượt 42** ở đầu (bỏ bản 32 cho đúng trần 8 bản).
+- Ảnh: `/tmp/probe/nhay42/66_nhay.png`.
