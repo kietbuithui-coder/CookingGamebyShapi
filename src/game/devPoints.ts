@@ -1,7 +1,7 @@
 // MENU TEST & DỊCH CHUYỂN ẨN (mở bằng cách bấm 7 lần vào chữ "Cài đặt").
 // Lưu ý bảo trì: mỗi lượt thêm tính năng mới thì THAY mục test cũ bằng mục của tính năng mới,
 // chỉ giữ lại nhóm "Địa điểm — tele nhanh". Đừng để menu phình thành bãi rác test cũ.
-import { ctx, QUALITY } from './ctx';
+import { ctx, QUALITY, saveSettings } from './ctx';
 import * as R from '../sim/rules';
 import { RECIPES } from '../data/recipes';
 import { SPOTS, CORR } from '../world/layout';
@@ -13,7 +13,7 @@ import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Thịt cá tươi để được 1,5–2 ngày, rau củ lâu hỏng 3 lần, ăn quán no lâu 2,5 lần, bệnh đau bụng có thuốc';
+export const DEV_BUILD_TAG = 'Mức “Cao” trên điện thoại trở lại như cũ, thịt cá tươi để được 2 ngày, rau củ lâu hỏng 3 lần, ăn quán no lâu 2,5 lần, bệnh đau bụng có thuốc';
 
 export interface DevAction {
   id: string;
@@ -112,6 +112,19 @@ export function getDevSections(): DevSection[] {
             for (const id of ['heo', 'ga', 'tom', 'ca']) addStack(g.stall.store, { id, n: 1, fresh: 100, q: 0.95, cost: R.unitCost(g, id) });
             ctx.ui.closePanel(); ctx.ui.panel('stall');
             toast('Thịt heo nay để được 48 giờ, gà vịt 43 giờ, tôm cá 38 giờ — mở Quầy › Kho quầy xem số giờ còn lại.', 'info', 'box', true);
+          },
+        },
+        {
+          id: 'cao_that_su',
+          label: 'Bật mức “Cao” thật rồi đọc thông số',
+          sub: '2 điểm ảnh, bóng đổ 2048, 4 đèn, 32 NPC — điện thoại cũng không bị hạ như trước',
+          tone: 'yellow',
+          closePanel: false,
+          run: () => {
+            const g0 = ctx;
+            g0.set.quality = 3; g0.applyQuality(); saveSettings();
+            const r = g0.renderer;
+            toast(`Mức “Cao”: ${r.getPixelRatio().toFixed(2)} điểm ảnh · bóng đổ ${r.shadowMap.enabled ? 'bật (2048)' : 'tắt'} · ${r.info.render.calls} lệnh vẽ. Máy yếu thì tụt FPS, tự hạ trong Cài đặt nếu cần.`, 'info', 'star', true);
           },
         },
         {

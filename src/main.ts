@@ -54,8 +54,9 @@ async function boot() {
   const resize = () => { const w = window.innerWidth, h = window.innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; if (!ctx.player?.camTo) camera.fov = baseFov(w / h); camera.updateProjectionMatrix(); };
   ctx.applyQuality = () => {
     const q = QUALITY[ctx.set.quality];
-    // Điện thoại: chặn trần điểm ảnh ở 1.25 và không bật MSAA — hai thứ tốn GPU nhất mà mắt gần như không thấy.
-    const prMax = ctx.mobile ? Math.min(q.pr, 1.25) : q.pr;
+    // Điện thoại: chỉ hạ ở các mức thấp/vừa (dưới 1,5 điểm ảnh). Mức "Cao" giữ nguyên 2 điểm ảnh như trước —
+    // ai tự chọn "Cao" là muốn hình đẹp nhất, kể cả trên điện thoại.
+    const prMax = ctx.mobile && q.pr < 1.5 ? Math.min(q.pr, 1.25) : q.pr;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, prMax)); resize();
     // Không có bóng đổ thì tắt hẳn bộ vẽ bóng — Three.js vẫn tốn một lượt vẽ bản đồ bóng mỗi khung nếu để bật.
     renderer.shadowMap.enabled = q.shadow > 0;

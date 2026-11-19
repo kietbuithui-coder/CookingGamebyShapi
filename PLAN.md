@@ -982,6 +982,17 @@ Thịt phải giữ lạnh nên hỏng nhanh gấp **2,6 lần** rau củ; vì v
 Có tủ đá/tủ đông thì lâu hơn nhiều; nắng gắt vẫn hao nhanh hơn. Bảng Kho quầy nay ghi *"thịt cá chưa nấu được 2 ngày"*.
 Test cũ canh "thịt hỏng trong ngày" đã đổi thành "qua được ngày thứ nhất, tới ngày thứ hai mới hỏng".
 
+### 41c — trả lại mức "Cao" như cũ trên điện thoại (người chơi: *"đồ hoạ cao của đt khôi phục mức cũ đi, thấy không đẹp lắm"*)
+Lượt 40 chặn pixel ratio điện thoại ở 1,25 cho **mọi** mức — kể cả "Cao", nên ai chọn Cao vẫn bị mờ. Nay:
+```ts
+const prMax = ctx.mobile && q.pr < 1.5 ? Math.min(q.pr, 1.25) : q.pr;
+```
+Chỉ các mức dưới 1,5 điểm ảnh mới bị hạ trần; **"Cao" giữ nguyên 2 điểm ảnh + bóng đổ 2048 + 4 đèn + 32 NPC**.
+Mức "Vừa" (mặc định điện thoại) vẫn nhẹ như lượt 40 — đó mới là mức chống giật.
+
+Đo trên trình duyệt điện thoại 390×844 DPR 3 (`cao41c.mjs`, `errors: none`): mức Cao → `pixelRatio 2`, `shadowMap true`, `mapSize 2048`, `viewDist 210`, `lights 4`; mức Vừa → `pr 1`, `shadowMap false`, `lights 1`.
+Cài đặt hiện đúng nút "Cao ← đang chọn". Ảnh: `anh_ket_qua/android/59_dt_muc_cao.png`, `60_cai_dat_muc_cao.png`.
+
 ### Kiểm chứng
 - `tests/rau41.test.ts` — **18 bài mới**; `tests/health.test.ts` cập nhật 3 → 4 món thuốc + chỉ `daubung` chữa đau bụng.
 - Tổng **497 bài / 39 tệp** pass; `tsc` sạch; `npm run build` OK.

@@ -23,6 +23,7 @@ export const CHANGELOG: LogEntry[] = [
       'Có bệnh đau bụng: ăn uống bậy (đồ mua sẵn, nước ở vòi công cộng, nước quán cà phê) là có thể bị, máu tụt dần chứ không mất một cục.',
       'Mua thuốc đau bụng ở nhà thuốc An Tâm hoặc quầy thuốc bệnh viện là khỏi ngay — không mua thì vài giờ cũng tự dịu.',
       'Món mình tự nấu từ 2 sao trở lên thì gần như không đau bụng; dưới 2 sao mới có rủi ro.',
+      'Mức “Cao” trên điện thoại được trả lại như cũ (2 điểm ảnh, bóng đổ 2048) — máy khoẻ chọn “Cao” là hình đẹp nhất, không bị hạ nữa.',
       'Thịt, cá, hải sản tươi để trong quầy được đúng 2 ngày thay vì 3,5–5 giờ như trước: thịt heo/bò 58 giờ, gà vịt 53 giờ, tôm cá cua 48 giờ.',
     ],
   },

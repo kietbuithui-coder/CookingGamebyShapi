@@ -151,11 +151,13 @@ describe('đồ nguội ăn liền để được 2 ngày trong quầy', () => {
     const g = withStall();
     g.min = 8 * 60;
     give(g, 'heo', 2, 100);
-    // Ngày thứ nhất: vẫn còn dùng được (trước đây 12 giờ là mất trắng, người chơi kêu).
-    for (let i = 0; i < 14; i++) advance(g, 60, IDLE);
+    // Ngày thứ nhất + đêm: vẫn còn dùng được (trước đây 12 giờ là mất trắng, người chơi kêu).
+    for (let i = 0; i < 24; i++) advance(g, 60, IDLE);
     expect(countOf([g.stall.store], 'heo')).toBe(2);
-    // Sang ngày thứ hai (thêm 56 giờ) thì phải hỏng.
-    for (let i = 0; i < 56; i++) advance(g, 60, IDLE);
-    expect(countOf([g.stall.store], 'heo')).toBe(0);
+    // Tới khoảng 58 giờ (giữa ngày thứ ba) thì phải hỏng hẳn.
+    let gone = 0;
+    for (let i = 0; i < 60 && !gone; i++) { advance(g, 60, IDLE); if (countOf([g.stall.store], 'heo') === 0) gone = i + 25; }
+    expect(gone).toBeGreaterThan(50);   // không hỏng sớm trước 2 ngày
+    expect(gone).toBeLessThan(70);      // nhưng phải hỏng trước 3 ngày (trước đây 12 giờ)
   });
 });

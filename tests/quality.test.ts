@@ -42,6 +42,25 @@ describe('mức đồ hoạ cho điện thoại', () => {
     expect(q.pr).toBe(2);
   });
 
+  it('mức "Cao" trên điện thoại giữ nguyên như cũ: 2 điểm ảnh, bóng 2048, 4 đèn, 32 NPC', () => {
+    const q = QUALITY[3];
+    expect(q.name).toBe('Cao');
+    expect(q.pr).toBe(2);
+    expect(q.shadow).toBe(2048);
+    expect(q.lights).toBe(4);
+    expect(q.npcs).toBe(32);
+    expect(q.view).toBe(210);
+  });
+
+  it('chỉ các mức dưới 1,5 điểm ảnh mới bị hạ trần trên điện thoại', () => {
+    // đây là quy tắc trong main.ts applyQuality: mobile && pr < 1.5 → min(pr, 1.25)
+    const cap = (mobile: boolean, pr: number) => (mobile && pr < 1.5 ? Math.min(pr, 1.25) : pr);
+    expect(cap(true, 2)).toBe(2);        // "Cao" không bị chặn
+    expect(cap(true, 1)).toBe(1);        // "Vừa" giữ 1
+    expect(cap(true, 1.4)).toBe(1.25);   // mức lửng lơ thì chặn nhẹ
+    expect(cap(false, 2)).toBe(2);       // máy tính không đổi
+  });
+
   it('thiết bị mới mặc định mức "Vừa" cho điện thoại, mức cao cho máy tính', () => {
     expect(loadSettings(true).quality).toBe(Q_DEFAULT_MOBILE);
     expect(loadSettings(false).quality).toBe(Q_DEFAULT_DESKTOP);

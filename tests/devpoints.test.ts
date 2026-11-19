@@ -3,7 +3,7 @@ import { DEV_BUILD_TAG, getDevSections } from '../src/game/devPoints';
 
 describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
   it('chỉ gồm mục của tính năng mới nhất + nhóm địa điểm tele nhanh', () => {
-    expect(DEV_BUILD_TAG).toContain('Thịt cá');
+    expect(DEV_BUILD_TAG).toContain('Cao');
     expect(DEV_BUILD_TAG).toContain('đau bụng');
     const sections = getDevSections();
     expect(sections.length).toBe(2);
@@ -22,7 +22,7 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
       }
     }
     // mục của lượt này: rau củ lâu hỏng + thử bệnh đau bụng và mua thuốc
-    for (const id of ['rau_lau_hong', 'thit_lau_hong', 'dau_bung']) expect(ids.has(id)).toBe(true);
+    for (const id of ['cao_that_su', 'rau_lau_hong', 'thit_lau_hong', 'dau_bung']) expect(ids.has(id)).toBe(true);
     // tele nhanh vẫn còn nguyên
     const loc = sections[1].items.map((i) => i.id);
     for (const id of ['tp_equip', 'tp_matbang_tb', 'tp_ongtu', 'tp_scrap2', 'tp_canho']) expect(loc).toContain(id);
