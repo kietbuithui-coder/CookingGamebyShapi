@@ -120,7 +120,17 @@ export class UI {
     const main = E.act.querySelector('.main') as HTMLElement, alt = E.act.querySelector('.alt') as HTMLElement, run = E.runb.querySelector('.run') as HTMLElement;
     main.onclick = () => ctx.interact.trigger(); alt.onclick = () => ctx.interact.triggerAlt(); run.onclick = () => { ctx.input.runLock = !ctx.input.runLock; run.classList.toggle('on', ctx.input.runLock); };
     const hitB = E.act2.querySelector('.hit') as HTMLElement, jumpB = E.act2.querySelector('.jump') as HTMLElement;
-    hitB.onclick = () => ctx.acts.punch(); jumpB.onclick = () => ctx.acts.jump();
+    // Nhảy/đấm phải ăn ngay lúc CHẠM, và không để cú chạm rơi xuống canvas.
+    // Trước đây dùng `click`: ngón thứ hai chạm nút trong lúc đang giữ cần ảo thì trình duyệt
+    // huỷ cử chỉ (pointercancel) nên `click` không bao giờ phát — vừa không nhảy, vừa mất cần ảo.
+    const tapBtn = (b: HTMLElement, fn: () => void) => {
+      // đặt thẳng bằng JS chứ không chỉ dựa vào CSS: #ui có pointer-events:none nên thiếu dòng này
+      // là ngón tay xuyên qua nút, rơi xuống canvas và cướp mất cần ảo đang giữ.
+      b.style.pointerEvents = 'auto'; b.style.touchAction = 'none';
+      b.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); fn(); });
+    };
+    tapBtn(hitB, () => ctx.acts.punch());
+    tapBtn(jumpB, () => ctx.acts.jump());
     const qmin = document.getElementById('qmin')!;
     const toggleQuest = () => { this.questMin = !this.questMin; E.quest.classList.toggle('min', this.questMin); qmin.textContent = this.questMin ? '+' : '–'; };
     qmin.onclick = (e) => { e.stopPropagation(); toggleQuest(); };

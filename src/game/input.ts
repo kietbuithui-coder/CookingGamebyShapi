@@ -17,21 +17,29 @@ export class Input {
   constructor(public el: HTMLElement) {
     el.style.touchAction = 'none';
     el.addEventListener('pointerdown', (e) => this.down(e)); el.addEventListener('pointermove', (e) => this.move(e));
-    for (const t of ['pointerup', 'pointercancel', 'pointerout', 'pointerleave'] as const) el.addEventListener(t, (e) => this.up(e));
+    // Chỉ nhả khi thật sự nhấc tay / bị hệ điều hành huỷ. Trước đây nghe cả `pointerout`/`pointerleave`:
+    // ngón thứ hai chạm vào nút là canvas nhận pointerout → nhả cần ảo giữa lúc đang đi.
+    for (const t of ['pointerup', 'pointercancel'] as const) el.addEventListener(t, (e) => this.up(e));
     el.addEventListener('contextmenu', (e) => e.preventDefault());
     window.addEventListener('keydown', (e) => { if ((e.target as HTMLElement)?.tagName === 'INPUT') return; const k = e.key.toLowerCase(); if (!this.keys.has(k)) this.onKey?.(k); this.keys.add(k); if (k === ' ' || k === 'tab') e.preventDefault(); });
     window.addEventListener('keyup', (e) => this.keys.delete(e.key.toLowerCase()));
     window.addEventListener('blur', () => { this.keys.clear(); this.stick = null; this.look.clear(); this.onStick?.(false, 0, 0, 0, 0); });
   }
   private down(e: PointerEvent) {
-    try { this.el.setPointerCapture(e.pointerId); } catch { /* không hỗ trợ */ }
-    if (this.capture) { this.capture.down(e.clientX, e.clientY, e.pointerId); return; }
+    // Chỉ chiếm pointer khi THẬT SỰ bắt đầu điều khiển. Trước đây chiếm ngay ở mọi pointerdown:
+    // ngón thứ hai chạm nút Nhảy/Đấm thì canvas nuốt mất, nút không nhận được cú bấm,
+    // và cần ảo đang giữ cũng bị nhả ra (người chơi đang đi thì khựng lại).
+    if (this.capture) {
+      this.grab(e.pointerId); this.capture.down(e.clientX, e.clientY, e.pointerId); return;
+    }
     if (!this.enabled) return;
     const w = window.innerWidth, h = window.innerHeight, touch = e.pointerType !== 'mouse';
     if (touch && !this.stick && e.clientX < w * 0.42 && e.clientY > h * 0.28) {
-      this.stick = { id: e.pointerId, ox: e.clientX, oy: e.clientY, x: 0, y: 0, t: e.timeStamp, moved: 0 }; this.onStick?.(true, e.clientX, e.clientY, 0, 0);
-    } else this.look.set(e.pointerId, { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: e.timeStamp, moved: 0 });
+      this.stick = { id: e.pointerId, ox: e.clientX, oy: e.clientY, x: 0, y: 0, t: e.timeStamp, moved: 0 }; this.grab(e.pointerId); this.onStick?.(true, e.clientX, e.clientY, 0, 0);
+    } else { this.look.set(e.pointerId, { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: e.timeStamp, moved: 0 }); this.grab(e.pointerId); }
   }
+  /** Giữ pointer trên canvas để vuốt không bị hụt khi ngón tay trượt ra ngoài. */
+  private grab(id: number) { try { this.el.setPointerCapture(id); } catch { /* không hỗ trợ */ } }
   private move(e: PointerEvent) {
     if (this.capture) { this.capture.move(e.clientX, e.clientY, e.pointerId); return; }
     const s = this.stick;
