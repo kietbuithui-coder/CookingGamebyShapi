@@ -30,7 +30,9 @@ export function shell(b: Builder, o: ShellOpt) {
   for (const op of ops) {
     const tp = op.top ?? 2.5, mid = (op.x0 + op.x1) / 2, ww = op.x1 - op.x0; top = Math.min(top, tp);
     if (op.x0 > x + 0.01) b.wall(x, 0.1, op.x0, 0.1, h1, col, t, 0, L, true, FACE.PZ);
-    if (op.sill) { L.box(mid, 0, 0.1, ww, op.sill, t, col, WHITE, 0.1); b.collide(op.x0, 0, op.x1, 0.2, op.sill); }
+    // Bệ CỬA SỔ — cố tình không khai báo `top`: khoảng trống phía trên cửa sổ không có vật cản nào khác,
+    // nên nếu cho nhảy qua bệ thì người chơi chui thẳng vào trong nhà người ta.
+    if (op.sill) { L.box(mid, 0, 0.1, ww, op.sill, t, col, WHITE, 0.1); b.collide(op.x0, 0, op.x1, 0.2); }
     if (tp < h1) L.box(mid, tp, 0.1, ww, h1 - tp, t, col, col, 0, true, FACE.PZ);
     x = op.x1;
   }

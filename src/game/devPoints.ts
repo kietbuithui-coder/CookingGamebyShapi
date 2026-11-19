@@ -13,7 +13,7 @@ import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Nhảy vượt được 97 vật thấp (ghế đá, bàn nhựa, thùng rác) nhưng tường nhà vẫn chặn tuyệt đối';
+export const DEV_BUILD_TAG = 'Đứng và đi lại được trên nóc 80 vật thấp (ghế đá, bàn nhựa, thùng rác), bước ra mép thì rơi, tường nhà vẫn chặn';
 
 export interface DevAction {
   id: string;
@@ -72,30 +72,33 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Nhảy vượt vật thấp (lượt 42)',
+      title: 'Mới nhất — Đứng trên nóc vật thấp (lượt 43)',
       items: [
         {
-          id: 'nhay_thu',
-          label: 'Đứng cạnh ghế đá công viên rồi nhảy thử',
-          sub: 'Nhảy cao 0,99 m — qua được ghế đá, bàn nhựa, thùng rác; tường nhà vẫn chặn',
+          id: 'len_noc',
+          label: 'Nhảy lên nóc ghế đá rồi đi lại trên đó',
+          sub: 'Bước ra mép là rơi xuống — không lơ lửng',
           tone: 'green',
           closePanel: false,
           run: () => {
             ctx.ui.closePanel();
-            tpTo(48, -49.5, Math.PI, 'Đứng cạnh ghế đá — bấm nút nhảy (hoặc phím Space) để thử vượt qua.');
+            tpTo(48, -52, Math.PI / 2, 'Đứng trên ghế đá công viên — bấm nút nhảy để lên nóc, đi ngang trên mặt ghế, ra mép thì rơi.');
           },
         },
         {
-          id: 'nhay_dem',
-          label: 'Đếm vật thấp nhảy qua được',
-          sub: 'Bao nhiêu hộp/tròn có khai báo chiều cao, và bao nhiêu tường chặn tuyệt đối',
+          id: 'noc_cao',
+          label: 'Đứng trên nóc mà nhảy thử',
+          sub: 'Chỉ lên thêm 0,5 m, không nhảy vọt lên nóc cao hơn',
           tone: 'yellow',
           closePanel: false,
           run: () => {
-            const w = ctx.world;
-            const low = w.boxes.filter((b) => b.top !== undefined).length + w.circs.filter((c) => c.top !== undefined).length;
-            const wall = w.boxes.filter((b) => b.top === undefined).length;
-            toast(`${low} vật thấp nhảy qua được · ${wall} tường/cột chặn tuyệt đối. Nhảy cao tối đa 0,99 m.`, 'info', 'jump', true);
+            // đo thật bằng cách nhảy rồi lấy đỉnh — không đoán
+            const p = ctx.player;
+            p.place(48, -52, Math.PI / 2);
+            p.jumpY = 0.6; p['vy'] = 0;
+            if (!p.jump()) { toast('Chưa nhảy được — thử lại.', 'info', 'jump', true); return; }
+            let peak = 0; for (let i = 0; i < 90; i++) { p.update(1 / 60); peak = Math.max(peak, p.jumpY); }
+            toast(`Đứng trên nóc 0,6 m: nhảy lên tới ${peak.toFixed(2)} m (thêm ${(peak - 0.6).toFixed(2)} m), rơi lại ${p.jumpY.toFixed(2)} m.`, 'info', 'jump', true);
           },
         },
       ],

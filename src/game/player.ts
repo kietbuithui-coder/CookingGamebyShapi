@@ -25,8 +25,8 @@ export class Player {
   /** Khi đặt, camera trượt tới tư thế cố định (nấu ăn, ngủ, rửa chén…). */
   camTo: { pos: THREE.Vector3; look: THREE.Vector3; fov?: number } | null = null; private camK = 0; private from = new THREE.Vector3(); private fromQ = new THREE.Quaternion(); private fromFov = 68;
   frozen = false; private stepSide = 0;
-  /** Độ cao đang nhảy (mét) và vận tốc lên — chỉ để cảm giác, không đổi va chạm. */
-  jumpY = 0; private vy = 0;
+  /** Độ cao bàn chân so với mặt đất (mét) — nhảy lên và đứng được trên nóc vật thấp. */ jumpY = 0; private vy = 0;
+  /** Dưới chân lúc này có nóc vật thấp nào không (0 = đất phẳng). */ get standTop() { return ctx.world.lowTopAt(this.x, this.z); }
   /** Vật lý bị văng / choáng / ngã khi bị xe đụng hoặc bị đánh trúng. */
   kbx = 0; kbz = 0; stunT = 0; fallT = 0; hitCd = 0;
   private shakeT = 0; private shakeMag = 0; private rollTilt = 0;
@@ -48,11 +48,16 @@ export class Player {
   }
   /** Còn đang trên đất thì mới nhảy được. */
   get onGround() { return this.jumpY <= 0.001 || (this.vy === 0 && this.jumpY > 0); }
-  /** Bật nhảy tại chỗ. false nếu đang ở trên không hoặc đang bị khoá điều khiển. */
+  /**
+   * Bật nhảy tại chỗ. Đứng dưới đất nhảy cao 0,99 m — đủ vượt ghế đá (0,6), bàn nhựa (0,5), thùng rác (0,93).
+   * Đang đứng trên nóc một vật thấp thì chỉ nhảy thêm ~0,5 m nữa, không nhảy vọt lên nóc cao hơn.
+   */
   jump(): boolean {
     if (!this.onGround || this.frozen || this.camTo) return false;
-    // Nhảy cao ~0,95 m: đủ vượt ghế đá (0,45), bàn nhựa (0,7), thùng hàng (0,6) — nhưng không qua tường nhà.
-    this.vy = 4.86; return true;
+    const from = ctx.world.lowTopAt(this.x, this.z);
+    // nhảy từ trên nóc: chỉ thêm 0,5 m, và không bao giờ vượt quá 0,99 m so với mặt đất
+    this.vy = from > 0.05 ? Math.min(3.4, Math.sqrt(Math.max(0.25, 0.98 - from) * 25)) : 4.86;
+    return true;
   }
   /** Hất văng người chơi theo hướng (dirX, dirZ) với lực đẩy, nảy lên, choáng, rung camera và ngã. */
   knockback(dirX: number, dirZ: number, speed: number, liftVy = 0, stunSec = 0, shake = 0, fallSec = 0) {
@@ -127,10 +132,10 @@ export class Player {
       ctx.world.resolve(nx, nz, 0.3, _o, this.jumpY); nx = clamp(_o.x, MAP.x0 + 0.5, MAP.x1 - 0.5); nz = clamp(_o.z, MAP.z0 + 0.5, MAP.z1 - 0.7);
       // lỡ bị kẹt trong vật cản (khe hẹp, góc tường, cửa hẹp) thì bò ra chỗ trống gần nhất,
       // nếu không camera sẽ nằm gọn trong tường và màn hình chỉ còn một màu nâu.
-      if (ctx.world.blocked(nx, nz, 0.28)) {
+      if (ctx.world.blocked(nx, nz, 0.28, this.jumpY)) {
         outer: for (let r = 0.25; r <= 1.75; r += 0.25) for (let i = 0; i < 16; i++) {
           const a = (i * Math.PI) / 8, tx = nx + Math.cos(a) * r, tz = nz + Math.sin(a) * r;
-          if (!ctx.world.blocked(tx, tz, 0.28)) { nx = tx; nz = tz; break outer; }
+          if (!ctx.world.blocked(tx, tz, 0.28, this.jumpY)) { nx = tx; nz = tz; break outer; }
         }
       }
       this.x = nx; this.z = nz;
@@ -142,17 +147,16 @@ export class Player {
     const kbDrag = this.jumpY > 0.05 ? 2.6 : 8.5;
     this.kbx = damp(this.kbx, 0, kbDrag, dt);
     this.kbz = damp(this.kbz, 0, kbDrag, dt);
-    // nhảy: lên rồi rơi xuống, chạm đất (hoặc nóc vật thấp) thì kêu một tiếng
-    // Nóc vật thấp ngay dưới chân (ghế đá, bàn nhựa, thùng hàng…). Đứng trên đó được, bước ra mép là rơi xuống.
+    // Nhảy / rơi / đứng trên nóc vật thấp. `floor` là nóc vật ngay dưới chân (0 nếu là đất).
+    // Bước ra khỏi mép nóc thì rơi xuống; đứng yên trên nóc thì giữ nguyên độ cao.
     const floor = ctx.world.lowTopAt(this.x, this.z);
-    if (this.jumpY > 0 || this.vy !== 0) {
+    if (this.vy !== 0 || Math.abs(this.jumpY - floor) > 0.02) {
+      const prevY = this.jumpY;
       this.jumpY += this.vy * dt; this.vy -= 12.5 * dt;
-      if (this.vy <= 0 && this.jumpY <= floor) {          // đáp xuống nóc vật thấp
-        this.jumpY = floor; this.vy = 0; ctx.sound.step('dry', 1.15);
-      } else if (this.jumpY < 0) { this.jumpY = 0; this.vy = 0; ctx.sound.step('dry', 1.15); }
-      else if (this.vy === 0 && this.jumpY > floor + 0.02) this.vy = -0.2;   // hết nóc thì rơi
-    } else if (floor > 0.001) {
-      this.jumpY = floor;                                   // đang đứng yên trên nóc vật
+      if (this.vy <= 0 && this.jumpY <= floor) {              // chạm nóc vật thấp hoặc chạm đất
+        if (prevY - floor > 0.12 || this.vy < -1.6) ctx.sound.step('dry', 1.15);
+        this.jumpY = floor; this.vy = 0;
+      } else if (this.jumpY < 0) { this.jumpY = 0; this.vy = 0; }
     }
     this.bob = damp(this.bob, this.moving ? 1 : 0, 8, dt);
     this.y = damp(this.y, groundY(this.x, this.z), 14, dt);

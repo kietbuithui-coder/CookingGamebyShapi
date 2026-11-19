@@ -60,4 +60,26 @@ describe('nhảy qua vật thấp', () => {
     const w = mk();
     expect(w.lowTopAt(5, 0)).toBeCloseTo(0.93, 5);
   });
+
+  it('mức 2 — đứng được trên nóc ghế đá, đi lại trên nóc không bị đẩy ra', () => {
+    const w = mk();
+    expect(w.lowTopAt(0, -5)).toBe(0.6);
+    // đang ở độ cao nóc (0,6): resolve + blocked phải cho phép đi trên mặt ghế
+    expect(w.blocked(0, -5, 0.28, 0.6)).toBe(false);
+    const o = at(w, 0.5, -4.6, 0.6);
+    expect(o.x).toBe(0.5); expect(o.z).toBe(-4.6);
+  });
+
+  it('mức 2 — supportAt: còn trên nóc mới đỡ, bước hụt ra ngoài thì trả 0 (rơi)', () => {
+    const w = mk();
+    expect(w.supportAt(0, -5, 0.6)).toBe(0.6);
+    expect(w.supportAt(0, -5, 0.3)).toBe(0);      // đang thấp hơn nóc → không đứng trên được
+    expect(w.supportAt(0, -2, 0.6)).toBe(0);      // ngoài mép ghế
+  });
+
+  it('mức 2 — thùng rác chỉ đỡ khi đứng thật trên miệng thùng', () => {
+    const w = mk();
+    expect(w.supportAt(5, 0, 0.93)).toBeCloseTo(0.93, 5);
+    expect(w.supportAt(5.45, 0, 0.93)).toBe(0);   // quá mép miệng thùng thì trượt
+  });
 });

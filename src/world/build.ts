@@ -66,16 +66,22 @@ export class World {
     out.x = x; out.z = z;
   }
   /** Điểm có nằm trong vật cản tĩnh không (dùng khi rải vật phẩm). */
-  blocked(x: number, z: number, r = 0.3): boolean { const o = { x, z }; this.resolve(x, z, r, o); return Math.abs(o.x - x) + Math.abs(o.z - z) > 1e-4; }
+  blocked(x: number, z: number, r = 0.3, feet = 0): boolean { const o = { x, z }; this.resolve(x, z, r, o, feet); return Math.abs(o.x - x) + Math.abs(o.z - z) > 1e-4; }
   /**
    * Vật thấp nhất ngay dưới chân ở (x,z) — dùng để biết người chơi có đang đứng trên nóc vật không
    * và để đáp xuống cho đúng. Bỏ qua tường (không có `top`).
    */
-  lowTopAt(x: number, z: number, r = 0.22): number {
+  lowTopAt(x: number, z: number, r = 0.1): number {
     let best = 0;
     for (const b of this.boxesNear(x, z, r)) if (b.on !== false && b.top !== undefined && b.top > best && insideBox(x, z, r, b)) best = b.top;
-    for (const c of this.circsNear(x, z, r)) if (c.on !== false && c.top !== undefined && c.top > best && Math.hypot(x - c.x, z - c.z) < c.r + r * 0.4) best = c.top;
+    // vật tròn (thùng rác…): phải đứng thật sự trên miệng thùng mới tính, không lơ lửng ngoài mép
+    for (const c of this.circsNear(x, z, r)) if (c.on !== false && c.top !== undefined && c.top > best && Math.hypot(x - c.x, z - c.z) < c.r * 0.8 + r * 0.2) best = c.top;
     return best;
+  }
+  /** Vật thấp ngay dưới chân ở độ cao `feet` — dùng để biết bước hụt hay còn đứng trên nóc. */
+  supportAt(x: number, z: number, feet: number, r = 0.1): number {
+    const top = this.lowTopAt(x, z, r);
+    return top <= feet + 0.02 ? top : 0;
   }
   private boxesNear(x: number, z: number, r: number): Box2[] {
     const out: Box2[] = [], ix0 = Math.floor((x - r + OFF) / CELL), ix1 = Math.floor((x + r + OFF) / CELL), iz0 = Math.floor((z - r + OFF) / CELL), iz1 = Math.floor((z + r + OFF) / CELL);
