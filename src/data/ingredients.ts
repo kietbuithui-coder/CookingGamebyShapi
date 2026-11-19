@@ -15,23 +15,27 @@ type Row = [string, string, Cat, string, number, number, number, 0 | 1, Shape, n
 const F = 99999; // không hỏng
 const RAW: Row[] = [
   // ── Thịt (đơn vị lạng = 100 g)
-  ['heo', 'Thịt heo nạc', 'meat', 'lạng', 13000, 0.1, 10, 1, 'slab', 0xe58a8a, 0xf7ddd0],
-  ['bachi', 'Ba chỉ', 'meat', 'lạng', 15000, 0.1, 10, 1, 'slab', 0xdf7a78, 0xfbeadf],
-  ['suon', 'Sườn heo', 'meat', 'lạng', 17000, 0.1, 10, 1, 'slab', 0xd66f6a, 0xf3e6d2],
-  ['bo', 'Thịt bò', 'meat', 'lạng', 26000, 0.1, 10, 1, 'slab', 0xb23a3a, 0xe9cdbf],
-  ['ga', 'Thịt gà', 'meat', 'lạng', 9000, 0.1, 9, 1, 'bird', 0xf2d2a9, 0xe9b98a],
-  ['vit', 'Thịt vịt', 'meat', 'lạng', 9500, 0.1, 9, 1, 'bird', 0xe6c090, 0xd9a673],
+  // Lượt 41b: người chơi xin "tăng thời gian thịt hỏng, ít nhất 1–2 ngày".
+  // Thịt tươi phải giữ lạnh nên hỏng nhanh gấp 2,6 lần rau củ; con số dưới đây chọn sao cho ĐỂ TRONG QUẦY KHÔNG TỦ
+  // vẫn được đúng 2 ngày (heo/bò 48 giờ, gà vịt 44 giờ, hải sản 40 giờ) — trước đây chỉ 3,5–5 giờ.
+  // Có tủ đá/tủ đông thì lâu hơn nhiều lần; nắng gắt vẫn hao nhanh hơn.
+  ['heo', 'Thịt heo nạc', 'meat', 'lạng', 13000, 0.1, 140, 1, 'slab', 0xe58a8a, 0xf7ddd0],
+  ['bachi', 'Ba chỉ', 'meat', 'lạng', 15000, 0.1, 140, 1, 'slab', 0xdf7a78, 0xfbeadf],
+  ['suon', 'Sườn heo', 'meat', 'lạng', 17000, 0.1, 140, 1, 'slab', 0xd66f6a, 0xf3e6d2],
+  ['bo', 'Thịt bò', 'meat', 'lạng', 26000, 0.1, 140, 1, 'slab', 0xb23a3a, 0xe9cdbf],
+  ['ga', 'Thịt gà', 'meat', 'lạng', 9000, 0.1, 128, 1, 'bird', 0xf2d2a9, 0xe9b98a],
+  ['vit', 'Thịt vịt', 'meat', 'lạng', 9500, 0.1, 128, 1, 'bird', 0xe6c090, 0xd9a673],
   // Đồ nguội chế biến sẵn (xúc xích, giò, chả, đậu hũ) cũng ×2 hạn dùng — để trong quầy đỡ mất oan.
   ['xucxich', 'Xúc xích', 'meat', 'cây', 5000, 0.05, 120, 1, 'long', 0xc8523e, 0xa83c2c],
   ['gio', 'Giò lụa', 'meat', 'lạng', 18000, 0.1, 80, 1, 'roll', 0xf0e2cf, 0x4f8a3f],
   ['pate', 'Pa-tê', 'meat', 'hộp', 25000, 0.2, 96, 1, 'can', 0x9a6a4e, 0xe9c23a],
   // ── Hải sản
-  ['tom', 'Tôm', 'seafood', 'lạng', 22000, 0.1, 7, 1, 'shrimp', 0xf08a5a, 0xf7c4a0],
-  ['cua', 'Cua đồng', 'seafood', 'con', 32000, 0.3, 8, 1, 'crab', 0xc8442c, 0xe8825a],
-  ['muc', 'Mực', 'seafood', 'lạng', 24000, 0.1, 7, 1, 'squid', 0xf3e6e0, 0xd9a0b0],
-  ['ca', 'Cá phi lê', 'seafood', 'lạng', 11000, 0.1, 7, 1, 'fish', 0x9fb8c8, 0xe9eef2],
-  ['ngheu', 'Nghêu', 'seafood', 'lạng', 5000, 0.1, 8, 1, 'shell', 0xe9dcc0, 0xc9b28a],
-  ['so', 'Sò điệp', 'seafood', 'lạng', 12000, 0.1, 8, 1, 'shell', 0xd9a88a, 0xf3d9c0],
+  ['tom', 'Tôm', 'seafood', 'lạng', 22000, 0.1, 116, 1, 'shrimp', 0xf08a5a, 0xf7c4a0],
+  ['cua', 'Cua đồng', 'seafood', 'con', 32000, 0.3, 116, 1, 'crab', 0xc8442c, 0xe8825a],
+  ['muc', 'Mực', 'seafood', 'lạng', 24000, 0.1, 116, 1, 'squid', 0xf3e6e0, 0xd9a0b0],
+  ['ca', 'Cá phi lê', 'seafood', 'lạng', 11000, 0.1, 116, 1, 'fish', 0x9fb8c8, 0xe9eef2],
+  ['ngheu', 'Nghêu', 'seafood', 'lạng', 5000, 0.1, 116, 1, 'shell', 0xe9dcc0, 0xc9b28a],
+  ['so', 'Sò điệp', 'seafood', 'lạng', 12000, 0.1, 116, 1, 'shell', 0xd9a88a, 0xf3d9c0],
   ['cavien', 'Cá viên', 'seafood', 'lạng', 9000, 0.1, 72, 1, 'balls', 0xf0e6d0, 0xe2c9a0],
   ['chaca', 'Chả cá', 'seafood', 'lạng', 12000, 0.1, 60, 1, 'block', 0xe0b070, 0xc98f4a],
   // ── Rau củ

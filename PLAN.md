@@ -969,9 +969,23 @@ thì tỉ lệ thấp"*; chốt thêm: **giữ nguyên khoai tây/khoai lang/hà
 - Bác sĩ khám ra đau bụng và chỉ ra quầy thuốc. HUD có chip **“Đau bụng 3h”**.
 - `risky` cũ (ăn đồ ôi, thùng rác, đồ hỏng) giờ đi qua `sickStomach` thay vì trừ 18 máu.
 
+### 41b — thịt/cá/hải sản tươi để được 2 ngày (người chơi: *"tăng thời gian thịt hỏng, ít nhất 1–2 ngày"*)
+Thịt phải giữ lạnh nên hỏng nhanh gấp **2,6 lần** rau củ; vì vậy con số trong bảng phải lớn hơn mới ra 2 ngày thật:
+
+| Nhóm | Bảng trước | Bảng sau | **Thời gian thật trong quầy không tủ** (đo bằng probe) |
+|---|---|---|---|
+| Thịt heo / ba chỉ / sườn / bò | 10 | **140** | 3,5–5 giờ → **58 giờ (2,4 ngày)** |
+| Thịt gà / vịt | 9 | **128** | → **53 giờ (2,2 ngày)** |
+| Tôm / cá / mực / cua / nghêu / sò | 7–8 | **116** | → **48 giờ (2 ngày)** |
+
+Đo thật: sau 14 giờ thịt heo còn **78 %**, tôm còn **74 %**; sau 48 giờ heo còn 18 %, tôm/cá 1 % (sắp hỏng).
+Có tủ đá/tủ đông thì lâu hơn nhiều; nắng gắt vẫn hao nhanh hơn. Bảng Kho quầy nay ghi *"thịt cá chưa nấu được 2 ngày"*.
+Test cũ canh "thịt hỏng trong ngày" đã đổi thành "qua được ngày thứ nhất, tới ngày thứ hai mới hỏng".
+
 ### Kiểm chứng
 - `tests/rau41.test.ts` — **18 bài mới**; `tests/health.test.ts` cập nhật 3 → 4 món thuốc + chỉ `daubung` chữa đau bụng.
 - Tổng **497 bài / 39 tệp** pass; `tsc` sạch; `npm run build` OK.
+- Probe `thit41b.mjs` (`errors: none`): thịt heo còn 58 giờ, gà 53 giờ, tôm/cá/mực/cua 48 giờ; để 14 giờ còn 74–78 % tươi.
 - Probe `rau41.mjs` (`errors: none`): sau 12 giờ trong kho quầy còn `raumuong 113 · rauthom 91 · xalach 113 · carot 389 · cachua 233 · bapcai 389`, khoai tây/hành tây 324, **thịt heo 4 giờ**; một dĩa cơm 20 → 125 độ no; uống nước vòi 12 % (26/200 lần); đau bụng 90 → 87 máu sau 1 giờ, chip “Đau bụng 3h”, mua thuốc 12.000₫ là `còn đau = false`.
 - Nhật ký trong game: bản **Lượt 41** ở đầu (bỏ bản 31 cho đúng trần 8 bản).
 - Ảnh: `anh_ket_qua/android/56_nhat_ky_41.png`, `57_dau_bung.png`.

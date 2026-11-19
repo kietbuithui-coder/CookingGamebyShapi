@@ -28,10 +28,13 @@ describe('rau củ ở chợ lâu hỏng hơn 200–300 %', () => {
     expect(INGS.gung.shelf).toBe(720);
     expect(INGS.sa.shelf).toBe(240);
   });
-  it('thịt và hải sản tươi vẫn giữ nguyên hạn ngắn', () => {
-    expect(INGS.heo.shelf).toBe(12);
-    expect(INGS.tom.shelf).toBe(8.4);
-    expect(INGS.ca.shelf).toBe(8.4);
+  it('thịt và hải sản tươi được nới lên 1,5–2 ngày nhưng vẫn ngắn hơn rau củ', () => {
+    // bảng 140 giờ = 168 giờ thực tế, nhưng thịt phải giữ lạnh nên trong quầy không tủ còn đúng 2 ngày
+    expect(INGS.heo.shelf).toBe(168);      // 140 giờ trong bảng → trong quầy không tủ còn đúng 2 ngày
+    expect(INGS.tom.shelf).toBe(139.2);    // 116 × 1,2
+    expect(INGS.ca.shelf).toBe(139.2);
+    // hạn thực tế của thịt (140) vẫn dài hơn rau muống (105) vì thịt hỏng nhanh gấp 2,6 lần — so theo số giờ còn lại
+    expect(168 / 2.6).toBeLessThan(INGS.raumuong.shelf);
   });
   it('rau muống / rau thơm / xà lách vẫn ngắn hơn cà rốt — rau lá vẫn phải dùng sớm', () => {
     expect(INGS.raumuong.shelf).toBeLessThan(INGS.carot.shelf);

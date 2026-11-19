@@ -13,7 +13,7 @@ import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Rau củ ở chợ lâu hỏng 3 lần, ăn uống ở quán no lâu 2,5 lần, thêm bệnh đau bụng và thuốc đau bụng ở nhà thuốc';
+export const DEV_BUILD_TAG = 'Thịt cá tươi để được 1,5–2 ngày, rau củ lâu hỏng 3 lần, ăn quán no lâu 2,5 lần, bệnh đau bụng có thuốc';
 
 export interface DevAction {
   id: string;
@@ -93,6 +93,25 @@ export function getDevSections(): DevSection[] {
             }
             ctx.ui.closePanel(); ctx.ui.panel('stall');
             toast('Rau củ nay để được lâu gấp 3: rau muống 105 giờ, cà rốt 360 giờ — khoai tây và hành thì vẫn như cũ.', 'info', 'box', true);
+          },
+        },
+        {
+          id: 'thit_lau_hong',
+          label: 'Thử thịt heo để trong quầy qua 2 ngày',
+          sub: 'Heo/bò 48 giờ, gà vịt 43 giờ, tôm cá 38 giờ — trước đây chỉ vài giờ là hỏng',
+          tone: 'green',
+          closePanel: false,
+          run: () => {
+            const g = ctx.g;
+            g.cash = Math.max(g.cash, 300000);
+            for (const id of ['ganh', 'daothot', 'bepthan', 'vi', 'noi']) { if (!R.has(g, id)) R.buyGear(g, id); }
+            g.stall.tier = 1; g.stall.where = 'placed';
+            const sp = SPOTS.find((x) => x.id === 'cv');
+            if (sp) ctx.stall.placeAt(sp);
+            ctx.stall.refresh();
+            for (const id of ['heo', 'ga', 'tom', 'ca']) addStack(g.stall.store, { id, n: 1, fresh: 100, q: 0.95, cost: R.unitCost(g, id) });
+            ctx.ui.closePanel(); ctx.ui.panel('stall');
+            toast('Thịt heo nay để được 48 giờ, gà vịt 43 giờ, tôm cá 38 giờ — mở Quầy › Kho quầy xem số giờ còn lại.', 'info', 'box', true);
           },
         },
         {

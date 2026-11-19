@@ -188,7 +188,7 @@ export function openPanel(ui: UI, name: string) {
         const chillTag = R.has(g, 'tu_dong') ? ' · tủ đông công nghiệp' : chilled ? ' · đang ướp đá' : '';
         // Kho quầy đồ nguội/khô tự hỏng: nói rõ mốc, để người chơi không tưởng "bỏ vào quầy là mất".
         const spoilHint = s.store.some((st) => INGS[st.id].shelf < 9000)
-          ? `<p class="muted">Đồ trong quầy vẫn hỏng tiếp: bánh mì, bánh phở, bún tươi và đồ nguội để được <b>2 ngày</b>; thịt cá chưa nấu chỉ vài giờ. Qua ngày là bỏ (${R.has(g, 'tu_dong') ? 'riêng tủ đông công nghiệp giữ được gần như cả tuần' : 'muốn giữ lâu thì mua tủ đông công nghiệp'}).</p>` : '';
+          ? `<p class="muted">Đồ trong quầy vẫn hỏng tiếp: bánh mì, bánh phở, bún tươi và đồ nguội để được <b>2 ngày</b>; thịt cá chưa nấu được <b>2 ngày</b>. Qua ngày là bỏ (${R.has(g, 'tu_dong') ? 'riêng tủ đông công nghiệp giữ được gần như cả tuần' : 'muốn giữ lâu thì mua tủ đông công nghiệp'}).</p>` : '';
         // Đồ lạnh để trong quầy mà không có tủ đá: hỏng nhanh gấp 2,6 lần — phải nói ngay ở đây,
         // vì người chơi tưởng "bỏ vào quầy là an toàn rồi" nên thấy mất thì tưởng bị lỗi.
         const cold = R.coldUnprotected(g);
