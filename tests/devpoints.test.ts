@@ -3,12 +3,12 @@ import { DEV_BUILD_TAG, getDevSections } from '../src/game/devPoints';
 
 describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
   it('chỉ gồm mục của tính năng mới nhất + nhóm địa điểm tele nhanh', () => {
-    expect(DEV_BUILD_TAG).toContain('Bánh phở');
-    expect(DEV_BUILD_TAG).toContain('hạn dùng');
+    expect(DEV_BUILD_TAG).toContain('FPS');
+    expect(DEV_BUILD_TAG).toContain('offline');
     const sections = getDevSections();
     expect(sections.length).toBe(2);
-    expect(sections[0].title.toLowerCase()).toContain('đồ nguội');
-    expect(sections[0].title).toContain('lượt 39');
+    expect(sections[0].title.toLowerCase()).toContain('điện thoại');
+    expect(sections[0].title).toContain('lượt 40');
     expect(sections[1].title).toContain('Địa điểm');
     const ids = new Set<string>();
     for (const sec of sections) {
@@ -21,8 +21,8 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
         expect(item.sub.length).toBeGreaterThan(3);
       }
     }
-    // mục của lượt này: đồ nguội lâu hỏng + so sánh với thịt tươi
-    for (const id of ['spoil_all', 'spoil_meat']) expect(ids.has(id)).toBe(true);
+    // mục của lượt này: đo FPS thật + thử lưu bản chơi offline
+    for (const id of ['perf_now', 'offline_try']) expect(ids.has(id)).toBe(true);
     // tele nhanh vẫn còn nguyên
     const loc = sections[1].items.map((i) => i.id);
     for (const id of ['tp_equip', 'tp_matbang_tb', 'tp_ongtu', 'tp_scrap2', 'tp_canho']) expect(loc).toContain(id);
@@ -50,6 +50,8 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
       // lượt 27–28 (hai tổng đài + điểm hẹn lừa đảo)
       'hot_wx', 'hot_scam', 'hot_bust',
       // lượt 30 (nhạc của máy + tin thật trên radio/WAP)
-      'music_bgm', 'news_radio', 'news_wap', 'anim_radio', 'anim_wap', 'anim_call']) expect(ids).not.toContain(old);
+      'music_bgm', 'news_radio', 'news_wap', 'anim_radio', 'anim_wap', 'anim_call',
+      // lượt 39 (hạn dùng đồ nguội)
+      'spoil_all', 'spoil_meat']) expect(ids).not.toContain(old);
   });
 });

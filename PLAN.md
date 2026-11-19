@@ -893,3 +893,43 @@ Sữa Tartieen: người chơi chọn **không thêm** — giữ nguyên sữa t
 Probe `spoil39.mjs` (`errors: none`): sau 20 giờ trong quầy còn `banhpho@73% bun@69% xucxich@65% gio@47% chaca@30% dauhu@41%`,
 riêng thịt heo bị dọn và báo **"Đồ hỏng phải bỏ: Thịt heo nạc."**
 Ảnh: `anh_ket_qua/android/47_do_nguoi_2_ngay.png`.
+
+## Lượt 40 — Mượt hơn trên điện thoại + chơi offline ✅ đã xong
+
+Người chơi hỏi: *"cải thiện FPS trên điện thoại (không mượt), cho vài cách tối ưu nhất"* và *"game offline chưa?"*.
+
+### Tối ưu FPS (đo thật, cùng máy, cùng cảnh — Chrome 390×844, DPR 3)
+
+| Mức | Trước | Sau | FPS trước → sau |
+|---|---|---|---|
+| Rất thấp | pr 0,7 · 10 NPC · view 100 | **pr 0,6 · 8 NPC · view 90 · không lớp chi tiết** | 25,9 → **29,8** |
+| Thấp | pr 1 · không bóng | pr 0,8 · 12 NPC · view 115 | 19,6 |
+| **Vừa** (mặc định đt) | **pr 1,5 · bóng 1024 · 2 đèn · 22 NPC · view 165** | **pr 1 · không bóng · 1 đèn · 18 NPC · view 145** | **5,5 → 14,1** (×2,6) |
+| Cao | pr 2 · bóng 2048 · 4 đèn · 32 NPC | giữ nguyên (máy tính) | 5,9 |
+
+Số đo của mức "Cao" thấp vì trình duyệt không giao diện dùng WebGL phần mềm — chỉ dùng để **so sánh tương đối** giữa các mức,
+không phải FPS của máy thật.
+
+Sáu thay đổi, xếp theo mức lợi:
+1. **Pixel ratio**: đt chặn trần 1,25; mức "Vừa" 1,5 → 1. Đây là thứ tốn GPU nhất (giảm 55 % số điểm ảnh phải tô).
+2. **Tắt bóng đổ ở mọi mức trừ "Cao"**: `shadowMap.enabled = q.shadow > 0` (trước đây bật vô điều kiện nên Three.js vẫn vẽ bản đồ bóng mỗi khung).
+3. **MSAA**: `antialias` chỉ bật khi không phải điện thoại **và** mức là "Cao" — trên màn hình mật độ cao gần như không thấy khác biệt.
+4. **Lớp chi tiết khu phố** (`detail`): mức "Rất thấp" tắt hẳn; các mức khác vẫn cull theo tầm nhìn như cũ.
+5. **Đèn điểm**: 2 → 1 ở "Vừa", 0 ở hai mức thấp.
+6. **Tự hạ đồ hoạ**: hạ sau **5 giây** giật (trước 6), máy **dưới 22 FPS hạ thẳng 2 mức**, và **không hạ khi đã trên 45 FPS** (trước đây ngưỡng 23 làm hạ oan máy chạy 30 FPS).
+
+### Chơi offline
+
+- `public/sw.js` — service worker: trang thì lấy bản lưu trước (mở tức thì), tài nguyên có hàm băm trong tên thì lấy mạng trước rồi rơi về bản lưu; có `message: 'cache-all'` để trang xin lưu sẵn toàn bộ tệp đang dùng.
+- `src/core/offline.ts` — đăng ký SW sau khi game lên hình (1,2 giây), đếm dung lượng đã lưu qua `performance.getEntriesByType('resource')`, hàm `downloadForOffline()`.
+- Cài đặt có mục **"Chơi offline"**: nút "Lưu để chơi offline" + dòng "Đã lưu · x MB — mất mạng vẫn mở được". Tiến trình vẫn nằm trong `localStorage`.
+- Menu ẩn (7 lần bấm "Cài đặt") đổi sang **lượt 40**: `perf_now` (đo FPS 3 giây, báo cả lệnh vẽ / tam giác / pixel ratio) và `offline_try` (lưu offline rồi báo trạng thái SW + số kho lưu).
+
+### Kiểm chứng
+
+- `tests/quality.test.ts` — **7 bài mới** canh: mức mặc định đt không bóng & pr ≤ 1, chỉ mức cao nhất có bóng, các mức tăng dần, thiết bị mới chọn đúng mức.
+- `tests/changelog.test.ts` → "Lượt 40"; `tests/devpoints.test.ts` → id `perf_now` / `offline_try`, và `spoil_all`/`spoil_meat` vào danh sách "không còn sót".
+- Tổng **479 bài / 38 tệp** pass; `tsc` sạch; `npm run build` OK.
+- Probe `fps40.mjs` (đt 390×844, DPR 3, `errors: none`): mức mặc định = "Vừa", `pr 1`, `shadows false`; FPS 4 mức `25,9 / 19,6 / 13,7 / 5,9`; **SW `activated`, kho `ganhhang-v1`, 16 tệp sau khi bấm nút**; **cắt mạng + tải lại trang → game vẫn chạy (chế độ menu), FPS 14,7**.
+- Probe `fps40c.mjs` (máy tính 1366×768): mặc định "Cao", `shadows true`; mức "Vừa" tắt bóng hẳn (`shadowMap false`, `sun.castShadow false`); mức "Rất thấp" `detailOn false`.
+- Ảnh: `anh_ket_qua/android/48_fps_toi_uu.png`, `49_cai_dat_offline.png`, `50_offline_that.png`, `anh_ket_qua/51_pc_cai_dat_offline.png`.

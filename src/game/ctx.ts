@@ -34,13 +34,19 @@ export function cleanLayout(raw: any): UiLayout {
   return { scale: num(raw?.scale, UI_SCALE[0], UI_SCALE[1], 1), L: side(raw?.L), P: side(raw?.P) };
 }
 export interface Settings { quality: number; sfx: number; music: number; sens: number; fps: boolean; auto: boolean; ui: UiLayout; /** Góc nhìn thứ ba (nhìn thấy chính mình). */ cam3: boolean; }
-/** pr: tỉ lệ điểm ảnh tối đa (so với điểm ảnh CSS) · blob: bóng tròn dưới chân NPC khi không có bóng đổ thật. */
+/**
+ * pr: tỉ lệ điểm ảnh tối đa (so với điểm ảnh CSS) · blob: bóng tròn dưới chân NPC khi không có bóng đổ thật.
+ * msaa: bật khử răng cưa của WebGL (tốn pin trên điện thoại) · detail: cho phép vẽ lớp chi tiết của khu phố.
+ * Điện thoại tầm trung chỉ chịu nổi khoảng 0,7–1,0 điểm ảnh và 0 bóng đổ; "Vừa" nay cũng hạ xuống mức đó.
+ */
 export const QUALITY = [
-  { name: 'Rất thấp', pr: 0.7, shadow: 0, shadowSize: 0, npcs: 10, view: 100, lights: 0, blob: true, birds: 1, traffic: 1 },
-  { name: 'Thấp', pr: 1, shadow: 0, shadowSize: 0, npcs: 14, view: 125, lights: 0, blob: true, birds: 2, traffic: 2 },
-  { name: 'Vừa', pr: 1.5, shadow: 1024, shadowSize: 30, npcs: 22, view: 165, lights: 2, blob: false, birds: 4, traffic: 3 },
-  { name: 'Cao', pr: 2, shadow: 2048, shadowSize: 38, npcs: 32, view: 210, lights: 4, blob: false, birds: 7, traffic: 5 },
+  { name: 'Rất thấp', pr: 0.6, shadow: 0, shadowSize: 0, npcs: 8, view: 90, lights: 0, blob: true, birds: 0, traffic: 1, msaa: false, detail: false },
+  { name: 'Thấp', pr: 0.8, shadow: 0, shadowSize: 0, npcs: 12, view: 115, lights: 0, blob: true, birds: 1, traffic: 2, msaa: false, detail: true },
+  { name: 'Vừa', pr: 1, shadow: 0, shadowSize: 0, npcs: 18, view: 145, lights: 1, blob: true, birds: 3, traffic: 3, msaa: false, detail: true },
+  { name: 'Cao', pr: 2, shadow: 2048, shadowSize: 38, npcs: 32, view: 210, lights: 4, blob: false, birds: 7, traffic: 5, msaa: true, detail: true },
 ];
+/** Mức "Vừa" giờ nhẹ như trước đây "Thấp": điện thoại mặc định vẫn chọn mức này nhưng chạy mượt hơn hẳn. */
+export const Q_QUALITY_NOTE = 'Mức “Vừa” không còn bóng đổ và chạy 1 điểm ảnh — nhẹ hơn khoảng 2,5 lần so với trước.';
 /** Mức mặc định: điện thoại "Vừa", máy tính "Cao". */
 export const Q_DEFAULT_MOBILE = 2, Q_DEFAULT_DESKTOP = 3;
 /** Góc nhìn khi đi bộ: màn dọc cần góc rộng hơn để không bị "ống nhòm". */
@@ -54,6 +60,8 @@ export interface Ctx {
   /** xe cộ chạy trên đường và chim trời — chỉ để thành phố có sự sống */ traffic: Traffic; birds: Birds;
   /** phút game trôi thêm mỗi giây thật (ngủ thì tua nhanh) */
   speed: number;
+  /** Cho phép vẽ lớp chi tiết của khu phố (mức đồ hoạ thấp thì tắt hẳn). */
+  detailOn?: boolean;
   save(reason?: string): void; applyQuality(): void; newGame(ac: 'anh' | 'chị'): void; toMenu(): void;
 }
 export const ctx = { mode: 'menu', time: 0, speed: MIN_PER_SEC } as Ctx;

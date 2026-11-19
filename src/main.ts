@@ -29,6 +29,7 @@ import { advance, wx, floodPct, activeEvents, mods, eventOn, blackoutAt } from '
 import { bus, toast } from './core/bus';
 import { districtAt } from './world/layout';
 import { clamp } from './core/util';
+import { initOffline } from './core/offline';
 
 async function boot() {
   const canvas = document.getElementById('gl') as HTMLCanvasElement;
@@ -38,9 +39,10 @@ async function boot() {
   ctx.input = new Input(canvas);
   const ui = (ctx.ui = new UI());
   let renderer: THREE.WebGLRenderer;
+  // antialias (MSAA) tốn 20–40 % GPU trên điện thoại mà gần như không thấy trên màn hình mật độ cao → luôn tắt ở đó.
   try { renderer = new THREE.WebGLRenderer({ canvas, antialias: !mobile, powerPreference: 'high-performance', stencil: false }); }
   catch { ui.loading('Thiết bị hoặc trình duyệt này không hỗ trợ WebGL nên không chạy được game 3D.'); return; }
-  ctx.renderer = renderer; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.12; renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
+  ctx.renderer = renderer; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.12; renderer.shadowMap.enabled = QUALITY[ctx.set.quality].shadow > 0; renderer.shadowMap.type = THREE.PCFShadowMap;
   const scene = (ctx.scene = new THREE.Scene()), camera = (ctx.camera = new THREE.PerspectiveCamera(68, 1, 0.08, 260));
   await fontsReady(); await new Promise((r) => setTimeout(r, 30));
   const city = (ctx.city = buildCity()); ctx.world = city.world; scene.add(city.root);
@@ -51,8 +53,15 @@ async function boot() {
 
   const resize = () => { const w = window.innerWidth, h = window.innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; if (!ctx.player?.camTo) camera.fov = baseFov(w / h); camera.updateProjectionMatrix(); };
   ctx.applyQuality = () => {
-    const q = QUALITY[ctx.set.quality]; renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, q.pr)); resize();
+    const q = QUALITY[ctx.set.quality];
+    // Điện thoại: chặn trần điểm ảnh ở 1.25 và không bật MSAA — hai thứ tốn GPU nhất mà mắt gần như không thấy.
+    const prMax = ctx.mobile ? Math.min(q.pr, 1.25) : q.pr;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, prMax)); resize();
+    // Không có bóng đổ thì tắt hẳn bộ vẽ bóng — Three.js vẫn tốn một lượt vẽ bản đồ bóng mỗi khung nếu để bật.
+    renderer.shadowMap.enabled = q.shadow > 0;
     ctx.env.setShadows(q.shadow > 0, q.shadowSize || 30, q.shadow || 512); ctx.env.viewDist = q.view; camera.far = q.view + 60; camera.updateProjectionMatrix(); ctx.env.setLights(q.lights);
+    // Mức thấp: bỏ hẳn lớp chi tiết của khu phố (lan can, cây nhỏ, đồ trang trí) — chỗ tốn lệnh vẽ nhất.
+    ctx.detailOn = q.detail !== false;
     for (const c of city.chunks) c.group.traverse((o) => { const m = o as THREE.Mesh; if (m.isMesh && (m.name === 'lit' || m.name === 'detail' || m.name === 'unlit')) m.castShadow = q.shadow > 0; });
     // ('unlit' cũng đổ bóng: tường bao đã bỏ mặt trong để khỏi trùng với lớp lót nội thất, nên chính lớp lót phải chắn nắng thay,
     //  nếu không nắng xiên buổi sáng/chiều sẽ lọt xuyên qua tường vào trong nhà.)
@@ -108,15 +117,24 @@ async function boot() {
       ctx.traffic.update(dt); ctx.birds.update(dt);
       saveT += dt; if ((dirty && saveT > 2) || saveT > 45) ctx.save();
       if (ctx.mode === 'play' && !ui.modalName) { if (bankrupt) { bankrupt = false; summary = false; ui.panel('bankrupt'); } else if (summary) { summary = false; ui.panel('summary'); } }
-      // tự hạ đồ hoạ nếu máy giật
-      if (ctx.set.auto && ctx.mode === 'play' && ui.fpsVal < 23 && ctx.set.quality > 0) { lowT += dt; if (lowT > 6) { lowT = 0; ctx.set.quality--; ctx.applyQuality(); saveSettings(); toast(`Máy hơi giật nên đã hạ đồ hoạ xuống mức "${QUALITY[ctx.set.quality].name}". Đổi lại trong Cài đặt.`, 'info', 'gear', true); } } else lowT = Math.max(0, lowT - dt);
+      // Tự hạ đồ hoạ nếu máy giật: đọc FPS đo theo đồng hồ thật, chỉ tin khi số khung đủ nhiều.
+      // Máy rất yếu (<15 FPS) thì hạ thẳng 2 mức, khỏi mất thêm 6 giây giật.
+      const fpsOk = ui.fpsVal >= 45, fpsBad = ui.fpsVal < 22;
+      if (ctx.set.auto && ctx.mode === 'play' && !fpsOk && ctx.set.quality > 0 && ui.fpsVal > 0) {
+        lowT += dt;
+        if (lowT > 5) {
+          const step = fpsBad ? 2 : 1;
+          lowT = 0; ctx.set.quality = Math.max(0, ctx.set.quality - step); ctx.applyQuality(); saveSettings();
+          toast(`Máy hơi giật nên đã hạ đồ hoạ xuống mức "${QUALITY[ctx.set.quality].name}". Đổi lại trong Cài đặt.`, 'info', 'gear', true);
+        }
+      } else lowT = Math.max(0, lowT - dt);
     } else {
       const t = ctx.time * 0.04; camera.position.set(-29.5 + Math.sin(t) * 3, 5.5 + Math.sin(t * 0.7) * 1.5, 44 - ((ctx.time * 1.2) % 70)); camera.lookAt(-29.5 + Math.sin(t * 1.3) * 10, 3, camera.position.z - 30);
     }
     const p = ctx.player, covered = ctx.mode !== 'menu' && ctx.acts.sheltered, d = districtAt(p.x, p.z), festive = activeEvents(g).some((e) => e.festive);
     ctx.env.blackout = blackoutAt(g, d); ctx.env.update(dt, hourOf(g), wx(g), camera, covered, floodPct(g), festive);
     const cp = camera.position, vd = ctx.env.fog.far;
-    for (const c of city.chunks) { if (c.id === 'edge' || c.id === 'misc' || c.id === 'south') continue; const far = (c.cx - cp.x) ** 2 + (c.cz - cp.z) ** 2 > (vd * 0.62 + 34) ** 2; if (c.detail) c.detail.visible = !far; }
+    for (const c of city.chunks) { if (c.id === 'edge' || c.id === 'misc' || c.id === 'south') continue; const far = (c.cx - cp.x) ** 2 + (c.cz - cp.z) ** 2 > (vd * 0.62 + 34) ** 2; if (c.detail) c.detail.visible = ctx.detailOn !== false && !far; }
     ui.update(dt);
     // âm thanh môi trường + nhạc theo ngữ cảnh
     musT -= dt;
@@ -132,6 +150,8 @@ async function boot() {
   };
   try { renderer.compile(scene, camera); } catch { /* một số máy không hỗ trợ biên dịch trước */ }
   ui.loading(null); menu(); requestAnimationFrame(frame);
+  // Chơi offline: đăng ký sau khi game đã lên hình để không làm chậm lần mở đầu tiên.
+  if (ctx.mode !== 'play') setTimeout(() => void initOffline(), 1200);
   // Cửa hậu gỡ lỗi: thêm ?debug vào địa chỉ để mở (dùng cho kiểm thử tự động).
   if (/[?&]debug/.test(location.search)) {
     const w = window as any; w.__game = ctx; w.__R = Rules; w.__S = State; w.__life = Life; w.__acts = ctx.acts; w.__bus = bus;

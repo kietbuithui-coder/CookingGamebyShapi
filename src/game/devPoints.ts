@@ -1,18 +1,19 @@
 // MENU TEST & DỊCH CHUYỂN ẨN (mở bằng cách bấm 7 lần vào chữ "Cài đặt").
 // Lưu ý bảo trì: mỗi lượt thêm tính năng mới thì THAY mục test cũ bằng mục của tính năng mới,
 // chỉ giữ lại nhóm "Địa điểm — tele nhanh". Đừng để menu phình thành bãi rác test cũ.
-import { ctx } from './ctx';
+import { ctx, QUALITY } from './ctx';
 import * as R from '../sim/rules';
 import { RECIPES } from '../data/recipes';
 import { SPOTS, CORR } from '../world/layout';
 import { toast } from '../core/bus';
+import { downloadForOffline } from '../core/offline';
 import { addStack } from '../sim/state';
 import * as PUI from '../ui/phoneUI';
 import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Bánh phở, bún tươi và đồ nguội (xúc xích, giò, chả, đậu hũ) tăng gấp đôi hạn dùng, thịt cá tươi vẫn hỏng trong ngày';
+export const DEV_BUILD_TAG = 'Tối ưu FPS trên điện thoại (mức “Vừa” nhanh gấp 2,5 lần) và chơi offline sau khi lưu bản game';
 
 export interface DevAction {
   id: string;
@@ -71,46 +72,40 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Bánh phở, bún và đồ nguội để được 2 ngày (lượt 39)',
+      title: 'Mới nhất — Mượt hơn trên điện thoại và chơi offline (lượt 40)',
       items: [
         {
-          id: 'spoil_all',
-          label: 'Bỏ bánh phở, bún, xúc xích, giò, chả, đậu hũ vào quầy rồi xem hạn dùng',
-          sub: 'Bánh phở 60 giờ, bún 52 giờ, xúc xích 120 giờ… — mở Quầy › Kho quầy xem độ tươi',
+          id: 'perf_now',
+          label: 'Đo FPS thật ở mức đồ hoạ đang dùng',
+          sub: 'Đếm khung hình trong 3 giây, kèm số lệnh vẽ và tỉ lệ điểm ảnh — biết ngay máy có gánh nổi không',
           tone: 'green',
           closePanel: false,
           run: () => {
-            const g = ctx.g;
-            g.cash = Math.max(g.cash, 300000);
-            for (const id of ['ganh', 'daothot', 'bepthan', 'vi', 'noi']) { if (!R.has(g, id)) R.buyGear(g, id); }
-            g.stall.tier = 1; g.stall.where = 'placed';
-            const sp = SPOTS.find((x) => x.id === 'cv');
-            if (sp) ctx.stall.placeAt(sp);
-            ctx.stall.refresh();
-            for (const id of ['banhpho', 'bun', 'xucxich', 'gio', 'chaca', 'dauhu']) {
-              addStack(g.stall.store, { id, n: 1, fresh: 100, q: 0.95, cost: R.unitCost(g, id) });
-            }
-            ctx.ui.closePanel(); ctx.ui.panel('stall');
-            toast('Bánh phở, bún và đồ nguội nay để được 2 ngày trong quầy — thịt cá tươi thì vẫn hỏng trong ngày.', 'info', 'box', true);
+            const t0 = performance.now(); let n = 0, worst = 0, last = t0;
+            const tick = (now: number) => {
+              const d = now - last; last = now; if (d > worst) worst = d; n++;
+              if (now - t0 < 3000) { requestAnimationFrame(tick); return; }
+              const fps = (n * 1000) / (now - t0), info = ctx.renderer.info.render;
+              const q = QUALITY[ctx.set.quality];
+              toast(`Mức “${q.name}”: ${fps.toFixed(0)} FPS · khung chậm nhất ${worst.toFixed(0)} ms · ${info.calls} lệnh vẽ · ${Math.round(info.triangles / 1000)}k tam giác · ${ctx.renderer.getPixelRatio().toFixed(2)} điểm ảnh${worst > 120 ? ' — máy đang giật, hạ xuống mức thấp hơn.' : ''}`,
+                fps < 25 ? 'warn' : 'good', 'bolt', true);
+            };
+            requestAnimationFrame(tick);
+            toast('Đang đo 3 giây…', 'info', 'bolt');
           },
         },
         {
-          id: 'spoil_meat',
-          label: 'So sánh: thịt tươi vẫn hỏng trong ngày (không nới luật đồ sống)',
-          sub: 'Bỏ 2 lạng thịt heo vào quầy, để trôi qua ngày — sáng ra bị báo hỏng đúng tên món',
+          id: 'offline_try',
+          label: 'Lưu bản chơi offline rồi kiểm tra kho lưu',
+          sub: 'Tải sẵn toàn bộ tệp game vào bộ nhớ đệm; xong là tắt mạng vẫn mở được',
           tone: 'yellow',
           closePanel: false,
           run: () => {
-            const g = ctx.g;
-            g.cash = Math.max(g.cash, 300000);
-            for (const id of ['ganh', 'daothot', 'bepthan', 'vi', 'noi']) { if (!R.has(g, id)) R.buyGear(g, id); }
-            g.stall.tier = 1; g.stall.where = 'placed';
-            const sp = SPOTS.find((x) => x.id === 'cv');
-            if (sp) ctx.stall.placeAt(sp);
-            ctx.stall.refresh();
-            addStack(g.stall.store, { id: 'heo', n: 3, fresh: 100, q: 0.9, cost: R.unitCost(g, 'heo') });
-            ctx.ui.closePanel(); ctx.ui.panel('stall');
-            toast('Thịt heo để trong quầy không tủ đá: vài giờ là hỏng — bảng Kho quầy đang báo số giờ còn lại.', 'warn', 'box', true);
+            void downloadForOffline().then(async (m) => {
+              const reg = await navigator.serviceWorker?.getRegistration?.();
+              const keys = (await caches.keys?.()) ?? [];
+              toast(`${m} · ${reg?.active ? 'service worker đang chạy' : 'chưa có service worker'} · ${keys.length} kho lưu`, 'good', 'download', true);
+            });
           },
         },
       ],

@@ -20,6 +20,7 @@ import * as PH from '../sim/phone';
 import * as PUI from './phoneUI';
 import { FEAT_LABEL } from '../data/phone';
 import { money, qty, clamp, round1k, dist2, hhmm } from '../core/util';
+import { canOffline, downloadForOffline, offlineState, offlineBytes } from '../core/offline';
 import { toast, sfx, bus } from '../core/bus';
 import { BX, CORR, SPOTS, LOTS, lotPoint, DISTRICT, MAP } from '../world/layout';
 
@@ -447,6 +448,7 @@ export function openPanel(ui: UI, name: string) {
       const unreadLog = (g.flags.logSeen ?? 0) !== newestVer;
       acts.q = (i) => { st.quality = i; st.auto = false; ctx.applyQuality(); saveSettings(); }; acts.cam3 = () => { ctx.ui.switchView(); ctx.ui.panel('settings'); }; acts.fps = () => { st.fps = !st.fps; saveSettings(); }; acts.auto = () => { st.auto = !st.auto; saveSettings(); };
       acts.log = () => ui.panel('changelog');
+      acts.offline = () => { void downloadForOffline().then((m) => { toast(m, 'good', 'download'); ui.panel('settings'); }); };
       acts.fs = () => { void toggleFullscreen(); }; acts.layout = () => ui.editLayout(); acts.save = () => { ctx.save('thu cong'); toast('Đã lưu game.', 'good'); }; acts.menu = () => { ctx.save('ve menu'); ui.closePanel(); ctx.toMenu(); };
       draw(`${ic('gear')} <span id="dev-unlock" style="cursor:pointer;user-select:none">Cài đặt</span>`, [], `<h4>Đồ hoạ</h4><div style="display:flex;gap:.4em;flex-wrap:wrap">${QUALITY.map((q, i) => `<button class="btn${st.quality === i ? ' yellow' : ''}" data-a="q" data-i="${i}">${q.name}</button>`).join('')}<button class="btn${st.auto ? ' green' : ''}" data-a="auto">Tự hạ khi giật: ${st.auto ? 'bật' : 'tắt'}</button><button class="btn${st.fps ? ' green' : ''}" data-a="fps">Hiện FPS: ${st.fps ? 'bật' : 'tắt'}</button>${canFullscreen() ? '<button class="btn" data-a="fs">Toàn màn hình</button>' : ''}</div>
         <h4>Góc nhìn</h4><div style="display:flex;gap:.6em;align-items:center;flex-wrap:wrap"><button class="btn ${st.cam3 ? 'green' : ''}" data-a="cam3">${st.cam3 ? 'Đang ở góc nhìn thứ ba' : 'Đang ở góc nhìn thứ nhất'} — bấm để đổi</button><span class="muted">Góc nhìn thứ ba cho thấy quần áo, kiểu tóc bạn mua. Phím tắt: V.</span></div>
@@ -455,6 +457,7 @@ export function openPanel(ui: UI, name: string) {
         <div class="uiscale"><span class="muted">Nhỏ</span><input type="range" min="${UI_SCALE[0] * 100}" max="${UI_SCALE[1] * 100}" step="5" value="${Math.round(st.ui.scale * 100)}" data-r="uiscale"><span class="muted">To</span></div>
         <div class="uiprev" id="uiprev"><span class="chip">${ic('dish')} Độ no</span><span class="stat" style="color:#fff7e4"><span style="display:flex;align-items:center;gap:.25em">${ic('smile')}<i style="display:block;width:3.3em;height:.5em;background:rgba(255,255,255,.22);border-radius:.3em;overflow:hidden"><b style="display:block;height:100%;width:70%;background:var(--green)"></b></i></span></span><button class="ib" style="pointer-events:none">${ic('bag')}</button></div>
         <h4>Âm thanh hiệu ứng</h4><input type="range" min="0" max="100" value="${Math.round(st.sfx * 100)}" data-r="sfx"><h4>Nhạc nền</h4><input type="range" min="0" max="100" value="${Math.round(st.music * 100)}" data-r="music"><h4>Độ nhạy xoay góc nhìn</h4><input type="range" min="30" max="250" value="${Math.round(st.sens * 100)}" data-r="sens">
+        <h4>Chơi offline</h4><div style="display:flex;gap:.6em;align-items:center;flex-wrap:wrap">${canOffline() ? `<button class="btn ${offlineState() === 'san sang' ? 'green' : 'yellow'}" data-a="offline">Lưu để chơi offline</button><span class="muted">${offlineState() === 'san sang' ? 'Đã lưu' : 'Đang lưu'}${offlineBytes() ? ` · ${(offlineBytes() / 1048576).toFixed(1)} MB` : ''} — mất mạng vẫn mở được</span>` : '<span class="muted">Trình duyệt này không hỗ trợ lưu offline</span>'}</div>
         <h4>Nhật ký phát triển</h4><div style="display:flex;gap:.6em;align-items:center;flex-wrap:wrap"><button class="btn yellow" data-a="log">Xem các bản gần đây${unreadLog ? ' <span class="tag good">mới</span>' : ''}</button><span class="muted">${CHANGELOG[0]?.v ?? ''} · ${CHANGELOG[0]?.tag ?? ''}</span></div>
         <h4>Cách chơi</h4><p class="muted">Điện thoại: ngón trái kéo để đi, ngón phải vuốt để nhìn, chạm vào người hoặc đồ vật (hay nút tròn vàng) để tương tác. Máy tính: W A S D đi, giữ Shift chạy, kéo chuột để nhìn, E tương tác, Tab túi đồ, B sổ tay, M bản đồ. Game tự lưu sau mỗi việc quan trọng.</p>`,
         `<button class="btn green" data-a="save">Lưu ngay</button><button class="btn" data-a="menu">Về màn hình chính</button>`);
