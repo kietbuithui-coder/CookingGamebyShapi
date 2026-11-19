@@ -11,7 +11,7 @@ import { SPOTS, DISTRICT, NAV, findPath, nearestNode, PLACES, districtAt, MAP } 
 const sold = new Set(SHOP_LIST.flatMap((s) => s.items));
 
 describe('nguyên liệu và cửa hàng', () => {
-  it('không trùng mã, giá và hạn dùng hợp lệ (đã tăng 20% thời gian hỏng)', () => {
+  it('không trùng mã, giá và hạn dùng hợp lệ (đồ nguội đã tăng gấp đôi hạn dùng)', () => {
     expect(new Set(ING_LIST.map((i) => i.id)).size).toBe(ING_LIST.length);
     for (const i of ING_LIST) { expect(i.price, i.id).toBeGreaterThan(0); expect(i.shelf, i.id).toBeGreaterThan(0); expect(i.kg, i.id).toBeGreaterThanOrEqual(0); expect(i.name.length).toBeGreaterThan(0); }
     expect(INGS.heo.shelf).toBe(12);
@@ -19,6 +19,16 @@ describe('nguyên liệu và cửa hàng', () => {
     // Bánh mì tăng thêm 100% thời gian để hỏng (22 → 44 giờ, ×1,2 sẵn có = 52,8).
     expect(INGS.banhmi.shelf).toBe(52.8);
     expect(INGS.banhmi.shelf / 26.4).toBe(2);
+    // Lượt 39: các món "đồ nguội / ăn liền" khác cũng tăng 100% hạn dùng, đồng bộ với bánh mì.
+    expect(INGS.banhpho.shelf).toBe(72);   // 30 → 60, ×1,2 của bảng
+    expect(INGS.bun.shelf).toBe(62.4);     // 26 → 52
+    expect(INGS.xucxich.shelf).toBe(144);  // 60 → 120
+    expect(INGS.gio.shelf).toBe(96);       // 40 → 80
+    expect(INGS.chaca.shelf).toBe(72);     // 30 → 60
+    expect(INGS.dauhu.shelf).toBe(86.4);   // 36 → 72
+    // Thịt/cá/hải sản tươi sống thì GIỮ NGUYÊN: để lâu vẫn phải hỏng.
+    expect(INGS.heo.shelf).toBe(12);
+    expect(INGS.tom.shelf).toBe(8.4);
     expect(INGS.da.shelf).toBe(10.8);
     expect(INGS.gao.shelf).toBe(99999);
   });

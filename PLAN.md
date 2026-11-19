@@ -868,3 +868,28 @@ câu đủ dài, không lặp câu) → tổng **470 bài / 37 tệp**. `tsc` s�
 Probe `changelog.mjs` (`errors: none`): Cài đặt có khối + nhãn "mới"; mở ra đủ **20 việc** của 5 bản, đầu đề đúng thứ tự
 `Lượt 37 … Lượt 31`; `logSeen: 0 → 37`; mở lại Cài đặt thì nhãn "mới" đã mất.
 Ảnh: `anh_ket_qua/android/46_nhat_ky_phat_trien.png`.
+
+## Lượt 39 — Bánh phở, bún và đồ nguội cũng để được 2 ngày ✅ đã xong
+
+Người chơi chốt: *(1) không thêm "Sữa Tartieen", (2) "ok sửa luôn"* phần tăng hạn dùng cho đồ nguội như bánh mì.
+
+| Nguyên liệu | Trước (giờ) | Sau (giờ) | Ghi chú |
+|---|---|---|---|
+| Bánh phở | 30 | **60** | ×1,2 của bảng → 72 giờ thực tế |
+| Bún tươi | 26 | **52** | → 62,4 giờ |
+| Xúc xích | 60 | **120** | → 144 giờ |
+| Giò lụa | 40 | **80** | → 96 giờ |
+| Chả cá | 30 | **60** | → 72 giờ |
+| Đậu hũ | 36 | **72** | → 86,4 giờ |
+
+**Giữ nguyên** (không nới): thịt, cá, hải sản tươi sống — `heo` 12 giờ, `tom` 8,4 giờ… để lâu vẫn hỏng thật.
+Dòng nhắc trong bảng Kho quầy đổi thành *"bánh mì, bánh phở, bún tươi và đồ nguội để được **2 ngày**; thịt cá chưa nấu chỉ vài giờ"*.
+Sữa Tartieen: người chơi chọn **không thêm** — giữ nguyên sữa tươi + sữa đặc.
+
+**Nhật ký phát triển** (lượt 38) đã thêm bản **Lượt 39** lên đầu — đúng cơ chế đã làm: chỉ cần thêm một mục vào `CHANGELOG`.
+
+**Kiểm thử:** `tests/data.test.ts` canh đúng 6 con số mới + 2 con số thịt cá *không* đổi; `tests/hong.test.ts` thêm 2 bài
+(6 món đồ nguội sống qua một ngày trong quầy; thịt heo thì vẫn hỏng) → tổng **472 bài / 37 tệp**. `tsc` sạch, build OK.
+Probe `spoil39.mjs` (`errors: none`): sau 20 giờ trong quầy còn `banhpho@73% bun@69% xucxich@65% gio@47% chaca@30% dauhu@41%`,
+riêng thịt heo bị dọn và báo **"Đồ hỏng phải bỏ: Thịt heo nạc."**
+Ảnh: `anh_ket_qua/android/47_do_nguoi_2_ngay.png`.

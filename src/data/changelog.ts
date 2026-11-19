@@ -14,6 +14,24 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 39',
+    tag: 'Bánh phở, bún và đồ nguội cũng để được 2 ngày',
+    items: [
+      'Bánh phở 30 → 60 giờ, bún tươi 26 → 52 giờ: mua hôm nay, để qua đêm vẫn bán được.',
+      'Đồ nguội ăn liền (xúc xích, giò lụa, chả cá, đậu hũ) cũng tăng gấp đôi hạn dùng.',
+      'Thịt, cá, hải sản tươi sống thì vẫn hỏng trong ngày như cũ — để lâu là mất thật.',
+    ],
+  },
+  {
+    v: 'Lượt 38',
+    tag: 'Nhật ký phát triển xem được trong Cài đặt',
+    items: [
+      'Cài đặt có mục “Nhật ký phát triển”: danh sách các bản gần đây và việc đã làm trong từng bản, bản mới nhất ở trên cùng.',
+      'Bản nào chưa đọc thì nút có nhãn “mới”; mở ra đọc là tự lưu, lần sau nhãn biến mất.',
+      'Danh sách chỉ giữ các bản gần nhất cho dễ đọc, không phải cuộn một trang dài.',
+    ],
+  },
+  {
     v: 'Lượt 37',
     tag: 'Lấy đồ ra khỏi quầy ở bất cứ đâu',
     items: [

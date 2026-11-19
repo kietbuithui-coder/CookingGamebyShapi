@@ -3,12 +3,12 @@ import { DEV_BUILD_TAG, getDevSections } from '../src/game/devPoints';
 
 describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
   it('chỉ gồm mục của tính năng mới nhất + nhóm địa điểm tele nhanh', () => {
-    expect(DEV_BUILD_TAG).toContain('Nhật ký phát triển');
-    expect(DEV_BUILD_TAG).toContain('Cài đặt');
+    expect(DEV_BUILD_TAG).toContain('Bánh phở');
+    expect(DEV_BUILD_TAG).toContain('hạn dùng');
     const sections = getDevSections();
     expect(sections.length).toBe(2);
-    expect(sections[0].title.toLowerCase()).toContain('nhật ký');
-    expect(sections[0].title).toContain('lượt 38');
+    expect(sections[0].title.toLowerCase()).toContain('đồ nguội');
+    expect(sections[0].title).toContain('lượt 39');
     expect(sections[1].title).toContain('Địa điểm');
     const ids = new Set<string>();
     for (const sec of sections) {
@@ -21,8 +21,8 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
         expect(item.sub.length).toBeGreaterThan(3);
       }
     }
-    // mục của lượt này: mở nhật ký phát triển + xoá dấu đã đọc để thấy nhãn "mới"
-    for (const id of ['open_log', 'log_unread']) expect(ids.has(id)).toBe(true);
+    // mục của lượt này: đồ nguội lâu hỏng + so sánh với thịt tươi
+    for (const id of ['spoil_all', 'spoil_meat']) expect(ids.has(id)).toBe(true);
     // tele nhanh vẫn còn nguyên
     const loc = sections[1].items.map((i) => i.id);
     for (const id of ['tp_equip', 'tp_matbang_tb', 'tp_ongtu', 'tp_scrap2', 'tp_canho']) expect(loc).toContain(id);
