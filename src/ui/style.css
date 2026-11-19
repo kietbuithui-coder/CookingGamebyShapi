@@ -59,7 +59,9 @@ button { font: inherit; color: inherit; border: 0; background: none; padding: 0;
 #runb { right: 7.2em; bottom: 1.1em; }
 /* hai nút đấm & nhảy, xếp dọc phía trên nút chạy */
 #act2 { right: 11.6em; bottom: 1.4em; display: flex; flex-direction: column; gap: .5em; }
-#act2 button { width: 3.1em; height: 3.1em; border-radius: 50%; background: var(--paper); border: 2px solid var(--ink); border-bottom-width: 4px; display: grid; place-items: center; color: var(--ink); box-shadow: 0 2px 0 var(--shadow); }
+/* pointer-events: auto là BẮT BUỘC — #ui có pointer-events:none, thiếu dòng này là nút nhảy/đấm
+   không nhận được chạm, ngón tay rơi thẳng xuống canvas và cướp mất cần ảo đang giữ. */
+#act2 button { width: 3.1em; height: 3.1em; border-radius: 50%; background: var(--paper); border: 2px solid var(--ink); border-bottom-width: 4px; display: grid; place-items: center; color: var(--ink); box-shadow: 0 2px 0 var(--shadow); pointer-events: auto; touch-action: none; }
 #act2 button svg.ic { width: 1.7em; height: 1.7em; }
 #act2 button:active { transform: translateY(3px); border-bottom-width: 2px; }
 #act2 .hit { background: #ffe0dc; }

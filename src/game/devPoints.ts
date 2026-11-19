@@ -13,7 +13,7 @@ import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Nhảy qua được bồn hoa 0,42 m, thành hồ nước, 69 xe máy; hồ nước không đứng trên mặt; chữ bới thùng rác gộp một dòng';
+export const DEV_BUILD_TAG = 'Điện thoại vừa đi vừa nhảy/đấm được: nút Nhảy-Đấm nhận chạm và không cướp cần ảo đang giữ';
 
 export interface DevAction {
   id: string;
@@ -72,30 +72,30 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Nhảy qua bồn hoa, hồ nước, xe (lượt 44)',
+      title: 'Mới nhất — Điện thoại: vừa đi vừa nhảy/đấm (lượt 45)',
       items: [
         {
-          id: 'nhay_bon',
-          label: 'Đứng cạnh bồn hoa công viên rồi nhảy qua',
-          sub: 'Vành bồn 0,42 m — đi bộ bị chặn, nhảy là qua (8 bồn quanh hồ)',
+          id: 'vua_di_vua_nhay',
+          label: 'Đo lại: đang đi mà bấm Nhảy/Đấm',
+          sub: 'Gọi thẳng jump()/punch() rồi báo trạng thái cần ảo — dùng để kiểm tra trên máy thật',
           tone: 'green',
           closePanel: false,
           run: () => {
             ctx.ui.closePanel();
-            const c = ctx.world.circs.find((q) => q.top === 0.42);
-            if (c) tpTo(c.x - c.r - 0.8, c.z, Math.PI / 2, 'Đứng cạnh bồn hoa — bấm nhảy để vượt qua vành bồn (0,42 m).');
+            const before = { mz: ctx.input.mz, stick: !!ctx.input.stick };
+            ctx.acts.jump();
+            toast(`Nhảy: độ cao ${ctx.player.jumpY.toFixed(2)} m. Cần ảo: ${ctx.input.stick ? 'đang giữ' : 'không giữ'} (mz ${before.mz.toFixed(2)}). Trên điện thoại: giữ ngón trái để đi rồi chạm nút Nhảy bằng ngón phải — phải vừa nhảy vừa đi tiếp.`, 'info', 'jump', true);
           },
         },
         {
-          id: 'nhay_ho',
-          label: 'Nhảy qua thành hồ nước',
-          sub: 'Thành hồ 0,62 m: qua được, nhưng đứng vào là chìm — không lơ lửng trên mặt nước',
+          id: 'vua_di_vua_dam',
+          label: 'Đo lại: đang đi mà bấm Đấm',
+          sub: 'Báo thời gian hồi đấm + cần ảo còn giữ hay không',
           tone: 'yellow',
           closePanel: false,
           run: () => {
-            const c = ctx.world.circs.find((q) => q.kind === 'trough');
-            if (c) tpTo(c.x, c.z - c.r - 1.2, 0, 'Đứng trước thành hồ — nhảy qua được; đứng trong nước thì không nhảy tiếp được.');
-            else toast('Không tìm thấy hồ nước.', 'warn');
+            ctx.acts.punch();
+            toast(`Đấm: hồi ${ctx.acts.punchCd.toFixed(2)} giây. Cần ảo: ${ctx.input.stick ? 'vẫn giữ' : 'không giữ'}.`, 'info', 'fist', true);
           },
         },
       ],

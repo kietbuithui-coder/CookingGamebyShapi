@@ -1063,9 +1063,35 @@ Người chơi gửi ảnh bồn hoa công viên: *"nhảy qua đc cái này 1 b
 thành hồ 0,62 đi bộ chặn / nhảy qua được / `lowTopAt` = 0 / `troughAt` = true; đứng giữa hồ: `jump()` = false, độ cao 0;
 69 xe máy yên 0,75 đi bộ chặn, nhảy qua được; bới 4 thùng rác: mỗi lần **đúng 1 dòng chữ**, **0 cặp chồng**.
 
+### 45 — điện thoại: vừa đi vừa nhảy / vừa đi vừa đấm (người chơi: *"sửa android chưa vừa chạy/đi vừa nhảy/đấm đc"*)
+Đo bằng CDP hai ngón thật trên giả lập Android 390×844, cả 3 khâu đều hỏng:
+- đang giữ cần ảo + chạm nút Nhảy → `clicks=0`, `jumpY=0`, **`mz` tụt về 0**, `stick=false`: không nhảy, mất luôn cần ảo.
+
+Ba nguyên nhân, sửa cả ba:
+1. `#act2 button` nằm trong `#ui` (mà `#ui { pointer-events: none }`) nhưng không bật `pointer-events: auto`
+   → ngón thứ hai **xuyên qua nút**, rơi xuống canvas và bị canvas cướp. Nay bật cả trong CSS **và** bằng JS
+   (`b.style.pointerEvents = 'auto'`) để không phụ thuộc thứ tự nạp CSS.
+2. Nút dùng `onclick` (chỉ chạy khi `pointerup`), mà cử chỉ 2 ngón hay bị huỷ giữa chừng → nay `pointerdown` + `preventDefault` + `stopPropagation`.
+3. Canvas nghe cả `pointerout` / `pointerleave` → vừa rời ngón là **nhả cần ảo**. Nay chỉ nghe `pointerup` / `pointercancel`,
+   và `setPointerCapture` chỉ gọi khi **thật sự** bắt đầu cần ảo / vuốt nhìn (trước đây chiếm mọi `pointerdown`).
+
+Đo lại trên cùng giả lập (`errors: none`):
+
+| Bước | Kết quả |
+|---|---|
+| đang đi | `mz 0,86` · `stick true` · đã đi 0,64 m |
+| **+ bấm NHẢY** | `jumpY 0,78` **và** `mz 0,86` — vừa nhảy vừa đi |
+| đi tiếp | `jumpY 1,04` · đi 2,09 m — cần ảo không rơi |
+| **+ bấm ĐẤM** | `punchCd 0,75` **và** `mz 0,86` — vừa đấm vừa đi |
+| nhấc hết tay | `mz 0` · `stick false` — dừng đúng |
+
+PC kiểm tra lại không hỏng gì (900×560, tắt cảnh 3D cho headless đủ khung hình): W đi (`mz 1`), W+Space nhảy 0,81 m **vẫn đi**,
+W+F đấm `punchCd 0,7` **vẫn đi**, kéo chuột nhìn quanh trong lúc đi vẫn đi, nhả tay dừng đúng.
+
 ### Kiểm chứng
+- `tests/android45.test.ts` — **4 bài mới** canh đúng 3 nguyên nhân trên.
 - `tests/muc44.test.ts` — **3 bài mới** (bồn hoa, xe máy, hồ nước).
 - `tests/nhay42.test.ts` — **7 bài mới** (lượt 42) + **3 bài mức 2** (lượt 43): nhảy qua ghế đá, vẫn chặn khi chưa đủ cao, tường cao chặn ở mọi độ cao, `lowTopAt` đúng.
-- Tổng **514 bài / 41 tệp** pass; `tsc` sạch; `npm run build` + `build:pages` OK.
-- Nhật ký trong game: bản **Lượt 44** ở đầu (bỏ bản 36 cho đúng trần 8 bản).
+- Tổng **518 bài / 42 tệp** pass; `tsc` sạch; `npm run build` + `build:pages` OK.
+- Nhật ký trong game: bản **Lượt 45** ở đầu (bỏ bản 37 cho đúng trần 8 bản).
 - Ảnh: `/tmp/probe/nhay42/66_nhay.png`.

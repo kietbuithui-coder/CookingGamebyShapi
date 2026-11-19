@@ -14,6 +14,16 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 45',
+    tag: 'Điện thoại: vừa đi vừa nhảy/đấm được',
+    items: [
+      'Trên điện thoại, đang giữ cần ảo mà bấm Nhảy hoặc Đấm thì trước đây vừa không nhảy được, vừa khựng lại — nay chạy đúng.',
+      'Đo thật: đang đi, bấm Nhảy vẫn đi tiếp (mz 0,86, quãng đường tăng đều); bấm Đấm cũng vậy.',
+      'Nguyên nhân: nút nằm trong lớp #ui trong suốt với chạm nên ngón tay rơi xuống canvas, canvas cướp mất cần ảo.',
+      'Trên máy tính không đổi gì: W + Space, W + F, kéo chuột nhìn quanh trong lúc đi vẫn như cũ.',
+    ],
+  },
+  {
     v: 'Lượt 44',
     tag: 'Nhảy qua bồn hoa, hồ nước, xe máy',
     items: [
@@ -84,15 +94,6 @@ export const CHANGELOG: LogEntry[] = [
       'Cài đặt có mục “Nhật ký phát triển”: danh sách các bản gần đây và việc đã làm trong từng bản, bản mới nhất ở trên cùng.',
       'Bản nào chưa đọc thì nút có nhãn “mới”; mở ra đọc là tự lưu, lần sau nhãn biến mất.',
       'Danh sách chỉ giữ các bản gần nhất cho dễ đọc, không phải cuộn một trang dài.',
-    ],
-  },
-  {
-    v: 'Lượt 37',
-    tag: 'Lấy đồ ra khỏi quầy ở bất cứ đâu',
-    items: [
-      'Bảng Túi đồ có thêm tab “Kho quầy”: bấm “› Túi” là lấy được đồ trong kho quầy ra, không cần đặt quầy ở chỗ bán.',
-      'Đang gánh quầy trên vai, quầy để ở nhà, hay đang đứng giữa chợ — vẫn lấy ra được.',
-      'Chỉ chiều bỏ đồ VÀO kho mới cần đứng gần quầy (để kho không thành túi không đáy).',
     ],
   },
 ];
