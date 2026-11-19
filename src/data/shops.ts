@@ -25,7 +25,8 @@ export const SHOP_LIST: ShopDef[] = [
       'suatuoi', 'xucxich', 'cavien', 'pate', 'phomai', 'bolat', 'trungca', 'da'], say: 'Dạ, em chào anh chị ạ.' },
   { id: 'kiosk', name: 'Tạp hoá Cô Ba', vendor: 'Cô Ba', vendorLook: 4, open: [5.5, 23], priceMul: 1.12, fresh: [72, 90], q: 0.8, haggle: 0.2,
     items: ['trung', 'mi', 'nuocmam', 'duong', 'muoi', 'dauan', 'tuongot', 'da', 'nuocloc', 'nuocngot', 'than', 'gas'], say: 'Mua gì đó con? Thiếu thì cô ghi sổ.' },
-  { id: 'bakery', name: 'Lò bánh mì Anh Bảo', vendor: 'Anh Bảo', vendorLook: 0, open: [5, 20], priceMul: 1, fresh: [90, 100], q: 0.95, haggle: 0,
+  // Lò bánh mì: chiều muộn xả hàng như các sạp thực phẩm khác (bánh nguội rồi thì bán rẻ cho hết).
+  { id: 'bakery', name: 'Lò bánh mì Anh Bảo', vendor: 'Anh Bảo', vendorLook: 0, open: [5, 20], priceMul: 1, fresh: [90, 100], q: 0.95, haggle: 0, lateSale: true,
     items: ['banhmi'], say: 'Bánh mì nóng giòn đây!' },
   { id: 'wholesale', name: 'Vựa đầu mối Tám Lúa', vendor: 'Chú Tám', vendorLook: 7, open: [3, 9], priceMul: 0.78, fresh: [85, 98], q: 0.86, haggle: 0.25, bulk: 10,
     items: ['gao', 'nep', 'duong', 'dauan', 'heo', 'ga', 'tom', 'bun', 'banhpho', 'da', 'than'], say: 'Bán sỉ thôi nghe, mười ký trở lên.' },

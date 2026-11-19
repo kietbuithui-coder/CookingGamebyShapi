@@ -6,12 +6,13 @@ import * as R from '../sim/rules';
 import { RECIPES } from '../data/recipes';
 import { SPOTS, CORR } from '../world/layout';
 import { toast } from '../core/bus';
+import { addStack } from '../sim/state';
 import * as PUI from '../ui/phoneUI';
 import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Quán thường (bậc 3–5) đã thuê phụ quầy thì bảng Quầy có tab Nhân sự và giao được người đi chợ';
+export const DEV_BUILD_TAG = 'Bánh mì trong quầy để được 2 ngày thay vì 1, và bảng Kho quầy cảnh báo đồ cần lạnh đang hỏng dần khi không có tủ đá';
 
 export interface DevAction {
   id: string;
@@ -70,42 +71,46 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Quán thường cũng có bảng Nhân sự, giao được người đi chợ (lượt 35)',
+      title: 'Mới nhất — Kiểm đồ trong quầy: bánh mì lâu hỏng hơn, cảnh báo đồ cần lạnh (lượt 36)',
       items: [
         {
-          id: 'staff_shop5',
-          label: 'Quán thường (bậc 5) có phụ quầy: mở Quầy › Nhân sự, giao người đi chợ',
-          sub: 'Thuê người phụ quầy rồi mở bảng Quầy — tab Nhân sự có cả ở quán nhỏ, không chỉ nhà hàng',
+          id: 'spoil_bread',
+          label: 'Bánh mì trong quầy để được 2 ngày (trước đây 1 ngày)',
+          sub: 'Đặt quầy gánh ở công viên, bỏ 4 ổ bánh mì vào kho rồi mở Quầy › Kho quầy xem độ tươi',
           tone: 'green',
           closePanel: false,
           run: () => {
             const g = ctx.g;
-            g.cash = Math.max(g.cash, 3000000);
-            g.flags.firstSale = g.day - 6; g.led.revenue = Math.max(g.led.revenue, 900000);
-            for (const id of ['ganh', 'xeday', 'sap', 'quanan']) { if (!R.has(g, id)) R.buyGear(g, id); }
-            g.stall.tier = 5; g.stall.where = 'placed'; g.gear.nhahang = 0; g.sous = null;
-            if (!g.help) R.hireHelper(g);
+            g.cash = Math.max(g.cash, 300000);
+            for (const id of ['ganh', 'daothot', 'bepthan', 'vi', 'noi']) { if (!R.has(g, id)) R.buyGear(g, id); }
+            g.stall.tier = 1; g.stall.where = 'placed';
+            const sp = SPOTS.find((x) => x.id === 'cv');
+            if (sp) ctx.stall.placeAt(sp);
             ctx.stall.refresh();
+            addStack(g.stall.store, { id: 'banhmi', n: 4, fresh: 100, q: 0.95, cost: R.unitCost(g, 'banhmi') });
             ctx.ui.closePanel(); ctx.ui.panel('stall');
-            toast('Quán thường đã có tab Nhân sự: giao người phụ quầy đi chợ đúng món còn thiếu.', 'good', 'shop', true);
+            toast('Bánh mì nay để được 2 ngày (52,8 giờ) — mua hôm nay, mai vẫn bán được.', 'info', 'bread', true);
           },
         },
         {
-          id: 'staff_rest6',
-          label: 'Lên nhà hàng bình dân (bậc 6): bảng Nhân sự có thêm Đặt bàn trước',
-          sub: 'Cùng một bảng: đặt bàn trước, bếp trưởng tự duyệt và người đi chợ nằm chung một chỗ',
+          id: 'cold_warn',
+          label: 'Thử để sữa/thịt trong quầy không tủ đá: bảng Kho quầy cảnh báo vài giờ là hỏng',
+          sub: 'Đồ cần lạnh để ở quầy mà không có tủ đá/thùng đá thì hỏng nhanh gấp 2,6 lần — cảnh báo ghi rõ số giờ',
           tone: 'yellow',
           closePanel: false,
           run: () => {
             const g = ctx.g;
-            g.cash = Math.max(g.cash, 3000000);
-            g.flags.firstSale = g.day - 6; g.led.revenue = Math.max(g.led.revenue, 900000);
-            for (const id of ['ganh', 'xeday', 'sap', 'quanan', 'quanngoi', 'nhahang']) { if (!R.has(g, id)) R.buyGear(g, id); }
-            g.stall.tier = 6; g.stall.where = 'placed'; g.gear.nhahang = 100;
-            if (!g.help) R.hireHelper(g);
+            g.cash = Math.max(g.cash, 300000);
+            for (const id of ['ganh', 'daothot', 'bepthan', 'vi', 'noi']) { if (!R.has(g, id)) R.buyGear(g, id); }
+            g.stall.tier = 1; g.stall.where = 'placed';
+            const sp = SPOTS.find((x) => x.id === 'cv');
+            if (sp) ctx.stall.placeAt(sp);
+            delete g.gear.tu_dong; delete g.gear.thungda;
             ctx.stall.refresh();
+            addStack(g.stall.store, { id: 'suatuoi', n: 2, fresh: 100, q: 0.95, cost: R.unitCost(g, 'suatuoi') });
+            addStack(g.stall.store, { id: 'heo', n: 3, fresh: 100, q: 0.9, cost: R.unitCost(g, 'heo') });
             ctx.ui.closePanel(); ctx.ui.panel('stall');
-            toast('Nhà hàng bình dân: tab Nhân sự & Đặt bàn — nhận bàn, tự duyệt, giao đi chợ.', 'info', 'star', true);
+            toast('Sữa và thịt trong quầy đang hỏng dần: mở tab Kho quầy xem cảnh báo, hoặc mua thùng đá 110.000₫ ở tiệm Ba Tài.', 'warn', 'box', true);
           },
         },
       ],

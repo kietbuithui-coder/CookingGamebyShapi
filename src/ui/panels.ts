@@ -91,12 +91,18 @@ export function openPanel(ui: UI, name: string) {
     if (name === 'bag') {
       if (!['bag', 'gear'].includes(tab)) tab = 'bag';
       const near = stallNear(g), cap = R.carryCap(g), w = R.bagWeight(g);
-      acts.eat = (i) => ctx.acts.eat(g.bag, i); acts.drop = (i) => { g.bag.splice(i, 1); }; acts.dropj = (_i, e) => { delete g.junk[e.dataset.k!]; };
+      acts.eat = (i) => ctx.acts.eat(g.bag, i);
+      // "Bỏ" là vứt cả lô — phải nói rõ vứt món gì, bao nhiêu, để không ai tưởng đồ tự dưng biến mất.
+      acts.drop = (i) => {
+        const st = g.bag[i]; if (!st) return;
+        const d = INGS[st.id]; g.bag.splice(i, 1);
+        toast(`Đã vứt ${qty(st.n)} ${d.unit} ${d.name.toLowerCase()} đi.`, 'info', 'box');
+      }; acts.dropj = (_i, e) => { delete g.junk[e.dataset.k!]; };
       acts.toStall = (i) => { const k = moveStack(g.bag, s.store, i, 1e9, R.stallRoom(g)); if (!k) toast('Quầy đầy rồi.', 'warn'); else sfx('pick'); };
       let body = '';
       if (tab === 'bag') {
         body = `<div class="bar"><b style="width:${clamp(w / cap) * 100}%;background:${w > cap ? 'var(--red)' : ''}"></b></div><p class="muted">Đang mang ${w.toFixed(1).replace('.', ',')} / ${cap} kg${w > cap * 0.85 ? ' — nặng quá nên đi chậm!' : ''}</p>` +
-          stackList(g.bag, (st, i) => (INGS[st.id].eat ? `<button class="btn small green" data-a="eat" data-i="${i}">${INGS[st.id].eat!.t && !INGS[st.id].eat!.h ? 'Uống' : 'Ăn'}</button>` : '') + (near ? `<button class="btn small" data-a="toStall" data-i="${i}">› Quầy</button>` : '') + `<button class="btn small" data-a="drop" data-i="${i}">Bỏ</button>`, 'Túi trống trơn. Ra chợ mua nguyên liệu: tự tay bốc hàng ở sạp rồi đưa người bán tính tiền.');
+          stackList(g.bag, (st, i) => (INGS[st.id].eat ? `<button class="btn small green" data-a="eat" data-i="${i}">${INGS[st.id].eat!.t && !INGS[st.id].eat!.h ? 'Uống' : 'Ăn'}</button>` : '') + (near ? `<button class="btn small" data-a="toStall" data-i="${i}">› Quầy</button>` : '') + `<button class="btn small" data-a="drop" data-i="${i}">Vứt</button>`, 'Túi trống trơn. Ra chợ mua nguyên liệu: tự tay bốc hàng ở sạp rồi đưa người bán tính tiền.');
         const junk = Object.entries(g.junk).filter(([, n]) => n > 0);
         if (junk.length) body += `<h4>Đồ nhặt được</h4><div class="list">${junk.map(([k, n]) => `<div class="item"><div class="grow"><b>${JUNK[k].name} × ${n}</b><small>Bán ở ${JUNK[k].where === 'scrap' ? 'vựa ve chai (Tư Rác hoặc Bà Chín)' : 'tiệm cầm đồ Chú Lâm'}: ${money(JUNK[k].price * n)}</small></div><button class="btn small" data-a="dropj" data-k="${k}">Bỏ</button></div>`).join('')}</div>`;
       } else {
@@ -169,7 +175,16 @@ export function openPanel(ui: UI, name: string) {
       } else if (tab === 'store') {
         const chilled = R.stallChilled(g);
         const chillTag = R.has(g, 'tu_dong') ? ' · tủ đông công nghiệp' : chilled ? ' · đang ướp đá' : '';
-        body = `<div class="grid2"><div><h4>Trong quầy (${weightOf(s.store).toFixed(1).replace('.', ',')}/${R.stallCap(g)} kg)${chillTag}</h4>${stackList(s.store, (_s, i) => `<button class="btn small" data-a="toBag" data-i="${i}">› Túi</button>`, 'Quầy chưa có nguyên liệu.')}</div><div><h4>Trong túi (${R.bagWeight(g).toFixed(1).replace('.', ',')}/${R.carryCap(g)} kg)</h4>${stackList(g.bag, (_s, i) => `<button class="btn small" data-a="toStall" data-i="${i}">› Quầy</button>`, 'Túi trống.')}</div></div>` +
+        // Kho quầy đồ nguội/khô tự hỏng: nói rõ mốc, để người chơi không tưởng "bỏ vào quầy là mất".
+        const spoilHint = s.store.some((st) => INGS[st.id].shelf < 9000)
+          ? `<p class="muted">Đồ trong quầy vẫn hỏng tiếp: bánh mì để được <b>2 ngày</b>, thịt cá chưa nấu chỉ vài giờ. Qua ngày là bỏ (${R.has(g, 'tu_dong') ? 'riêng tủ đông công nghiệp giữ được gần như cả tuần' : 'muốn giữ lâu thì mua tủ đông công nghiệp'}).</p>` : '';
+        // Đồ lạnh để trong quầy mà không có tủ đá: hỏng nhanh gấp 2,6 lần — phải nói ngay ở đây,
+        // vì người chơi tưởng "bỏ vào quầy là an toàn rồi" nên thấy mất thì tưởng bị lỗi.
+        const cold = R.coldUnprotected(g);
+        const coldLeft = cold.kinds ? Math.min(...s.store.filter((st) => INGS[st.id]?.cold && INGS[st.id].shelf < 9000).map((st) => R.hoursLeft(g, st))) : 0;
+        const coldHint = cold.kinds
+          ? `<p class="neg">${cold.names.join(', ')} cần lạnh mà quầy không có tủ đá — để đây khoảng ${Math.max(1, Math.round(coldLeft))} giờ nữa là hỏng. Cất ở nhà (tủ lạnh) hoặc mua thùng đá ở tiệm Ba Tài.</p>` : '';
+        body = `<div class="grid2"><div><h4>Trong quầy (${weightOf(s.store).toFixed(1).replace('.', ',')}/${R.stallCap(g)} kg)${chillTag}</h4>${stackList(s.store, (_s, i) => `<button class="btn small" data-a="toBag" data-i="${i}">› Túi</button>`, 'Quầy chưa có nguyên liệu.')}${coldHint}${spoilHint}</div><div><h4>Trong túi (${R.bagWeight(g).toFixed(1).replace('.', ',')}/${R.carryCap(g)} kg)</h4>${stackList(g.bag, (_s, i) => `<button class="btn small" data-a="toStall" data-i="${i}">› Quầy</button>`, 'Túi trống.')}</div></div>` +
           (s.preps.length ? `<h4>Đã sơ chế</h4>${s.preps.map((p) => `<span class="tag ${R.holdFactor(g, RECIPES[p.rid], p.at) < 1 ? 'warn' : 'good'}">${RECIPES[p.rid].short}: ${p.n} phần · ${Math.round(p.q * 100)}đ${R.holdFactor(g, RECIPES[p.rid], p.at) < 1 ? ' · để lâu, kém ngon' : ''}</span>`).join('')}` : '') +
           (R.has(g, 'tu_dong') ? '<p class="muted">Tủ đông công nghiệp đang giữ lạnh tự động (+80 kg sức chứa, không cần mua đá viên).</p>' : R.has(g, 'thungda') && !chilled ? '<p class="muted">Có thùng đá nhưng chưa có đá viên — mua đá ở tạp hoá Cô Ba để giữ lạnh thịt cá.</p>' : !R.has(g, 'thungda') ? '<p class="muted">Chưa có thùng đá: thịt cá để ngoài trời nóng rất mau hỏng.</p>' : '');
       } else if (tab === 'staff') {

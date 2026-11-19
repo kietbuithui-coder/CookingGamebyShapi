@@ -16,7 +16,9 @@ describe('nguyên liệu và cửa hàng', () => {
     for (const i of ING_LIST) { expect(i.price, i.id).toBeGreaterThan(0); expect(i.shelf, i.id).toBeGreaterThan(0); expect(i.kg, i.id).toBeGreaterThanOrEqual(0); expect(i.name.length).toBeGreaterThan(0); }
     expect(INGS.heo.shelf).toBe(12);
     expect(INGS.tom.shelf).toBe(8.4);
-    expect(INGS.banhmi.shelf).toBe(26.4);
+    // Bánh mì tăng thêm 100% thời gian để hỏng (22 → 44 giờ, ×1,2 sẵn có = 52,8).
+    expect(INGS.banhmi.shelf).toBe(52.8);
+    expect(INGS.banhmi.shelf / 26.4).toBe(2);
     expect(INGS.da.shelf).toBe(10.8);
     expect(INGS.gao.shelf).toBe(99999);
   });

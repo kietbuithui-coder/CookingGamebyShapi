@@ -60,7 +60,8 @@ const RAW: Row[] = [
   ['mi', 'Mì vàng', 'starch', 'vắt', 2500, 0.08, 2000, 0, 'nest', 0xf2cf5a, 0xe0b53a],
   ['banhpho', 'Bánh phở', 'starch', 'kg', 16000, 1, 30, 0, 'nest', 0xf7f3ea, 0xe9e2d0],
   ['bun', 'Bún tươi', 'starch', 'kg', 12000, 1, 26, 0, 'nest', 0xfaf7f0, 0xece6d6],
-  ['banhmi', 'Bánh mì', 'starch', 'ổ', 3500, 0.1, 22, 0, 'loaf', 0xd9a05a, 0xf0d9a0, { h: 26, m: 1 }],
+  // Bánh mì nay để được 44 giờ (22 × 2): mua chiều nay, sáng mai vẫn bán được — trước đây qua một ngày là bỏ.
+  ['banhmi', 'Bánh mì', 'starch', 'ổ', 3500, 0.1, 44, 0, 'loaf', 0xd9a05a, 0xf0d9a0, { h: 26, m: 1 }],
   ['botmi', 'Bột mì', 'starch', 'kg', 17000, 1, F, 0, 'bag', 0xf0ead8, 0xf0a92e],
   ['banhtrang', 'Bánh tráng', 'starch', 'xấp', 15000, 0.3, F, 0, 'stack', 0xf3ead0, 0xe0d2a8],
   // ── Gia vị

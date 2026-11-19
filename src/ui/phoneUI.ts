@@ -191,7 +191,10 @@ export function appScreen(g: Game, m: PhoneDef, app: PhoneApp): string {
     return `${dead}<p class="muted">Xem quầy chính và chi nhánh, bật/tắt bán ngay trên máy — không cần chạy ra quầy.</p>
       <div class="plist">${R.shopRows(g).map((r) => `<div class="row"><span class="g"><b>${esc(r.name)} <em class="${r.open ? 'ok' : 'bad'}">${r.open ? 'đang bán' : 'tạm đóng'}</em></b>
         <s>${r.stock} phần · ${r.kinds} món${r.low ? ` · ${r.low} món sắp hết` : ''} · thuê ${money(r.rent)}/ngày</s>
+        ${r.storeKinds ? `<s>Kho nguyên liệu: ${r.storeKinds} loại · ${String(r.storeKg).replace('.', ',')} kg</s>` : ''}
         <s>Hôm nay: ${money(r.revenue)} · ${r.sold} phần · ${r.customers} khách${r.lost ? ` · mất ${r.lost} khách` : ''}</s>
+        ${r.coldKinds ? `<s class="warnline">Đồ cần lạnh đang để ở quầy mà không có tủ đá: ${esc(r.coldNames.join(', '))} — hỏng trong ~${r.coldHours} giờ. Mua thùng đá hoặc tủ đông công nghiệp.</s>` : ''}
+        ${r.spoilKinds ? `<s class="warnline">Đồ trong kho sắp hỏng: ${esc(r.spoilNames.join(', '))}${r.spoilKinds > r.spoilNames.length ? ' …' : ''} — bán/nấu ngay, hoặc bỏ bớt cho đỡ tiếc.</s>` : ''}
         <s class="hint">${esc(r.hint)}</s></span>
         <button class="btn small${r.open ? '' : ' green'}" data-a="phshop" data-i="0" data-k="${r.id}"${r.canToggle ? '' : ' disabled'}>${r.open ? 'Đóng' : 'Mở'}</button></div>`).join('')}</div>
       ${R.shopStaffWarn(g) ? `<p class="muted warnline">⚠ ${R.shopStaffWarn(g)}</p>` : ''}

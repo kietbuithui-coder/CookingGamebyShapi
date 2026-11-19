@@ -798,3 +798,36 @@ Probe `tools/probe/steps/checkstaff.mjs` (390×844), kết quả `đạt: true`:
 `tools/probe/steps/checkdev35.mjs`: mở menu ẩn 8 lần bấm → bấm "Chạy" ở mục đầu → ra bảng Quầy có tab **Nhân sự** và nút
 **Giao đi chợ…** (`nútChợ: ["Giao đi chợ…"]`, `errors: none`).
 Ảnh: `anh_ket_qua/android/39_quan_thuong_co_nhan_su.png`, `40_nha_hang_nhan_su_dat_ban.png`.
+
+## Lượt 36 — Đồ bỏ vào quầy "biến mất": bánh mì lâu hỏng hơn + cảnh báo đồ cần lạnh ✅ đã xong
+
+Người chơi báo *"bánh mì và sữa tôi bỏ vào quầy lại biến mất"*, nghi lỗi khác nhau giữa điện thoại và PC.
+**Kiểm bằng probe thật trước khi sửa** (`tools/probe/steps/stallvanish.mjs`, 390×844): mua bánh mì + sữa bằng
+`acts.take`, bỏ vào quầy bằng nút "› Quầy", rồi cho trôi 1 ngày → **không có lỗi mất đồ**; đồ vẫn nằm trong kho
+(`banhmi×2 @41%`). Cái làm người chơi tưởng "biến mất" là ba thứ im lặng:
+
+1. **Đồ hỏng bị dọn mà không nói món gì.** `newDay()` purge cả túi/quầy/nhà rồi chỉ báo "mất bao nhiêu tiền".
+   Nay báo đích danh: *"Đồ hỏng phải bỏ: Tôm. Đồ nguội để vài hôm vẫn được, thịt cá chưa nấu thì không."*
+2. **Bánh mì hỏng sau ~22 giờ** — mua chiều hôm nay, sáng mai mở ra đã mất. Người chơi xin **tăng 100% thời gian
+   hỏng**: `banhmi.shelf` 22 → **44 giờ** (×1,2 hệ số chung của bảng = **52,8 giờ**, đúng gấp đôi mức cũ 26,4).
+3. **Đồ cần lạnh để ở quầy mà không có tủ đá** thì hỏng nhanh **2,6 lần** (sữa, thịt) — im lặng hoàn toàn.
+   Thêm `hoursLeft()` + `coldUnprotected()` trong `src/sim/rules.ts`, hiện ở **bảng Kho quầy (PC)** và **app Quản lý
+   cửa hàng (điện thoại)**: *"Sữa tươi, Thịt heo nạc cần lạnh mà quầy không có tủ đá — để đây khoảng 4 giờ nữa là hỏng."*
+
+**Cho PC và điện thoại thấy giống nhau** (người chơi dặn "kiểm các món khác với trên đt và pc"): app Quản lý cửa hàng
+nay có thêm dòng **"Kho nguyên liệu: N loại · X kg"** (trước chỉ có số phần đã nấu), dòng cảnh báo **sắp hỏng** kèm tên
+món, và cảnh báo **đồ cần lạnh**. Nút **"Bỏ"** trong bảng Túi đổi thành **"Vứt"** + toast *"Đã vứt 2 ổ bánh mì đi."*
+(trước đây vứt cả lô mà không nói gì — cũng là một kiểu "biến mất").
+
+**Sữa Tartieen**: kiểm hết `src/data/ingredients.ts` + `src/data/shops.ts` — game **không có** mục "sữa Tartieen";
+chỉ có **Sữa tươi** (`suatuoi`, hộp 1 kg, 32.000₫, bán ở MiniMart) và **Sữa đặc** (`suadac`, lon, bán ở MiniMart).
+Nên nếu bạn ấy "mua hộp sữa Tartieen rồi biến mất" thì đó là do **hỏng** (sữa là đồ cần lạnh). Chưa thêm món mới vì
+chưa rõ ý người chơi — sẽ hỏi.
+
+**Kiểm thử:** `tests/hong.test.ts` (8 bài: đồ bỏ quầy còn nguyên, bánh mì 52,8 giờ, báo tên món hỏng, app báo sắp hỏng,
+cảnh báo đồ lạnh có/không tủ đá, thịt ≤ 6 giờ, giá bánh mì khớp giữa các chỗ hiển thị, cuối buổi lò bánh mì xả hàng rẻ hơn)
++ `tests/data.test.ts` cập nhật → tổng **464 bài / 36 tệp**. `tsc` sạch, `build` + `build:pages` OK.
+Probe `stallvanish.mjs` (`errors: none`): `store` sau khi bỏ = `banhmi×2`, báo hỏng đúng tên **Tôm**, app có
+`Kho nguyên liệu: 2 loại · 0,6 kg` + `Đồ trong kho sắp hỏng: Bánh mì`. Probe `coldwarn.mjs`: bảng Kho quầy báo
+*"…để đây khoảng 40 giờ nữa là hỏng"* cho sữa; app báo cùng nội dung. Probe `dev36.mjs`: hai mục menu ẩn chạy đúng.
+Ảnh: `anh_ket_qua/android/41_banh_mi_trong_quay.png`, `42_canh_bao_do_lanh.png`, `43_app_bao_do_lanh.png`.
