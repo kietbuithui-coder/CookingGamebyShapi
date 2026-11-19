@@ -14,6 +14,16 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 44',
+    tag: 'Nhảy qua bồn hoa, hồ nước, xe máy',
+    items: [
+      'Nhảy qua được 8 bồn hoa công viên, thành hồ nước và cả 69 chiếc xe máy đỗ ven đường.',
+      'Hồ nước chỉ nhảy qua được thôi — đứng vào là chìm xuống đáy, không lơ lửng trên mặt nước.',
+      'Hàng rào chợ nâng lên cho chắc: chợ vẫn phải đi cổng, không nhảy rào được.',
+      'Sửa lỗi chữ dính nhau khi bới thùng rác: nay gộp thành một dòng, ví dụ “+1 Chai nhựa · +2 Lon nhôm”.',
+    ],
+  },
+  {
     v: 'Lượt 43',
     tag: 'Đứng được trên nóc vật thấp',
     items: [
@@ -83,18 +93,6 @@ export const CHANGELOG: LogEntry[] = [
       'Bảng Túi đồ có thêm tab “Kho quầy”: bấm “› Túi” là lấy được đồ trong kho quầy ra, không cần đặt quầy ở chỗ bán.',
       'Đang gánh quầy trên vai, quầy để ở nhà, hay đang đứng giữa chợ — vẫn lấy ra được.',
       'Chỉ chiều bỏ đồ VÀO kho mới cần đứng gần quầy (để kho không thành túi không đáy).',
-    ],
-  },
-  {
-    v: 'Lượt 36',
-    tag: 'Đồ bỏ vào quầy không còn “biến mất”',
-    items: [
-      'Bánh mì để được 2 ngày thay vì 1 ngày (52,8 giờ).',
-      'Sáng ra thấy mất đồ thì giờ có báo đích danh: “Đồ hỏng phải bỏ: Tôm…”.',
-      'Sữa, thịt để trong quầy mà không có tủ đá thì bảng Kho quầy cảnh báo còn mấy giờ là hỏng.',
-      'App Quản lý cửa hàng trên điện thoại hiện thêm “Kho nguyên liệu: N loại · X kg”, cảnh báo sắp hỏng và cảnh báo đồ cần lạnh — giống bảng trên máy tính.',
-      'Nút “Bỏ” trong Túi đổi thành “Vứt” và báo rõ đã vứt món gì, bao nhiêu.',
-      'Lò bánh mì Anh Bảo chiều muộn bán rẻ xả hàng như các sạp khác.',
     ],
   },
 ];

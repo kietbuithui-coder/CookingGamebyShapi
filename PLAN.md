@@ -1042,8 +1042,30 @@ Phía trên cửa sổ không có vật cản nào khác, nên nếu gắn `top`
 và **không lệch ngang** (0,00 m); đi hết mặt ghế → rơi về 0; đứng trên nóc nhảy tiếp → đỉnh 1,01 m rồi về đúng 0,6; thùng rác đứng giữa 0,93, ra ngoài → 0;
 vẫn qua được ghế khi bay 0,9 m và vẫn bị chặn khi chỉ bay 0,2 m. Ảnh: `anh_ket_qua/android/62_dung_tren_noc.png`.
 
+### 44 — nhảy qua bồn hoa / hồ nước / xe máy + sửa chữ dính khi bới thùng rác
+Người chơi gửi ảnh bồn hoa công viên: *"nhảy qua đc cái này 1 bồn nước cv và xe nx, sửa lỗi chữ bị dính khi lục đồ thùng rác"*.
+
+- `Builder.circle(lx, lz, r, top?, kind?)` — vật tròn nay cũng khai báo được chiều cao. Bồn hoa 0,42 m (8 cái quanh hồ),
+  xe máy 0,75 m (69 chiếc), thùng/sọt quanh chợ lấy đúng chiều cao vừa vẽ (0,3–0,7 + 0,12).
+- Hồ nước công viên: thành hồ 0,62 m **nhảy qua được**, nhưng thêm `kind: 'trough'` → `lowTopAt()` bỏ qua nó
+  (mặt nước không đỡ được ai), `jump()` từ trong nước trả `false`, và độ cao chân luôn về 0.
+  Nhờ vậy nhảy vào hồ là chìm xuống đáy, **không lơ lửng trên mặt nước**.
+- Hàng rào chợ nâng 1,25 → **1,45 m** để không lọt vào diện "vật thấp nhảy qua được" (wall() tự gắn top cho mọi thanh < 1,4 m):
+  chợ vẫn phải đi cổng.
+- Chữ dính: `rummage()` trước đây gọi `ui.float()` cho **từng món** ở cùng một toạ độ → "+2 Chai nhựa" đè lên "+1 Lon nhôm".
+  Nay gộp thành một dòng (`+1 Chai nhựa · +2 Lon nhôm`), và `ui.float()` tự xếp lớp: chữ nào nổi ở cùng chỗ (< 0,4 m)
+  thì nâng lên 0,34 m mỗi lớp, không bao giờ đè nhau.
+
+**Sửa luôn bài test chập chờn:** `tests/hong.test.ts` ("thịt qua được một ngày") thỉnh thoảng hỏng vì **thời tiết ngẫu nhiên**
+(nắng gắt ×1,7 làm hỏng sớm, se lạnh ×0,6 thì lâu). Nay ghim `g.weather` về "nắng đẹp" trong bài đó — chạy 10/10 lần pass.
+
+Đo trên 390×844 DPR 2 (`muc44.mjs`, `errors: none`): bồn hoa 8 cái, nóc 0,42; đi bộ lệch **1,55 m**, nhảy qua lệch **0,000**;
+thành hồ 0,62 đi bộ chặn / nhảy qua được / `lowTopAt` = 0 / `troughAt` = true; đứng giữa hồ: `jump()` = false, độ cao 0;
+69 xe máy yên 0,75 đi bộ chặn, nhảy qua được; bới 4 thùng rác: mỗi lần **đúng 1 dòng chữ**, **0 cặp chồng**.
+
 ### Kiểm chứng
+- `tests/muc44.test.ts` — **3 bài mới** (bồn hoa, xe máy, hồ nước).
 - `tests/nhay42.test.ts` — **7 bài mới** (lượt 42) + **3 bài mức 2** (lượt 43): nhảy qua ghế đá, vẫn chặn khi chưa đủ cao, tường cao chặn ở mọi độ cao, `lowTopAt` đúng.
-- Tổng **510 bài / 40 tệp** pass; `tsc` sạch; `npm run build` + `build:pages` OK.
-- Nhật ký trong game: bản **Lượt 43** ở đầu (bỏ bản 35 cho đúng trần 8 bản).
+- Tổng **514 bài / 41 tệp** pass; `tsc` sạch; `npm run build` + `build:pages` OK.
+- Nhật ký trong game: bản **Lượt 44** ở đầu (bỏ bản 36 cho đúng trần 8 bản).
 - Ảnh: `/tmp/probe/nhay42/66_nhay.png`.

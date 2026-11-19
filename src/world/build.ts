@@ -11,7 +11,7 @@ import { RNG } from '../core/util';
  * Vật thấp (ghế đá, bàn nhựa, thùng hàng…) ghi `top` thật để người chơi nhảy qua khi đang bay cao hơn nó.
  */
 export interface Box2 { x0: number; z0: number; x1: number; z1: number; on?: boolean; top?: number; }
-export interface Circ { x: number; z: number; r: number; on?: boolean; top?: number; }
+export interface Circ { x: number; z: number; r: number; on?: boolean; top?: number; /** Loại vật tròn — 'trough' = bồn nước (nhảy qua được nhưng KHÔNG đứng trên mặt nước). */ kind?: 'trough'; }
 export interface Anchor { x: number; y: number; z: number; yaw: number; }
 export interface DoorDef { name: string; x: number; z: number; yaw: number; w: number; h: number; col: number; box: Box2; lock?: string; }
 export interface ShutterDef { shop: string; x: number; z: number; yaw: number; w: number; h: number; box: Box2; }
@@ -75,8 +75,13 @@ export class World {
     let best = 0;
     for (const b of this.boxesNear(x, z, r)) if (b.on !== false && b.top !== undefined && b.top > best && insideBox(x, z, r, b)) best = b.top;
     // vật tròn (thùng rác…): phải đứng thật sự trên miệng thùng mới tính, không lơ lửng ngoài mép
-    for (const c of this.circsNear(x, z, r)) if (c.on !== false && c.top !== undefined && c.top > best && Math.hypot(x - c.x, z - c.z) < c.r * 0.8 + r * 0.2) best = c.top;
+    for (const c of this.circsNear(x, z, r)) if (c.on !== false && c.kind !== 'trough' && c.top !== undefined && c.top > best && Math.hypot(x - c.x, z - c.z) < c.r * 0.8 + r * 0.2) best = c.top;
     return best;
+  }
+  /** Có đang đứng trong bồn nước không (nước không phải nóc để đứng lên). */
+  troughAt(x: number, z: number): boolean {
+    for (const c of this.circsNear(x, z, 0.2)) if (c.on !== false && c.kind === 'trough' && Math.hypot(x - c.x, z - c.z) < c.r) return true;
+    return false;
   }
   /** Vật thấp ngay dưới chân ở độ cao `feet` — dùng để biết bước hụt hay còn đứng trên nóc. */
   supportAt(x: number, z: number, feet: number, r = 0.1): number {
@@ -158,7 +163,8 @@ export class Builder {
     if (top !== undefined) b.top = top;
     this.world.addBox(b); return b;
   }
-  circle(lx: number, lz: number, r: number) { const [x, z] = this.W(lx, lz); this.world.addCirc({ x, z, r }); }
+  /** Vật cản tròn. `top` = chiều cao nếu nhảy qua/đứng lên được; bỏ trống = cột/vật cao chặn tuyệt đối. */
+  circle(lx: number, lz: number, r: number, top?: number, kind?: Circ['kind']) { const [x, z] = this.W(lx, lz); const c: Circ = { x, z, r }; if (top !== undefined) c.top = top; if (kind) c.kind = kind; this.world.addCirc(c); }
   /** phi: hướng nhìn cục bộ (0 = +z vào trong lô, π = quay ra đường). */
   anchor(name: string, lx: number, y: number, lz: number, phi = Math.PI): Anchor {
     const [x, z] = this.W(lx, lz), a = { x, y, z, yaw: this.fr.yaw + phi };
@@ -315,7 +321,7 @@ export class Builder {
       d.sph(0.66, 0.9, 0, 0.09, 0.09, 0.09, 0xf7f3d0, 6);                             // đèn
       d.box(-0.72, 0.56, 0, 0.2, 0.06, 0.2, 0xb8221f, undefined, 0, true);            // đèn hậu
     });
-    this.circle(x, z, 0.42);
+    this.circle(x, z, 0.42, 0.75);   // yên xe máy ~0,75 m: nhảy qua được, đứng lên được
   }
   bin(x: number, z: number, name?: string) {
     this.lit.cyl(x, 0, z, 0.3, 0.86, 0x2f7d4f, 8, 0.36); this.lit.cyl(x, 0.86, z, 0.38, 0.07, 0x25633f, 8);

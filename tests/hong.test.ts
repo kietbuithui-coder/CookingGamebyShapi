@@ -150,6 +150,9 @@ describe('đồ nguội ăn liền để được 2 ngày trong quầy', () => {
   it('thịt tươi sống qua được một ngày, nhưng tới ngày thứ hai thì hỏng thật', () => {
     const g = withStall();
     g.min = 8 * 60;
+    // Thời tiết ngẫu nhiên làm kết quả nhảy lung tung (nắng gắt ×1,7 → hỏng sớm; se lạnh ×0,6 → lâu hơn),
+    // nên ghim thời tiết về "nắng đẹp" (hệ số 1) để bài này đo đúng tuổi thọ của thịt, không đo thời tiết.
+    g.weather.now = 'nang'; g.weather.next = 'nang'; g.weather.until = 1e9;
     give(g, 'heo', 2, 100);
     // Ngày thứ nhất + đêm: vẫn còn dùng được (trước đây 12 giờ là mất trắng, người chơi kêu).
     for (let i = 0; i < 24; i++) advance(g, 60, IDLE);

@@ -236,7 +236,9 @@ function market(b: Builder, R: RNG) {
   const L = b.lit, D = b.detail;
   // tường rào thấp quanh chợ, chừa cổng
   const fc = 0xe9d9a8, cap = 0xb5553a;
-  const fence = (ax: number, az: number, bx2: number, bz2: number) => { b.wall(ax, az, bx2, bz2, 1.25, fc, 0.22); const mx = (ax + bx2) / 2, mz = (az + bz2) / 2; L.box(mx, 1.25, mz, Math.max(0.3, Math.abs(bx2 - ax)), 0.08, Math.max(0.3, Math.abs(bz2 - az)), cap, cap, 0, true); };
+  // Hàng rào chợ: nâng lên 1,45 m để KHÔNG lọt vào diện "vật thấp nhảy qua được" — chợ phải có cổng đi vào,
+  // không phải nhảy rào. (wall() tự gắn chiều cao cho mọi thanh dưới 1,4 m.)
+  const fence = (ax: number, az: number, bx2: number, bz2: number) => { b.wall(ax, az, bx2, bz2, 1.45, fc, 0.22); const mx = (ax + bx2) / 2, mz = (az + bz2) / 2; L.box(mx, 1.45, mz, Math.max(0.3, Math.abs(bx2 - ax)), 0.08, Math.max(0.3, Math.abs(bz2 - az)), cap, cap, 0, true); };
   fence(x0 + 0.3, z0 + 0.3, -63, z0 + 0.3); fence(-57, z0 + 0.3, x1 - 0.3, z0 + 0.3);
   fence(x0 + 0.3, z1 - 0.3, -63, z1 - 0.3); fence(-57, z1 - 0.3, x1 - 0.3, z1 - 0.3);
   fence(x1 - 0.3, z0 + 0.3, x1 - 0.3, -4.6); fence(x1 - 0.3, 12.8, x1 - 0.3, z1 - 0.3);
@@ -279,7 +281,8 @@ function market(b: Builder, R: RNG) {
   b.collide(-1, -0.1, 1, 0.1); b.anchor('board', 0, 1.4, -0.3, 0);
   b.frame({ tx: 0, tz: 0, yaw: 0 });
   // thùng, sọt, xe máy lặt vặt
-  for (let i = 0; i < 16; i++) { const x = R.range(-80, -40), z = (R.chance(0.5) ? -1 : 1) * R.range(17.5, 21); D.box(x, 0.12, z, R.range(0.5, 0.9), R.range(0.3, 0.7), R.range(0.4, 0.7), R.pick([0xb99a6a, 0x8fbf6a, 0x6a8ab5, 0xd9a05a, 0xc9665a]), undefined, 0.15); b.circle(x, z, 0.45); }
+  // thùng/sọt quanh chợ cao 0,3–0,7 m → nhảy qua được (chiều cao lấy đúng số vừa vẽ)
+  for (let i = 0; i < 16; i++) { const x = R.range(-80, -40), z = (R.chance(0.5) ? -1 : 1) * R.range(17.5, 21), hh = R.range(0.3, 0.7); D.box(x, 0.12, z, R.range(0.5, 0.9), hh, R.range(0.4, 0.7), R.pick([0xb99a6a, 0x8fbf6a, 0x6a8ab5, 0xd9a05a, 0xc9665a]), undefined, 0.15); b.circle(x, z, 0.45, 0.12 + hh); }
   for (let i = 0; i < 7; i++) b.bike(-37.6, -21 + i * 1.3 + (i > 3 ? 29 : 0) * 0 - (i > 3 ? -30 : 0) * 0, R.range(-0.2, 0.2), R.pick(BIKE));
   for (let i = 0; i < 4; i++) b.bike(-37.6, 15 + i * 1.3, R.range(-0.2, 0.2), R.pick(BIKE));
   for (const [x, z] of [[-78, 10], [-78, 18], [-42, -19], [-50, 19]] as const) b.world.litter.push([x, z]);
@@ -330,7 +333,8 @@ function park(b: Builder, R: RNG) {
   L.cyl(cx, 0.12, cz, 4.6, 0.5, 0xd9d2c0, 20, 4.6, false); L.geo(new THREE.RingGeometry(4.1, 4.75, 20).rotateX(-Math.PI / 2), 1, 1, 1, cx, 0.625, cz, 0xe6e0d0);
   G.water.geo(new THREE.CircleGeometry(4.2, 20).rotateX(-Math.PI / 2), 1, 1, 1, cx, 0.5, cz, 0xffffff);
   L.cyl(cx, 0.12, cz, 0.5, 1.5, 0xc9c2b2, 10, 0.3); L.cyl(cx, 1.6, cz, 0.9, 0.14, 0xd9d2c0, 12, 1.1);
-  b.circle(cx, cz, 4.7);
+  // thành hồ cao 0,62 m — nhảy qua được, nhưng đây là NƯỚC: đứng vào là chìm xuống đáy, không đứng trên mặt nước.
+  b.circle(cx, cz, 4.7, 0.62, 'trough');
   // hàng rào cây thấp quanh công viên, chừa cổng
   const hedge = (ax: number, az: number, bx2: number, bz2: number) => { const sx = Math.max(0.7, Math.abs(bx2 - ax)), sz = Math.max(0.7, Math.abs(bz2 - az)); L.box((ax + bx2) / 2, 0.12, (az + bz2) / 2, sx, 0.85, sz, 0x3f8a40, 0x5fae4f, 0.2); b.collide((ax + bx2) / 2 - sx / 2, (az + bz2) / 2 - sz / 2, (ax + bx2) / 2 + sx / 2, (az + bz2) / 2 + sz / 2); };
   hedge(x0 + 0.4, z0 + 0.4, x1 - 0.4, z0 + 0.4); hedge(x1 - 0.4, z0 + 0.4, x1 - 0.4, z1 - 0.4);
@@ -344,7 +348,8 @@ function park(b: Builder, R: RNG) {
     if (Math.abs(x - cx) < 3 || Math.abs(z - cz) < 3 || Math.hypot(x - cx, z - cz) < 9 || (x < x0 + 10 && z > z1 - 8)) continue;
     b.tree(x, z, R, R.range(5.5, 7.5), R.chance(0.6), false);
   }
-  for (let i = 0; i < 8; i++) { const a = i * TAU / 8 + 0.4, x = cx + Math.cos(a) * 10.5, z = cz + Math.sin(a) * 10.5; if (Math.abs(x - cx) < 2.4 || Math.abs(z - cz) < 2.4) continue; L.cyl(x, 0.12, z, 1.2, 0.3, 0xd9d2c0, 10); for (let k = 0; k < 9; k++) D.sph(x + R.range(-0.8, 0.8), 0.5, z + R.range(-0.8, 0.8), 0.22, 0.16, 0.22, R.pick([0xe2402f, 0xf5c531, 0xe86f9a, 0xffffff, 0xf08a2f]), 5); b.circle(x, z, 1.25); }
+  // bồn hoa quanh hồ: vành bồn chỉ cao 0,42 m nên NHẢY QUA ĐƯỢC (người chơi xin), hoa vẫn mọc trong bồn.
+  for (let i = 0; i < 8; i++) { const a = i * TAU / 8 + 0.4, x = cx + Math.cos(a) * 10.5, z = cz + Math.sin(a) * 10.5; if (Math.abs(x - cx) < 2.4 || Math.abs(z - cz) < 2.4) continue; L.cyl(x, 0.12, z, 1.2, 0.3, 0xd9d2c0, 10); for (let k = 0; k < 9; k++) D.sph(x + R.range(-0.8, 0.8), 0.5, z + R.range(-0.8, 0.8), 0.22, 0.16, 0.22, R.pick([0xe2402f, 0xf5c531, 0xe86f9a, 0xffffff, 0xf08a2f]), 5); b.circle(x, z, 1.25, 0.42); }
   // ghế đá (ghế đầu tiên là chỗ ngủ được)
   b.bench(48, -52, Math.PI / 2); b.anchor('bed_ghe', 48, 0.56, -52, -Math.PI / 2);
   b.bench(48, -68, Math.PI / 2); b.bench(70, -68, -Math.PI / 2); b.bench(70, -50, -Math.PI / 2); b.bench(57, -72.5, 0); b.bench(61, -45.5, Math.PI);

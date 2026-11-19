@@ -9,6 +9,8 @@ function mk() {
   w.addBox({ x0: -1, z0: 4, x1: 1, z1: 6 });                 // tường cao (không có top)
   w.addBox({ x0: -1, z0: -6, x1: 1, z1: -4, top: 0.6 });     // ghế đá
   w.addCirc({ x: 5, z: 0, r: 0.36, top: 0.93 });             // thùng rác
+  w.addCirc({ x: 9, z: 0, r: 1.2, top: 0.42 });              // bồn hoa công viên (vành cao 0,42 m)
+  w.addCirc({ x: -9, z: 0, r: 2, top: 0.62, kind: 'trough' }); // thành hồ nước công viên
   return w;
 }
 const at = (w: World, x: number, z: number, feet: number) => { const o = { x, z }; w.resolve(x, z, 0.3, o, feet); return o; };
@@ -81,5 +83,22 @@ describe('nhảy qua vật thấp', () => {
     const w = mk();
     expect(w.supportAt(5, 0, 0.93)).toBeCloseTo(0.93, 5);
     expect(w.supportAt(5.45, 0, 0.93)).toBe(0);   // quá mép miệng thùng thì trượt
+  });
+
+  it('bồn hoa công viên (0,42 m) nhảy qua được', () => {
+    const w = mk();
+    expect(at(w, 9, 0, 0).x).not.toBe(9);      // đi bộ thì bị chặn
+    expect(at(w, 9, 0, 0.6).x).toBe(9);        // nhảy lên là qua
+    expect(w.lowTopAt(9, 0)).toBeCloseTo(0.42, 5);
+  });
+
+  it('thành hồ nước nhảy qua được nhưng KHÔNG đứng được trên mặt nước', () => {
+    const w = mk();
+    expect(at(w, -9, 0, 0).x).not.toBe(-9);    // đi bộ bị chặn ở thành hồ
+    expect(at(w, -9, 0, 0.9).x).toBe(-9);      // nhảy qua được
+    expect(w.lowTopAt(-9, 0)).toBe(0);         // mặt nước không phải nóc để đứng
+    expect(w.supportAt(-9, 0, 0.62)).toBe(0);
+    expect(w.troughAt(-9, 0)).toBe(true);      // biết mình đang ở trong bồn nước
+    expect(w.troughAt(9, 0)).toBe(false);      // bồn hoa thì không phải nước
   });
 });

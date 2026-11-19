@@ -54,6 +54,8 @@ export class Player {
    */
   jump(): boolean {
     if (!this.onGround || this.frozen || this.camTo) return false;
+    // đứng ngay trong bồn nước thì không nhảy được — nếu không sẽ "nhảy lên mặt nước" rồi lơ lửng
+    if (ctx.world.troughAt(this.x, this.z)) return false;
     const from = ctx.world.lowTopAt(this.x, this.z);
     // nhảy từ trên nóc: chỉ thêm 0,5 m, và không bao giờ vượt quá 0,99 m so với mặt đất
     this.vy = from > 0.05 ? Math.min(3.4, Math.sqrt(Math.max(0.25, 0.98 - from) * 25)) : 4.86;
@@ -149,7 +151,8 @@ export class Player {
     this.kbz = damp(this.kbz, 0, kbDrag, dt);
     // Nhảy / rơi / đứng trên nóc vật thấp. `floor` là nóc vật ngay dưới chân (0 nếu là đất).
     // Bước ra khỏi mép nóc thì rơi xuống; đứng yên trên nóc thì giữ nguyên độ cao.
-    const floor = ctx.world.lowTopAt(this.x, this.z);
+    // trong bồn nước thì coi như đứng ở đáy bồn, không đứng lơ lửng trên mặt nước
+    const floor = ctx.world.troughAt(this.x, this.z) ? 0 : ctx.world.lowTopAt(this.x, this.z);
     if (this.vy !== 0 || Math.abs(this.jumpY - floor) > 0.02) {
       const prevY = this.jumpY;
       this.jumpY += this.vy * dt; this.vy -= 12.5 * dt;

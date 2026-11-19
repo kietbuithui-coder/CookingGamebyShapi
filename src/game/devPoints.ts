@@ -13,7 +13,7 @@ import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Đứng và đi lại được trên nóc 80 vật thấp (ghế đá, bàn nhựa, thùng rác), bước ra mép thì rơi, tường nhà vẫn chặn';
+export const DEV_BUILD_TAG = 'Nhảy qua được bồn hoa 0,42 m, thành hồ nước, 69 xe máy; hồ nước không đứng trên mặt; chữ bới thùng rác gộp một dòng';
 
 export interface DevAction {
   id: string;
@@ -72,33 +72,30 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Đứng trên nóc vật thấp (lượt 43)',
+      title: 'Mới nhất — Nhảy qua bồn hoa, hồ nước, xe (lượt 44)',
       items: [
         {
-          id: 'len_noc',
-          label: 'Nhảy lên nóc ghế đá rồi đi lại trên đó',
-          sub: 'Bước ra mép là rơi xuống — không lơ lửng',
+          id: 'nhay_bon',
+          label: 'Đứng cạnh bồn hoa công viên rồi nhảy qua',
+          sub: 'Vành bồn 0,42 m — đi bộ bị chặn, nhảy là qua (8 bồn quanh hồ)',
           tone: 'green',
           closePanel: false,
           run: () => {
             ctx.ui.closePanel();
-            tpTo(48, -52, Math.PI / 2, 'Đứng trên ghế đá công viên — bấm nút nhảy để lên nóc, đi ngang trên mặt ghế, ra mép thì rơi.');
+            const c = ctx.world.circs.find((q) => q.top === 0.42);
+            if (c) tpTo(c.x - c.r - 0.8, c.z, Math.PI / 2, 'Đứng cạnh bồn hoa — bấm nhảy để vượt qua vành bồn (0,42 m).');
           },
         },
         {
-          id: 'noc_cao',
-          label: 'Đứng trên nóc mà nhảy thử',
-          sub: 'Chỉ lên thêm 0,5 m, không nhảy vọt lên nóc cao hơn',
+          id: 'nhay_ho',
+          label: 'Nhảy qua thành hồ nước',
+          sub: 'Thành hồ 0,62 m: qua được, nhưng đứng vào là chìm — không lơ lửng trên mặt nước',
           tone: 'yellow',
           closePanel: false,
           run: () => {
-            // đo thật bằng cách nhảy rồi lấy đỉnh — không đoán
-            const p = ctx.player;
-            p.place(48, -52, Math.PI / 2);
-            p.jumpY = 0.6; p['vy'] = 0;
-            if (!p.jump()) { toast('Chưa nhảy được — thử lại.', 'info', 'jump', true); return; }
-            let peak = 0; for (let i = 0; i < 90; i++) { p.update(1 / 60); peak = Math.max(peak, p.jumpY); }
-            toast(`Đứng trên nóc 0,6 m: nhảy lên tới ${peak.toFixed(2)} m (thêm ${(peak - 0.6).toFixed(2)} m), rơi lại ${p.jumpY.toFixed(2)} m.`, 'info', 'jump', true);
+            const c = ctx.world.circs.find((q) => q.kind === 'trough');
+            if (c) tpTo(c.x, c.z - c.r - 1.2, 0, 'Đứng trước thành hồ — nhảy qua được; đứng trong nước thì không nhảy tiếp được.');
+            else toast('Không tìm thấy hồ nước.', 'warn');
           },
         },
       ],

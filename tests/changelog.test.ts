@@ -12,11 +12,11 @@ describe('nhật ký phát triển trong Cài đặt', () => {
     expect(nums).toEqual(sorted);              // bản mới nhất ở trên cùng
     expect(new Set(nums).size).toBe(nums.length);
   });
-  it('bản mới nhất là bản vừa làm xong (lượt 43)', () => {
-    expect(CHANGELOG[0].v).toBe('Lượt 43');
-    // Lượt 43 = đứng/đi lại trên nóc vật thấp, bước ra mép thì rơi.
-    expect(CHANGELOG[0].items.some((t) => /nóc/i.test(t))).toBe(true);
-    expect(CHANGELOG[0].items.some((t) => /mép/i.test(t))).toBe(true);
+  it('bản mới nhất là bản vừa làm xong (lượt 44)', () => {
+    expect(CHANGELOG[0].v).toBe('Lượt 44');
+    // Lượt 44 = bồn hoa / hồ nước / xe máy nhảy qua được + sửa chữ dính khi bới thùng rác.
+    expect(CHANGELOG[0].items.some((t) => /bồn hoa/i.test(t))).toBe(true);
+    expect(CHANGELOG[0].items.some((t) => /thùng rác/i.test(t))).toBe(true);
     expect(CHANGELOG[0].tag.length).toBeGreaterThan(5);
   });
   it('mỗi bản có tóm tắt và ít nhất 2 việc đã làm, câu chữ đủ dài để đọc hiểu', () => {
