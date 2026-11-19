@@ -7,11 +7,11 @@
  * Chiến lược:
  *  · Tài nguyên có hàm băm trong tên (assets/index-abc123.js) → "tải trước, rơi về bộ nhớ đệm": mở
  *    mạng trước cho tươi, mất mạng thì trả bản đã lưu. Không bao giờ cũ vì tên đã đổi theo nội dung.
- *  · Trang (index.html, ./) → "bộ nhớ đệm trước, cập nhật sau": mở offline vẫn vào ngay, còn khi có
- *    mạng thì âm thầm lấy bản mới cho lần sau.
+ *  · Trang (index.html, ./) → "mạng trước, rơi về bộ nhớ đệm": luôn mở bản mới nhất khi có mạng, mất
+ *    mạng mới dùng bản đã lưu. (Bản v1 làm ngược lại: ưu tiên bản lưu nên điện thoại kẹt mãi ở bản cũ.)
  *  · Mọi thứ khác (icon, font, manifest) → bộ nhớ đệm trước, thiếu thì tải rồi lưu.
  */
-const VERSION = 'ganhhang-v1';
+const VERSION = 'ganhhang-v2';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon.svg'];
 
 self.addEventListener('install', (e) => {
@@ -43,27 +43,29 @@ self.addEventListener('fetch', (e) => {
   if (isPage(url)) {
     e.respondWith((async () => {
       const cache = await caches.open(VERSION);
-      const hit = (await cache.match(req)) || (await cache.match('./index.html'));
-      const net = fetch(req).then((res) => { if (res.ok) cache.put(req, res.clone()); return res; }).catch(() => null);
-      return hit || (await net) || new Response('Ngoại tuyến và chưa có bản lưu. Hãy mở game một lần khi có mạng.', { status: 503, headers: { 'content-type': 'text/plain; charset=utf-8' } });
+      // Có mạng thì LUÔN lấy trang mới: bản đóng gói mới trỏ sang tệp JS mới, đúng với HTML mới.
+      try {
+        const res = await fetch(req, { cache: 'no-store' });
+        if (res.ok) { cache.put(req, res.clone()); cache.put(new Request('./index.html'), res.clone()); }
+        return res;
+      } catch {
+        const hit = (await cache.match(req)) || (await cache.match('./index.html'));
+        return hit || new Response('Ngoại tuyến và chưa có bản lưu. Hãy mở game một lần khi có mạng.', { status: 503, headers: { 'content-type': 'text/plain; charset=utf-8' } });
+      }
     })());
     return;
   }
 
   e.respondWith((async () => {
     const cache = await caches.open(VERSION);
-    const hit = await cache.match(req);
-    if (hit) {
-      // Có bản lưu: trả ngay, đồng thời làm mới cho lần sau (stale-while-revalidate).
-      fetch(req).then((res) => { if (res.ok) cache.put(req, res.clone()); }).catch(() => {});
-      return hit;
-    }
+    // Tên tệp đã có hàm băm theo nội dung: cứ lấy bản trên mạng là bản đúng, chỉ khi mất mạng mới dùng bản lưu.
     try {
       const res = await fetch(req);
       if (res.ok) cache.put(req, res.clone());
       return res;
     } catch {
-      return new Response('', { status: 504 });
+      const hit = await cache.match(req);
+      return hit || new Response('', { status: 504 });
     }
   })());
 });

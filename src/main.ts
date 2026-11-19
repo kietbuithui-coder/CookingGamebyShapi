@@ -68,6 +68,9 @@ async function boot() {
     //  nếu không nắng xiên buổi sáng/chiều sẽ lọt xuyên qua tường vào trong nhà.)
   };
   ctx.applyQuality(); window.addEventListener('resize', resize); window.addEventListener('orientationchange', () => setTimeout(resize, 200));
+  // Màn hình chờ nằm trong index.html (không phụ thuộc tệp game) được ẩn đi khi đã dựng xong khung hình đầu tiên.
+  const boot = (window as any).__boot as { stage?: () => void; ok?: () => void; fail?: (m?: string) => void } | undefined;
+  boot?.stage?.();
 
   // ───────── lưu / tải ─────────
   let dirty = false, saveT = 0;
@@ -151,6 +154,7 @@ async function boot() {
   };
   try { renderer.compile(scene, camera); } catch { /* một số máy không hỗ trợ biên dịch trước */ }
   ui.loading(null); menu(); requestAnimationFrame(frame);
+  (window as any).__gameReady = true; boot?.ok?.();
   // Chơi offline: đăng ký sau khi game đã lên hình để không làm chậm lần mở đầu tiên.
   if (ctx.mode !== 'play') setTimeout(() => void initOffline(), 1200);
   // Cửa hậu gỡ lỗi: thêm ?debug vào địa chỉ để mở (dùng cho kiểm thử tự động).
@@ -177,4 +181,9 @@ async function boot() {
     w.__give = (id: string, n: number, where: 'bag' | 'store' | 'home' = 'store') => State.addStack(where === 'bag' ? ctx.g.bag : where === 'home' ? ctx.g.home : ctx.g.stall.store, { id, n, fresh: 100, q: 1, cost: Rules.unitCost(ctx.g, id) });
   }
 }
-boot().catch((e) => { console.error(e); const l = document.getElementById('load'); if (l) l.textContent = 'Lỗi khởi động: ' + (e?.message ?? e); });
+boot().catch((e) => {
+  console.error(e);
+  const l = document.getElementById('load'); if (l) l.textContent = 'Lỗi khởi động: ' + (e?.message ?? e);
+  // Không để người chơi nhìn màn hình đen: hiện bảng báo lỗi có nút thử lại / sửa bộ nhớ đệm.
+  (window as any).__boot?.fail?.('Game gặp lỗi khi khởi động: ' + (e?.message ?? e));
+});
