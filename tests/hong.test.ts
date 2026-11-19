@@ -33,10 +33,11 @@ describe('đồ bỏ vào quầy không biến mất oan', () => {
     const g = withStall();
     g.min = 8 * 60;
     give(g, 'banhmi', 2, 100);
-    // món rất mau hỏng: tôm để ngoài 7 giờ là ôi
+    // món rất mau hỏng: tôm để ngoài quầy không tủ nay được ~40 giờ (lượt 41b), nên chờ tới lúc đó
     give(g, 'tom', 1, 100);
     const t = toasts();
-    for (let i = 0; i < 17; i++) advance(g, 60, IDLE); // 8h sáng + 17 tiếng = 1h sáng hôm sau, lúc khoá sổ ngày
+    // Đồ chỉ bị dọn lúc sang ngày mới, nên chạy tới khi có lời báo (tôm hỏng ở giờ thứ ~40, dọn ở lần sang ngày kế).
+    for (let i = 0; i < 120 && !t.out.some((x) => /Đồ hỏng phải bỏ/.test(x)); i++) advance(g, 60, IDLE);
     t.off();
     const line = t.out.find((x) => /Đồ hỏng phải bỏ/.test(x));
     expect(line, `không thấy lời báo hỏng, chỉ có: ${t.out.join(' | ')}`).toBeTruthy();
@@ -100,13 +101,14 @@ describe('cảnh báo đồ cần lạnh để ở quầy', () => {
     delete g.gear.tu_dong; g.gear.thungda = 100; give(g, 'da', 2);
     expect(shopRows(g)[0].coldKinds).toBe(0);  // thùng đá + đá viên cũng giữ được
   });
-  it('thịt để trong quầy không tủ chỉ vài giờ là hỏng — cảnh báo nói đúng con số thật', () => {
+  it('thịt để trong quầy không tủ thì hỏng trong khoảng một ngày rưỡi — cảnh báo nói đúng con số thật', () => {
     const g = withStall();
     g.min = 10 * 60;
     give(g, 'heo', 3, 100);
     const row = shopRows(g)[0];
     expect(row.coldNames).toContain('Thịt heo nạc');
-    expect(row.coldHours).toBeLessThanOrEqual(6);
+    expect(row.coldHours).toBeLessThanOrEqual(60);   // thịt heo nay ~2 ngày trong quầy không tủ
+    expect(row.coldHours).toBeGreaterThan(30);
   });
 });
 
@@ -145,11 +147,17 @@ describe('đồ nguội ăn liền để được 2 ngày trong quầy', () => {
       expect(countOf([g.stall.store], id), id).toBe(1);
     }
   });
-  it('thịt tươi thì vẫn hỏng trong ngày — không nới luật cho đồ sống', () => {
+  it('thịt tươi sống qua được một ngày, nhưng tới ngày thứ hai thì hỏng thật', () => {
     const g = withStall();
     g.min = 8 * 60;
     give(g, 'heo', 2, 100);
-    for (let i = 0; i < 20; i++) advance(g, 60, IDLE);
-    expect(countOf([g.stall.store], 'heo')).toBe(0);
+    // Ngày thứ nhất + đêm: vẫn còn dùng được (trước đây 12 giờ là mất trắng, người chơi kêu).
+    for (let i = 0; i < 24; i++) advance(g, 60, IDLE);
+    expect(countOf([g.stall.store], 'heo')).toBe(2);
+    // Tới khoảng 58 giờ (giữa ngày thứ ba) thì phải hỏng hẳn.
+    let gone = 0;
+    for (let i = 0; i < 60 && !gone; i++) { advance(g, 60, IDLE); if (countOf([g.stall.store], 'heo') === 0) gone = i + 25; }
+    expect(gone).toBeGreaterThan(50);   // không hỏng sớm trước 2 ngày
+    expect(gone).toBeLessThan(70);      // nhưng phải hỏng trước 3 ngày (trước đây 12 giờ)
   });
 });

@@ -375,6 +375,9 @@ export function decideGroup(g: Game, p: Persona, size: number, fem: boolean, R: 
   const line = say(R.pick(LINES.order_group), p.arch, fem, g, { dish: r.name.toLowerCase(), n, price: money(price) });
   return { order: { rid: r.id, n, price, ratio: br, line, mood, group: size } };
 }
+/** Số sao của một phần đã nấu sẵn (dùng cho chất lượng ăn lại, và cho tỉ lệ đau bụng). 0–1 → 1–5 sao. */
+export const dishStars = (rd: { q: number }) => clamp(1 + clamp(rd.q, 0, 1) * 4, 1, 5);
+
 export interface Review { stars: number; rep: number; tip: number; line: string; face: number; back: boolean; }
 /** Khách đánh giá sau khi nhận món. quality 0–1, wait: tỉ lệ thời gian đã chờ so với sự kiên nhẫn. */
 /** Khách ngồi ăn xong có thể gọi thêm một món tráng miệng / đồ uống (chỉ quán có chỗ ngồi, bậc 5). */
@@ -472,10 +475,17 @@ export function tickStats(g: Game, dm: number, a: Activity) {
   g.weather.wet = clamp(g.weather.wet + (exposed ? w.wet : -25) * dm / 60, 0, 100);
   if (g.weather.wet > 55) { s.health -= dm * 0.04; s.mood -= dm * 0.05; if (!g.flags.sick && rnd.chance(dm * 0.004)) { g.flags.sick = 1; toast('Bạn bị cảm lạnh vì dầm mưa. Mua thuốc ở nhà thuốc An Tâm.', 'bad', 'heart', true); } }
   if (g.flags.sick) { s.health -= dm * 0.035; s.energy -= dm * 0.03; }
+  // đau bụng: máu tụt dần, sức cũng tụt; hết vài giờ thì tự dịu, nhưng uống thuốc thì khỏi ngay
+  const stom = stomachLeft(g);
+  if (stom > 0) {
+    s.health -= dm * 0.05; s.energy -= dm * 0.04; s.mood -= dm * 0.02;
+    (g.flags as any).dauBung = Math.max(0, stom - dm);
+    if (stom - dm <= 0) toast('Cơn đau bụng đã dịu xuống, người nhẹ hẳn.', 'good', 'heart');
+  }
   if (s.hunger <= 0) s.health -= dm * 0.09;
   if (s.thirst <= 0) s.health -= dm * 0.13;
   if (s.energy <= 0) s.health -= dm * 0.05;
-  if (s.hunger > 40 && s.thirst > 40 && s.energy > 30 && !g.flags.sick) s.health += dm * 0.012;
+  if (s.hunger > 40 && s.thirst > 40 && s.energy > 30 && !g.flags.sick && stom <= 0) s.health += dm * 0.012;
   // tinh thần trôi dần về mức nền
   const base = clamp(42 + HOUSING[g.housing].mood + (s.hunger < 25 ? -14 : 0) + (s.hygiene < 25 ? -10 : 0) + (g.debts.some((d) => g.day > d.due) ? -15 : 0) + (g.rep > 40 ? 8 : 0), 5, 90);
   s.mood += (base - s.mood) * clamp(dm * 0.0025);
@@ -487,7 +497,42 @@ export function consume(g: Game, eff: { h?: number; t?: number; m?: number; hp?:
   s.hunger = clamp(s.hunger + (eff.h ?? 0), 0, STAT_MAX); s.thirst = clamp(s.thirst + (eff.t ?? 0), 0, STAT_MAX); s.mood = clamp(s.mood + (eff.m ?? 0), 0, STAT_MAX);
   s.health = clamp(s.health + (eff.hp ?? 0), 0, STAT_MAX); s.energy = clamp(s.energy + (eff.e ?? 0), 0, STAT_MAX); s.hygiene = clamp(s.hygiene + (eff.hy ?? 0), 0, STAT_MAX);
   if ((eff.hp ?? 0) >= 20 && g.flags.sick) { delete g.flags.sick; toast('Hết cảm rồi, khoẻ lại rồi!', 'good', 'heart'); }
-  if (risky > 0 && rnd.chance(risky)) { s.health = clamp(s.health - 18, 0, STAT_MAX); s.mood = clamp(s.mood - 8, 0, STAT_MAX); toast('Ăn đồ ôi thiu — đau bụng quá!', 'bad', 'heart'); }
+  if (risky > 0 && rnd.chance(risky)) sickStomach(g, 'Ăn đồ ôi thiu');
+}
+
+// ───────────────────────── Đau bụng (lượt 41) ─────────────────────────
+/**
+ * Đau bụng: ăn/uống đồ không đảm bảo thì có thể bị. Không trừ máu ngay như trước —
+ * máu tụt dần theo thời gian cho tới khi mua thuốc đau bụng (hoặc uống thuốc bổ) ở nhà thuốc.
+ * Lý do đổi: bản cũ trừ thẳng 18 máu rồi thôi, người chơi mất máu mà không có cách chữa rõ ràng.
+ */
+export const STOMACH_FEE = 12000;
+export function sickStomach(g: Game, why: string, mins = 90) {
+  const f = g.flags as any;
+  if (typeof f.dauBung === 'number' && f.dauBung > 0) return false; // đang đau sẵn thì không chồng thêm
+  f.dauBung = mins;
+  g.st.mood = clamp(g.st.mood - 8, 0, STAT_MAX);
+  toast(`${why} — đau bụng quá! Ghé nhà thuốc An Tâm mua thuốc đau bụng, hoặc vào bệnh viện khám.`, 'bad', 'heart', true);
+  return true;
+}
+/** Còn đau bụng không, và còn bao nhiêu phút. */
+export const stomachLeft = (g: Game) => Math.max(0, Number((g.flags as any).dauBung ?? 0));
+export const isStomach = (g: Game) => stomachLeft(g) > 0;
+/**
+ * Tỉ lệ đau bụng khi ăn/uống thứ gì đó.
+ * Đồ mình tự nấu: từ 2 sao trở lên thì gần như không sao, dưới 2 sao thì vẫn có rủi ro.
+ * Đồ mua sẵn / nước ở chỗ công cộng: rủi ro cao hơn hẳn.
+ */
+export function stomachChance(g: Game, src: { selfMade?: boolean; stars?: number; bought?: boolean; rank?: number; risky?: number }): number {
+  let p = src.risky ?? 0;
+  if (src.bought) p += 0.06;
+  if (src.selfMade) {
+    const st = src.stars ?? 3;
+    p += st >= 3 ? 0 : st >= 2 ? 0.02 : 0.08;   // đồ mình nấu: 3 sao = 0 %, 2 sao = 2 %, dưới 2 sao = 8 %
+  }
+  if (typeof src.rank === 'number') p += src.rank;  // nước ở chỗ công cộng (vòi nước, công viên)
+  if (isStomach(g)) p *= 0.5;                        // đang đau bụng thì bớt chồng thêm
+  return clamp(p, 0, 0.9);
 }
 
 // ───────────────────────── Sức khoẻ: xỉu & bệnh viện ─────────────────────────
@@ -498,12 +543,13 @@ export const RECOVER_FEE = 5000;
 /** Tiền xe cấp cứu cộng viện phí khi ngất — luôn có mức trần để người mới chơi không sạt nghiệp. */
 export const FAINT_FEE = 30000;
 
-export interface MedDef { id: string; name: string; price: number; desc: string; hp: number; e: number; cures?: 'sick'; }
+export interface MedDef { id: string; name: string; price: number; desc: string; hp: number; e: number; cures?: 'sick' | 'stomach'; }
 /** Quầy thuốc trong bệnh viện: bán đúng thứ người bệnh cần, dùng ngay tại chỗ. */
 export const MEDS: Record<string, MedDef> = {
   cam: { id: 'cam', name: 'Thuốc cảm', price: 15000, desc: 'Một liều là hết sợi cảm, người nhẹ hẳn.', hp: 8, e: 4, cures: 'sick' },
   bang: { id: 'bang', name: 'Bông băng', price: 8000, desc: 'Băng vết trầy, cầm máu, đỡ rát.', hp: 14, e: 0 },
   bo: { id: 'bo', name: 'Thuốc bổ', price: 25000, desc: 'Uống cho lại sức, bớt chóng mặt.', hp: 22, e: 14 },
+  daubung: { id: 'daubung', name: 'Thuốc đau bụng', price: STOMACH_FEE, desc: 'Uống một liều là cơn đau bụng dịu ngay, khỏi phải nằm.', hp: 6, e: 2, cures: 'stomach' },
 };
 export const MED_LIST = Object.values(MEDS);
 
@@ -513,6 +559,7 @@ export function buyMed(g: Game, id: string): boolean {
   if (!m || !spend(g, m.price, 'other')) return false;
   consume(g, { hp: m.hp, e: m.e });
   if (m.cures === 'sick' && g.flags.sick) { delete g.flags.sick; toast('Uống thuốc cảm, trong người nhẹ hẳn ra.', 'good', 'heart'); }
+  if (m.cures === 'stomach' && isStomach(g)) { (g.flags as any).dauBung = 0; toast('Uống thuốc đau bụng, cơn đau dịu hẳn. Đỡ hơn nhiều rồi.', 'good', 'heart'); }
   return true;
 }
 
@@ -522,6 +569,7 @@ export function exam(g: Game): string | null {
   g.flags.exam = g.day;
   const s = g.st;
   if (g.flags.sick) return 'Bác sĩ nói bạn bị cảm nặng, ho cả tuần rồi. Ra quầy thuốc mua thuốc cảm uống liền đi.';
+  if (isStomach(g)) return 'Bác sĩ nghe bụng rồi gật gù: rối loạn tiêu hoá, ăn uống bậy bạ phải không? Ra quầy thuốc mua liều thuốc đau bụng, uống là dịu ngay.';
   if (s.health < 35) return 'Bác sĩ lắc đầu: suy nhược, thiếu ăn thiếu ngủ. Nằm phòng hồi sức vài giờ rồi hẵng đi làm.';
   if (s.hunger < 25) return 'Không bệnh gì, chỉ là đói quá thôi. Kiếm gì bỏ bụng rồi tính tiếp.';
   if (s.hygiene < 30) return 'Bác sĩ nhíu mày: người lem luốc quá, dễ nhiễm trùng. Tắm rửa sạch sẽ rồi quay lại.';

@@ -933,3 +933,70 @@ Sáu thay đổi, xếp theo mức lợi:
 - Probe `fps40.mjs` (đt 390×844, DPR 3, `errors: none`): mức mặc định = "Vừa", `pr 1`, `shadows false`; FPS 4 mức `25,9 / 19,6 / 13,7 / 5,9`; **SW `activated`, kho `ganhhang-v1`, 16 tệp sau khi bấm nút**; **cắt mạng + tải lại trang → game vẫn chạy (chế độ menu), FPS 14,7**.
 - Probe `fps40c.mjs` (máy tính 1366×768): mặc định "Cao", `shadows true`; mức "Vừa" tắt bóng hẳn (`shadowMap false`, `sun.castShadow false`); mức "Rất thấp" `detailOn false`.
 - Ảnh: `anh_ket_qua/android/48_fps_toi_uu.png`, `49_cai_dat_offline.png`, `50_offline_that.png`, `anh_ket_qua/51_pc_cai_dat_offline.png`.
+
+## Lượt 41 — Rau củ lâu hỏng, ăn quán no lâu, bệnh đau bụng ✅ đã xong
+
+Người chơi: *"buff rau/củ bán chợ +200–300 % độ lâu hỏng, sản phẩm nước trong quán cà phê/cơm tăng hiệu quả 200–300 %,
+tăng nhẹ tỉ lệ đau bụng khi uống nước ở công viên, cần mua thuốc uống để hết, ăn sản phẩm mình nấu từ 2 sao trở lên
+thì tỉ lệ thấp"*; chốt thêm: **giữ nguyên khoai tây/khoai lang/hành**, mục 2 chọn **(a) no lâu hơn**.
+
+### Rau củ ở chợ (giờ thực tế = bảng × 1,2)
+| Món | Trước | Sau | Ghi chú |
+|---|---|---|---|
+| Rau muống | 30 | **105** | 126 giờ |
+| Rau thơm | 24 | **84** | 100,8 giờ |
+| Hành lá | 36 | **126** | 151 giờ |
+| Giá đỗ | 24 | **84** | 100,8 giờ |
+| Xà lách | 30 | **105** | 126 giờ |
+| Cà rốt / bắp cải | 120 | **360** | 432 giờ |
+| Cà chua / dưa leo / bắp | 72 | **216** | 259 giờ |
+| Ớt | 120 | **360** | 432 giờ |
+| Chanh | 150 | **450** | 540 giờ |
+| Xoài xanh | 40 | **140** | 168 giờ |
+| Chuối | 60 | **210** | 252 giờ |
+| **Khoai tây, khoai lang, hành tây** | 300 | **300 (không đổi)** | người chơi chốt giữ |
+| Tỏi, gừng, sả | 600/600/200 | không đổi | vốn đã bền |
+| Thịt heo / tôm / cá | 12 / 8,4 / 8,4 | không đổi | vẫn hỏng trong ngày |
+
+### No lâu hơn 2,5 lần (mục 2 = (a))
+`acts.playFun` nhân `hunger` × 2,5; quán cơm Bà Tư `h 60→150`, bữa cơm rửa chén `45→112,5`, cơm chay chùa `48→120`.
+Đồ uống (cà phê sữa) **không** nhân độ no vì vốn không có `hunger`. Giá bán không đổi.
+
+### Bệnh đau bụng (mới)
+- `rules.sickStomach(g, why, mins=90)` — đặt `flags.dauBung` (số phút). Giờ đau trừ máu **dần** (−0,05/phút), sức −0,04, tinh thần −0,02; hết giờ thì tự dịu. Bản cũ trừ thẳng 18 máu rồi thôi.
+- `stomachChance(g, {selfMade, stars, bought, rank, risky})`: đồ mua sẵn **6 %**, nước vòi/quán cà phê **+12 %/+8 %**, đồ tự nấu **3 sao = 0 %, 2 sao = 2 %, dưới 2 sao = 8 %**; đang đau thì giảm nửa.
+- `MEDS.daubung` — **Thuốc đau bụng 12.000₫** ở quầy thuốc bệnh viện **và** mua trực tiếp ở Nhà thuốc An Tâm (menu Cô Hiền). Uống là `flags.dauBung = 0`.
+- Bác sĩ khám ra đau bụng và chỉ ra quầy thuốc. HUD có chip **“Đau bụng 3h”**.
+- `risky` cũ (ăn đồ ôi, thùng rác, đồ hỏng) giờ đi qua `sickStomach` thay vì trừ 18 máu.
+
+### 41b — thịt/cá/hải sản tươi để được 2 ngày (người chơi: *"tăng thời gian thịt hỏng, ít nhất 1–2 ngày"*)
+Thịt phải giữ lạnh nên hỏng nhanh gấp **2,6 lần** rau củ; vì vậy con số trong bảng phải lớn hơn mới ra 2 ngày thật:
+
+| Nhóm | Bảng trước | Bảng sau | **Thời gian thật trong quầy không tủ** (đo bằng probe) |
+|---|---|---|---|
+| Thịt heo / ba chỉ / sườn / bò | 10 | **140** | 3,5–5 giờ → **58 giờ (2,4 ngày)** |
+| Thịt gà / vịt | 9 | **128** | → **53 giờ (2,2 ngày)** |
+| Tôm / cá / mực / cua / nghêu / sò | 7–8 | **116** | → **48 giờ (2 ngày)** |
+
+Đo thật: sau 14 giờ thịt heo còn **78 %**, tôm còn **74 %**; sau 48 giờ heo còn 18 %, tôm/cá 1 % (sắp hỏng).
+Có tủ đá/tủ đông thì lâu hơn nhiều; nắng gắt vẫn hao nhanh hơn. Bảng Kho quầy nay ghi *"thịt cá chưa nấu được 2 ngày"*.
+Test cũ canh "thịt hỏng trong ngày" đã đổi thành "qua được ngày thứ nhất, tới ngày thứ hai mới hỏng".
+
+### 41c — trả lại mức "Cao" như cũ trên điện thoại (người chơi: *"đồ hoạ cao của đt khôi phục mức cũ đi, thấy không đẹp lắm"*)
+Lượt 40 chặn pixel ratio điện thoại ở 1,25 cho **mọi** mức — kể cả "Cao", nên ai chọn Cao vẫn bị mờ. Nay:
+```ts
+const prMax = ctx.mobile && q.pr < 1.5 ? Math.min(q.pr, 1.25) : q.pr;
+```
+Chỉ các mức dưới 1,5 điểm ảnh mới bị hạ trần; **"Cao" giữ nguyên 2 điểm ảnh + bóng đổ 2048 + 4 đèn + 32 NPC**.
+Mức "Vừa" (mặc định điện thoại) vẫn nhẹ như lượt 40 — đó mới là mức chống giật.
+
+Đo trên trình duyệt điện thoại 390×844 DPR 3 (`cao41c.mjs`, `errors: none`): mức Cao → `pixelRatio 2`, `shadowMap true`, `mapSize 2048`, `viewDist 210`, `lights 4`; mức Vừa → `pr 1`, `shadowMap false`, `lights 1`.
+Cài đặt hiện đúng nút "Cao ← đang chọn". Ảnh: `anh_ket_qua/android/59_dt_muc_cao.png`, `60_cai_dat_muc_cao.png`.
+
+### Kiểm chứng
+- `tests/rau41.test.ts` — **18 bài mới**; `tests/health.test.ts` cập nhật 3 → 4 món thuốc + chỉ `daubung` chữa đau bụng.
+- Tổng **497 bài / 39 tệp** pass; `tsc` sạch; `npm run build` OK.
+- Probe `thit41b.mjs` (`errors: none`): thịt heo còn 58 giờ, gà 53 giờ, tôm/cá/mực/cua 48 giờ; để 14 giờ còn 74–78 % tươi.
+- Probe `rau41.mjs` (`errors: none`): sau 12 giờ trong kho quầy còn `raumuong 113 · rauthom 91 · xalach 113 · carot 389 · cachua 233 · bapcai 389`, khoai tây/hành tây 324, **thịt heo 4 giờ**; một dĩa cơm 20 → 125 độ no; uống nước vòi 12 % (26/200 lần); đau bụng 90 → 87 máu sau 1 giờ, chip “Đau bụng 3h”, mua thuốc 12.000₫ là `còn đau = false`.
+- Nhật ký trong game: bản **Lượt 41** ở đầu (bỏ bản 31 cho đúng trần 8 bản).
+- Ảnh: `anh_ket_qua/android/56_nhat_ky_41.png`, `57_dau_bung.png`.

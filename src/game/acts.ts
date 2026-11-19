@@ -209,7 +209,7 @@ export class Acts {
       }
       case 'eatery': {
         const h = hourOf(g), wash = (h >= 10 && h < 14.5) || (h >= 17.5 && h < 21), opts: Opt[] = [
-          { t: 'Ăn dĩa cơm bình dân — 25.000₫', off: g.cash < 25000, fn: () => { R.spend(g, 25000, 'food'); R.consume(g, { h: 60, t: 12, m: 6 }); sfx('eat'); R.advance(g, 15, this.act()); toast('Một dĩa cơm thịt kho nóng hổi. No căng bụng!', 'good', 'dish'); } },
+          { t: 'Ăn dĩa cơm bình dân — 25.000₫', off: g.cash < 25000, fn: () => { R.spend(g, 25000, 'food'); R.consume(g, { h: 60 * 2.5, t: 12 * 2.5, m: 6 }); sfx('eat'); R.advance(g, 15, this.act()); toast('Một dĩa cơm thịt kho nóng hổi. No căng bụng, no tới chiều!', 'good', 'dish'); } },
           { t: 'Xin rửa chén thuê', sub: wash ? (g.wd.plates >= 2 ? 'Hôm nay rửa đủ rồi' : 'Được 4.000₫ mỗi cái đĩa + một bữa cơm') : 'Chỉ cần người lúc 10–14h30 và 17h30–21h', off: !wash || g.wd.plates >= 2, fn: () => { this.job = { kind: 'dishes' }; this.setWay('sink', 'Bồn rửa chén'); this.D(who(n), n, 'Ừ, vô bếp phía sau đi con. Chồng đĩa dơ ở cạnh bồn rửa đó. Rửa cho sạch nghen!', [{ t: 'Dạ, con làm liền.' }]); } },
           ...this.learnOpts('eatery', n)];
         this.D(who(n), n, 'Quán cơm Bà Tư đây. Ăn gì con? Hay kiếm việc?', [...opts, bye]); break;
@@ -280,7 +280,13 @@ export class Acts {
     if (shop.id === 'kiosk') { const d = g.debts.find((x) => x.lender === 'tab'); if (d) opts.push({ t: `Trả sổ nợ — ${money(d.owed)}`, off: g.cash < d.owed, fn: () => { R.repay(g, d.id, d.owed); sfx('coin'); ctx.npcs.say(n, 'Sòng phẳng vậy cô quý!', 2.5, 1); } }); }
     if (PH.canChargeAt(shop.id) && PH.hasPhone(g) && PH.battery(g) < 99) opts.push({ t: `Sạc nhờ điện thoại — ${money(PH.CHARGE_FEE)}`, sub: `Pin đang ${Math.round(PH.battery(g))}% · ngồi chờ 20 phút`, off: g.cash < PH.CHARGE_FEE, fn: () => this.phoneCharge(shop.id) });
     opts.push(...this.learnOpts(shop.id, n));
-    if (shop.id === 'pharmacy') opts.push({ t: 'Cho em hỏi về sức khoẻ', fn: () => this.D(who(n), n, g.flags.sick ? 'Em bị cảm rồi đó. Lấy vỉ thuốc cảm trên quầy, uống xong nghỉ ngơi, đừng dầm mưa nữa.' : g.st.health < 50 ? 'Trông em xanh xao lắm. Ăn uống đủ bữa, ngủ đủ giấc là khoẻ lại thôi.' : 'Em khoẻ mạnh bình thường. Nhớ uống đủ nước nha.', [bye]) });
+    // Thuốc đau bụng: mua ngay tại quầy nhà thuốc, uống là khỏi (lượt 41).
+    if (shop.id === 'pharmacy') {
+      const stom = R.stomachLeft(g), med = R.MEDS.daubung;
+      opts.push({ t: `Mua ${med.name.toLowerCase()} — ${money(med.price)}`, sub: stom > 0 ? `Đang đau bụng (còn ~${Math.ceil(stom)} phút) — uống là dịu ngay` : 'Mua sẵn để dành, lỡ ăn uống bậy còn có thuốc', off: g.cash < med.price,
+        fn: () => { if (!R.buyMed(g, 'daubung')) { toast('Không đủ tiền mua thuốc.', 'bad', 'cash'); return; } sfx('coin'); toast(`Mua ${med.name.toLowerCase()}, uống liền tại chỗ.`, 'good', 'heart'); this.shopTalk(n, shop); } });
+    }
+    if (shop.id === 'pharmacy') opts.push({ t: 'Cho em hỏi về sức khoẻ', fn: () => this.D(who(n), n, R.isStomach(g) ? 'Bụng em sôi ục ục hả? Ăn uống bậy bạ rồi. Lấy liều thuốc đau bụng trên quầy, uống là dịu liền.' : g.flags.sick ? 'Em bị cảm rồi đó. Lấy vỉ thuốc cảm trên quầy, uống xong nghỉ ngơi, đừng dầm mưa nữa.' : g.st.health < 50 ? 'Trông em xanh xao lắm. Ăn uống đủ bữa, ngủ đủ giấc là khoẻ lại thôi.' : 'Em khoẻ mạnh bình thường. Nhớ uống đủ nước nha.', [bye]) });
     opts.push({ t: 'Dạo này buôn bán sao?', fn: () => {
       const ev = R.activeEvents(g).filter((e) => e.price || e.outOf || e.shop);
       this.D(who(n), n, ev.length ? ev[0].text : shop.lateSale && hourOf(g) >= shop.open[1] - 2 ? 'Cuối buổi rồi, đồ tươi cô bán rẻ cho hết hàng. Lựa lẹ đi con!' : rnd.pick(['Sáng sớm hàng mới về là tươi nhất đó. Chiều thì rẻ mà hết ngon.', 'Mua quen cô bớt cho. Cứ ghé hoài là thành mối.', 'Ra đường thấy trời chuyển mưa thì bán đồ nóng, đắt như tôm tươi.', 'Vựa đầu mối Tám Lúa bên Khu Kho Bãi bán sỉ rẻ lắm, mà phải đi từ 3 giờ sáng.']), [bye]);
@@ -700,7 +706,7 @@ export class Acts {
     g.wd.bins[i] = g.day; R.advance(g, 4, this.act()); g.st.hygiene = clamp(g.st.hygiene - 4, 0, STAT_MAX); sfx('rummage');
     const r = rnd.next(), give = (id: string, n: number) => { g.junk[id] = (g.junk[id] ?? 0) + n; ctx.ui.float(`+${n} ${JUNK[id].name}`, { x: b.x, y: 1.1, z: b.z }, 'info'); };
     if (r < 0.05) { const id = rnd.pick(['dongho', 'radio', 'nhan']); give(id, 1); toast(`Trúng mánh! Bới được ${JUNK[id].name.toLowerCase()} — đem ra tiệm cầm đồ Chú Lâm bán.`, 'good', 'star', true); }
-    else if (r < 0.2) this.D('Thùng rác', undefined, 'Có nửa ổ bánh mì ai bỏ lại, còn khá lành lặn… Ăn không?', [{ t: 'Ăn luôn (đỡ đói, có thể đau bụng)', fn: () => { R.consume(g, { h: 16, m: -3 }, 0.3); sfx('eat'); } }, { t: 'Thôi, ghê quá.' }]);
+    else if (r < 0.2) this.D('Thùng rác', undefined, 'Có nửa ổ bánh mì ai bỏ lại, còn khá lành lặn… Ăn không?', [{ t: 'Ăn luôn (đỡ đói, có thể đau bụng)', fn: () => { R.consume(g, { h: 16, m: -3 }, R.stomachChance(g, { risky: 0.3 })); sfx('eat'); } }, { t: 'Thôi, ghê quá.' }]);
     else if (r < 0.78) { give('chai', rnd.int(1, 3)); if (rnd.chance(0.6)) give('lon', rnd.int(1, 2)); if (rnd.chance(0.25)) give('bia', 1); }
     else toast('Chỉ toàn rác… chẳng có gì dùng được.', 'info');
     if (R.bagWeight(g) > R.carryCap(g)) toast('Túi nặng quá rồi, đi chậm hẳn. Đem ve chai đi bán thôi!', 'warn', 'bag');
@@ -719,7 +725,7 @@ export class Acts {
     ctx.player.x = a.x - s * 0.75; ctx.player.z = a.z - c * 0.75; ctx.player.yaw = a.yaw; this.way = null;
     ctx.cook.wash(st, 8, (score) => {
       this.job = null; if (score < 0) { toast('Bỏ ngang việc rửa chén, Bà Tư không trả công.', 'warn'); return; }
-      const pay = round1k(8 * 4000 * (0.75 + 0.25 * score)); g.wd.plates++; R.earn(g, pay, 'side'); R.consume(g, { h: 45, t: 10, m: 3 }); g.st.hygiene = clamp(g.st.hygiene + 6, 0, STAT_MAX); g.st.energy = clamp(g.st.energy - 6, 0, STAT_MAX); R.changeRel(g, 'eatery', 4, true);
+      const pay = round1k(8 * 4000 * (0.75 + 0.25 * score)); g.wd.plates++; R.earn(g, pay, 'side'); R.consume(g, { h: 45 * 2.5, t: 10 * 2.5, m: 3 }); g.st.hygiene = clamp(g.st.hygiene + 6, 0, STAT_MAX); g.st.energy = clamp(g.st.energy - 6, 0, STAT_MAX); R.changeRel(g, 'eatery', 4, true);
       const n = ctx.npcs.fixed.get('eatery'); toast(`Rửa xong 8 cái đĩa: nhận ${money(pay)} và một bữa cơm của Bà Tư.`, 'good', 'cash', true); if (n) ctx.npcs.say(n, 'Sạch đó! Ăn cơm đi con rồi hãy về.', 3, 1);
     });
   }
@@ -759,12 +765,21 @@ export class Acts {
     const g = this.g, s = list[idx]; if (!s) return; const d = INGS[s.id]; if (!d.eat) return;
     const dr = !!(d.eat.t && !d.eat.h);
     ctx.player.gesture('drink', 0.8);
-    R.consume(g, d.eat, s.fresh < 35 ? 0.35 : 0); g.led.food += s.cost; s.n -= 1; if (s.n <= 1e-6) list.splice(idx, 1); sfx(dr ? 'drink' : 'eat'); bus.emit('ui', 'eat');
+    // đồ ăn sẵn mua ngoài: rủi ro nền 6 %, thêm nếu để lâu; đồ uống đóng chai thì thấp hơn
+    const risk = R.stomachChance(g, { bought: true, risky: s.fresh < 35 ? 0.30 : 0 });
+    R.consume(g, d.eat, risk); g.led.food += s.cost; s.n -= 1; if (s.n <= 1e-6) list.splice(idx, 1); sfx(dr ? 'drink' : 'eat'); bus.emit('ui', 'eat');
   }
   eatDish(i: number) {
     const g = this.g, rd = g.stall.ready[i]; if (!rd) return; const r = RECIPES[rd.rid];
     ctx.player.gesture('drink', 0.85);
-    R.consume(g, { h: r.fill, t: r.cat === 'nuoc' || r.cat === 'che' ? 30 : 4, m: 2 + rd.q * 5 }, rd.q < 0.2 ? 0.3 : 0); g.led.food += rd.cost; rd.n--; if (rd.n <= 0) g.stall.ready.splice(i, 1); sfx('eat'); toast(`Ăn một phần ${r.name.toLowerCase()} của chính mình. ${rd.q > 0.75 ? 'Ngon thật!' : rd.q > 0.45 ? 'Cũng được.' : 'Ờm… dở ẹc.'}`, 'info', 'dish'); bus.emit('ui', 'eat');
+    // tự nấu: từ 2 sao trở lên gần như không đau bụng, dưới 2 sao thì vẫn có rủi ro (thấy ở toast)
+    const stars = R.dishStars(rd);
+    const risk = R.stomachChance(g, { selfMade: true, stars });
+    R.consume(g, { h: r.fill, t: r.cat === 'nuoc' || r.cat === 'che' ? 30 : 4, m: 2 + rd.q * 5 }, risk);
+    g.led.food += rd.cost; rd.n--; if (rd.n <= 0) g.stall.ready.splice(i, 1); sfx('eat');
+    const note = stars >= 3 ? ' · no lâu, bụng êm' : stars >= 2 ? ' · ăn ổn' : ' · hơi khó tiêu';
+    toast(`Ăn một phần ${r.name.toLowerCase()} của chính mình. ${rd.q > 0.75 ? 'Ngon thật!' : rd.q > 0.45 ? 'Cũng được.' : 'Ờm… dở ẹc.'}${note}`, stars >= 2 ? 'good' : 'info', 'dish');
+    bus.emit('ui', 'eat');
   }
   // ───────────────────────── Đấm & nhảy ─────────────────────────
   /** Bật nhảy tại chỗ. Tốn chút sức, không đổi gì trên bản đồ. */
@@ -857,13 +872,14 @@ export class Acts {
   medMenu() {
     const g = this.g;
     const opts: Opt[] = R.MED_LIST.map((m) => ({
-      t: `${m.name} — ${money(m.price)}`, sub: `${m.desc} · máu +${m.hp}${m.cures ? ' · hết cảm' : ''}${m.e ? ` · sức +${m.e}` : ''}`,
+      t: `${m.name} — ${money(m.price)}`,
+      sub: `${m.desc} · máu +${m.hp}${m.cures === 'sick' ? ' · hết cảm' : m.cures === 'stomach' ? ' · hết đau bụng' : ''}${m.e ? ` · sức +${m.e}` : ''}`,
       off: g.cash < m.price, fn: () => {
         if (!R.buyMed(g, m.id)) { toast('Không đủ tiền mua thuốc.', 'bad', 'cash'); return; }
         sfx('coin'); toast(`Mua ${m.name.toLowerCase()}, uống liền tại chỗ.`, 'good', 'heart'); this.medMenu();
       },
     }));
-    this.D('Quầy thuốc', undefined, g.flags.sick ? 'Cô bán thuốc nhìn bạn: “Cảm nặng vậy mà giờ mới tới hả?”' : 'Tủ thuốc kê sau quầy, hộp nào cũng có nhãn rõ ràng.', [...opts, { t: 'Thôi, không mua gì.' }]);
+    this.D('Quầy thuốc', undefined, R.isStomach(g) ? 'Cô bán thuốc nhìn bạn ôm bụng: “Đau bụng hả con? Liều thuốc đau bụng uống vô là dịu liền.”' : g.flags.sick ? 'Cô bán thuốc nhìn bạn: “Cảm nặng vậy mà giờ mới tới hả?”' : 'Tủ thuốc kê sau quầy, hộp nào cũng có nhãn rõ ràng.', [...opts, { t: 'Thôi, không mua gì.' }]);
   }
   // ───────────────────────── Công an phường, tạm giữ, lao động ─────────────────────────
   /** Công an gọi lại hỏi giấy tờ: nộp phạt, cãi, bỏ chạy hay theo về phường. */
@@ -1133,7 +1149,7 @@ export class Acts {
   }
   wash(kind: 'tap' | 'park' | 'room') {
     const g = this.g;
-    if (kind === 'tap') { this.D('Vòi nước công cộng', undefined, 'Nước máy chảy mát lạnh.', [{ t: 'Uống cho đỡ khát', fn: () => { ctx.player.gesture('drink', 0.6); R.consume(g, { t: 35 }, 0.04); sfx('drink'); } }, { t: 'Rửa mặt mũi tay chân', sub: 'Sạch hơn một chút (tối đa 60%)', fn: () => { ctx.player.gesture('work', 0.85); g.st.hygiene = Math.max(g.st.hygiene, Math.min(60, g.st.hygiene + 14)); R.advance(g, 5, this.act()); sfx('splash'); toast('Mát mẻ, đỡ lem luốc hơn rồi.', 'good'); } }, { t: 'Thôi' }]); return; }
+    if (kind === 'tap') { this.D('Vòi nước công cộng', undefined, 'Nước máy chảy mát lạnh.', [{ t: 'Uống cho đỡ khát', sub: 'Nước máy — hên xui', fn: () => { ctx.player.gesture('drink', 0.6); R.consume(g, { t: 35 }, R.stomachChance(g, { rank: 0.12 })); sfx('drink'); } }, { t: 'Rửa mặt mũi tay chân', sub: 'Sạch hơn một chút (tối đa 60%)', fn: () => { ctx.player.gesture('work', 0.85); g.st.hygiene = Math.max(g.st.hygiene, Math.min(60, g.st.hygiene + 14)); R.advance(g, 5, this.act()); sfx('splash'); toast('Mát mẻ, đỡ lem luốc hơn rồi.', 'good'); } }, { t: 'Thôi' }]); return; }
     if (kind === 'park') { if (!R.spend(g, 3000, 'other')) { toast('Tắm ở đây tốn 3.000₫ mà bạn không đủ tiền.', 'bad', 'cash'); return; } }
     ctx.ui.fade(true, 0.5); setTimeout(() => { g.st.hygiene = kind === 'park' ? Math.max(g.st.hygiene, 86) : STAT_MAX; g.st.mood = clamp(g.st.mood + 5, 0, STAT_MAX); g.weather.wet = 0; R.advance(g, 15, this.act()); sfx('splash'); ctx.ui.fade(false, 0.6); toast('Tắm rửa sạch sẽ thơm tho!', 'good'); }, 900);
   }
@@ -1141,7 +1157,7 @@ export class Acts {
     const g = this.g, h = hourOf(g);
     if (h < 11 || h >= 13) { toast('Chùa Phước An phát cơm chay từ 11 giờ tới 13 giờ mỗi ngày.', 'info'); return; }
     if (g.flags.temple === g.day) { toast('Hôm nay bạn đã nhận cơm chay rồi. Nhường phần cho người khác nhé.', 'info'); return; }
-    g.flags.temple = g.day; R.consume(g, { h: 48, t: 15, m: 5 }); sfx('eat'); R.advance(g, 12, this.act()); toast('Một dĩa cơm chay nóng với canh rau. Nam mô A Di Đà Phật.', 'good', 'heart', true);
+    g.flags.temple = g.day; R.consume(g, { h: 48 * 2.5, t: 15 * 2.5, m: 5 }); sfx('eat'); R.advance(g, 12, this.act()); toast('Một dĩa cơm chay nóng với canh rau. Nam mô A Di Đà Phật.', 'good', 'heart', true);
     ctx.anim.startTempleMeal();
   }
   // ───────────────────────── Vui chơi, thư giãn ─────────────────────────
@@ -1178,7 +1194,11 @@ export class Acts {
     const g = this.g;
     if (f.cost > 0 && !R.spend(g, f.cost, 'other')) { toast(`Không đủ ${money(f.cost)}.`, 'bad', 'cash'); return; }
     if (f.mins > 0) R.advance(g, f.mins, this.act());
-    R.consume(g, { m: f.mood, e: f.energy ?? 0, t: f.thirst ?? 0, h: f.hunger ?? 0, hy: f.hygiene ?? 0 });
+    // nước ở quán cà phê / chỗ công cộng: thêm một chút rủi ro đau bụng (đá, nước máy)
+    const risk = f.thirst && f.thirst > 0 ? R.stomachChance(g, { rank: f.id === 'cafe_sua' ? 0.08 : 0.05 }) : 0;
+    // Ăn/uống ở quán no lâu hơn 2,5 lần (lượt 41): phần hồi độ no được nhân lên, không đổi giá.
+    const fillMul = f.hunger && f.hunger > 0 ? 2.5 : 1;
+    R.consume(g, { m: f.mood, e: f.energy ?? 0, t: f.thirst ?? 0, h: Math.round((f.hunger ?? 0) * fillMul), hy: f.hygiene ?? 0 }, risk);
     sfx(f.id === 'cafe_karaoke' ? 'yay' : f.id === 'temple_huong' ? 'good' : 'drink');
     toast({
       cafe_sua: 'Cà phê sữa đá đậm đặc, đá tan chậm. Ngồi nhìn xe qua lại một hồi, lòng dịu hẳn.',

@@ -14,8 +14,9 @@ describe('nguyên liệu và cửa hàng', () => {
   it('không trùng mã, giá và hạn dùng hợp lệ (đồ nguội đã tăng gấp đôi hạn dùng)', () => {
     expect(new Set(ING_LIST.map((i) => i.id)).size).toBe(ING_LIST.length);
     for (const i of ING_LIST) { expect(i.price, i.id).toBeGreaterThan(0); expect(i.shelf, i.id).toBeGreaterThan(0); expect(i.kg, i.id).toBeGreaterThanOrEqual(0); expect(i.name.length).toBeGreaterThan(0); }
-    expect(INGS.heo.shelf).toBe(12);
-    expect(INGS.tom.shelf).toBe(8.4);
+    // Lượt 41b: thịt/hải sản tươi cũng được nới lên 1,5–2 ngày (trước chỉ 8,4–12 giờ).
+    expect(INGS.heo.shelf).toBe(168);
+    expect(INGS.tom.shelf).toBe(139.2);
     // Bánh mì tăng thêm 100% thời gian để hỏng (22 → 44 giờ, ×1,2 sẵn có = 52,8).
     expect(INGS.banhmi.shelf).toBe(52.8);
     expect(INGS.banhmi.shelf / 26.4).toBe(2);
@@ -26,9 +27,10 @@ describe('nguyên liệu và cửa hàng', () => {
     expect(INGS.gio.shelf).toBe(96);       // 40 → 80
     expect(INGS.chaca.shelf).toBe(72);     // 30 → 60
     expect(INGS.dauhu.shelf).toBe(86.4);   // 36 → 72
-    // Thịt/cá/hải sản tươi sống thì GIỮ NGUYÊN: để lâu vẫn phải hỏng.
-    expect(INGS.heo.shelf).toBe(12);
-    expect(INGS.tom.shelf).toBe(8.4);
+    // Thịt/cá/hải sản tươi: 38,4–48 giờ (1,5–2 ngày), vẫn ngắn hơn rau củ rất nhiều.
+    expect(INGS.heo.shelf).toBe(168);
+    expect(INGS.tom.shelf).toBe(139.2);
+    expect(INGS.ga.shelf).toBe(153.6);
     expect(INGS.da.shelf).toBe(10.8);
     expect(INGS.gao.shelf).toBe(99999);
   });

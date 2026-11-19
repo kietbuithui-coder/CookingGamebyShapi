@@ -24,10 +24,11 @@ describe('bệnh viện Phước An', () => {
     expect(lot!.district).toBe('trungtam');
   });
 
-  it('quầy thuốc có ba món, giá dương, chỉ thuốc cảm là chữa cảm', () => {
-    expect(MED_LIST.length).toBe(3);
+  it('quầy thuốc có bốn món, giá dương, chỉ thuốc cảm là chữa cảm, chỉ thuốc đau bụng là chữa đau bụng', () => {
+    expect(MED_LIST.length).toBe(4);
     const cures = MED_LIST.filter((m) => m.cures === 'sick').map((m) => m.id);
     expect(cures).toEqual(['cam']);
+    expect(MED_LIST.filter((m) => m.cures === 'stomach').map((m) => m.id)).toEqual(['daubung']);
     for (const m of MED_LIST) { expect(m.price).toBeGreaterThan(0); expect(m.hp).toBeGreaterThan(0); expect(m.desc.length).toBeGreaterThan(8); }
     expect(MEDS.bang.price).toBeLessThan(MEDS.bo.price);
   });

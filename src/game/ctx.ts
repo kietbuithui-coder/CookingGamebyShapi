@@ -38,6 +38,8 @@ export interface Settings { quality: number; sfx: number; music: number; sens: n
  * pr: tỉ lệ điểm ảnh tối đa (so với điểm ảnh CSS) · blob: bóng tròn dưới chân NPC khi không có bóng đổ thật.
  * msaa: bật khử răng cưa của WebGL (tốn pin trên điện thoại) · detail: cho phép vẽ lớp chi tiết của khu phố.
  * Điện thoại tầm trung chỉ chịu nổi khoảng 0,7–1,0 điểm ảnh và 0 bóng đổ; "Vừa" nay cũng hạ xuống mức đó.
+ * Riêng "Cao" giữ NGUYÊN như trước (2 điểm ảnh, bóng 2048, MSAA) — máy khoẻ chọn mức này vẫn được hình đẹp nhất,
+ * kể cả trên điện thoại (người chơi: "đồ hoạ cao của đt khôi phục mức cũ đi, thấy không đẹp lắm").
  */
 export const QUALITY = [
   { name: 'Rất thấp', pr: 0.6, shadow: 0, shadowSize: 0, npcs: 8, view: 90, lights: 0, blob: true, birds: 0, traffic: 1, msaa: false, detail: false },
@@ -46,7 +48,7 @@ export const QUALITY = [
   { name: 'Cao', pr: 2, shadow: 2048, shadowSize: 38, npcs: 32, view: 210, lights: 4, blob: false, birds: 7, traffic: 5, msaa: true, detail: true },
 ];
 /** Mức "Vừa" giờ nhẹ như trước đây "Thấp": điện thoại mặc định vẫn chọn mức này nhưng chạy mượt hơn hẳn. */
-export const Q_QUALITY_NOTE = 'Mức “Vừa” không còn bóng đổ và chạy 1 điểm ảnh — nhẹ hơn khoảng 2,5 lần so với trước.';
+export const Q_QUALITY_NOTE = 'Mức “Vừa” không còn bóng đổ và chạy 1 điểm ảnh — nhẹ hơn khoảng 2,5 lần so với trước. Mức “Cao” thì giữ nguyên như cũ.';
 /** Mức mặc định: điện thoại "Vừa", máy tính "Cao". */
 export const Q_DEFAULT_MOBILE = 2, Q_DEFAULT_DESKTOP = 3;
 /** Góc nhìn khi đi bộ: màn dọc cần góc rộng hơn để không bị "ống nhòm". */

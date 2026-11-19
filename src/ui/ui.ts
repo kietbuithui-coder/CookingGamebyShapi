@@ -15,7 +15,7 @@ import { SHOPS } from '../data/shops';
 import { DISTRICT, districtAt } from '../world/layout';
 import { STAT_MAX, hourOf } from '../sim/state';
 import { jailLeft } from '../sim/police';
-import { activeEvents, totalDebt, level, tier, hasMet, fixedLabel, lowStockCount, shortageLine, stockShortages, needsPrepCount } from '../sim/rules';
+import { activeEvents, totalDebt, level, tier, hasMet, fixedLabel, lowStockCount, shortageLine, stockShortages, needsPrepCount, isStomach, stomachLeft } from '../sim/rules';
 /** Chú thích khi rê chuột: liệt kê từng món + nguyên liệu còn thiếu, kèm chợ nào bán. */
 const lowchipTip = (g: Game) => {
   const l = stockShortages(g);
@@ -332,7 +332,7 @@ export class UI {
     const needPrep = onSpot ? needsPrepCount(ctx.g) : 0;
     const chipText = shortg ? `Thiếu ${esc(shortg)}` : needPrep ? `${needPrep} món cần sơ chế trước` : `Sắp hết đồ ${lowN} món`;
     const lowchip = lowN ? `<span class="chip danger" id="lowchip" ${lowchipTip(ctx.g)}>${ic('box')}${chipText} · xem chi tiết</span>` : '';
-    const evs = activeEvents(g); E.events.innerHTML = lowchip + evs.map((e) => `<span class="chip${e.danger ? ' danger' : ''}">${ic(e.icon)}${esc(e.name)}</span>`).join('') + (g.flags.sick ? `<span class="chip danger">${ic('heart')}Bị cảm</span>` : '') + (g.weather.wet > 55 ? `<span class="chip">${ic('drop')}Ướt sũng</span>` : '') + (g.weather.flood > 0.35 ? `<span class="chip">${ic('drop')}Ngập khu trũng</span>` : '');
+    const evs = activeEvents(g); E.events.innerHTML = lowchip + evs.map((e) => `<span class="chip${e.danger ? ' danger' : ''}">${ic(e.icon)}${esc(e.name)}</span>`).join('') + (g.flags.sick ? `<span class="chip danger">${ic('heart')}Bị cảm</span>` : '') + (isStomach(g) ? `<span class="chip danger">${ic('heart')}Đau bụng ${Math.ceil(stomachLeft(g) / 60)}h</span>` : '') + (g.weather.wet > 55 ? `<span class="chip">${ic('drop')}Ướt sũng</span>` : '') + (g.weather.flood > 0.35 ? `<span class="chip">${ic('drop')}Ngập khu trũng</span>` : '');
     const c = ctx.acts.cart; E.cart.classList.toggle('hide', !c); if (c) E.cart.innerHTML = `${ic('bag')}Giỏ: ${c.lines.map((l) => `${l.n} ${INGS[l.id].name.toLowerCase()}`).join(', ')} — <b>${money(ctx.acts.cartTotal())}</b> · đưa ${hasMet(g, c.shop) ? SHOPS[c.shop].vendor : fixedLabel(g, c.shop).toLowerCase()} tính tiền`;
     const s = g.stall; E.stallchip.classList.toggle('hide', s.tier === 0); if (s.tier) E.stallchip.innerHTML = `${ic('shop')}${tier(g).name}: ${stallHint(g, ctx.stall.stowed)}` + (s.open ? ` · ${ctx.stall.customers.length} khách · hôm nay ${money(g.led.revenue + g.led.tips)}` : '');
     // Thanh sức bền chỉ hiện khi đang hụt so với trần hiện tại (đang chạy hoặc đang hồi), không hiện suốt chỉ vì đói/khát làm trần tụt xuống.
