@@ -14,6 +14,17 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 46',
+    tag: 'Ít mưa hơn, thuê chỗ chợ & công viên rẻ 40 %',
+    items: [
+      'Trời mưa ít hẳn: từ 37 % thời gian xuống còn 18 % (mưa nhỏ 22 % → 11 %, mưa to 10 % → 2,6 %, giông 5,8 % → 4,5 %).',
+      'Mưa tan nhanh hơn, nắng quay lại sớm — bớt cảnh dầm mưa liên miên.',
+      'Phí chỗ Cổng Chợ: 30.000 → 18.000₫/ngày. Cổng Công Viên: 20.000 → 12.000₫/ngày (giảm 40 %).',
+      'Giá thuê chi nhánh ở chợ và công viên cũng giảm 40 %: chợ 120.000 → 72.000₫, công viên 90.000 → 54.000₫/ngày.',
+      'Các chỗ khác giữ nguyên giá.',
+    ],
+  },
+  {
     v: 'Lượt 45',
     tag: 'Điện thoại: vừa đi vừa nhảy/đấm được',
     items: [
@@ -85,15 +96,6 @@ export const CHANGELOG: LogEntry[] = [
       'Bánh phở 30 → 60 giờ, bún tươi 26 → 52 giờ: mua hôm nay, để qua đêm vẫn bán được.',
       'Đồ nguội ăn liền (xúc xích, giò lụa, chả cá, đậu hũ) cũng tăng gấp đôi hạn dùng.',
       'Thịt, cá, hải sản tươi sống thì vẫn hỏng trong ngày như cũ — để lâu là mất thật.',
-    ],
-  },
-  {
-    v: 'Lượt 38',
-    tag: 'Nhật ký phát triển xem được trong Cài đặt',
-    items: [
-      'Cài đặt có mục “Nhật ký phát triển”: danh sách các bản gần đây và việc đã làm trong từng bản, bản mới nhất ở trên cùng.',
-      'Bản nào chưa đọc thì nút có nhãn “mới”; mở ra đọc là tự lưu, lần sau nhãn biến mất.',
-      'Danh sách chỉ giữ các bản gần nhất cho dễ đọc, không phải cuộn một trang dài.',
     ],
   },
 ];

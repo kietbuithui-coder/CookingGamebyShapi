@@ -149,8 +149,10 @@ function spotFromLot(id: string, name: string, fee: number, traffic: number, min
 }
 export const SPOTS: Spot[] = [
   spotFromLot('hem', 'Hẻm Công Nhân', 0, 0.85, 1, 'Miễn phí, khách bình dân. Đất của băng Hùng Sẹo.'),
-  { id: 'cho', name: 'Cổng Chợ', x: -37.2, z: 9, yaw: Math.PI / 2, fee: 30000, traffic: 1.35, district: 'cho', minTier: 1, note: 'Đông người qua lại, hay bị kiểm tra.' },
-  { id: 'cv', name: 'Cổng Công Viên', x: 41, z: -37.3, yaw: 0, fee: 20000, traffic: 1.05, district: 'congvien', minTier: 1, note: 'Gia đình, sinh viên, khách du lịch.' },
+  // Phí chỗ Cổng Chợ giảm 40 % (30.000 → 18.000/ngày) theo yêu cầu người chơi.
+  { id: 'cho', name: 'Cổng Chợ', x: -37.2, z: 9, yaw: Math.PI / 2, fee: 18000, traffic: 1.35, district: 'cho', minTier: 1, note: 'Đông người qua lại, hay bị kiểm tra.' },
+  // Phí chỗ Cổng Công Viên giảm 40 % (20.000 → 12.000/ngày).
+  { id: 'cv', name: 'Cổng Công Viên', x: 41, z: -37.3, yaw: 0, fee: 12000, traffic: 1.05, district: 'congvien', minTier: 1, note: 'Gia đình, sinh viên, khách du lịch.' },
   spotFromLot('vp', 'Phố Văn Phòng', 60000, 1.25, 2, 'Khách chịu chi nhưng khó tính. Cần xe đẩy trở lên.'),
   spotFromLot('matbang_tb', 'Mặt bằng Phố Văn Phòng', 160000, 1.45, 4, 'Có sân kê bàn ghế, khách văn phòng ăn trưa rất đông. Cần quán ăn nhỏ trở lên.'),
   spotFromLot('matbang_dc', 'Mặt bằng Khu Căn Hộ', 120000, 1.3, 4, 'Cạnh quán cà phê và chung cư, khách ăn sáng – ăn trưa cả ngày. Cần quán ăn nhỏ trở lên.'),

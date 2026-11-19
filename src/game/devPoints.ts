@@ -13,7 +13,7 @@ import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Điện thoại vừa đi vừa nhảy/đấm được: nút Nhảy-Đấm nhận chạm và không cướp cần ảo đang giữ';
+export const DEV_BUILD_TAG = 'Trời mưa 37% xuống 18% thời gian; phí chỗ và thuê chi nhánh ở chợ/công viên giảm 40%';
 
 export interface DevAction {
   id: string;
@@ -72,30 +72,38 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Điện thoại: vừa đi vừa nhảy/đấm (lượt 45)',
+      title: 'Mới nhất — Ít mưa hơn, thuê chỗ rẻ 40 % (lượt 46)',
       items: [
         {
-          id: 'vua_di_vua_nhay',
-          label: 'Đo lại: đang đi mà bấm Nhảy/Đấm',
-          sub: 'Gọi thẳng jump()/punch() rồi báo trạng thái cần ảo — dùng để kiểm tra trên máy thật',
+          id: 'mua_it',
+          label: 'Đo tỉ lệ mưa thật trong game',
+          sub: 'Chạy 3.000 lần chuyển thời tiết bằng chính luật của game rồi đếm',
           tone: 'green',
           closePanel: false,
           run: () => {
-            ctx.ui.closePanel();
-            const before = { mz: ctx.input.mz, stick: !!ctx.input.stick };
-            ctx.acts.jump();
-            toast(`Nhảy: độ cao ${ctx.player.jumpY.toFixed(2)} m. Cần ảo: ${ctx.input.stick ? 'đang giữ' : 'không giữ'} (mz ${before.mz.toFixed(2)}). Trên điện thoại: giữ ngón trái để đi rồi chạm nút Nhảy bằng ngón phải — phải vừa nhảy vừa đi tiếp.`, 'info', 'jump', true);
+            const g = ctx.g;
+            let wet = 0; const N = 3000, dem: Record<string, number> = {};
+            const save = { now: g.weather.now, until: g.weather.until, next: g.weather.next };
+            for (let i = 0; i < N; i++) {
+              g.weather.until = -1e9;
+              R.setWeather(g, g.weather.next, undefined, false);
+              dem[g.weather.now] = (dem[g.weather.now] ?? 0) + 1;
+              if (['mua', 'muato', 'giong', 'bao'].includes(g.weather.now)) wet++;
+            }
+            Object.assign(g.weather, save);          // trả lại thời tiết cũ, không phá ván đang chơi
+            toast(`Đo ${N} lần: mưa ${(wet / N * 100).toFixed(1)} % thời gian (trước là 37 %).`, 'info', 'rain', true);
           },
         },
         {
-          id: 'vua_di_vua_dam',
-          label: 'Đo lại: đang đi mà bấm Đấm',
-          sub: 'Báo thời gian hồi đấm + cần ảo còn giữ hay không',
+          id: 'gia_cho_re',
+          label: 'Giá phí chỗ và thuê chi nhánh',
+          sub: 'Chợ / công viên sau khi giảm 40 %',
           tone: 'yellow',
           closePanel: false,
           run: () => {
-            ctx.acts.punch();
-            toast(`Đấm: hồi ${ctx.acts.punchCd.toFixed(2)} giây. Cần ảo: ${ctx.input.stick ? 'vẫn giữ' : 'không giữ'}.`, 'info', 'fist', true);
+            const p = (id: string) => SPOTS.find((s) => s.id === id)?.fee ?? 0;
+            const cn = (id: string) => R.branchSite(id)?.rent ?? 0;
+            toast(`Cổng Chợ ${p('cho').toLocaleString('vi-VN')}₫/ngày · Công Viên ${p('cv').toLocaleString('vi-VN')}₫/ngày. Thuê chi nhánh: chợ ${cn('cho').toLocaleString('vi-VN')}₫ · công viên ${cn('cv').toLocaleString('vi-VN')}₫ (giảm 40 %).`, 'info', 'shop', true);
           },
         },
       ],
