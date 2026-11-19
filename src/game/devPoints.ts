@@ -6,12 +6,13 @@ import * as R from '../sim/rules';
 import { RECIPES } from '../data/recipes';
 import { SPOTS, CORR } from '../world/layout';
 import { toast } from '../core/bus';
+import { addStack } from '../sim/state';
 import * as PUI from '../ui/phoneUI';
 import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Quán thường (bậc 3–5) đã thuê phụ quầy thì bảng Quầy có tab Nhân sự và giao được người đi chợ';
+export const DEV_BUILD_TAG = 'Nhật ký phát triển xem được trong Cài đặt: các bản gần đây, mỗi bản liệt kê việc đã làm, bản chưa đọc có nhãn “mới”';
 
 export interface DevAction {
   id: string;
@@ -70,42 +71,29 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Quán thường cũng có bảng Nhân sự, giao được người đi chợ (lượt 35)',
+      title: 'Mới nhất — Nhật ký phát triển xem được trong Cài đặt (lượt 38)',
       items: [
         {
-          id: 'staff_shop5',
-          label: 'Quán thường (bậc 5) có phụ quầy: mở Quầy › Nhân sự, giao người đi chợ',
-          sub: 'Thuê người phụ quầy rồi mở bảng Quầy — tab Nhân sự có cả ở quán nhỏ, không chỉ nhà hàng',
+          id: 'open_log',
+          label: 'Mở nhật ký phát triển: các bản gần đây và việc đã làm trong từng bản',
+          sub: 'Cài đặt › Nhật ký phát triển; bản chưa đọc có nhãn “mới”, đọc xong tự lưu',
           tone: 'green',
           closePanel: false,
           run: () => {
-            const g = ctx.g;
-            g.cash = Math.max(g.cash, 3000000);
-            g.flags.firstSale = g.day - 6; g.led.revenue = Math.max(g.led.revenue, 900000);
-            for (const id of ['ganh', 'xeday', 'sap', 'quanan']) { if (!R.has(g, id)) R.buyGear(g, id); }
-            g.stall.tier = 5; g.stall.where = 'placed'; g.gear.nhahang = 0; g.sous = null;
-            if (!g.help) R.hireHelper(g);
-            ctx.stall.refresh();
-            ctx.ui.closePanel(); ctx.ui.panel('stall');
-            toast('Quán thường đã có tab Nhân sự: giao người phụ quầy đi chợ đúng món còn thiếu.', 'good', 'shop', true);
+            ctx.ui.closePanel(); ctx.ui.panel('changelog');
+            toast('Nhật ký phát triển: 5 bản gần nhất, mỗi bản liệt kê việc đã làm.', 'info', 'book');
           },
         },
         {
-          id: 'staff_rest6',
-          label: 'Lên nhà hàng bình dân (bậc 6): bảng Nhân sự có thêm Đặt bàn trước',
-          sub: 'Cùng một bảng: đặt bàn trước, bếp trưởng tự duyệt và người đi chợ nằm chung một chỗ',
+          id: 'log_unread',
+          label: 'Xoá dấu đã đọc để thấy nhãn “mới” trong Cài đặt',
+          sub: 'Đặt logSeen về 0 rồi mở Cài đặt — nút “Xem các bản gần đây” hiện nhãn mới như lần đầu',
           tone: 'yellow',
           closePanel: false,
           run: () => {
-            const g = ctx.g;
-            g.cash = Math.max(g.cash, 3000000);
-            g.flags.firstSale = g.day - 6; g.led.revenue = Math.max(g.led.revenue, 900000);
-            for (const id of ['ganh', 'xeday', 'sap', 'quanan', 'quanngoi', 'nhahang']) { if (!R.has(g, id)) R.buyGear(g, id); }
-            g.stall.tier = 6; g.stall.where = 'placed'; g.gear.nhahang = 100;
-            if (!g.help) R.hireHelper(g);
-            ctx.stall.refresh();
-            ctx.ui.closePanel(); ctx.ui.panel('stall');
-            toast('Nhà hàng bình dân: tab Nhân sự & Đặt bàn — nhận bàn, tự duyệt, giao đi chợ.', 'info', 'star', true);
+            ctx.g.flags.logSeen = 0;
+            ctx.ui.closePanel(); ctx.ui.panel('settings');
+            toast('Đã xoá dấu đã đọc — mở Cài đặt là thấy nhãn “mới”.', 'info', 'star');
           },
         },
       ],

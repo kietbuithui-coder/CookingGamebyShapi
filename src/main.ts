@@ -134,7 +134,7 @@ async function boot() {
   ui.loading(null); menu(); requestAnimationFrame(frame);
   // Cửa hậu gỡ lỗi: thêm ?debug vào địa chỉ để mở (dùng cho kiểm thử tự động).
   if (/[?&]debug/.test(location.search)) {
-    const w = window as any; w.__game = ctx; w.__R = Rules; w.__S = State; w.__life = Life;
+    const w = window as any; w.__game = ctx; w.__R = Rules; w.__S = State; w.__life = Life; w.__acts = ctx.acts; w.__bus = bus;
     // màn hình điện thoại: bật/tắt hoạt ảnh để chụp ảnh kiểm tra
     w.__PUI = PhoneUI;
     w.__cam = (px?: number, py = 0, pz = 0, lx = 0, ly = 0, lz = 0) => (px === undefined ? ctx.player.view(null) : ctx.player.view(new THREE.Vector3(px, py, pz), new THREE.Vector3(lx, ly, lz)));

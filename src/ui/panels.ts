@@ -1,6 +1,7 @@
 // CÁC BẢNG LỚN: túi đồ, quầy hàng (thực đơn – giá – sơ chế – kho), chỗ cất đồ, sổ tay (công thức, sổ sách, nợ), bản đồ, cài đặt.
 import { ctx, QUALITY, saveSettings, canFullscreen, toggleFullscreen, UI_SCALE } from '../game/ctx';
 import { DEV_BUILD_TAG, getDevSections } from '../game/devPoints';
+import { CHANGELOG } from '../data/changelog';
 import type { UI } from './ui';
 import { ic, el, esc, dishIcon } from './ui';
 import { INGS } from '../data/ingredients';
@@ -25,7 +26,7 @@ import { BX, CORR, SPOTS, LOTS, lotPoint, DISTRICT, MAP } from '../world/layout'
 let tab = '';
 const fresh = (s: Stack) => { const d = INGS[s.id]; if (d.shelf > 9000) return ''; const f = Math.round(s.fresh); return `<span class="tag ${f < 35 ? 'bad' : f < 60 ? 'warn' : 'good'}">${f < 10 ? 'hỏng' : 'tươi ' + f + '%'}</span>`; };
 export const profitOf = (l: LedgerDay) => l.revenue + l.tips + l.side - l.cogs - l.fees - l.rent - l.gear - l.loss - l.interest - l.food - l.other;
-const stallNear = (g: Game) => g.stall.tier > 0 && (g.stall.where === 'carried' || ((g.stall.where === 'placed' || g.stall.where === 'home') && dist2(g.stall.x, g.stall.z, ctx.player.x, ctx.player.z) < 8 * 8));
+const stallNear = (g: Game) => R.nearStall(g, ctx.player.x, ctx.player.z);
 
 /** Bảng sổ thu chi trong ngày — dùng chung cho sổ tay giấy và sổ trong điện thoại. */
 export function ledgerBody(g: Game): string {
@@ -89,22 +90,37 @@ export function openPanel(ui: UI, name: string) {
   function build() {
     const s = g.stall, T = R.tier(g);
     if (name === 'bag') {
-      if (!['bag', 'gear'].includes(tab)) tab = 'bag';
+      // Kho quầy lấy đồ RA được ở mọi nơi (không cần đứng cạnh quầy, không cần đặt quầy ở chỗ bán) —
+      // đúng yêu cầu người chơi. Chỉ chiều BỎ VÀO kho mới cần có quầy trong tầm tay.
+      const canTake = R.canTakeFromStore(g);
+      if (!['bag', 'gear', ...(canTake ? ['store'] : [])].includes(tab)) tab = 'bag';
       const near = stallNear(g), cap = R.carryCap(g), w = R.bagWeight(g);
-      acts.eat = (i) => ctx.acts.eat(g.bag, i); acts.drop = (i) => { g.bag.splice(i, 1); }; acts.dropj = (_i, e) => { delete g.junk[e.dataset.k!]; };
+      acts.eat = (i) => ctx.acts.eat(g.bag, i);
+      // "Bỏ" là vứt cả lô — phải nói rõ vứt món gì, bao nhiêu, để không ai tưởng đồ tự dưng biến mất.
+      acts.drop = (i) => {
+        const st = g.bag[i]; if (!st) return;
+        const d = INGS[st.id]; g.bag.splice(i, 1);
+        toast(`Đã vứt ${qty(st.n)} ${d.unit} ${d.name.toLowerCase()} đi.`, 'info', 'box');
+      }; acts.dropj = (_i, e) => { delete g.junk[e.dataset.k!]; };
       acts.toStall = (i) => { const k = moveStack(g.bag, s.store, i, 1e9, R.stallRoom(g)); if (!k) toast('Quầy đầy rồi.', 'warn'); else sfx('pick'); };
+      acts.takeStore = (i) => { const k = moveStack(s.store, g.bag, i, 1e9, R.carryCap(g) - R.bagWeight(g)); if (!k) toast('Túi đầy rồi.', 'warn'); else sfx('pick'); };
       let body = '';
       if (tab === 'bag') {
         body = `<div class="bar"><b style="width:${clamp(w / cap) * 100}%;background:${w > cap ? 'var(--red)' : ''}"></b></div><p class="muted">Đang mang ${w.toFixed(1).replace('.', ',')} / ${cap} kg${w > cap * 0.85 ? ' — nặng quá nên đi chậm!' : ''}</p>` +
-          stackList(g.bag, (st, i) => (INGS[st.id].eat ? `<button class="btn small green" data-a="eat" data-i="${i}">${INGS[st.id].eat!.t && !INGS[st.id].eat!.h ? 'Uống' : 'Ăn'}</button>` : '') + (near ? `<button class="btn small" data-a="toStall" data-i="${i}">› Quầy</button>` : '') + `<button class="btn small" data-a="drop" data-i="${i}">Bỏ</button>`, 'Túi trống trơn. Ra chợ mua nguyên liệu: tự tay bốc hàng ở sạp rồi đưa người bán tính tiền.');
+          stackList(g.bag, (st, i) => (INGS[st.id].eat ? `<button class="btn small green" data-a="eat" data-i="${i}">${INGS[st.id].eat!.t && !INGS[st.id].eat!.h ? 'Uống' : 'Ăn'}</button>` : '') + (near ? `<button class="btn small" data-a="toStall" data-i="${i}">› Quầy</button>` : '') + `<button class="btn small" data-a="drop" data-i="${i}">Vứt</button>`, 'Túi trống trơn. Ra chợ mua nguyên liệu: tự tay bốc hàng ở sạp rồi đưa người bán tính tiền.');
         const junk = Object.entries(g.junk).filter(([, n]) => n > 0);
         if (junk.length) body += `<h4>Đồ nhặt được</h4><div class="list">${junk.map(([k, n]) => `<div class="item"><div class="grow"><b>${JUNK[k].name} × ${n}</b><small>Bán ở ${JUNK[k].where === 'scrap' ? 'vựa ve chai (Tư Rác hoặc Bà Chín)' : 'tiệm cầm đồ Chú Lâm'}: ${money(JUNK[k].price * n)}</small></div><button class="btn small" data-a="dropj" data-k="${k}">Bỏ</button></div>`).join('')}</div>`;
+      } else if (tab === 'store') {
+        // Lấy đồ từ kho quầy ra túi — dùng được ở bất cứ đâu, kể cả khi quầy đang để ở nhà.
+        const where = s.where === 'placed' ? (s.spot ? (SPOTS.find((x) => x.id === s.spot)?.name ?? 'chỗ bán') : 'chỗ bán') : s.where === 'home' ? 'chỗ ở' : 'đang mang theo';
+        body = `<p class="muted">Kho quầy (${where}) · ${weightOf(s.store).toFixed(1).replace('.', ',')}/${R.stallCap(g)} kg — lấy ra được ở bất cứ đâu.</p>` +
+          stackList(s.store, (_st, i) => `<button class="btn small" data-a="takeStore" data-i="${i}">› Túi</button>`, 'Kho quầy trống.');
       } else {
         const ids = Object.keys(g.gear);
         body = ids.length ? `<div class="list">${ids.map((id) => `<div class="item"><div class="grow"><b>${GEAR[id].name}</b><small>${GEAR[id].desc}</small></div>${GEAR[id].wear ? `<span class="tag ${g.gear[id] < 25 ? 'bad' : ''}">còn ${Math.round(g.gear[id])}%</span>` : ''}</div>`).join('')}</div>` : '<p class="muted">Chưa có dụng cụ nào. Ghé tiệm Đồ Nghề Ba Tài ở Phố Trung Tâm.</p>';
         body += `<h4>Chỗ ở</h4><p>${HOUSING[g.housing].name} — ${HOUSING[g.housing].desc}${HOUSING[g.housing].rent ? ` Đã trả tới hết ngày ${g.paidUntil}.` : ''}</p>`;
       }
-      draw(`${ic('bag')} Túi đồ`, [['bag', 'Nguyên liệu'], ['gear', 'Dụng cụ']], body, `<span class="muted">Tiền mặt ${money(g.cash)}${g.bank ? ' · ngân hàng ' + money(g.bank) : ''}</span>`);
+      draw(`${ic('bag')} Túi đồ`, [['bag', 'Nguyên liệu'], ...(canTake ? [['store', 'Kho quầy'] as [string, string]] : []), ['gear', 'Dụng cụ']], body, `<span class="muted">Tiền mặt ${money(g.cash)}${g.bank ? ' · ngân hàng ' + money(g.bank) : ''}</span>`);
     } else if (name === 'stall') {
       const rest = R.isRestaurant(g);
       // Nhân sự không chỉ có ở nhà hàng: từ bậc 3 đã thuê được người phụ quầy và phải giao họ đi chợ được.
@@ -169,7 +185,16 @@ export function openPanel(ui: UI, name: string) {
       } else if (tab === 'store') {
         const chilled = R.stallChilled(g);
         const chillTag = R.has(g, 'tu_dong') ? ' · tủ đông công nghiệp' : chilled ? ' · đang ướp đá' : '';
-        body = `<div class="grid2"><div><h4>Trong quầy (${weightOf(s.store).toFixed(1).replace('.', ',')}/${R.stallCap(g)} kg)${chillTag}</h4>${stackList(s.store, (_s, i) => `<button class="btn small" data-a="toBag" data-i="${i}">› Túi</button>`, 'Quầy chưa có nguyên liệu.')}</div><div><h4>Trong túi (${R.bagWeight(g).toFixed(1).replace('.', ',')}/${R.carryCap(g)} kg)</h4>${stackList(g.bag, (_s, i) => `<button class="btn small" data-a="toStall" data-i="${i}">› Quầy</button>`, 'Túi trống.')}</div></div>` +
+        // Kho quầy đồ nguội/khô tự hỏng: nói rõ mốc, để người chơi không tưởng "bỏ vào quầy là mất".
+        const spoilHint = s.store.some((st) => INGS[st.id].shelf < 9000)
+          ? `<p class="muted">Đồ trong quầy vẫn hỏng tiếp: bánh mì để được <b>2 ngày</b>, thịt cá chưa nấu chỉ vài giờ. Qua ngày là bỏ (${R.has(g, 'tu_dong') ? 'riêng tủ đông công nghiệp giữ được gần như cả tuần' : 'muốn giữ lâu thì mua tủ đông công nghiệp'}).</p>` : '';
+        // Đồ lạnh để trong quầy mà không có tủ đá: hỏng nhanh gấp 2,6 lần — phải nói ngay ở đây,
+        // vì người chơi tưởng "bỏ vào quầy là an toàn rồi" nên thấy mất thì tưởng bị lỗi.
+        const cold = R.coldUnprotected(g);
+        const coldLeft = cold.kinds ? Math.min(...s.store.filter((st) => INGS[st.id]?.cold && INGS[st.id].shelf < 9000).map((st) => R.hoursLeft(g, st))) : 0;
+        const coldHint = cold.kinds
+          ? `<p class="neg">${cold.names.join(', ')} cần lạnh mà quầy không có tủ đá — để đây khoảng ${Math.max(1, Math.round(coldLeft))} giờ nữa là hỏng. Cất ở nhà (tủ lạnh) hoặc mua thùng đá ở tiệm Ba Tài.</p>` : '';
+        body = `<div class="grid2"><div><h4>Trong quầy (${weightOf(s.store).toFixed(1).replace('.', ',')}/${R.stallCap(g)} kg)${chillTag}</h4>${stackList(s.store, (_s, i) => `<button class="btn small" data-a="toBag" data-i="${i}">› Túi</button>`, 'Quầy chưa có nguyên liệu.')}${coldHint}${spoilHint}</div><div><h4>Trong túi (${R.bagWeight(g).toFixed(1).replace('.', ',')}/${R.carryCap(g)} kg)</h4>${stackList(g.bag, (_s, i) => `<button class="btn small" data-a="toStall" data-i="${i}">› Quầy</button>`, 'Túi trống.')}</div></div>` +
           (s.preps.length ? `<h4>Đã sơ chế</h4>${s.preps.map((p) => `<span class="tag ${R.holdFactor(g, RECIPES[p.rid], p.at) < 1 ? 'warn' : 'good'}">${RECIPES[p.rid].short}: ${p.n} phần · ${Math.round(p.q * 100)}đ${R.holdFactor(g, RECIPES[p.rid], p.at) < 1 ? ' · để lâu, kém ngon' : ''}</span>`).join('')}` : '') +
           (R.has(g, 'tu_dong') ? '<p class="muted">Tủ đông công nghiệp đang giữ lạnh tự động (+80 kg sức chứa, không cần mua đá viên).</p>' : R.has(g, 'thungda') && !chilled ? '<p class="muted">Có thùng đá nhưng chưa có đá viên — mua đá ở tạp hoá Cô Ba để giữ lạnh thịt cá.</p>' : !R.has(g, 'thungda') ? '<p class="muted">Chưa có thùng đá: thịt cá để ngoài trời nóng rất mau hỏng.</p>' : '');
       } else if (tab === 'staff') {
@@ -381,6 +406,20 @@ export function openPanel(ui: UI, name: string) {
       const places = ctx.acts.places(); acts.go = (i) => { ctx.acts.way = places[i]; ui.closePanel(); toast(`Đã ghim: ${places[i].name}. Đi theo mũi tên và cột sáng vàng.`, 'info', 'pin'); }; acts.clear = () => { ctx.acts.way = null; };
       draw(`${ic('map')} Bản đồ khu phố`, [], `<div class="grid2"><canvas id="map" width="640" height="610"></canvas><div><p class="muted">Chạm một địa điểm để ghim đường đi.</p><div class="list">${places.map((p, i) => `<button class="btn small" style="justify-content:flex-start" data-a="go" data-i="${i}">${ic('pin')} ${p.name} <span class="muted">· ${Math.round(Math.hypot(p.x - ctx.player.x, p.z - ctx.player.z))} m</span></button>`).join('')}</div></div></div>`, ctx.acts.way ? `<button class="btn" data-a="clear">Bỏ ghim “${esc(ctx.acts.way.name)}”</button>` : '');
       drawMap(document.getElementById('map') as HTMLCanvasElement, places);
+    } else if (name === 'changelog') {
+      // Nhật ký phát triển: mở từ Cài đặt, đọc được ngay trong game.
+      // Có mục mới thì đánh dấu "chưa đọc" tới lần mở đầu tiên, để người chơi biết bản này vừa thêm gì.
+      const seenVer = g.flags.logSeen ?? 0;
+      const newestVer = Number((CHANGELOG[0]?.v ?? '').replace(/\D/g, '')) || 0;
+      const firstUnseen = seenVer !== newestVer;
+      g.flags.logSeen = newestVer;
+      if (firstUnseen) bus.emit('save', 'xem nhat ky');
+      const tag = (e: (typeof CHANGELOG)[number], i: number) => {
+        const isNew = firstUnseen && i === 0;
+        return `<h4 style="margin-top:.9em">${e.v} · ${e.tag}${isNew ? ' <span class="tag good">mới</span>' : ''}</h4>` +
+          `<div class="list">${e.items.map((t) => `<div class="item"><div class="grow"><b style="font-weight:600">${t}</b></div></div>`).join('')}</div>`;
+      };
+      draw(`${ic('book')} Nhật ký phát triển`, [], `<p class="muted">Những bản gần đây và việc đã làm trong từng bản. Bản mới nhất ở trên cùng.</p>` + CHANGELOG.map(tag).join(''));
     } else if (name === 'settings') {
       if (devOpen) {
         const sections = getDevSections();
@@ -403,7 +442,11 @@ export function openPanel(ui: UI, name: string) {
         return;
       }
       const st = ctx.set;
+      // Chưa đọc bản mới nhất thì nút có nhãn "mới" — chỉ để người chơi biết vừa có gì đổi.
+      const newestVer = Number(((CHANGELOG[0]?.v ?? '').replace(/\D/g, '')) || 0);
+      const unreadLog = (g.flags.logSeen ?? 0) !== newestVer;
       acts.q = (i) => { st.quality = i; st.auto = false; ctx.applyQuality(); saveSettings(); }; acts.cam3 = () => { ctx.ui.switchView(); ctx.ui.panel('settings'); }; acts.fps = () => { st.fps = !st.fps; saveSettings(); }; acts.auto = () => { st.auto = !st.auto; saveSettings(); };
+      acts.log = () => ui.panel('changelog');
       acts.fs = () => { void toggleFullscreen(); }; acts.layout = () => ui.editLayout(); acts.save = () => { ctx.save('thu cong'); toast('Đã lưu game.', 'good'); }; acts.menu = () => { ctx.save('ve menu'); ui.closePanel(); ctx.toMenu(); };
       draw(`${ic('gear')} <span id="dev-unlock" style="cursor:pointer;user-select:none">Cài đặt</span>`, [], `<h4>Đồ hoạ</h4><div style="display:flex;gap:.4em;flex-wrap:wrap">${QUALITY.map((q, i) => `<button class="btn${st.quality === i ? ' yellow' : ''}" data-a="q" data-i="${i}">${q.name}</button>`).join('')}<button class="btn${st.auto ? ' green' : ''}" data-a="auto">Tự hạ khi giật: ${st.auto ? 'bật' : 'tắt'}</button><button class="btn${st.fps ? ' green' : ''}" data-a="fps">Hiện FPS: ${st.fps ? 'bật' : 'tắt'}</button>${canFullscreen() ? '<button class="btn" data-a="fs">Toàn màn hình</button>' : ''}</div>
         <h4>Góc nhìn</h4><div style="display:flex;gap:.6em;align-items:center;flex-wrap:wrap"><button class="btn ${st.cam3 ? 'green' : ''}" data-a="cam3">${st.cam3 ? 'Đang ở góc nhìn thứ ba' : 'Đang ở góc nhìn thứ nhất'} — bấm để đổi</button><span class="muted">Góc nhìn thứ ba cho thấy quần áo, kiểu tóc bạn mua. Phím tắt: V.</span></div>
@@ -412,6 +455,7 @@ export function openPanel(ui: UI, name: string) {
         <div class="uiscale"><span class="muted">Nhỏ</span><input type="range" min="${UI_SCALE[0] * 100}" max="${UI_SCALE[1] * 100}" step="5" value="${Math.round(st.ui.scale * 100)}" data-r="uiscale"><span class="muted">To</span></div>
         <div class="uiprev" id="uiprev"><span class="chip">${ic('dish')} Độ no</span><span class="stat" style="color:#fff7e4"><span style="display:flex;align-items:center;gap:.25em">${ic('smile')}<i style="display:block;width:3.3em;height:.5em;background:rgba(255,255,255,.22);border-radius:.3em;overflow:hidden"><b style="display:block;height:100%;width:70%;background:var(--green)"></b></i></span></span><button class="ib" style="pointer-events:none">${ic('bag')}</button></div>
         <h4>Âm thanh hiệu ứng</h4><input type="range" min="0" max="100" value="${Math.round(st.sfx * 100)}" data-r="sfx"><h4>Nhạc nền</h4><input type="range" min="0" max="100" value="${Math.round(st.music * 100)}" data-r="music"><h4>Độ nhạy xoay góc nhìn</h4><input type="range" min="30" max="250" value="${Math.round(st.sens * 100)}" data-r="sens">
+        <h4>Nhật ký phát triển</h4><div style="display:flex;gap:.6em;align-items:center;flex-wrap:wrap"><button class="btn yellow" data-a="log">Xem các bản gần đây${unreadLog ? ' <span class="tag good">mới</span>' : ''}</button><span class="muted">${CHANGELOG[0]?.v ?? ''} · ${CHANGELOG[0]?.tag ?? ''}</span></div>
         <h4>Cách chơi</h4><p class="muted">Điện thoại: ngón trái kéo để đi, ngón phải vuốt để nhìn, chạm vào người hoặc đồ vật (hay nút tròn vàng) để tương tác. Máy tính: W A S D đi, giữ Shift chạy, kéo chuột để nhìn, E tương tác, Tab túi đồ, B sổ tay, M bản đồ. Game tự lưu sau mỗi việc quan trọng.</p>`,
         `<button class="btn green" data-a="save">Lưu ngay</button><button class="btn" data-a="menu">Về màn hình chính</button>`);
       M.querySelectorAll('input[type=range]').forEach((inp) => ((inp as HTMLInputElement).oninput = () => { const k = (inp as HTMLElement).dataset.r as 'sfx' | 'music' | 'sens' | 'uiscale', v = +(inp as HTMLInputElement).value / 100; if (k === 'uiscale') { st.ui.scale = v; ui.layout(); const lab = M.querySelector('#uiscale-v'); if (lab) lab.textContent = Math.round(v * 100) + '%'; } else st[k] = v; ctx.sound.setVol(st.sfx, st.music); saveSettings(); }));

@@ -42,11 +42,45 @@ export const stallCap = (g: Game) => tier(g).cap + (has(g, 'tu_dong') ? 80 : 0);
 export const stallQueueCap = (g: Game) => tier(g).queue + (has(g, 'hopmangve') ? 2 : 0);
 export const stallTrayCap = (g: Game) => tier(g).trays + (has(g, 'tu_kinh') ? 8 : 0);
 export const stallRoom = (g: Game) => stallCap(g) - weightOf(g.stall.store);
+/**
+ * Có lấy được đồ ra khỏi kho quầy hay không — KHÔNG cần đứng cạnh quầy.
+ * Người chơi yêu cầu (lượt 37): "cho phép lấy đồ ra khỏi quầy mà không cần đặt quầy vào chỗ bán".
+ * Kho quầy vẫn luôn mở để LẤY đồ ra (kể cả khi đang mang theo hay đang để ở nhà); chỉ việc BỎ VÀO thì
+ * mới cần có quầy trong tầm tay, để không thành cái túi không đáy.
+ */
+export const canTakeFromStore = (g: Game) => g.stall.tier > 0;
+/** Ở gần quầy (hoặc đang mang quầy) thì mới bỏ đồ vào kho quầy được. */
+export const nearStall = (g: Game, x: number, z: number) => {
+  const s = g.stall;
+  if (s.tier <= 0) return false;
+  if (s.where === 'carried') return true;
+  if (s.where !== 'placed' && s.where !== 'home') return true;
+  return (s.x - x) ** 2 + (s.z - z) ** 2 < 8 * 8;
+};
 export const homeRoom = (g: Game) => HOUSING[g.housing].storage - weightOf(g.home);
 /** Nhà thuê theo tuần thì cắm được tủ lạnh của mình. */
 export const PLUGGABLE = ['tro', 'canho', 'nharieng', 'cuahang'];
 export const homeChilled = (g: Game) => HOUSING[g.housing].cold || (PLUGGABLE.includes(g.housing) && has(g, 'tulanh') && !blackoutAt(g, 'dancu'));
 export const stallChilled = (g: Game) => (has(g, 'tu_dong') && (!g.stall.spot || !blackoutAt(g, districtAt(g.stall.x, g.stall.z)))) || (has(g, 'thungda') && countOf([g.stall.store], 'da') > 0);
+/**
+ * Số giờ còn bán được của một lô trong kho quầy (ước lượng, dùng cho lời nhắc).
+ * Đồ cần lạnh mà quầy không có tủ đá/thùng đá thì hỏng nhanh gấp 2,6 lần — đây chính là lý do
+ * người chơi thấy "sữa bỏ vào quầy rồi mất": nó hỏng chứ không bị ai lấy.
+ */
+export function hoursLeft(g: Game, st: Stack): number {
+  const d = INGS[st.id];
+  if (!d || d.shelf > 9000) return Infinity;
+  const chilled = stallChilled(g), w = wx(g);
+  const perHour = (100 / d.shelf) * (chilled ? 0.22 * (has(g, 'tu_dong') ? 0.35 : 1) : d.cold ? 2.6 * w.spoil : w.spoil);
+  if (perHour <= 0) return Infinity;
+  return Math.max(0, (st.fresh - 10) / perHour); // dưới 10% tươi là hỏng hẳn
+}
+/** Đồ cần lạnh đang để ở quầy mà quầy không có gì giữ lạnh: đếm số loại + tên vài món. */
+export function coldUnprotected(g: Game): { kinds: number; names: string[] } {
+  if (stallChilled(g)) return { kinds: 0, names: [] };
+  const cold = g.stall.store.filter((st) => INGS[st.id]?.cold && INGS[st.id].shelf < 9000);
+  return { kinds: cold.length, names: [...new Set(cold.map((st) => INGS[st.id].name))].slice(0, 3) };
+}
 export const activeEvents = (g: Game): EventDef[] => g.ev.active.map((a) => EVENTS[a.id]).filter(Boolean);
 export const eventOn = (g: Game, id: string) => g.ev.active.some((a) => a.id === id);
 export const blackoutAt = (g: Game, d: District) => activeEvents(g).some((e) => e.blackout?.includes(d));
@@ -1210,6 +1244,12 @@ export interface ShopRow {
   rent: number;
   /** Sổ hôm nay. */
   revenue: number; sold: number; customers: number; lost: number;
+  /** Nguyên liệu trong kho quầy sắp hỏng (tươi < 35%): số loại và tên vài món. Rỗng = không có gì sắp hỏng. */
+  spoilKinds: number; spoilNames: string[];
+  /** Nguyên liệu thô trong kho (không phải món đã nấu): số loại + số kg. App phải thấy giống bảng Quầy trên PC. */
+  storeKinds: number; storeKg: number;
+  /** Đồ cần lạnh đang để ở quầy mà không có tủ đá/thùng đá: số loại + tên vài món, và số giờ còn bán được. */
+  coldKinds: number; coldNames: string[]; coldHours: number;
   /** Câu gợi ý ngắn cho người chơi biết nên làm gì tiếp. */
   hint: string;
   canToggle: boolean;
@@ -1219,12 +1259,20 @@ export interface ShopRow {
 export function shopRows(g: Game): ShopRow[] {
   const s = g.stall, out: ShopRow[] = [];
   const ready = s.ready.filter((r) => r.n > 1e-6);
+  // Đồ trong kho quầy vẫn hỏng tiếp — app phải nhắc, để người chơi không tưởng "bỏ vào quầy là mất".
+  const spoiling = s.store.filter((st) => INGS[st.id] && INGS[st.id].shelf < 9000 && st.fresh < 35);
+  const spoilNames = [...new Set(spoiling.map((st) => INGS[st.id].name))];
+  const cold = coldUnprotected(g);
+  const coldHours = cold.kinds ? Math.min(...s.store.filter((st) => INGS[st.id]?.cold).map((st) => hoursLeft(g, st))) : 0;
   const stock = ready.reduce((a, r) => a + r.n, 0);
   const placed = s.where === 'placed';
   out.push({
     id: 'main', name: placed ? `Quầy chính · ${spotById(s.spot ?? '')?.name ?? 'ngoài phố'}` : 'Quầy chính · đang mang theo',
     open: !!s.open, staffed: placed, stock, kinds: ready.length, low: ready.filter((r) => r.n <= 1).length,
     rent: s.tier >= 3 ? stallRent(g) : 0,
+    spoilKinds: spoilNames.length, spoilNames: spoilNames.slice(0, 3),
+    storeKinds: s.store.length, storeKg: Math.round(weightOf(s.store) * 10) / 10,
+    coldKinds: cold.kinds, coldNames: cold.names, coldHours: Math.round(coldHours),
     revenue: g.led.revenue, sold: g.led.sold, customers: g.led.customers, lost: g.led.lost,
     hint: !placed ? 'Quầy chưa đặt ra phố — ra mặt bằng rồi dựng quầy mới bán được.'
       : !menuOf(g).length ? 'Chưa bật món nào trong thực đơn.'
@@ -1238,7 +1286,8 @@ export function shopRows(g: Game): ShopRow[] {
     out.push({
       id: 'branch', name: `Chi nhánh · ${spotById(b.spot)?.name ?? '?'}`,
       open: !!b.open, staffed: !!b.keeper, stock: br.reduce((a, r) => a + r.n, 0), kinds: br.length,
-      low: br.filter((r) => r.n <= 1).length, rent: b.rent,
+      low: br.filter((r) => r.n <= 1).length, rent: b.rent, spoilKinds: 0, spoilNames: [], storeKinds: 0, storeKg: 0,
+      coldKinds: 0, coldNames: [], coldHours: 0,
       revenue: b.led.revenue, sold: b.led.sold, customers: b.led.customers, lost: b.led.lost,
       hint: !b.keeper ? 'Chưa có người trông coi — thuê người thì chi nhánh mới bán.'
         : !b.open ? 'Chi nhánh đang đóng (thiếu tiền thuê hoặc bạn tắt) — mở lại đi.'
@@ -1574,14 +1623,20 @@ function newDay(g: Game, R: RNG) {
   let waste = 0;
   for (const rd of s.ready) waste += rd.n * rd.cost; s.ready = [];
   for (const p of s.preps.slice()) { const r = RECIPES[p.rid]; if (absMin(g) - p.at > Math.max(r.hold, 300)) { waste += p.n * p.cost; s.preps.splice(s.preps.indexOf(p), 1); } }
-  for (const l of [g.bag, s.store, g.home]) waste += purge(l).lost;
+  // Dọn đồ hỏng qua đêm: phải NÓI rõ món nào hỏng, nếu không người chơi tưởng đồ bỏ vào quầy bị mất trộm.
+  const spoiled: string[] = [];
+  for (const l of [g.bag, s.store, g.home]) { const p = purge(l); waste += p.lost; spoiled.push(...p.names); }
   g.led.loss += waste;
+  if (spoiled.length) {
+    const uniq = [...new Set(spoiled)];
+    toast(`Đồ hỏng phải bỏ: ${uniq.slice(0, 3).join(', ')}${uniq.length > 3 ? ` và ${uniq.length - 3} món nữa` : ''}. Đồ nguội để vài hôm vẫn được, thịt cá chưa nấu thì không.`, 'warn', 'box');
+  }
   branchNewDay(g);
   errandsNewDay(g);
   g.hist.push(g.led); if (g.hist.length > 30) g.hist.shift();
   g.tot.best = Math.max(g.tot.best, g.led.revenue);
   g.day++; g.min -= 1440; g.led = newLedger(g.day);
-  if (waste > 500) toast(`Đồ ôi thiu và đồ ế phải bỏ: mất ${money(waste)}.`, 'bad', 'box');
+  if (waste > 500) toast(`Tổng thiệt hại đồ bỏ đi: ${money(waste)}.`, 'bad', 'box');
   g.wd.picked = []; g.wd.sacks = 0; g.wd.plates = 0; g.wd.deliveries = 0; g.wd.begTired = Math.max(0, g.wd.begTired - 60); g.wd.haggled = {}; g.wd.litterDay = g.day;
   s.dirt = clamp(s.dirt + 6, 0, 100); s.open = false;
   dailyDebts(g); dailyHousing(g);

@@ -798,3 +798,73 @@ Probe `tools/probe/steps/checkstaff.mjs` (390×844), kết quả `đạt: true`:
 `tools/probe/steps/checkdev35.mjs`: mở menu ẩn 8 lần bấm → bấm "Chạy" ở mục đầu → ra bảng Quầy có tab **Nhân sự** và nút
 **Giao đi chợ…** (`nútChợ: ["Giao đi chợ…"]`, `errors: none`).
 Ảnh: `anh_ket_qua/android/39_quan_thuong_co_nhan_su.png`, `40_nha_hang_nhan_su_dat_ban.png`.
+
+## Lượt 36 — Đồ bỏ vào quầy "biến mất": bánh mì lâu hỏng hơn + cảnh báo đồ cần lạnh ✅ đã xong
+
+Người chơi báo *"bánh mì và sữa tôi bỏ vào quầy lại biến mất"*, nghi lỗi khác nhau giữa điện thoại và PC.
+**Kiểm bằng probe thật trước khi sửa** (`tools/probe/steps/stallvanish.mjs`, 390×844): mua bánh mì + sữa bằng
+`acts.take`, bỏ vào quầy bằng nút "› Quầy", rồi cho trôi 1 ngày → **không có lỗi mất đồ**; đồ vẫn nằm trong kho
+(`banhmi×2 @41%`). Cái làm người chơi tưởng "biến mất" là ba thứ im lặng:
+
+1. **Đồ hỏng bị dọn mà không nói món gì.** `newDay()` purge cả túi/quầy/nhà rồi chỉ báo "mất bao nhiêu tiền".
+   Nay báo đích danh: *"Đồ hỏng phải bỏ: Tôm. Đồ nguội để vài hôm vẫn được, thịt cá chưa nấu thì không."*
+2. **Bánh mì hỏng sau ~22 giờ** — mua chiều hôm nay, sáng mai mở ra đã mất. Người chơi xin **tăng 100% thời gian
+   hỏng**: `banhmi.shelf` 22 → **44 giờ** (×1,2 hệ số chung của bảng = **52,8 giờ**, đúng gấp đôi mức cũ 26,4).
+3. **Đồ cần lạnh để ở quầy mà không có tủ đá** thì hỏng nhanh **2,6 lần** (sữa, thịt) — im lặng hoàn toàn.
+   Thêm `hoursLeft()` + `coldUnprotected()` trong `src/sim/rules.ts`, hiện ở **bảng Kho quầy (PC)** và **app Quản lý
+   cửa hàng (điện thoại)**: *"Sữa tươi, Thịt heo nạc cần lạnh mà quầy không có tủ đá — để đây khoảng 4 giờ nữa là hỏng."*
+
+**Cho PC và điện thoại thấy giống nhau** (người chơi dặn "kiểm các món khác với trên đt và pc"): app Quản lý cửa hàng
+nay có thêm dòng **"Kho nguyên liệu: N loại · X kg"** (trước chỉ có số phần đã nấu), dòng cảnh báo **sắp hỏng** kèm tên
+món, và cảnh báo **đồ cần lạnh**. Nút **"Bỏ"** trong bảng Túi đổi thành **"Vứt"** + toast *"Đã vứt 2 ổ bánh mì đi."*
+(trước đây vứt cả lô mà không nói gì — cũng là một kiểu "biến mất").
+
+**Sữa Tartieen**: kiểm hết `src/data/ingredients.ts` + `src/data/shops.ts` — game **không có** mục "sữa Tartieen";
+chỉ có **Sữa tươi** (`suatuoi`, hộp 1 kg, 32.000₫, bán ở MiniMart) và **Sữa đặc** (`suadac`, lon, bán ở MiniMart).
+Nên nếu bạn ấy "mua hộp sữa Tartieen rồi biến mất" thì đó là do **hỏng** (sữa là đồ cần lạnh). Chưa thêm món mới vì
+chưa rõ ý người chơi — sẽ hỏi.
+
+**Kiểm thử:** `tests/hong.test.ts` (8 bài: đồ bỏ quầy còn nguyên, bánh mì 52,8 giờ, báo tên món hỏng, app báo sắp hỏng,
+cảnh báo đồ lạnh có/không tủ đá, thịt ≤ 6 giờ, giá bánh mì khớp giữa các chỗ hiển thị, cuối buổi lò bánh mì xả hàng rẻ hơn)
++ `tests/data.test.ts` cập nhật → tổng **464 bài / 36 tệp**. `tsc` sạch, `build` + `build:pages` OK.
+Probe `stallvanish.mjs` (`errors: none`): `store` sau khi bỏ = `banhmi×2`, báo hỏng đúng tên **Tôm**, app có
+`Kho nguyên liệu: 2 loại · 0,6 kg` + `Đồ trong kho sắp hỏng: Bánh mì`. Probe `coldwarn.mjs`: bảng Kho quầy báo
+*"…để đây khoảng 40 giờ nữa là hỏng"* cho sữa; app báo cùng nội dung. Probe `dev36.mjs`: hai mục menu ẩn chạy đúng.
+Ảnh: `anh_ket_qua/android/41_banh_mi_trong_quay.png`, `42_canh_bao_do_lanh.png`, `43_app_bao_do_lanh.png`.
+
+## Lượt 37 — Lấy đồ ra khỏi kho quầy ở bất cứ đâu ✅ đã xong
+
+Người chơi xin: *"cho phép lấy đồ ra khỏi quầy mà không cần đặt quầy vào chỗ bán"*.
+
+- **`rules.ts`**: thêm `canTakeFromStore(g)` (có quầy là lấy được) và `nearStall(g, x, z)` (đang mang quầy coi như
+  ở cạnh; quầy đặt ở chỗ bán / ở nhà thì phải trong 8 m). Bảng `panels.ts` dùng chung hàm này thay cho biến `near` cũ.
+- **Bảng Túi đồ** có thêm tab **"Kho quầy"** (`bag` → `Nguyên liệu · Kho quầy · Dụng cụ`): xem kho quầy và bấm
+  **"› Túi"** để lấy ra, ở bất cứ đâu — đang gánh quầy, quầy để ở nhà, hay đang đứng giữa chợ. Dòng đầu ghi rõ
+  *"Kho quầy (chỗ ở) · 0,2/14 kg — lấy ra được ở bất cứ đâu."*
+- **Chỉ chiều bỏ VÀO** kho mới cần ở gần quầy (giữ luật cũ: không thành túi không đáy).
+- Tab tự ẩn khi chưa có quầy (tier 0) — lúc đó không có kho nào để lấy.
+
+**Kiểm thử:** `tests/hong.test.ts` thêm 2 bài (carried/placed/home; chưa có quầy), `tests/devpoints.test.ts` cập nhật
+→ tổng **466 bài / 36 tệp**. `tsc` sạch, `build` + `build:pages` OK.
+Probe `takestore.mjs` (`errors: none`): quầy `carried` → tab `Nguyên liệu · Kho quầy · Dụng cụ`, lấy 4 ổ bánh mì ra túi
+(`túi: banhmi×4`, `store: heo×2`); quầy `home` đứng ngoài đường vẫn lấy được (`túi: banhmi×7`).
+Probe `dev37.mjs`: hai mục menu ẩn (`take_store`, `take_store_home`) chạy đúng.
+Ảnh: `anh_ket_qua/android/44_lay_do_tu_kho_quay.png`, `45_kho_quay_o_nha.png`.
+
+## Lượt 38 — Nhật ký phát triển xem được trong Cài đặt ✅ đã xong
+
+Người chơi xin: *"làm thêm 1 dev log coi được trong Cài đặt (chỉ cần từ bản trước đến bản này và các bản sau)
+những gì đã làm"*.
+
+- **`src/data/changelog.ts`** (mới): mảng `CHANGELOG` — mới nhất ở đầu, mỗi bản gồm `v` ("Lượt 37"), `tag` (một dòng
+  tóm tắt) và `items` (những việc đã làm, viết như kể cho người chơi nghe, không phải câu commit). Hiện có **5 bản**:
+  lượt 31, 32, 35, 36, 37. Bản sau chỉ cần thêm một mục vào đầu mảng; giữ tối đa 8 bản (bài test canh).
+- **Màn hình mới `changelog`** (`src/ui/panels.ts`): mở từ **Cài đặt › khối "Nhật ký phát triển" › nút "Xem các bản
+  gần đây"**, liệt kê từng bản; bản chưa đọc có nhãn **"mới"**; đọc xong lưu `g.flags.logSeen = 37` để lần sau nhãn biến mất.
+- Khối trong Cài đặt có sẵn dòng phụ đề *"Lượt 37 · Lấy đồ ra khỏi quầy ở bất cứ đâu"* — không cần mở mới biết bản mới nhất.
+
+**Kiểm thử:** `tests/changelog.test.ts` (4 bài: thứ tự giảm dần + ≤ 8 bản, bản mới nhất là lượt 37, mỗi bản ≥ 2 việc và
+câu đủ dài, không lặp câu) → tổng **470 bài / 37 tệp**. `tsc` sạch, `build` + `build:pages` OK.
+Probe `changelog.mjs` (`errors: none`): Cài đặt có khối + nhãn "mới"; mở ra đủ **20 việc** của 5 bản, đầu đề đúng thứ tự
+`Lượt 37 … Lượt 31`; `logSeen: 0 → 37`; mở lại Cài đặt thì nhãn "mới" đã mất.
+Ảnh: `anh_ket_qua/android/46_nhat_ky_phat_trien.png`.

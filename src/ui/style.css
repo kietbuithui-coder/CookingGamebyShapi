@@ -520,5 +520,6 @@ svg.pg { width: 1.85em; height: 1.85em; fill: none; stroke: currentColor; stroke
 .plist .row em.ok { background: rgba(63, 174, 90, .22); color: #1d6b32; }
 .plist .row em.bad { background: rgba(217, 70, 60, .2); color: #8f1d16; }
 .plist .row s.hint { opacity: .9; font-style: italic; }
+.plist .row s.warnline { color: #b4462c; font-weight: 600; opacity: 1; }
 .plist .row .btn.small { flex: none; align-self: center; }
 .plist .row b em { white-space: nowrap; }
