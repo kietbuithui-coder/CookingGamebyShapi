@@ -13,7 +13,7 @@ import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Tối ưu FPS trên điện thoại (mức “Vừa” nhanh gấp 2,5 lần) và chơi offline sau khi lưu bản game';
+export const DEV_BUILD_TAG = 'Rau củ ở chợ lâu hỏng 3 lần, ăn uống ở quán no lâu 2,5 lần, thêm bệnh đau bụng và thuốc đau bụng ở nhà thuốc';
 
 export interface DevAction {
   id: string;
@@ -72,40 +72,41 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Mượt hơn trên điện thoại và chơi offline (lượt 40)',
+      title: 'Mới nhất — Rau củ lâu hỏng, ăn quán no lâu, bệnh đau bụng (lượt 41)',
       items: [
         {
-          id: 'perf_now',
-          label: 'Đo FPS thật ở mức đồ hoạ đang dùng',
-          sub: 'Đếm khung hình trong 3 giây, kèm số lệnh vẽ và tỉ lệ điểm ảnh — biết ngay máy có gánh nổi không',
+          id: 'rau_lau_hong',
+          label: 'Bỏ rau củ mới mua vào kho quầy rồi xem hạn dùng',
+          sub: 'Rau muống 105 giờ, cà rốt 360 giờ… — mở Quầy › Kho quầy xem độ tươi',
           tone: 'green',
           closePanel: false,
           run: () => {
-            const t0 = performance.now(); let n = 0, worst = 0, last = t0;
-            const tick = (now: number) => {
-              const d = now - last; last = now; if (d > worst) worst = d; n++;
-              if (now - t0 < 3000) { requestAnimationFrame(tick); return; }
-              const fps = (n * 1000) / (now - t0), info = ctx.renderer.info.render;
-              const q = QUALITY[ctx.set.quality];
-              toast(`Mức “${q.name}”: ${fps.toFixed(0)} FPS · khung chậm nhất ${worst.toFixed(0)} ms · ${info.calls} lệnh vẽ · ${Math.round(info.triangles / 1000)}k tam giác · ${ctx.renderer.getPixelRatio().toFixed(2)} điểm ảnh${worst > 120 ? ' — máy đang giật, hạ xuống mức thấp hơn.' : ''}`,
-                fps < 25 ? 'warn' : 'good', 'bolt', true);
-            };
-            requestAnimationFrame(tick);
-            toast('Đang đo 3 giây…', 'info', 'bolt');
+            const g = ctx.g;
+            g.cash = Math.max(g.cash, 300000);
+            for (const id of ['ganh', 'daothot', 'bepthan', 'vi', 'noi']) { if (!R.has(g, id)) R.buyGear(g, id); }
+            g.stall.tier = 1; g.stall.where = 'placed';
+            const sp = SPOTS.find((x) => x.id === 'cv');
+            if (sp) ctx.stall.placeAt(sp);
+            ctx.stall.refresh();
+            for (const id of ['raumuong', 'rauthom', 'xalach', 'carot', 'cachua', 'bapcai', 'khoaitay']) {
+              addStack(g.stall.store, { id, n: 1, fresh: 100, q: 0.95, cost: R.unitCost(g, id) });
+            }
+            ctx.ui.closePanel(); ctx.ui.panel('stall');
+            toast('Rau củ nay để được lâu gấp 3: rau muống 105 giờ, cà rốt 360 giờ — khoai tây và hành thì vẫn như cũ.', 'info', 'box', true);
           },
         },
         {
-          id: 'offline_try',
-          label: 'Lưu bản chơi offline rồi kiểm tra kho lưu',
-          sub: 'Tải sẵn toàn bộ tệp game vào bộ nhớ đệm; xong là tắt mạng vẫn mở được',
+          id: 'dau_bung',
+          label: 'Thử bệnh đau bụng rồi mua thuốc chữa',
+          sub: 'Bị đau bụng ngay, bảng sức khoẻ hiện chip “Đau bụng” — ra nhà thuốc An Tâm mua liều là khỏi',
           tone: 'yellow',
           closePanel: false,
           run: () => {
-            void downloadForOffline().then(async (m) => {
-              const reg = await navigator.serviceWorker?.getRegistration?.();
-              const keys = (await caches.keys?.()) ?? [];
-              toast(`${m} · ${reg?.active ? 'service worker đang chạy' : 'chưa có service worker'} · ${keys.length} kho lưu`, 'good', 'download', true);
-            });
+            const g = ctx.g;
+            g.cash = Math.max(g.cash, 100000);
+            R.sickStomach(g, 'Ăn đồ ôi thiu (thử)', 180);
+            ctx.ui.closePanel();
+            toast('Đang đau bụng — mở Cài đặt › không, ra Nhà thuốc An Tâm mua “Thuốc đau bụng” 12.000₫ là khỏi ngay.', 'warn', 'heart', true);
           },
         },
       ],

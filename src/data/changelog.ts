@@ -14,6 +14,18 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 41',
+    tag: 'Rau củ để được lâu, ăn quán no lâu, và bệnh đau bụng có thuốc chữa',
+    items: [
+      'Rau củ mua ở chợ để được lâu gấp 3–3,5 lần: rau muống 30 → 105 giờ, cà rốt 120 → 360 giờ, cà chua 72 → 216 giờ…',
+      'Khoai tây, khoai lang, hành tây, tỏi, gừng, sả giữ nguyên như cũ — nhóm này vốn đã rất bền.',
+      'Ăn ở quán cơm, quán ăn, chùa hay uống ở quán cà phê thì no lâu hơn 2,5 lần, giá không đổi.',
+      'Có bệnh đau bụng: ăn uống bậy (đồ mua sẵn, nước ở vòi công cộng, nước quán cà phê) là có thể bị, máu tụt dần chứ không mất một cục.',
+      'Mua thuốc đau bụng ở nhà thuốc An Tâm hoặc quầy thuốc bệnh viện là khỏi ngay — không mua thì vài giờ cũng tự dịu.',
+      'Món mình tự nấu từ 2 sao trở lên thì gần như không đau bụng; dưới 2 sao mới có rủi ro.',
+    ],
+  },
+  {
     v: 'Lượt 40',
     tag: 'Mượt hơn trên điện thoại, và chơi được khi mất mạng',
     items: [
@@ -79,17 +91,6 @@ export const CHANGELOG: LogEntry[] = [
       'Tạp hoá Cô Ba và MiniMart có khách thật vào lựa hàng: đi dọc kệ, nói đúng tên món và đúng giá hôm nay, có khi nhờ bạn lấy giùm món trên kệ cao.',
       'Người đi đường chào theo hoàn cảnh: bạn giàu, bạn đang túng, hay bạn đang bị công an để ý.',
       'Menu Test & Dịch chuyển (ẩn) có thêm nhóm của lượt 31.',
-    ],
-  },
-  {
-    v: 'Lượt 31',
-    tag: 'Con người: dáng · râu · nón · thoại riêng · ca làm',
-    items: [
-      'Tiệm may Cô Ngọc bán ba dáng người (gọn / vừa / đậm) — đổi cả chiều cao, tốc độ đi và độ hao sức; có thêm mũ nón.',
-      'Ghế Chú Bảy có mục râu: sạch, râu mép, râu cằm, râu quai nón.',
-      '15 nhân vật cố định có câu nói riêng, xoay theo ngày.',
-      'Hai người phụ quầy chia ca sáng / ca chiều / cả ngày; ngoài ca thì họ không tới quầy.',
-      'Từ xe đẩy trở lên, người chơi tự mặc tạp dề của người bán.',
     ],
   },
 ];
