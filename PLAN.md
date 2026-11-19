@@ -850,3 +850,21 @@ Probe `takestore.mjs` (`errors: none`): quầy `carried` → tab `Nguyên liệu
 (`túi: banhmi×4`, `store: heo×2`); quầy `home` đứng ngoài đường vẫn lấy được (`túi: banhmi×7`).
 Probe `dev37.mjs`: hai mục menu ẩn (`take_store`, `take_store_home`) chạy đúng.
 Ảnh: `anh_ket_qua/android/44_lay_do_tu_kho_quay.png`, `45_kho_quay_o_nha.png`.
+
+## Lượt 38 — Nhật ký phát triển xem được trong Cài đặt ✅ đã xong
+
+Người chơi xin: *"làm thêm 1 dev log coi được trong Cài đặt (chỉ cần từ bản trước đến bản này và các bản sau)
+những gì đã làm"*.
+
+- **`src/data/changelog.ts`** (mới): mảng `CHANGELOG` — mới nhất ở đầu, mỗi bản gồm `v` ("Lượt 37"), `tag` (một dòng
+  tóm tắt) và `items` (những việc đã làm, viết như kể cho người chơi nghe, không phải câu commit). Hiện có **5 bản**:
+  lượt 31, 32, 35, 36, 37. Bản sau chỉ cần thêm một mục vào đầu mảng; giữ tối đa 8 bản (bài test canh).
+- **Màn hình mới `changelog`** (`src/ui/panels.ts`): mở từ **Cài đặt › khối "Nhật ký phát triển" › nút "Xem các bản
+  gần đây"**, liệt kê từng bản; bản chưa đọc có nhãn **"mới"**; đọc xong lưu `g.flags.logSeen = 37` để lần sau nhãn biến mất.
+- Khối trong Cài đặt có sẵn dòng phụ đề *"Lượt 37 · Lấy đồ ra khỏi quầy ở bất cứ đâu"* — không cần mở mới biết bản mới nhất.
+
+**Kiểm thử:** `tests/changelog.test.ts` (4 bài: thứ tự giảm dần + ≤ 8 bản, bản mới nhất là lượt 37, mỗi bản ≥ 2 việc và
+câu đủ dài, không lặp câu) → tổng **470 bài / 37 tệp**. `tsc` sạch, `build` + `build:pages` OK.
+Probe `changelog.mjs` (`errors: none`): Cài đặt có khối + nhãn "mới"; mở ra đủ **20 việc** của 5 bản, đầu đề đúng thứ tự
+`Lượt 37 … Lượt 31`; `logSeen: 0 → 37`; mở lại Cài đặt thì nhãn "mới" đã mất.
+Ảnh: `anh_ket_qua/android/46_nhat_ky_phat_trien.png`.
