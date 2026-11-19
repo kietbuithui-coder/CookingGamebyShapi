@@ -132,3 +132,24 @@ describe('lấy đồ ra khỏi kho quầy ở mọi lúc', () => {
     expect(nearStall(g, 0, 0)).toBe(false);
   });
 });
+
+// Lượt 39 — người chơi xin tăng hạn dùng cho bánh phở/bún và đồ nguội, giống bánh mì.
+describe('đồ nguội ăn liền để được 2 ngày trong quầy', () => {
+  it('bánh phở, bún, xúc xích, giò, chả, đậu hũ đều sống qua một ngày trong quầy', () => {
+    const g = withStall();
+    g.min = 8 * 60;
+    for (const id of ['banhpho', 'bun', 'xucxich', 'gio', 'chaca', 'dauhu']) give(g, id, 1, 100);
+    // trôi từng giờ: máy làm hỏng đồ chạy theo từng giờ một, tua một cục qua ngày thì nó không chạy
+    for (let i = 0; i < 20; i++) advance(g, 60, IDLE);   // 8h sáng → 4h sáng hôm sau
+    for (const id of ['banhpho', 'bun', 'xucxich', 'gio', 'chaca', 'dauhu']) {
+      expect(countOf([g.stall.store], id), id).toBe(1);
+    }
+  });
+  it('thịt tươi thì vẫn hỏng trong ngày — không nới luật cho đồ sống', () => {
+    const g = withStall();
+    g.min = 8 * 60;
+    give(g, 'heo', 2, 100);
+    for (let i = 0; i < 20; i++) advance(g, 60, IDLE);
+    expect(countOf([g.stall.store], 'heo')).toBe(0);
+  });
+});

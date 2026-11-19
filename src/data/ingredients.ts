@@ -21,8 +21,9 @@ const RAW: Row[] = [
   ['bo', 'Thịt bò', 'meat', 'lạng', 26000, 0.1, 10, 1, 'slab', 0xb23a3a, 0xe9cdbf],
   ['ga', 'Thịt gà', 'meat', 'lạng', 9000, 0.1, 9, 1, 'bird', 0xf2d2a9, 0xe9b98a],
   ['vit', 'Thịt vịt', 'meat', 'lạng', 9500, 0.1, 9, 1, 'bird', 0xe6c090, 0xd9a673],
-  ['xucxich', 'Xúc xích', 'meat', 'cây', 5000, 0.05, 60, 1, 'long', 0xc8523e, 0xa83c2c],
-  ['gio', 'Giò lụa', 'meat', 'lạng', 18000, 0.1, 40, 1, 'roll', 0xf0e2cf, 0x4f8a3f],
+  // Đồ nguội chế biến sẵn (xúc xích, giò, chả, đậu hũ) cũng ×2 hạn dùng — để trong quầy đỡ mất oan.
+  ['xucxich', 'Xúc xích', 'meat', 'cây', 5000, 0.05, 120, 1, 'long', 0xc8523e, 0xa83c2c],
+  ['gio', 'Giò lụa', 'meat', 'lạng', 18000, 0.1, 80, 1, 'roll', 0xf0e2cf, 0x4f8a3f],
   ['pate', 'Pa-tê', 'meat', 'hộp', 25000, 0.2, 96, 1, 'can', 0x9a6a4e, 0xe9c23a],
   // ── Hải sản
   ['tom', 'Tôm', 'seafood', 'lạng', 22000, 0.1, 7, 1, 'shrimp', 0xf08a5a, 0xf7c4a0],
@@ -32,7 +33,7 @@ const RAW: Row[] = [
   ['ngheu', 'Nghêu', 'seafood', 'lạng', 5000, 0.1, 8, 1, 'shell', 0xe9dcc0, 0xc9b28a],
   ['so', 'Sò điệp', 'seafood', 'lạng', 12000, 0.1, 8, 1, 'shell', 0xd9a88a, 0xf3d9c0],
   ['cavien', 'Cá viên', 'seafood', 'lạng', 9000, 0.1, 72, 1, 'balls', 0xf0e6d0, 0xe2c9a0],
-  ['chaca', 'Chả cá', 'seafood', 'lạng', 12000, 0.1, 30, 1, 'block', 0xe0b070, 0xc98f4a],
+  ['chaca', 'Chả cá', 'seafood', 'lạng', 12000, 0.1, 60, 1, 'block', 0xe0b070, 0xc98f4a],
   // ── Rau củ
   ['carot', 'Cà rốt', 'veg', 'củ', 3000, 0.12, 120, 0, 'long', 0xf0802a, 0x4f9a3f],
   ['khoaitay', 'Khoai tây', 'veg', 'củ', 4000, 0.15, 300, 0, 'round', 0xc9a36a, 0xb08a52],
@@ -58,8 +59,9 @@ const RAW: Row[] = [
   ['gao', 'Gạo', 'starch', 'kg', 18000, 1, F, 0, 'bag', 0xf3f0e6, 0x2f8fd5],
   ['nep', 'Gạo nếp', 'starch', 'kg', 26000, 1, F, 0, 'bag', 0xf7f3ea, 0xd9463c],
   ['mi', 'Mì vàng', 'starch', 'vắt', 2500, 0.08, 2000, 0, 'nest', 0xf2cf5a, 0xe0b53a],
-  ['banhpho', 'Bánh phở', 'starch', 'kg', 16000, 1, 30, 0, 'nest', 0xf7f3ea, 0xe9e2d0],
-  ['bun', 'Bún tươi', 'starch', 'kg', 12000, 1, 26, 0, 'nest', 0xfaf7f0, 0xece6d6],
+  // Bánh phở & bún tươi cũng tăng 100% thời gian để hỏng (30 → 60 giờ, 26 → 52 giờ) — đồng bộ với bánh mì.
+  ['banhpho', 'Bánh phở', 'starch', 'kg', 16000, 1, 60, 0, 'nest', 0xf7f3ea, 0xe9e2d0],
+  ['bun', 'Bún tươi', 'starch', 'kg', 12000, 1, 52, 0, 'nest', 0xfaf7f0, 0xece6d6],
   // Bánh mì nay để được 44 giờ (22 × 2): mua chiều nay, sáng mai vẫn bán được — trước đây qua một ngày là bỏ.
   ['banhmi', 'Bánh mì', 'starch', 'ổ', 3500, 0.1, 44, 0, 'loaf', 0xd9a05a, 0xf0d9a0, { h: 26, m: 1 }],
   ['botmi', 'Bột mì', 'starch', 'kg', 17000, 1, F, 0, 'bag', 0xf0ead8, 0xf0a92e],
@@ -89,7 +91,7 @@ const RAW: Row[] = [
   ['trungca', 'Trứng cá', 'special', 'hũ', 120000, 0.1, 150, 1, 'jar', 0xf0702a, 0x2a2a2e],
   ['nam', 'Nấm rơm', 'special', 'hộp', 14000, 0.2, 48, 1, 'mushroom', 0xe9dcc8, 0xb09a80],
   ['trung', 'Trứng gà', 'special', 'quả', 3000, 0.06, 300, 0, 'egg', 0xf0d9b8, 0xe6c49a],
-  ['dauhu', 'Đậu hũ', 'special', 'miếng', 4000, 0.2, 36, 1, 'block', 0xfaf5e6, 0xece2c8],
+  ['dauhu', 'Đậu hũ', 'special', 'miếng', 4000, 0.2, 72, 1, 'block', 0xfaf5e6, 0xece2c8],
   ['dauxanh', 'Đậu xanh', 'special', 'kg', 42000, 1, F, 0, 'bag', 0xe2e6b0, 0x4f9a3f],
   ['nuocdua', 'Nước cốt dừa', 'special', 'lon', 20000, 0.4, F, 0, 'can', 0xf7f7f0, 0x3fae5a],
   ['tranchau', 'Trân châu', 'special', 'gói', 30000, 0.5, F, 0, 'bag', 0x2a1a12, 0xe86f9a],

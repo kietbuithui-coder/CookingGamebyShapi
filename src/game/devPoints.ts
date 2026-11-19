@@ -12,7 +12,7 @@ import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Nhật ký phát triển xem được trong Cài đặt: các bản gần đây, mỗi bản liệt kê việc đã làm, bản chưa đọc có nhãn “mới”';
+export const DEV_BUILD_TAG = 'Bánh phở, bún tươi và đồ nguội (xúc xích, giò, chả, đậu hũ) tăng gấp đôi hạn dùng, thịt cá tươi vẫn hỏng trong ngày';
 
 export interface DevAction {
   id: string;
@@ -71,29 +71,46 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Nhật ký phát triển xem được trong Cài đặt (lượt 38)',
+      title: 'Mới nhất — Bánh phở, bún và đồ nguội để được 2 ngày (lượt 39)',
       items: [
         {
-          id: 'open_log',
-          label: 'Mở nhật ký phát triển: các bản gần đây và việc đã làm trong từng bản',
-          sub: 'Cài đặt › Nhật ký phát triển; bản chưa đọc có nhãn “mới”, đọc xong tự lưu',
+          id: 'spoil_all',
+          label: 'Bỏ bánh phở, bún, xúc xích, giò, chả, đậu hũ vào quầy rồi xem hạn dùng',
+          sub: 'Bánh phở 60 giờ, bún 52 giờ, xúc xích 120 giờ… — mở Quầy › Kho quầy xem độ tươi',
           tone: 'green',
           closePanel: false,
           run: () => {
-            ctx.ui.closePanel(); ctx.ui.panel('changelog');
-            toast('Nhật ký phát triển: 5 bản gần nhất, mỗi bản liệt kê việc đã làm.', 'info', 'book');
+            const g = ctx.g;
+            g.cash = Math.max(g.cash, 300000);
+            for (const id of ['ganh', 'daothot', 'bepthan', 'vi', 'noi']) { if (!R.has(g, id)) R.buyGear(g, id); }
+            g.stall.tier = 1; g.stall.where = 'placed';
+            const sp = SPOTS.find((x) => x.id === 'cv');
+            if (sp) ctx.stall.placeAt(sp);
+            ctx.stall.refresh();
+            for (const id of ['banhpho', 'bun', 'xucxich', 'gio', 'chaca', 'dauhu']) {
+              addStack(g.stall.store, { id, n: 1, fresh: 100, q: 0.95, cost: R.unitCost(g, id) });
+            }
+            ctx.ui.closePanel(); ctx.ui.panel('stall');
+            toast('Bánh phở, bún và đồ nguội nay để được 2 ngày trong quầy — thịt cá tươi thì vẫn hỏng trong ngày.', 'info', 'box', true);
           },
         },
         {
-          id: 'log_unread',
-          label: 'Xoá dấu đã đọc để thấy nhãn “mới” trong Cài đặt',
-          sub: 'Đặt logSeen về 0 rồi mở Cài đặt — nút “Xem các bản gần đây” hiện nhãn mới như lần đầu',
+          id: 'spoil_meat',
+          label: 'So sánh: thịt tươi vẫn hỏng trong ngày (không nới luật đồ sống)',
+          sub: 'Bỏ 2 lạng thịt heo vào quầy, để trôi qua ngày — sáng ra bị báo hỏng đúng tên món',
           tone: 'yellow',
           closePanel: false,
           run: () => {
-            ctx.g.flags.logSeen = 0;
-            ctx.ui.closePanel(); ctx.ui.panel('settings');
-            toast('Đã xoá dấu đã đọc — mở Cài đặt là thấy nhãn “mới”.', 'info', 'star');
+            const g = ctx.g;
+            g.cash = Math.max(g.cash, 300000);
+            for (const id of ['ganh', 'daothot', 'bepthan', 'vi', 'noi']) { if (!R.has(g, id)) R.buyGear(g, id); }
+            g.stall.tier = 1; g.stall.where = 'placed';
+            const sp = SPOTS.find((x) => x.id === 'cv');
+            if (sp) ctx.stall.placeAt(sp);
+            ctx.stall.refresh();
+            addStack(g.stall.store, { id: 'heo', n: 3, fresh: 100, q: 0.9, cost: R.unitCost(g, 'heo') });
+            ctx.ui.closePanel(); ctx.ui.panel('stall');
+            toast('Thịt heo để trong quầy không tủ đá: vài giờ là hỏng — bảng Kho quầy đang báo số giờ còn lại.', 'warn', 'box', true);
           },
         },
       ],
