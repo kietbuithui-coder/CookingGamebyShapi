@@ -1000,3 +1000,72 @@ Cài đặt hiện đúng nút "Cao ← đang chọn". Ảnh: `anh_ket_qua/andro
 - Probe `rau41.mjs` (`errors: none`): sau 12 giờ trong kho quầy còn `raumuong 113 · rauthom 91 · xalach 113 · carot 389 · cachua 233 · bapcai 389`, khoai tây/hành tây 324, **thịt heo 4 giờ**; một dĩa cơm 20 → 125 độ no; uống nước vòi 12 % (26/200 lần); đau bụng 90 → 87 máu sau 1 giờ, chip “Đau bụng 3h”, mua thuốc 12.000₫ là `còn đau = false`.
 - Nhật ký trong game: bản **Lượt 41** ở đầu (bỏ bản 31 cho đúng trần 8 bản).
 - Ảnh: `anh_ket_qua/android/56_nhat_ky_41.png`, `57_dau_bung.png`.
+
+### 42 — nút nhảy thật sự vượt được vật thấp (người chơi: *"làm nút nhảy có thể thật sự chạy qua các vật hoặc cấu trúc thấp"*)
+Người chơi chọn **mức 1** (nhảy cao + bỏ va chạm khi đang bay) và **tất cả vật thấp dưới ~1 m**, kể cả nội thất trong nhà.
+Không làm mức 2 (đứng/đi trên nóc vật) và mức 3 (trèo mái nhà) — đã nói thẳng là quá phức tạp và không cần.
+
+Va chạm trước đây là 2D hoàn toàn nên `Box2` không có chiều cao. Nay:
+```ts
+export interface Box2 { x0: number; z0: number; x1: number; z1: number; top?: number }   // top bỏ trống = tường vô hạn
+const over = (o: Box2 | Circ, feet: number) => o.top !== undefined && feet >= o.top - 0.02;
+```
+`world.resolve(x, z, r, out, feet = 0)` bỏ qua vật nào `over()`; thêm `lowTopAt(x, z)` (nóc vật thấp dưới chân) và `isLow()`.
+`Builder.collide(..., top?)` và `wall()` nay tự gắn `top` cho thanh thấp dưới 1,4 m.
+
+Nhảy `vy 3.4 → 4.86` → đỉnh **0,99 m** (công thức `vy²/(2·12.5)`). Vòng lặp di chuyển truyền `this.jumpY` vào `resolve`, và
+đáp xuống nóc vật thấp thì đứng trên đó (`jumpY = top`), bước ra mép là rơi — nhờ vậy rơi trúng đồ không bị kẹt.
+
+**Đã khai báo `top` cho 80 vật**: ghế đá 0,6 · thùng rác 0,93 · bàn nhựa trà đá 0,5 · két nước 0,45 · bàn cờ ông Tư 0,52 ·
+băng ngồi chợ 0,45 · kệ/bàn/quầy thấp trong nhà 0,83–0,89 · lề đường theo chiều cao thật của nó.
+Đo trên 390×844 DPR 2 (`nhay42.mjs`, `errors: none`): đỉnh nhảy **0,99 m**; ghế đá đẩy ra 0,55 m khi đứng dưới đất, đang bay 0,9 m thì lệch 0,000;
+tường nhà thử ở độ cao 0 · 1 · 5 · 20 m đều **không lọt vào**; 80 vật thấp / 669 tường cao.
+
+### 43 — MỨC 2: đứng và đi lại trên nóc vật thấp (người chơi: *"continue mức 2"*)
+Lượt 42 chỉ cho **bay qua**. Nay đứng hẳn trên nóc được:
+
+- `world.lowTopAt(x, z, r = 0.1)` — nóc vật ngay dưới chân (bán kính nhỏ để không "đứng trên không" ở mép).
+  Vật tròn (thùng rác) chỉ đỡ khi tâm người nằm trong `r * 0.8`, tức là đứng thật trên miệng thùng.
+- `world.supportAt(x, z, feet)` — nóc chỉ được tính nếu `top <= feet + 0.02`.
+- `blocked(x, z, r, feet = 0)` — trước đây luôn tính `feet = 0`, nên đứng trên ghế là bị đá văng ra. Nay người chơi truyền `this.jumpY`.
+- `Player.jump()` — đứng dưới đất: `vy = 4.86` (0,99 m). Đang trên nóc: chỉ thêm **0,5 m** và không bao giờ vượt 0,98 m,
+  nên không thể nhảy vọt từ ghế đá lên mái nhà hay nóc cao hơn.
+- Vòng lặp độ cao viết lại: `if (vy !== 0 || |jumpY - floor| > 0.02)` → rơi tới `floor` thì dừng; bước ra khỏi mép (`floor` tụt về 0) là rơi.
+  Tiếng bước chân khi tiếp đất chỉ kêu khi rơi thật (trên 0,12 m hoặc vận tốc < −1,6), không kêu lạch cạch mỗi khung hình.
+
+**Bẫy đã phát hiện và bịt:** `shell()` khai báo **bệ cửa sổ** bằng `b.collide(op.x0, 0, op.x1, 0.2)` (0,8–1,1 m).
+Phía trên cửa sổ không có vật cản nào khác, nên nếu gắn `top` cho bệ thì người chơi **nhảy qua bệ cửa sổ chui vào nhà người ta**.
+Đã bỏ `top` ở dòng đó (kèm ghi chú), nhờ vậy số vật thấp giảm 97 → **80** và tường/cột còn 669.
+`traffic.ts` vẫn giữ luật cũ: `jumpY < 0.9` (xe máy) / `< 1.45` (ô tô) mới bị đụng — đứng trên nóc vẫn an toàn.
+
+Đo trên 390×844 DPR 2 (`noc43.mjs`, `errors: none`): nhảy lên ghế đá → `jumpY 0.6`, đứng yên 2 giây vẫn 0,6; đi 1,2 m trên mặt ghế vẫn ở 0,6
+và **không lệch ngang** (0,00 m); đi hết mặt ghế → rơi về 0; đứng trên nóc nhảy tiếp → đỉnh 1,01 m rồi về đúng 0,6; thùng rác đứng giữa 0,93, ra ngoài → 0;
+vẫn qua được ghế khi bay 0,9 m và vẫn bị chặn khi chỉ bay 0,2 m. Ảnh: `anh_ket_qua/android/62_dung_tren_noc.png`.
+
+### 44 — nhảy qua bồn hoa / hồ nước / xe máy + sửa chữ dính khi bới thùng rác
+Người chơi gửi ảnh bồn hoa công viên: *"nhảy qua đc cái này 1 bồn nước cv và xe nx, sửa lỗi chữ bị dính khi lục đồ thùng rác"*.
+
+- `Builder.circle(lx, lz, r, top?, kind?)` — vật tròn nay cũng khai báo được chiều cao. Bồn hoa 0,42 m (8 cái quanh hồ),
+  xe máy 0,75 m (69 chiếc), thùng/sọt quanh chợ lấy đúng chiều cao vừa vẽ (0,3–0,7 + 0,12).
+- Hồ nước công viên: thành hồ 0,62 m **nhảy qua được**, nhưng thêm `kind: 'trough'` → `lowTopAt()` bỏ qua nó
+  (mặt nước không đỡ được ai), `jump()` từ trong nước trả `false`, và độ cao chân luôn về 0.
+  Nhờ vậy nhảy vào hồ là chìm xuống đáy, **không lơ lửng trên mặt nước**.
+- Hàng rào chợ nâng 1,25 → **1,45 m** để không lọt vào diện "vật thấp nhảy qua được" (wall() tự gắn top cho mọi thanh < 1,4 m):
+  chợ vẫn phải đi cổng.
+- Chữ dính: `rummage()` trước đây gọi `ui.float()` cho **từng món** ở cùng một toạ độ → "+2 Chai nhựa" đè lên "+1 Lon nhôm".
+  Nay gộp thành một dòng (`+1 Chai nhựa · +2 Lon nhôm`), và `ui.float()` tự xếp lớp: chữ nào nổi ở cùng chỗ (< 0,4 m)
+  thì nâng lên 0,34 m mỗi lớp, không bao giờ đè nhau.
+
+**Sửa luôn bài test chập chờn:** `tests/hong.test.ts` ("thịt qua được một ngày") thỉnh thoảng hỏng vì **thời tiết ngẫu nhiên**
+(nắng gắt ×1,7 làm hỏng sớm, se lạnh ×0,6 thì lâu). Nay ghim `g.weather` về "nắng đẹp" trong bài đó — chạy 10/10 lần pass.
+
+Đo trên 390×844 DPR 2 (`muc44.mjs`, `errors: none`): bồn hoa 8 cái, nóc 0,42; đi bộ lệch **1,55 m**, nhảy qua lệch **0,000**;
+thành hồ 0,62 đi bộ chặn / nhảy qua được / `lowTopAt` = 0 / `troughAt` = true; đứng giữa hồ: `jump()` = false, độ cao 0;
+69 xe máy yên 0,75 đi bộ chặn, nhảy qua được; bới 4 thùng rác: mỗi lần **đúng 1 dòng chữ**, **0 cặp chồng**.
+
+### Kiểm chứng
+- `tests/muc44.test.ts` — **3 bài mới** (bồn hoa, xe máy, hồ nước).
+- `tests/nhay42.test.ts` — **7 bài mới** (lượt 42) + **3 bài mức 2** (lượt 43): nhảy qua ghế đá, vẫn chặn khi chưa đủ cao, tường cao chặn ở mọi độ cao, `lowTopAt` đúng.
+- Tổng **514 bài / 41 tệp** pass; `tsc` sạch; `npm run build` + `build:pages` OK.
+- Nhật ký trong game: bản **Lượt 44** ở đầu (bỏ bản 36 cho đúng trần 8 bản).
+- Ảnh: `/tmp/probe/nhay42/66_nhay.png`.

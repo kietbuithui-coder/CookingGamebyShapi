@@ -36,7 +36,8 @@ export function buildSide(b: Builder) {
     // bảng giá dựng cạnh quán, quay ra lòng đường
     for (const sz of [-0.32, 0.32]) d.box(x + 0.72, 0.13, z + sz, 0.05, 1.42, 0.05, 0x8a6a4a);
     b.signAt(x + 0.7, 1.12, z, 0.9, 0.32, 'TRÀ ĐÁ 3.000₫', { bg: '#fff7d6', fg: '#7a0f1e', border: '#c8102e' }, 1, 0, 44, true);
-    b.collide(x - 0.36, z - 0.36, x + 0.36, z + 0.36); b.collide(x - 0.63, z - 0.6, x - 0.17, z - 0.24);
+    // bàn nhựa (0,42 m) và thùng xốp/két nước (0,43 m) đều là vật thấp → nhảy qua được
+    b.collide(x - 0.36, z - 0.36, x + 0.36, z + 0.36, 0.5); b.collide(x - 0.63, z - 0.6, x - 0.17, z - 0.24, 0.45);
     b.anchor('v_tra_da', x - 0.44, 0.13, z + 0.02, Math.PI / 2);          // ngồi trên ghế nhựa (mông tự hạ xuống mặt ghế)
     b.anchor('tra_ban', x, 0.55, z, -Math.PI / 2);
   }
@@ -146,7 +147,7 @@ export function buildSide(b: Builder) {
       d.cyl(x - 0.195 + i * 0.078, 0.506, z + 0.195, 0.018, 0.048, 0xf7f2e4, 6, 0.012);
     }
     plasticStool(d, x - 0.06, 0.13, z - 0.72, 0xd9463c, 0.4); plasticStool(d, x + 0.1, 0.13, z + 0.74, 0x2f8fd5, 0.4);
-    b.collide(x - 0.34, z - 0.34, x + 0.34, z + 0.34);
+    b.collide(x - 0.34, z - 0.34, x + 0.34, z + 0.34, 0.52);   // bàn cờ thấp, nhảy qua được
     b.anchor('v_danh_co', x - 0.06, 0.13, z - 0.72, 0);                   // ngồi trên ghế nhựa (mông tự hạ xuống mặt ghế)
   }
 

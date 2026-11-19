@@ -13,7 +13,7 @@ import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Mức “Cao” trên điện thoại trở lại như cũ, thịt cá tươi để được 2 ngày, rau củ lâu hỏng 3 lần, ăn quán no lâu 2,5 lần, bệnh đau bụng có thuốc';
+export const DEV_BUILD_TAG = 'Nhảy qua được bồn hoa 0,42 m, thành hồ nước, 69 xe máy; hồ nước không đứng trên mặt; chữ bới thùng rác gộp một dòng';
 
 export interface DevAction {
   id: string;
@@ -72,73 +72,30 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Rau củ lâu hỏng, ăn quán no lâu, bệnh đau bụng (lượt 41)',
+      title: 'Mới nhất — Nhảy qua bồn hoa, hồ nước, xe (lượt 44)',
       items: [
         {
-          id: 'rau_lau_hong',
-          label: 'Bỏ rau củ mới mua vào kho quầy rồi xem hạn dùng',
-          sub: 'Rau muống 105 giờ, cà rốt 360 giờ… — mở Quầy › Kho quầy xem độ tươi',
+          id: 'nhay_bon',
+          label: 'Đứng cạnh bồn hoa công viên rồi nhảy qua',
+          sub: 'Vành bồn 0,42 m — đi bộ bị chặn, nhảy là qua (8 bồn quanh hồ)',
           tone: 'green',
           closePanel: false,
           run: () => {
-            const g = ctx.g;
-            g.cash = Math.max(g.cash, 300000);
-            for (const id of ['ganh', 'daothot', 'bepthan', 'vi', 'noi']) { if (!R.has(g, id)) R.buyGear(g, id); }
-            g.stall.tier = 1; g.stall.where = 'placed';
-            const sp = SPOTS.find((x) => x.id === 'cv');
-            if (sp) ctx.stall.placeAt(sp);
-            ctx.stall.refresh();
-            for (const id of ['raumuong', 'rauthom', 'xalach', 'carot', 'cachua', 'bapcai', 'khoaitay']) {
-              addStack(g.stall.store, { id, n: 1, fresh: 100, q: 0.95, cost: R.unitCost(g, id) });
-            }
-            ctx.ui.closePanel(); ctx.ui.panel('stall');
-            toast('Rau củ nay để được lâu gấp 3: rau muống 105 giờ, cà rốt 360 giờ — khoai tây và hành thì vẫn như cũ.', 'info', 'box', true);
-          },
-        },
-        {
-          id: 'thit_lau_hong',
-          label: 'Thử thịt heo để trong quầy qua 2 ngày',
-          sub: 'Heo/bò 48 giờ, gà vịt 43 giờ, tôm cá 38 giờ — trước đây chỉ vài giờ là hỏng',
-          tone: 'green',
-          closePanel: false,
-          run: () => {
-            const g = ctx.g;
-            g.cash = Math.max(g.cash, 300000);
-            for (const id of ['ganh', 'daothot', 'bepthan', 'vi', 'noi']) { if (!R.has(g, id)) R.buyGear(g, id); }
-            g.stall.tier = 1; g.stall.where = 'placed';
-            const sp = SPOTS.find((x) => x.id === 'cv');
-            if (sp) ctx.stall.placeAt(sp);
-            ctx.stall.refresh();
-            for (const id of ['heo', 'ga', 'tom', 'ca']) addStack(g.stall.store, { id, n: 1, fresh: 100, q: 0.95, cost: R.unitCost(g, id) });
-            ctx.ui.closePanel(); ctx.ui.panel('stall');
-            toast('Thịt heo nay để được 48 giờ, gà vịt 43 giờ, tôm cá 38 giờ — mở Quầy › Kho quầy xem số giờ còn lại.', 'info', 'box', true);
-          },
-        },
-        {
-          id: 'cao_that_su',
-          label: 'Bật mức “Cao” thật rồi đọc thông số',
-          sub: '2 điểm ảnh, bóng đổ 2048, 4 đèn, 32 NPC — điện thoại cũng không bị hạ như trước',
-          tone: 'yellow',
-          closePanel: false,
-          run: () => {
-            const g0 = ctx;
-            g0.set.quality = 3; g0.applyQuality(); saveSettings();
-            const r = g0.renderer;
-            toast(`Mức “Cao”: ${r.getPixelRatio().toFixed(2)} điểm ảnh · bóng đổ ${r.shadowMap.enabled ? 'bật (2048)' : 'tắt'} · ${r.info.render.calls} lệnh vẽ. Máy yếu thì tụt FPS, tự hạ trong Cài đặt nếu cần.`, 'info', 'star', true);
-          },
-        },
-        {
-          id: 'dau_bung',
-          label: 'Thử bệnh đau bụng rồi mua thuốc chữa',
-          sub: 'Bị đau bụng ngay, bảng sức khoẻ hiện chip “Đau bụng” — ra nhà thuốc An Tâm mua liều là khỏi',
-          tone: 'yellow',
-          closePanel: false,
-          run: () => {
-            const g = ctx.g;
-            g.cash = Math.max(g.cash, 100000);
-            R.sickStomach(g, 'Ăn đồ ôi thiu (thử)', 180);
             ctx.ui.closePanel();
-            toast('Đang đau bụng — mở Cài đặt › không, ra Nhà thuốc An Tâm mua “Thuốc đau bụng” 12.000₫ là khỏi ngay.', 'warn', 'heart', true);
+            const c = ctx.world.circs.find((q) => q.top === 0.42);
+            if (c) tpTo(c.x - c.r - 0.8, c.z, Math.PI / 2, 'Đứng cạnh bồn hoa — bấm nhảy để vượt qua vành bồn (0,42 m).');
+          },
+        },
+        {
+          id: 'nhay_ho',
+          label: 'Nhảy qua thành hồ nước',
+          sub: 'Thành hồ 0,62 m: qua được, nhưng đứng vào là chìm — không lơ lửng trên mặt nước',
+          tone: 'yellow',
+          closePanel: false,
+          run: () => {
+            const c = ctx.world.circs.find((q) => q.kind === 'trough');
+            if (c) tpTo(c.x, c.z - c.r - 1.2, 0, 'Đứng trước thành hồ — nhảy qua được; đứng trong nước thì không nhảy tiếp được.');
+            else toast('Không tìm thấy hồ nước.', 'warn');
           },
         },
       ],

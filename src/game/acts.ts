@@ -704,11 +704,15 @@ export class Acts {
     if (g.wd.bins[i] === g.day) { toast('Thùng này hôm nay bạn bới rồi, chẳng còn gì.', 'info'); return; }
     ctx.player.gesture('rummage', 0.95);
     g.wd.bins[i] = g.day; R.advance(g, 4, this.act()); g.st.hygiene = clamp(g.st.hygiene - 4, 0, STAT_MAX); sfx('rummage');
-    const r = rnd.next(), give = (id: string, n: number) => { g.junk[id] = (g.junk[id] ?? 0) + n; ctx.ui.float(`+${n} ${JUNK[id].name}`, { x: b.x, y: 1.1, z: b.z }, 'info'); };
+    // Gộp mọi thứ bới được vào MỘT dòng chữ: trước đây mỗi món một dòng nổi lên cùng một toạ độ nên chữ
+    // chồng lên nhau, đọc không ra ("+2 Chai nhựa" đè lên "+1 Lon nhôm").
+    const r = rnd.next(), got: string[] = [];
+    const give = (id: string, n: number) => { g.junk[id] = (g.junk[id] ?? 0) + n; got.push(`+${n} ${JUNK[id].name}`); };
     if (r < 0.05) { const id = rnd.pick(['dongho', 'radio', 'nhan']); give(id, 1); toast(`Trúng mánh! Bới được ${JUNK[id].name.toLowerCase()} — đem ra tiệm cầm đồ Chú Lâm bán.`, 'good', 'star', true); }
     else if (r < 0.2) this.D('Thùng rác', undefined, 'Có nửa ổ bánh mì ai bỏ lại, còn khá lành lặn… Ăn không?', [{ t: 'Ăn luôn (đỡ đói, có thể đau bụng)', fn: () => { R.consume(g, { h: 16, m: -3 }, R.stomachChance(g, { risky: 0.3 })); sfx('eat'); } }, { t: 'Thôi, ghê quá.' }]);
     else if (r < 0.78) { give('chai', rnd.int(1, 3)); if (rnd.chance(0.6)) give('lon', rnd.int(1, 2)); if (rnd.chance(0.25)) give('bia', 1); }
     else toast('Chỉ toàn rác… chẳng có gì dùng được.', 'info');
+    if (got.length) ctx.ui.float(got.join(' · '), { x: b.x, y: 1.1, z: b.z }, 'info');
     if (R.bagWeight(g) > R.carryCap(g)) toast('Túi nặng quá rồi, đi chậm hẳn. Đem ve chai đi bán thôi!', 'warn', 'bag');
   }
 

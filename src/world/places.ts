@@ -30,6 +30,8 @@ export function shell(b: Builder, o: ShellOpt) {
   for (const op of ops) {
     const tp = op.top ?? 2.5, mid = (op.x0 + op.x1) / 2, ww = op.x1 - op.x0; top = Math.min(top, tp);
     if (op.x0 > x + 0.01) b.wall(x, 0.1, op.x0, 0.1, h1, col, t, 0, L, true, FACE.PZ);
+    // Bệ CỬA SỔ — cố tình không khai báo `top`: khoảng trống phía trên cửa sổ không có vật cản nào khác,
+    // nên nếu cho nhảy qua bệ thì người chơi chui thẳng vào trong nhà người ta.
     if (op.sill) { L.box(mid, 0, 0.1, ww, op.sill, t, col, WHITE, 0.1); b.collide(op.x0, 0, op.x1, 0.2); }
     if (tp < h1) L.box(mid, tp, 0.1, ww, h1 - tp, t, col, col, 0, true, FACE.PZ);
     x = op.x1;
@@ -220,7 +222,7 @@ export function buildPlace(b: Builder, l: Lot, R: RNG) {
       b.collide(10, 0.4, 10.7, 2.0); b.anchor('store_tro', 10.0, 1.0, 1.2, -Math.PI / 2);
       U.box(3.7, 0.13, 5.3, 1.0, 0.02, 1.0, 0xbfe6f7); U.box(3.2, 1.85, 5.3, 0.3, 0.06, 0.06, STEEL, STEEL, 0, true); b.anchor('wash_tro', 3.7, 1.2, 5.3, 0);
       b.anchor('fridge_tro', 4.2, 0.13, 0.75, 0);
-      U.box(6.5, 0.13, 5.5, 1.1, 0.7, 0.6, 0x8a6a4a, 0xa98a62, 0.1); b.collide(5.95, 5.2, 7.05, 5.8);
+      U.box(6.5, 0.13, 5.5, 1.1, 0.7, 0.6, 0x8a6a4a, 0xa98a62, 0.1); b.collide(5.95, 5.2, 7.05, 5.8, 0.83);   // bàn thấp 0,7 m
       ceilLight(b, 6.5, 2.96, 3.2, 1.2); ceilLight(b, 1.6, 2.96, 5, 1);
       for (let i = 0; i < 3; i++) b.plant(0.6 + i * 0.5, 0.12, -0.4, R, 0.8);
       break;
@@ -242,7 +244,7 @@ export function buildPlace(b: Builder, l: Lot, R: RNG) {
       // phòng khách: sofa, bàn, tivi, thảm
       U.box(2.6, 0.14, 2.4, 2.6, 0.014, 1.9, 0x8a4a4a);
       sofa(b, 2.6, 2.15, 2.4, 0x5a6a7a, 1);
-      U.box(2.6, 0.55, 3.5, 1.2, 0.34, 0.62, WOODC, 0xb98a5a, 0.08); b.collide(2.0, 3.2, 3.2, 3.8);
+      U.box(2.6, 0.55, 3.5, 1.2, 0.34, 0.62, WOODC, 0xb98a5a, 0.08); b.collide(2.0, 3.2, 3.2, 3.8, 0.89);   // kệ thấp 0,34 m
       U.box(2.6, 1.15, 0.36, 1.5, 0.86, 0.06, 0x1b1c1f); b.glow.quad(2.6 + 0.7, 1.2, 0.31, 2.6 - 0.7, 1.2, 0.31, 2.6 - 0.7, 1.9, 0.31, 2.6 + 0.7, 1.9, 0.31, 0x2a3a5a);
       // bếp nhỏ bên phải
       counter(b, 9.2, 1.0, 11.7, 1.9, 0x8a6a4a, 0.95);
@@ -365,7 +367,7 @@ export function buildPlace(b: Builder, l: Lot, R: RNG) {
       if (k !== 'pharmacy') b.awning(0.3, w - 0.3, 2.75, 1.2, k === 'kiosk' ? 0x2f8fd5 : 0x6a7a8a, 0xf7f3e6, -0.05);
       for (let i = 0; i < 2; i++) b.glow.quad(w - 0.8 - i * (w / 2 - 0.2), 4.2, -0.02, w - 2.2 - i * (w / 2 - 0.2), 4.2, -0.02, w - 2.2 - i * (w / 2 - 0.2), 5.6, -0.02, w - 0.8 - i * (w / 2 - 0.2), 5.6, -0.02, i ? 0xffd98a : 0x1c2530);
       const cw = w - 0.9;
-      U.box(w / 2, 0.13, 0.75, cw, 0.72, 0.6, 0x8a6a4a, 0xb99a72, 0.12); b.collide(0.4, 0.4, w - 0.4, 1.4);
+      U.box(w / 2, 0.13, 0.75, cw, 0.72, 0.6, 0x8a6a4a, 0xb99a72, 0.12); b.collide(0.4, 0.4, w - 0.4, 1.4, 0.85);   // quầy thấp 0,72 m
       shelfUnit(b, 0.3, di - 0.75, w - 0.3, di - 0.25, 2.2, 0x8a6a4a, R);
       b.anchor('v_' + cfg.shop, w / 2, 0.13, 2.1, Math.PI);
       if (k === 'kiosk') {
@@ -593,8 +595,8 @@ export function buildPlace(b: Builder, l: Lot, R: RNG) {
       bigSign(b, w, 4.7, 'VỰA ĐẦU MỐI TÁM LÚA', { bg: '#ffd400', fg: '#0b5ea8', sub: 'Bán sỉ từ 3 giờ sáng tới 9 giờ', subFg: '#7a0f1e' }, 1.2, 0.9, 110);
       for (let i = 0; i < 6; i++) display(b, U, 'wholesale', i, 1.5 + i * 1.8, 0.45, 3.0, R);
       for (let i = 0; i < 5; i++) display(b, U, 'wholesale', 6 + i, 2.4 + i * 1.8, 0.45, 5.6, R);
-      for (let i = 0; i < 6; i++) { U.box(1.5 + i * 1.8, 0.13, 3.0, 1.2, 0.32, 0.9, 0xa98a62, 0x8a6a4a, 0.1); b.collide(0.9 + i * 1.8, 2.55, 2.1 + i * 1.8, 3.45); }
-      for (let i = 0; i < 5; i++) { U.box(2.4 + i * 1.8, 0.13, 5.6, 1.2, 0.32, 0.9, 0xa98a62, 0x8a6a4a, 0.1); b.collide(1.8 + i * 1.8, 5.15, 3.0 + i * 1.8, 6.05); }
+      for (let i = 0; i < 6; i++) { U.box(1.5 + i * 1.8, 0.13, 3.0, 1.2, 0.32, 0.9, 0xa98a62, 0x8a6a4a, 0.1); b.collide(0.9 + i * 1.8, 2.55, 2.1 + i * 1.8, 3.45, 0.45); }   // băng ngồi thấp
+      for (let i = 0; i < 5; i++) { U.box(2.4 + i * 1.8, 0.13, 5.6, 1.2, 0.32, 0.9, 0xa98a62, 0x8a6a4a, 0.1); b.collide(1.8 + i * 1.8, 5.15, 3.0 + i * 1.8, 6.05, 0.45); }   // băng ngồi thấp
       for (let i = 0; i < 7; i++) for (let j = 0; j < 3; j++) U.box(0.9 + i * 1.6, 0.13 + j * 0.3, 7.4, 1.3, 0.28, 0.7, j % 2 ? 0xd9cdb0 : 0xc9b890, undefined, 0.1);
       b.collide(0.2, 7.0, 11.8, 7.9);
       b.anchor('v_wholesale', 10.9, 0.13, 1.2, Math.PI);

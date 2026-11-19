@@ -200,7 +200,15 @@ export class UI {
   order(n: Npc, rid: string, count: number) { this.unorder(n); const r = RECIPES[rid]; this.att('ord', 'ord', `<img src="${dishIcon(r)}" alt=""><span>${count > 1 ? count + '× ' : ''}${esc(r.short)}</span><i><b style="width:100%"></b></i>`, n, undefined, 0.1, 1e9); }
   unorder(n: Npc) { for (const a of this.atts) if (a.n === n && a.kind === 'ord') a.life = 0; }
   patience(n: Npc, f: number) { const a = this.atts.find((x) => x.n === n && x.kind === 'ord'); if (!a) return; (a.e.querySelector('b') as HTMLElement).style.width = clamp(f) * 100 + '%'; a.e.classList.toggle('hurry', f < 0.3); }
-  float(text: string, at: Npc | { x: number; y: number; z: number }, kind = 'info') { const isN = (at as Npc).rig !== undefined; this.att('flt', 'flt ' + kind, esc(text), isN ? (at as Npc) : undefined, isN ? undefined : (at as any), isN ? 0.45 : 0, 1.5, 0.6); }
+  float(text: string, at: Npc | { x: number; y: number; z: number }, kind = 'info') {
+    const isN = (at as Npc).rig !== undefined;
+    // Chữ nổi ở cùng một chỗ (bới thùng rác, nhặt ve chai…) thì xếp LÊN NHAU chứ không đè lên nhau:
+    // đếm xem còn bao nhiêu dòng đang bay ngay tại đây rồi nâng dòng mới lên trên.
+    let stack = 0;
+    if (!isN) { const p = at as { x: number; y: number; z: number };
+      for (const q of this.atts) if (q.kind === 'flt' && q.life > 0 && q.p && dist2(q.p.x, q.p.z, p.x, p.z) < 0.4) stack++; }
+    this.att('flt', 'flt ' + kind, esc(text), isN ? (at as Npc) : undefined, isN ? undefined : (at as any), (isN ? 0.45 : 0) + stack * 0.34, 1.5, 0.6);
+  }
   floatAt(text: string, p: THREE.Vector3, kind = 'info') { this.att('flt', 'flt ' + kind, esc(text), undefined, { x: p.x, y: p.y, z: p.z }, 0, 1.1, 0.25); }
   stars(n: Npc, s: number) { const k = Math.round(s); this.att('flt', 'flt stars', starsHtml(k), n, undefined, 0.75, 2, 0.4); }
   private place(a: Att, dt: number): boolean {
