@@ -66,9 +66,10 @@ export const FUTURE_TIERS: string[] = [];
 /** Một chỗ trông coi chi nhánh: chỗ bán (SPOTS) + giá thuê mỗi ngày. Chỉ mở khi đã có Chuỗi cửa hàng. */
 export interface BranchSite { spot: string; rent: number; note: string; }
 export const BRANCH_SITES: BranchSite[] = [
-  { spot: 'cho', rent: 120000, note: 'Sát cổng chợ, khách đi chợ sáng đông — hàng bán chạy nhất.' },
+  // Giá thuê chi nhánh giảm 40 % cho chợ và công viên.
+  { spot: 'cho', rent: 72000, note: 'Sát cổng chợ, khách đi chợ sáng đông — hàng bán chạy nhất.' },
   { spot: 'vp', rent: 150000, note: 'Phố văn phòng, khách chịu chi nhưng đòi món đúng buổi trưa.' },
-  { spot: 'cv', rent: 90000, note: 'Cổng công viên, buổi chiều và tối đông gia đình, sinh viên.' },
+  { spot: 'cv', rent: 54000, note: 'Cổng công viên, buổi chiều và tối đông gia đình, sinh viên.' },
 ];
 /** Lương cơ bản của người trông coi chi nhánh (mỗi ngày) — lương thật lệch theo ứng viên. */
 export const BRANCH_WAGE = 90000;

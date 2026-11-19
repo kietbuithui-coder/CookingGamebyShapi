@@ -20,19 +20,20 @@ export interface WeatherDef {
 }
 export const WEATHER: Record<WeatherId, WeatherDef> = {
   nang: { id: 'nang', name: 'Nắng đẹp', icon: 'sun', cust: 1, hot: 0, spoil: 1, beg: 1, rain: 0, wind: 0.1, dim: 0, fog: 0, walk: 1, wet: 0, damage: 0, fire: 0, flood: -0.2, dur: [5, 10],
-    next: { nang: 3, nong: 2.5, mua: 2, gio: 1, lanh: 1, muato: 0.6 }, say: 'Trời quang, nắng nhẹ.' },
+    // Người chơi xin "giảm tỉ lệ trời mưa": mưa nhỏ 2 → 0,9 · mưa to 0,6 → 0,25 (tỉ lệ mưa chung 37 % → ~22 %).
+    next: { nang: 3, nong: 2.8, mua: 0.9, gio: 1.1, lanh: 1.1, muato: 0.25 }, say: 'Trời quang, nắng nhẹ.' },
   nong: { id: 'nong', name: 'Nắng gắt', icon: 'hot', cust: 0.82, hot: -1, spoil: 1.7, beg: 0.85, rain: 0, wind: 0.05, dim: -0.1, fog: 0, walk: 0.95, wet: 0, damage: 0, fire: 0, flood: -0.35, dur: [4, 7],
-    next: { nang: 3, giong: 2, mua: 1.2, nong: 1 }, say: 'Nắng như đổ lửa — đồ tươi mau hỏng, khách thèm đồ mát.' },
+    next: { nang: 3, giong: 1.2, mua: 0.6, nong: 1.6 }, say: 'Nắng như đổ lửa — đồ tươi mau hỏng, khách thèm đồ mát.' },
   mua: { id: 'mua', name: 'Mưa nhỏ', icon: 'rain', cust: 0.72, hot: 0.6, spoil: 0.9, beg: 1.25, rain: 0.35, wind: 0.2, dim: 0.3, fog: 0.3, walk: 0.95, wet: 6, damage: 0.6, fire: 0.3, flood: 0.03, dur: [2, 5],
-    next: { nang: 3, muato: 2, mua: 1, lanh: 1.2 }, say: 'Mưa lâm râm. Khách thưa hơn, món nóng dễ bán.' },
+    next: { nang: 3.2, muato: 0.6, mua: 0.7, lanh: 1.4, gio: 0.8 }, say: 'Mưa lâm râm. Khách thưa hơn, món nóng dễ bán.' },
   muato: { id: 'muato', name: 'Mưa to', icon: 'rain2', cust: 0.4, hot: 1, spoil: 0.9, beg: 0.9, rain: 0.8, wind: 0.4, dim: 0.5, fog: 0.55, walk: 0.85, wet: 16, damage: 3, fire: 0.65, flood: 0.22, dur: [2, 4],
-    next: { mua: 3, giong: 1.5, nang: 1.5, lanh: 1 }, say: 'Mưa xối xả! Không có ô dù thì bếp than tắt ngúm.' },
+    next: { mua: 1.2, giong: 0.8, nang: 3, lanh: 1.2 }, say: 'Mưa xối xả! Không có ô dù thì bếp than tắt ngúm.' },
   giong: { id: 'giong', name: 'Giông sét', icon: 'storm', cust: 0.3, hot: 1, spoil: 0.9, beg: 0.7, rain: 0.9, wind: 0.7, dim: 0.65, fog: 0.6, walk: 0.8, wet: 20, damage: 5, fire: 0.8, flood: 0.3, dur: [1, 3],
-    next: { muato: 2, mua: 2, nang: 2, gio: 1 }, say: 'Sấm chớp đùng đùng, đường phố vắng tanh.' },
+    next: { muato: 0.6, mua: 1.2, nang: 3, gio: 1.4 }, say: 'Sấm chớp đùng đùng, đường phố vắng tanh.' },
   gio: { id: 'gio', name: 'Gió lớn', icon: 'wind', cust: 0.85, hot: 0.3, spoil: 1, beg: 1, rain: 0, wind: 0.9, dim: 0.15, fog: 0.1, walk: 0.92, wet: 0, damage: 2, fire: 0.5, flood: -0.15, dur: [2, 5],
-    next: { nang: 3, mua: 1.5, lanh: 1.5, giong: 0.8 }, say: 'Gió giật từng cơn — lửa bếp chập chờn, ô dù dễ bay.' },
+    next: { nang: 3, mua: 0.7, lanh: 1.6, giong: 0.5 }, say: 'Gió giật từng cơn — lửa bếp chập chờn, ô dù dễ bay.' },
   lanh: { id: 'lanh', name: 'Trời se lạnh', icon: 'cold', cust: 0.92, hot: 1, spoil: 0.6, beg: 1.2, rain: 0, wind: 0.3, dim: 0.25, fog: 0.4, walk: 1, wet: 3, damage: 0, fire: 0.1, flood: -0.15, dur: [4, 9],
-    next: { nang: 3, mua: 1.5, lanh: 1, gio: 1 }, say: 'Se lạnh. Ai cũng thèm một món nóng hổi.' },
+    next: { nang: 3, mua: 0.7, lanh: 1.2, gio: 1 }, say: 'Se lạnh. Ai cũng thèm một món nóng hổi.' },
   bao: { id: 'bao', name: 'Bão', icon: 'storm', cust: 0.08, hot: 1, spoil: 1, beg: 0.4, rain: 1, wind: 1, dim: 0.8, fog: 0.8, walk: 0.7, wet: 30, damage: 12, fire: 1, flood: 0.5, dur: [3, 5],
     next: { muato: 3, mua: 2 }, say: 'BÃO! Dọn hàng ngay kẻo hư hết quầy.' },
 };

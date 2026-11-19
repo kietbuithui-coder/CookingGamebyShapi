@@ -1088,10 +1088,35 @@ Ba nguyên nhân, sửa cả ba:
 PC kiểm tra lại không hỏng gì (900×560, tắt cảnh 3D cho headless đủ khung hình): W đi (`mz 1`), W+Space nhảy 0,81 m **vẫn đi**,
 W+F đấm `punchCd 0,7` **vẫn đi**, kéo chuột nhìn quanh trong lúc đi vẫn đi, nhả tay dừng đúng.
 
+### 46 — ít mưa hơn + giảm 40 % giá thuê ở chợ và công viên (người chơi: *"giảm tỉ lệ lệ trời muă và giảm giá thuê ở chợ cv đi 40%"*)
+**Mưa.** Bảng chuyển thời tiết `WEATHER[].next` (src/data/world.ts) — không phải sửa tỉ lệ "mỗi ngày", mà sửa trọng số chuyển tiếp:
+
+| Từ | Trước | Sau |
+|---|---|---|
+| Nắng đẹp | mưa nhỏ 2 · mưa to 0,6 | mưa nhỏ **0,9** · mưa to **0,25** (nắng 3→3, nắng gắt 2,5→2,8) |
+| Nắng gắt | giông 2 · mưa nhỏ 1,2 | giông **1,2** · mưa nhỏ **0,6** (nắng gắt 1→1,6) |
+| Mưa nhỏ | mưa to 2 | **0,6** (nắng 3→3,2, se lạnh 1,2→1,4) |
+| Mưa to | mưa nhỏ 3 | **1,2** (nắng 1,5→3) |
+| Giông | mưa to 2 · mưa nhỏ 2 | **0,6 / 1,2** (nắng 2→3) |
+| Gió lớn / Se lạnh | mưa 1,5 | **0,7** |
+
+Đo bằng đúng luật của game (chạy 40.000 lần `nextWeather`):
+**37,2 % → 18,2 % thời gian có mưa** — mưa nhỏ 21,8 → 11,1 %, mưa to 9,7 → 2,6 %, giông 5,8 → 4,4 %.
+Đo lại trong game chạy thật (3.000 lần `setWeather` trên trình duyệt): **18,9 %**. Nắng vẫn là thời tiết phổ biến nhất (1268/3000).
+
+**Giá thuê.** Có hai con số khác nhau, sửa cả hai cho khỏi lệch:
+- Phí chỗ hằng ngày (`SPOTS` trong `src/world/layout.ts`): Cổng Chợ **30.000 → 18.000₫**, Cổng Công Viên **20.000 → 12.000₫**.
+- Giá thuê chi nhánh (`BRANCH_SITES` trong `src/data/gear.ts`): chợ **120.000 → 72.000₫**, công viên **90.000 → 54.000₫**.
+- Chỗ khác giữ nguyên: Phố Văn Phòng 60.000₫ phí chỗ / 150.000₫ chi nhánh, Hẻm 0₫.
+
+Đo trên trình duyệt bằng chính hàm thu tiền (`stallRent` / `payStallRent`): `cho 18.000`, `cv 12.000`, `vp 60.000`, `hem 0`;
+thu tiền thật thì ví trừ đúng **18.000** và **12.000**, `paidDay` khớp ngày. `branchSite` trả 72.000 / 54.000 / 150.000.
+
 ### Kiểm chứng
+- `tests/mua46.test.ts` — **8 bài mới** (tỉ lệ mưa 3 hạt giống, nắng vẫn nhiều nhất, phí chỗ + thuê chi nhánh giảm 40 %, chỗ khác không đụng).
 - `tests/android45.test.ts` — **4 bài mới** canh đúng 3 nguyên nhân trên.
 - `tests/muc44.test.ts` — **3 bài mới** (bồn hoa, xe máy, hồ nước).
 - `tests/nhay42.test.ts` — **7 bài mới** (lượt 42) + **3 bài mức 2** (lượt 43): nhảy qua ghế đá, vẫn chặn khi chưa đủ cao, tường cao chặn ở mọi độ cao, `lowTopAt` đúng.
-- Tổng **518 bài / 42 tệp** pass; `tsc` sạch; `npm run build` + `build:pages` OK.
-- Nhật ký trong game: bản **Lượt 45** ở đầu (bỏ bản 37 cho đúng trần 8 bản).
+- Tổng **526 bài / 43 tệp** pass; `tsc` sạch; `npm run build` + `build:pages` OK.
+- Nhật ký trong game: bản **Lượt 46** ở đầu (bỏ bản 38 cho đúng trần 8 bản).
 - Ảnh: `/tmp/probe/nhay42/66_nhay.png`.
