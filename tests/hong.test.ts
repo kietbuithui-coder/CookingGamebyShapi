@@ -2,8 +2,8 @@
 // Bài này canh ba việc: (1) bỏ quầy thì vẫn còn nguyên tới ngày hôm sau, (2) lúc dọn phải báo tên món hỏng,
 // (3) bánh mì giữ được lâu gấp đôi trước.
 import { describe, it, expect } from 'vitest';
-import { withStall, give, IDLE } from './helpers';
-import { advance, shopRows, shopPrice } from '../src/sim/rules';
+import { fresh, withStall, give, IDLE } from './helpers';
+import { advance, shopRows, shopPrice, canTakeFromStore, nearStall } from '../src/sim/rules';
 import { SHOPS } from '../src/data/shops';
 import { countOf } from '../src/sim/state';
 import { INGS } from '../src/data/ingredients';
@@ -107,5 +107,28 @@ describe('cảnh báo đồ cần lạnh để ở quầy', () => {
     const row = shopRows(g)[0];
     expect(row.coldNames).toContain('Thịt heo nạc');
     expect(row.coldHours).toBeLessThanOrEqual(6);
+  });
+});
+
+// Lượt 37 — người chơi xin: "lấy đồ ra khỏi quầy mà không cần đặt quầy vào chỗ bán".
+describe('lấy đồ ra khỏi kho quầy ở mọi lúc', () => {
+  it('quầy đang mang theo / để ở nhà: vẫn lấy được đồ ra, nhưng bỏ vào thì phải ở gần quầy', () => {
+    const g = withStall();
+    give(g, 'banhmi', 5);
+    expect(canTakeFromStore(g)).toBe(true);
+
+    g.stall.where = 'carried';                       // đang gánh trên vai
+    expect(canTakeFromStore(g)).toBe(true);
+    expect(nearStall(g, 9999, 9999)).toBe(true);      // mang theo người thì lúc nào cũng "gần"
+
+    g.stall.where = 'placed'; g.stall.x = 0; g.stall.z = 0;
+    expect(nearStall(g, 2, 0)).toBe(true);            // đứng cạnh quầy
+    expect(nearStall(g, 40, 0)).toBe(false);          // đi chợ xa: bỏ vào không được…
+    expect(canTakeFromStore(g)).toBe(true);           // …nhưng vẫn lấy ra được
+  });
+  it('chưa có quầy thì không có kho để lấy', () => {
+    const g = fresh();
+    expect(canTakeFromStore(g)).toBe(false);
+    expect(nearStall(g, 0, 0)).toBe(false);
   });
 });

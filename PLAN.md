@@ -831,3 +831,22 @@ Probe `stallvanish.mjs` (`errors: none`): `store` sau khi bỏ = `banhmi×2`, b�
 `Kho nguyên liệu: 2 loại · 0,6 kg` + `Đồ trong kho sắp hỏng: Bánh mì`. Probe `coldwarn.mjs`: bảng Kho quầy báo
 *"…để đây khoảng 40 giờ nữa là hỏng"* cho sữa; app báo cùng nội dung. Probe `dev36.mjs`: hai mục menu ẩn chạy đúng.
 Ảnh: `anh_ket_qua/android/41_banh_mi_trong_quay.png`, `42_canh_bao_do_lanh.png`, `43_app_bao_do_lanh.png`.
+
+## Lượt 37 — Lấy đồ ra khỏi kho quầy ở bất cứ đâu ✅ đã xong
+
+Người chơi xin: *"cho phép lấy đồ ra khỏi quầy mà không cần đặt quầy vào chỗ bán"*.
+
+- **`rules.ts`**: thêm `canTakeFromStore(g)` (có quầy là lấy được) và `nearStall(g, x, z)` (đang mang quầy coi như
+  ở cạnh; quầy đặt ở chỗ bán / ở nhà thì phải trong 8 m). Bảng `panels.ts` dùng chung hàm này thay cho biến `near` cũ.
+- **Bảng Túi đồ** có thêm tab **"Kho quầy"** (`bag` → `Nguyên liệu · Kho quầy · Dụng cụ`): xem kho quầy và bấm
+  **"› Túi"** để lấy ra, ở bất cứ đâu — đang gánh quầy, quầy để ở nhà, hay đang đứng giữa chợ. Dòng đầu ghi rõ
+  *"Kho quầy (chỗ ở) · 0,2/14 kg — lấy ra được ở bất cứ đâu."*
+- **Chỉ chiều bỏ VÀO** kho mới cần ở gần quầy (giữ luật cũ: không thành túi không đáy).
+- Tab tự ẩn khi chưa có quầy (tier 0) — lúc đó không có kho nào để lấy.
+
+**Kiểm thử:** `tests/hong.test.ts` thêm 2 bài (carried/placed/home; chưa có quầy), `tests/devpoints.test.ts` cập nhật
+→ tổng **466 bài / 36 tệp**. `tsc` sạch, `build` + `build:pages` OK.
+Probe `takestore.mjs` (`errors: none`): quầy `carried` → tab `Nguyên liệu · Kho quầy · Dụng cụ`, lấy 4 ổ bánh mì ra túi
+(`túi: banhmi×4`, `store: heo×2`); quầy `home` đứng ngoài đường vẫn lấy được (`túi: banhmi×7`).
+Probe `dev37.mjs`: hai mục menu ẩn (`take_store`, `take_store_home`) chạy đúng.
+Ảnh: `anh_ket_qua/android/44_lay_do_tu_kho_quay.png`, `45_kho_quay_o_nha.png`.

@@ -12,7 +12,7 @@ import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Bánh mì trong quầy để được 2 ngày thay vì 1, và bảng Kho quầy cảnh báo đồ cần lạnh đang hỏng dần khi không có tủ đá';
+export const DEV_BUILD_TAG = 'Lấy đồ ra khỏi kho quầy ở bất cứ đâu — không cần đặt quầy vào chỗ bán, cũng không cần đứng cạnh quầy';
 
 export interface DevAction {
   id: string;
@@ -71,46 +71,43 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Kiểm đồ trong quầy: bánh mì lâu hỏng hơn, cảnh báo đồ cần lạnh (lượt 36)',
+      title: 'Mới nhất — Lấy đồ trong quầy ra ở bất cứ đâu, không cần đặt quầy (lượt 37)',
       items: [
         {
-          id: 'spoil_bread',
-          label: 'Bánh mì trong quầy để được 2 ngày (trước đây 1 ngày)',
-          sub: 'Đặt quầy gánh ở công viên, bỏ 4 ổ bánh mì vào kho rồi mở Quầy › Kho quầy xem độ tươi',
+          id: 'take_store',
+          label: 'Quầy đang mang theo: mở Túi đồ › Kho quầy lấy đồ ra ngay',
+          sub: 'Tab "Kho quầy" nằm trong bảng Túi đồ — lấy ra được ở mọi nơi, kể cả khi chưa đặt quầy ở chỗ bán',
           tone: 'green',
           closePanel: false,
           run: () => {
             const g = ctx.g;
             g.cash = Math.max(g.cash, 300000);
             for (const id of ['ganh', 'daothot', 'bepthan', 'vi', 'noi']) { if (!R.has(g, id)) R.buyGear(g, id); }
-            g.stall.tier = 1; g.stall.where = 'placed';
-            const sp = SPOTS.find((x) => x.id === 'cv');
-            if (sp) ctx.stall.placeAt(sp);
-            ctx.stall.refresh();
+            g.stall.tier = Math.max(g.stall.tier, 1);
+            if (g.stall.where !== 'placed') g.stall.where = 'placed';
             addStack(g.stall.store, { id: 'banhmi', n: 4, fresh: 100, q: 0.95, cost: R.unitCost(g, 'banhmi') });
-            ctx.ui.closePanel(); ctx.ui.panel('stall');
-            toast('Bánh mì nay để được 2 ngày (52,8 giờ) — mua hôm nay, mai vẫn bán được.', 'info', 'bread', true);
+            addStack(g.stall.store, { id: 'heo', n: 2, fresh: 100, q: 0.9, cost: R.unitCost(g, 'heo') });
+            if (g.stall.where === 'placed') ctx.stall.pickUp();   // mang quầy lên vai, chưa đặt ở chỗ bán
+            ctx.ui.closePanel(); ctx.ui.panel('bag');
+            toast('Quầy đang mang theo mà vẫn mở được tab Kho quầy để lấy bánh mì, thịt ra.', 'good', 'bag', true);
           },
         },
         {
-          id: 'cold_warn',
-          label: 'Thử để sữa/thịt trong quầy không tủ đá: bảng Kho quầy cảnh báo vài giờ là hỏng',
-          sub: 'Đồ cần lạnh để ở quầy mà không có tủ đá/thùng đá thì hỏng nhanh gấp 2,6 lần — cảnh báo ghi rõ số giờ',
+          id: 'take_store_home',
+          label: 'Quầy để ở nhà: đứng ngoài đường vẫn lấy đồ trong kho ra được',
+          sub: 'Kho quầy đọc được từ xa; chỉ chiều bỏ đồ VÀO kho mới cần đứng gần quầy',
           tone: 'yellow',
           closePanel: false,
           run: () => {
             const g = ctx.g;
             g.cash = Math.max(g.cash, 300000);
             for (const id of ['ganh', 'daothot', 'bepthan', 'vi', 'noi']) { if (!R.has(g, id)) R.buyGear(g, id); }
-            g.stall.tier = 1; g.stall.where = 'placed';
-            const sp = SPOTS.find((x) => x.id === 'cv');
-            if (sp) ctx.stall.placeAt(sp);
-            delete g.gear.tu_dong; delete g.gear.thungda;
-            ctx.stall.refresh();
-            addStack(g.stall.store, { id: 'suatuoi', n: 2, fresh: 100, q: 0.95, cost: R.unitCost(g, 'suatuoi') });
-            addStack(g.stall.store, { id: 'heo', n: 3, fresh: 100, q: 0.9, cost: R.unitCost(g, 'heo') });
-            ctx.ui.closePanel(); ctx.ui.panel('stall');
-            toast('Sữa và thịt trong quầy đang hỏng dần: mở tab Kho quầy xem cảnh báo, hoặc mua thùng đá 110.000₫ ở tiệm Ba Tài.', 'warn', 'box', true);
+            if (g.stall.tier >= 3) g.stall.tier = 1;             // sạp cố định không đưa về nhà được
+            g.stall.tier = Math.max(g.stall.tier, 1);
+            ctx.stall.storeHome();
+            addStack(g.stall.store, { id: 'banhmi', n: 3, fresh: 100, q: 0.95, cost: R.unitCost(g, 'banhmi') });
+            ctx.ui.closePanel(); ctx.ui.panel('bag');
+            toast('Quầy đang ở chỗ ngủ — vẫn lấy được đồ trong kho ra túi ở bất cứ đâu.', 'info', 'home', true);
           },
         },
       ],

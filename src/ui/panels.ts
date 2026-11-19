@@ -25,7 +25,7 @@ import { BX, CORR, SPOTS, LOTS, lotPoint, DISTRICT, MAP } from '../world/layout'
 let tab = '';
 const fresh = (s: Stack) => { const d = INGS[s.id]; if (d.shelf > 9000) return ''; const f = Math.round(s.fresh); return `<span class="tag ${f < 35 ? 'bad' : f < 60 ? 'warn' : 'good'}">${f < 10 ? 'hỏng' : 'tươi ' + f + '%'}</span>`; };
 export const profitOf = (l: LedgerDay) => l.revenue + l.tips + l.side - l.cogs - l.fees - l.rent - l.gear - l.loss - l.interest - l.food - l.other;
-const stallNear = (g: Game) => g.stall.tier > 0 && (g.stall.where === 'carried' || ((g.stall.where === 'placed' || g.stall.where === 'home') && dist2(g.stall.x, g.stall.z, ctx.player.x, ctx.player.z) < 8 * 8));
+const stallNear = (g: Game) => R.nearStall(g, ctx.player.x, ctx.player.z);
 
 /** Bảng sổ thu chi trong ngày — dùng chung cho sổ tay giấy và sổ trong điện thoại. */
 export function ledgerBody(g: Game): string {
@@ -89,7 +89,10 @@ export function openPanel(ui: UI, name: string) {
   function build() {
     const s = g.stall, T = R.tier(g);
     if (name === 'bag') {
-      if (!['bag', 'gear'].includes(tab)) tab = 'bag';
+      // Kho quầy lấy đồ RA được ở mọi nơi (không cần đứng cạnh quầy, không cần đặt quầy ở chỗ bán) —
+      // đúng yêu cầu người chơi. Chỉ chiều BỎ VÀO kho mới cần có quầy trong tầm tay.
+      const canTake = R.canTakeFromStore(g);
+      if (!['bag', 'gear', ...(canTake ? ['store'] : [])].includes(tab)) tab = 'bag';
       const near = stallNear(g), cap = R.carryCap(g), w = R.bagWeight(g);
       acts.eat = (i) => ctx.acts.eat(g.bag, i);
       // "Bỏ" là vứt cả lô — phải nói rõ vứt món gì, bao nhiêu, để không ai tưởng đồ tự dưng biến mất.
@@ -99,18 +102,24 @@ export function openPanel(ui: UI, name: string) {
         toast(`Đã vứt ${qty(st.n)} ${d.unit} ${d.name.toLowerCase()} đi.`, 'info', 'box');
       }; acts.dropj = (_i, e) => { delete g.junk[e.dataset.k!]; };
       acts.toStall = (i) => { const k = moveStack(g.bag, s.store, i, 1e9, R.stallRoom(g)); if (!k) toast('Quầy đầy rồi.', 'warn'); else sfx('pick'); };
+      acts.takeStore = (i) => { const k = moveStack(s.store, g.bag, i, 1e9, R.carryCap(g) - R.bagWeight(g)); if (!k) toast('Túi đầy rồi.', 'warn'); else sfx('pick'); };
       let body = '';
       if (tab === 'bag') {
         body = `<div class="bar"><b style="width:${clamp(w / cap) * 100}%;background:${w > cap ? 'var(--red)' : ''}"></b></div><p class="muted">Đang mang ${w.toFixed(1).replace('.', ',')} / ${cap} kg${w > cap * 0.85 ? ' — nặng quá nên đi chậm!' : ''}</p>` +
           stackList(g.bag, (st, i) => (INGS[st.id].eat ? `<button class="btn small green" data-a="eat" data-i="${i}">${INGS[st.id].eat!.t && !INGS[st.id].eat!.h ? 'Uống' : 'Ăn'}</button>` : '') + (near ? `<button class="btn small" data-a="toStall" data-i="${i}">› Quầy</button>` : '') + `<button class="btn small" data-a="drop" data-i="${i}">Vứt</button>`, 'Túi trống trơn. Ra chợ mua nguyên liệu: tự tay bốc hàng ở sạp rồi đưa người bán tính tiền.');
         const junk = Object.entries(g.junk).filter(([, n]) => n > 0);
         if (junk.length) body += `<h4>Đồ nhặt được</h4><div class="list">${junk.map(([k, n]) => `<div class="item"><div class="grow"><b>${JUNK[k].name} × ${n}</b><small>Bán ở ${JUNK[k].where === 'scrap' ? 'vựa ve chai (Tư Rác hoặc Bà Chín)' : 'tiệm cầm đồ Chú Lâm'}: ${money(JUNK[k].price * n)}</small></div><button class="btn small" data-a="dropj" data-k="${k}">Bỏ</button></div>`).join('')}</div>`;
+      } else if (tab === 'store') {
+        // Lấy đồ từ kho quầy ra túi — dùng được ở bất cứ đâu, kể cả khi quầy đang để ở nhà.
+        const where = s.where === 'placed' ? (s.spot ? (SPOTS.find((x) => x.id === s.spot)?.name ?? 'chỗ bán') : 'chỗ bán') : s.where === 'home' ? 'chỗ ở' : 'đang mang theo';
+        body = `<p class="muted">Kho quầy (${where}) · ${weightOf(s.store).toFixed(1).replace('.', ',')}/${R.stallCap(g)} kg — lấy ra được ở bất cứ đâu.</p>` +
+          stackList(s.store, (_st, i) => `<button class="btn small" data-a="takeStore" data-i="${i}">› Túi</button>`, 'Kho quầy trống.');
       } else {
         const ids = Object.keys(g.gear);
         body = ids.length ? `<div class="list">${ids.map((id) => `<div class="item"><div class="grow"><b>${GEAR[id].name}</b><small>${GEAR[id].desc}</small></div>${GEAR[id].wear ? `<span class="tag ${g.gear[id] < 25 ? 'bad' : ''}">còn ${Math.round(g.gear[id])}%</span>` : ''}</div>`).join('')}</div>` : '<p class="muted">Chưa có dụng cụ nào. Ghé tiệm Đồ Nghề Ba Tài ở Phố Trung Tâm.</p>';
         body += `<h4>Chỗ ở</h4><p>${HOUSING[g.housing].name} — ${HOUSING[g.housing].desc}${HOUSING[g.housing].rent ? ` Đã trả tới hết ngày ${g.paidUntil}.` : ''}</p>`;
       }
-      draw(`${ic('bag')} Túi đồ`, [['bag', 'Nguyên liệu'], ['gear', 'Dụng cụ']], body, `<span class="muted">Tiền mặt ${money(g.cash)}${g.bank ? ' · ngân hàng ' + money(g.bank) : ''}</span>`);
+      draw(`${ic('bag')} Túi đồ`, [['bag', 'Nguyên liệu'], ...(canTake ? [['store', 'Kho quầy'] as [string, string]] : []), ['gear', 'Dụng cụ']], body, `<span class="muted">Tiền mặt ${money(g.cash)}${g.bank ? ' · ngân hàng ' + money(g.bank) : ''}</span>`);
     } else if (name === 'stall') {
       const rest = R.isRestaurant(g);
       // Nhân sự không chỉ có ở nhà hàng: từ bậc 3 đã thuê được người phụ quầy và phải giao họ đi chợ được.

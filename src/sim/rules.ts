@@ -42,6 +42,21 @@ export const stallCap = (g: Game) => tier(g).cap + (has(g, 'tu_dong') ? 80 : 0);
 export const stallQueueCap = (g: Game) => tier(g).queue + (has(g, 'hopmangve') ? 2 : 0);
 export const stallTrayCap = (g: Game) => tier(g).trays + (has(g, 'tu_kinh') ? 8 : 0);
 export const stallRoom = (g: Game) => stallCap(g) - weightOf(g.stall.store);
+/**
+ * Có lấy được đồ ra khỏi kho quầy hay không — KHÔNG cần đứng cạnh quầy.
+ * Người chơi yêu cầu (lượt 37): "cho phép lấy đồ ra khỏi quầy mà không cần đặt quầy vào chỗ bán".
+ * Kho quầy vẫn luôn mở để LẤY đồ ra (kể cả khi đang mang theo hay đang để ở nhà); chỉ việc BỎ VÀO thì
+ * mới cần có quầy trong tầm tay, để không thành cái túi không đáy.
+ */
+export const canTakeFromStore = (g: Game) => g.stall.tier > 0;
+/** Ở gần quầy (hoặc đang mang quầy) thì mới bỏ đồ vào kho quầy được. */
+export const nearStall = (g: Game, x: number, z: number) => {
+  const s = g.stall;
+  if (s.tier <= 0) return false;
+  if (s.where === 'carried') return true;
+  if (s.where !== 'placed' && s.where !== 'home') return true;
+  return (s.x - x) ** 2 + (s.z - z) ** 2 < 8 * 8;
+};
 export const homeRoom = (g: Game) => HOUSING[g.housing].storage - weightOf(g.home);
 /** Nhà thuê theo tuần thì cắm được tủ lạnh của mình. */
 export const PLUGGABLE = ['tro', 'canho', 'nharieng', 'cuahang'];
