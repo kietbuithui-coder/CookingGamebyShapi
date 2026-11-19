@@ -12,8 +12,11 @@ describe('nhật ký phát triển trong Cài đặt', () => {
     expect(nums).toEqual(sorted);              // bản mới nhất ở trên cùng
     expect(new Set(nums).size).toBe(nums.length);
   });
-  it('bản mới nhất là bản vừa làm xong (lượt 39)', () => {
-    expect(CHANGELOG[0].v).toBe('Lượt 39');
+  it('bản mới nhất là bản vừa làm xong (lượt 40)', () => {
+    expect(CHANGELOG[0].v).toBe('Lượt 40');
+    // Lượt 40 = mượt hơn trên điện thoại + chơi offline, phải nói đúng hai việc đó.
+    expect(CHANGELOG[0].items.some((t) => /mạng/i.test(t))).toBe(true);
+    expect(CHANGELOG[0].items.some((t) => /FPS/.test(t))).toBe(true);
     expect(CHANGELOG[0].tag.length).toBeGreaterThan(5);
   });
   it('mỗi bản có tóm tắt và ít nhất 2 việc đã làm, câu chữ đủ dài để đọc hiểu', () => {

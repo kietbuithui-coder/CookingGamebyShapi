@@ -44,6 +44,8 @@ for (const s of steps) {
         await page.touchscreen.touchEnd();
       }
     }
+    if (s.offline !== undefined) { await page.setOfflineMode(!!s.offline); console.log('  offline', !!s.offline); }
+    if (s.reload) { await page.reload({ waitUntil: 'load' }).catch((e) => console.log('  reload lỗi', String(e.message).slice(0, 120))); console.log('  reload ok'); }
     if (s.key) { await page.keyboard.down(s.key); await sleep(s.hold || 80); await page.keyboard.up(s.key); }
     if (s.wait) await sleep(s.wait);
     if (s.shot) await page.screenshot({ path: path.join(OUT, `${s.shot}.png`), ...(s.clip ? { clip: s.clip } : {}) });

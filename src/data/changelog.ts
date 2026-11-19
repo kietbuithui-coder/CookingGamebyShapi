@@ -14,6 +14,17 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 40',
+    tag: 'Mượt hơn trên điện thoại, và chơi được khi mất mạng',
+    items: [
+      'Mức “Vừa” — mức mặc định trên điện thoại — bỏ bóng đổ, vẽ 1 điểm ảnh thay vì 1,5 và bớt đèn: đo trên cùng một máy, khung hình nhanh gấp 2,5 lần (5,5 → 14,1 FPS).',
+      'Mức “Rất thấp” nay nhẹ hơn nữa (0,6 điểm ảnh, không lớp chi tiết) — máy yếu chọn mức này là gần 30 FPS.',
+      'Không có bóng đổ thì tắt hẳn bộ vẽ bóng; điện thoại không bật khử răng cưa (MSAA) ở bất cứ mức nào.',
+      'Tự hạ đồ hoạ thông minh hơn: hạ sau 5 giây giật thay vì 6, máy dưới 22 FPS thì hạ thẳng 2 mức, và không hạ oan khi khung hình vẫn trên 45.',
+      'Chơi offline: Cài đặt có nút “Lưu để chơi offline” — lưu xong thì tắt mạng, mở lại game vẫn vào và chơi tiếp bình thường.',
+    ],
+  },
+  {
     v: 'Lượt 39',
     tag: 'Bánh phở, bún và đồ nguội cũng để được 2 ngày',
     items: [
