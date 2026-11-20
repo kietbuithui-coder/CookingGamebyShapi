@@ -1130,12 +1130,37 @@ thu tiền thật thì ví trừ đúng **18.000** và **12.000**, `paidDay` kh�
 | Bấm "Sửa lỗi tải" | `caches` `["ganhhang-v2"]` → **`[]`**, địa chỉ thành `?v=…` ✔ |
 | CPU chậm 6× | vẫn lên menu sau **5,1 s** (bình thường 1,5 s) — không phải lỗi máy yếu ✔ |
 
+### 48 — ngủ ở trọ/khách sạn đỡ tụt chỉ số, ghế đá tốt hơn, biển chỗ bán hết sai giá
+Người chơi: *"ngủ ở bệnh viện, khách sạn và trọ… đồ ăn, nước chỉ số tụt sẽ giảm đi đáng kể (không tụt nhiều) · tăng nhẹ hiệu quả nghỉ ở ghế đá · làm lại 2 biển chỗ thuê đang sai giá"*.
+
+**1. Ngủ (`src/sim/rules.ts` · `tickStats`).** Thêm hệ số theo chất lượng chỗ ngủ:
+`rest = clamp((sleepQ − 0,4)/0,9, 0, 1)` · `drainMul = 1 − 0,6·rest` → đói `0,045 → 0,03·drainMul`, khát `0,06 → 0,04·drainMul`.
+Đo 8 tiếng ngủ (480 phút game), bắt đầu đói 60 / khát 60:
+
+| Chỗ ngủ | sleepQ | Đói | Khát | Năng lượng |
+|---|---|---|---|---|
+| Ghế đá | 0,5 | −13,4 | −17,9 | +42,9 |
+| Gầm cầu | 0,6 | −12,5 | −16,6 | +50,2 |
+| Nhà nghỉ | 0,9 | −9,6 | −12,8 | +69,9 |
+| Phòng trọ | 1,0 | −8,6 | −11,5 | +75,7 |
+| **Khách sạn** | 1,25 | **−6,2** | **−8,3** | **+89,1** |
+
+**2. Năng lượng hồi chậm dần khi gần đầy** (`0,215·sleepQ·(0,35 + 0,65·(1 − energy/100))`).
+Trước đây ghế đá và khách sạn **đều chạm trần 43** sau 8 tiếng (năng lượng 10 → 53 là trần vì test cũ chạy từ 10; thực tế cả hai đều đầy 100) nên chỗ ngủ xịn chẳng có lợi gì. Giờ khách sạn +89 so với ghế đá +43.
+
+**3. Nghỉ ghế đá** (`acts.rest`): tinh thần **+7 → +9**, năng lượng **+4 → +6**, thời gian vẫn 20 phút, vẫn miễn phí. Lời mời tương tác ghi đúng "20 phút · tinh thần +9, năng lượng +6".
+
+**4. Biển chỗ bán.** Có tới **ba** tấm biển ghi cứng giá cũ: chợ `30.000`, công viên `20.000` (trong `city.ts`) và **Phố Văn Phòng `60.000`** (trong `places.ts`, phát hiện khi đọc thẳng atlas chữ của biển ra ảnh). Giờ cả ba đọc thẳng từ `SPOTS`:
+`feeText(fee)` trong `city.ts` và `SPOTS.find((q) => q.id === l.id)?.fee` trong `places.ts`. Chỗ phí 0 vẫn ghi "Hẻm Công Nhân — tự do".
+Đọc lại atlas chữ vẽ ra: Mặt bằng Phố Văn Phòng **160.000**, Phố Văn Phòng **60.000**, Mặt bằng Khu Căn Hộ **120.000**, Hẻm "tự do". Hai biển chợ/công viên dùng đúng chuỗi `Phí chỗ 18.000₫/ngày` và `Phí chỗ 12.000₫/ngày` (đo trong trình duyệt: `SPOTS` trả 18000 / 12000, chuỗi sinh ra đúng).
+
 ### Kiểm chứng
+- `tests/nghi48.test.ts` — **11 bài mới**: mức tụt đói/khát theo từng chỗ ngủ (khách sạn < 60 % ghế đá), chỗ tử tế giảm ≥ 20 %, vẫn tụt chút ít, năng lượng theo chất lượng giường, ghế đá +9/+6, và **mọi** biển đọc giá từ `SPOTS` (không còn chuỗi 30.000 / 20.000 / 60.000 ghi cứng).
 - `tests/boot47.test.ts` — **7 bài mới** canh: bảng báo lỗi + 2 nút có trong trang, xoá cache/SW, hẹn giờ 15 s, bắt lỗi thẻ script, CSS nằm trong trang, `?reset`, và service worker v2 "mạng trước".
 - `tests/mua46.test.ts` — **8 bài mới** (tỉ lệ mưa 3 hạt giống, nắng vẫn nhiều nhất, phí chỗ + thuê chi nhánh giảm 40 %, chỗ khác không đụng).
 - `tests/android45.test.ts` — **4 bài mới** canh đúng 3 nguyên nhân trên.
 - `tests/muc44.test.ts` — **3 bài mới** (bồn hoa, xe máy, hồ nước).
 - `tests/nhay42.test.ts` — **7 bài mới** (lượt 42) + **3 bài mức 2** (lượt 43): nhảy qua ghế đá, vẫn chặn khi chưa đủ cao, tường cao chặn ở mọi độ cao, `lowTopAt` đúng.
-- Tổng **536 bài / 44 tệp** pass; `tsc` sạch; `npm run build` + `build:pages` OK.
-- Nhật ký trong game: bản **Lượt 47** ở đầu (bỏ bản 39 cho đúng trần 8 bản).
+- Tổng **547 bài / 45 tệp** pass; `tsc` sạch; `npm run build` + `build:pages` OK.
+- Nhật ký trong game: bản **Lượt 48** ở đầu (bỏ bản 40 cho đúng trần 8 bản).
 - Ảnh: `/tmp/probe/nhay42/66_nhay.png`.

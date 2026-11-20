@@ -14,6 +14,16 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 48',
+    tag: 'Ngủ ở trọ/khách sạn đỡ đói, ghế đá nghỉ tốt hơn, biển chỗ bán đúng giá',
+    items: [
+      'Ngủ ở khách sạn, phòng trọ, nhà nghỉ, căn hộ: đói và khát tụt ít hơn hẳn (khách sạn giảm ~50 %, phòng trọ ~35 %). Ngủ gầm cầu, ghế đá thì vẫn tụt như cũ.',
+      'Giường xịn giờ hồi năng lượng nhanh hơn thật: 8 tiếng ở khách sạn được +89 năng lượng, ghế đá +43 (trước đây cả hai đều chạm trần 43).',
+      'Nghỉ trên ghế đá hiệu quả hơn một chút: tinh thần +9 (trước +7), năng lượng +6 (trước +4), vẫn miễn phí.',
+      'Biển “CHỖ BÁN HÀNG” hết sai giá: đọc thẳng giá thật trong game (Cổng Chợ 18.000₫, Cổng Công Viên 12.000₫, Phố Văn Phòng 60.000₫, Mặt bằng Phố Văn Phòng 160.000₫, Mặt bằng Khu Căn Hộ 120.000₫).',
+    ],
+  },
+  {
     v: 'Lượt 47',
     tag: 'Sửa lỗi mở game trên điện thoại: không còn màn hình đen',
     items: [
@@ -86,17 +96,6 @@ export const CHANGELOG: LogEntry[] = [
       'Món mình tự nấu từ 2 sao trở lên thì gần như không đau bụng; dưới 2 sao mới có rủi ro.',
       'Mức “Cao” trên điện thoại được trả lại như cũ (2 điểm ảnh, bóng đổ 2048) — máy khoẻ chọn “Cao” là hình đẹp nhất, không bị hạ nữa.',
       'Thịt, cá, hải sản tươi để trong quầy được đúng 2 ngày thay vì 3,5–5 giờ như trước: thịt heo/bò 58 giờ, gà vịt 53 giờ, tôm cá cua 48 giờ.',
-    ],
-  },
-  {
-    v: 'Lượt 40',
-    tag: 'Mượt hơn trên điện thoại, và chơi được khi mất mạng',
-    items: [
-      'Mức “Vừa” — mức mặc định trên điện thoại — bỏ bóng đổ, vẽ 1 điểm ảnh thay vì 1,5 và bớt đèn: đo trên cùng một máy, khung hình nhanh gấp 2,5 lần (5,5 → 14,1 FPS).',
-      'Mức “Rất thấp” nay nhẹ hơn nữa (0,6 điểm ảnh, không lớp chi tiết) — máy yếu chọn mức này là gần 30 FPS.',
-      'Không có bóng đổ thì tắt hẳn bộ vẽ bóng; điện thoại không bật khử răng cưa (MSAA) ở bất cứ mức nào.',
-      'Tự hạ đồ hoạ thông minh hơn: hạ sau 5 giây giật thay vì 6, máy dưới 22 FPS thì hạ thẳng 2 mức, và không hạ oan khi khung hình vẫn trên 45.',
-      'Chơi offline: Cài đặt có nút “Lưu để chơi offline” — lưu xong thì tắt mạng, mở lại game vẫn vào và chơi tiếp bình thường.',
     ],
   },
 ];

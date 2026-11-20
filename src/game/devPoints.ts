@@ -5,6 +5,7 @@ import { ctx, QUALITY, saveSettings } from './ctx';
 import * as R from '../sim/rules';
 import { RECIPES } from '../data/recipes';
 import { SPOTS, CORR } from '../world/layout';
+import { HOUSING } from '../data/gear';
 import { toast } from '../core/bus';
 import { downloadForOffline } from '../core/offline';
 import { addStack } from '../sim/state';
@@ -13,7 +14,7 @@ import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Sửa lỗi mở game trên điện thoại: có bảng báo lỗi + nút Sửa lỗi tải, không còn màn hình đen';
+export const DEV_BUILD_TAG = 'Ngủ ở trọ/khách sạn đỡ tụt đói-khát (khách sạn −50%), nghỉ ghế đá tốt hơn, biển chỗ bán hết sai giá';
 
 export interface DevAction {
   id: string;
@@ -72,40 +73,39 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Sửa lỗi “màn hình đen” trên điện thoại (lượt 47)',
+      title: 'Mới nhất — Ngủ đỡ đói, ghế đá tốt hơn, biển đúng giá (lượt 48)',
       items: [
         {
-          id: 'kiem_tra_tai',
-          label: 'Kiểm tra bộ nhớ đệm & bản đang chạy',
-          sub: 'Xem máy có đang giữ bản cũ không',
+          id: 'ngu_do_doi',
+          label: 'Đo mức tụt đói/khát khi ngủ 8 tiếng',
+          sub: 'So chỗ tử tế với gầm cầu, ghế đá',
           tone: 'green',
           closePanel: false,
           run: () => {
-            const sw = 'serviceWorker' in navigator ? navigator.serviceWorker.controller : null;
-            const cache = typeof caches !== 'undefined' ? caches : null;
-            const dem = (ks: readonly string[]) => ks.length;
-            Promise.resolve(cache ? cache.keys() : []).then((ks) => {
-              const ban = (document.querySelector('script[type=module]') as HTMLScriptElement | null)?.src.split('/').pop() ?? 'không rõ';
-              const n = dem(ks as readonly string[]);
-              toast(`Bản đang chạy: ${ban}. Bộ nhớ đệm: ${n} mục${sw ? '' : ' · chưa có service worker'}.`, n > 6 ? 'warn' : 'info', 'gear', true);
-            }).catch(() => toast('Trình duyệt này chặn xem bộ nhớ đệm.', 'warn', 'gear', true));
+            const g = ctx.g;
+            const save = { ...g.st };
+            const ra: string[] = [];
+            for (const id of ['ghe', 'khachsan', 'tro']) {
+              const h = HOUSING[id];
+              Object.assign(g.st, { hunger: 60, thirst: 60, energy: 40 });
+              const h0 = g.st.hunger, t0 = g.st.thirst, e0 = g.st.energy;
+              const a = { moving: false, running: false, sleeping: true, sheltered: true, working: false, load: 0, sleepQ: h.sleep };
+              for (let i = 0; i < 480; i++) R.tickStats(g, 1, a);
+              ra.push(`${h.name}: đói −${(h0 - g.st.hunger).toFixed(0)} · khát −${(t0 - g.st.thirst).toFixed(0)} · năng lượng +${(g.st.energy - e0).toFixed(0)}`);
+            }
+            Object.assign(g.st, save);   // trả lại chỉ số cũ, không phá ván đang chơi
+            toast(ra.join('  |  '), 'info', 'moon', true);
           },
         },
         {
-          id: 'sua_loi_tai',
-          label: 'Sửa lỗi tải (xoá bộ nhớ đệm cũ)',
-          sub: 'Giữ nguyên tiến trình chơi, chỉ tải lại tệp game',
+          id: 'bien_gia',
+          label: 'Giá thật trên các biển “CHỖ BÁN HÀNG”',
+          sub: 'Biển đọc thẳng từ dữ liệu chỗ bán',
           tone: 'yellow',
           closePanel: false,
           run: () => {
-            const go = () => location.replace(location.pathname + '?v=' + Date.now());
-            try {
-              if (typeof caches === 'undefined' || !('serviceWorker' in navigator)) return go();
-              caches.keys().then((ks) => Promise.all(ks.map((k) => caches.delete(k))))
-                .then(() => navigator.serviceWorker.getRegistrations())
-                .then((rs) => Promise.all(rs.map((r) => r.unregister())))
-                .then(go).catch(go);
-            } catch { go(); }
+            const list = SPOTS.filter((s) => s.fee > 0).map((s) => `${s.name} ${s.fee.toLocaleString('vi-VN')}₫`).join(' · ');
+            toast(`Biển ghi: ${list} (mỗi ngày).`, 'info', 'shop', true);
           },
         },
       ],

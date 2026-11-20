@@ -115,7 +115,7 @@ export class Interact {
       case 'bed': { const k = c.ref as string, err = A.canSleep(k); return mk(err ? HOUSING[k].name : `Ngủ — ${HOUSING[k].name}`, () => A.sleepMenu(k), err ?? `Giấc ngủ ${Math.round(HOUSING[k].sleep * 100)}% · an toàn ${Math.round(HOUSING[k].safety * 100)}%`); }
       case 'store': return mk('Mở chỗ cất đồ', () => ctx.ui.panel('home'), `Cất được ${HOUSING[c.ref].storage} kg` + (R.homeChilled(g) ? ' · có giữ lạnh' : ''));
       case 'wash': return mk(c.ref === 'park' ? 'Tắm — 3.000₫' : c.ref === 'sink' ? 'Rửa tay & rửa mặt (nhà hàng)' : 'Tắm vòi sen', () => A.wash(c.ref === 'sink' ? 'tap' : c.ref), `Vệ sinh hiện tại ${Math.round(g.st.hygiene)}/${STAT_MAX}`);
-      case 'bench': { const b = ctx.world.benches[c.ref]; return mk('Ngồi nghỉ trên ghế đá', () => { ctx.player.face(b.x, b.z); A.rest(); }, '20 phút · tinh thần +7'); }
+      case 'bench': { const b = ctx.world.benches[c.ref]; return mk('Ngồi nghỉ trên ghế đá', () => { ctx.player.face(b.x, b.z); A.rest(); }, '20 phút · tinh thần +9, năng lượng +6'); }
       case 'tap': return mk('Dùng vòi nước', () => A.wash('tap'));
       case 'bin': return mk(g.wd.bins[c.ref] === g.day ? 'Thùng rác (đã bới)' : 'Bới thùng rác', () => A.rummage(c.ref));
       case 'litter': return mk(`Nhặt ${JUNK[c.ref.id].name.toLowerCase()}`, () => A.pickLitter(c.ref), `Bán được ${money(JUNK[c.ref.id].price)}`);
