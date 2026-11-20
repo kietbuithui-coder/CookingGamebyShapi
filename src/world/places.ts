@@ -1,7 +1,7 @@
 // Các địa điểm đặc biệt: cửa hàng, chỗ ở, chỗ làm thêm… Mỗi nơi là một không gian thật, người chơi tự đi bộ vào.
 // Toạ độ cục bộ của lô: x ∈ [0,w] dọc mặt tiền, z ∈ [0,d] đi sâu vào trong, z < 0 là vỉa hè.
 import { Builder, shade } from './build';
-import { Lot } from './layout';
+import { Lot, SPOTS } from './layout';
 import { MB, mix, FACE } from '../gfx/mb';
 import { RNG } from '../core/util';
 import { SHOPS } from '../data/shops';
@@ -855,7 +855,9 @@ export function buildPlace(b: Builder, l: Lot, R: RNG) {
       const H = 7.2, col = 0xbfb6a6;
       L.box(w / 2, 0, (3.6 + d) / 2, w - 0.04, H, d - 3.6, col, shade(col, 0.7), 0.15); b.collide(0, 3.6, w, d);
       for (let i = 0; i < 4; i++) L.box(0.8 + i * 1.4 + R.range(-0.2, 0.2), R.range(0.9, 1.6), 3.585, R.range(0.5, 0.9), R.range(0.6, 1.1), 0.02, R.pick([0xf3e2a8, 0xe9c8c8, 0xc8dce9, 0xf7f3ea, 0xe2402f]), undefined, 0, true);
-      b.signAt(w / 2, 2.9, 3.58, 3.2, 0.7, 'CHỖ BÁN HÀNG', { bg: '#ffd400', fg: '#1b1c1f', border: '#1b1c1f', sub: l.id === 'vp' ? 'Phí chỗ 60.000₫/ngày' : 'Hẻm Công Nhân — tự do', subFg: '#c8102e' }, 0, -1, 80);
+      // Giá trên biển đọc thẳng từ SPOTS (trước đây ghi cứng 60.000 nên lệch giá thật trong game).
+      const spFee = SPOTS.find((q) => q.id === l.id)?.fee ?? 0;
+      b.signAt(w / 2, 2.9, 3.58, 3.2, 0.7, 'CHỖ BÁN HÀNG', { bg: '#ffd400', fg: '#1b1c1f', border: '#1b1c1f', sub: spFee > 0 ? `Phí chỗ ${spFee.toLocaleString('vi-VN')}₫/ngày` : 'Hẻm Công Nhân — tự do', subFg: '#c8102e' }, 0, -1, 80);
       spotMark(b, w / 2, 0.95);
       break;
     }

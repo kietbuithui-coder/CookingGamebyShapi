@@ -464,7 +464,17 @@ export function tickStats(g: Game, dm: number, a: Activity) {
   const s = g.st, w = wx(g);
   const work = (a.running ? 1.7 : a.working ? 1.35 : a.moving ? 1.1 : 1) * (a.sleeping ? 1 : BODY_DRAIN[bodyType(g)]), load = 1 + clamp(a.load) * 0.5;
   if (a.sleeping) {
-    s.energy += dm * 0.215 * a.sleepQ; s.hunger -= dm * 0.045; s.thirst -= dm * 0.06;
+    // Ngủ ở chỗ tử tế (khách sạn, phòng trọ, căn hộ, nhà riêng) thì đói và khát tụt ít hơn hẳn —
+    // người chơi: "ngủ ở khách sạn và trọ thì đồ ăn, nước chỉ số tụt sẽ giảm đi đáng kể (không tụt nhiều)".
+    // Ngủ gầm cầu / ghế đá thì vẫn tụt gần như cũ (chỗ tồi thì ngủ dậy vẫn mệt và đói).
+    const rest = clamp((a.sleepQ - 0.4) / 0.9, 0, 1);   // 0 = ngủ tệ nhất, 1 = khách sạn
+    const drainMul = 1 - 0.6 * rest;                    // khách sạn giảm 60 %, phòng trọ giảm 40 %
+    // Hồi năng lượng CHẬM DẦN khi gần đầy: giường xịn (1,25) và ghế đá (0,5) trước đây đều chạm trần 100
+    // sau đúng 8 tiếng, nên chỗ ngủ tốt chẳng có lợi gì. Giờ giường khách sạn đầy pin sớm hơn, và chỗ ngủ
+    // xịn còn dư đà để hồi máu/tinh thần trong phần còn lại của giấc.
+    const room = 1 - clamp(s.energy / STAT_MAX);              // 1 khi kiệt sức, 0 khi đã đầy
+    s.energy += dm * 0.215 * a.sleepQ * (0.35 + 0.65 * room);
+    s.hunger -= dm * 0.03 * drainMul; s.thirst -= dm * 0.04 * drainMul;
     s.health += dm * 0.03 * a.sleepQ; s.mood += dm * 0.02 * (a.sleepQ - 0.7);
   } else {
     s.energy -= dm * 0.085 * work * load; s.hunger -= dm * 0.1 * work; s.thirst -= dm * 0.15 * work * (w.id === 'nong' ? 1.6 : 1);

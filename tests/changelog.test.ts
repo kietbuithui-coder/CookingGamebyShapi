@@ -13,10 +13,11 @@ describe('nhật ký phát triển trong Cài đặt', () => {
     expect(new Set(nums).size).toBe(nums.length);
   });
   it('bản mới nhất là bản vừa làm xong (lượt 46)', () => {
-    expect(CHANGELOG[0].v).toBe('Lượt 47');
-    // Lượt 47 = hotfix màn hình đen trên điện thoại.
-    expect(CHANGELOG[0].items.some((t) => /màn hình đen/i.test(t))).toBe(true);
-    expect(CHANGELOG[0].items.some((t) => /Sửa lỗi tải/.test(t))).toBe(true);
+    expect(CHANGELOG[0].v).toBe('Lượt 49');
+    // Lượt 49 = xe chạy đúng đường + 3 màu mới + còi xe hơi.
+    expect(CHANGELOG[0].items.some((t) => /gầm cầu/i.test(t))).toBe(true);
+    expect(CHANGELOG[0].items.some((t) => /3 màu|Ba màu/i.test(t))).toBe(true);
+    expect(CHANGELOG[0].items.some((t) => /Còi/.test(t))).toBe(true);
     expect(CHANGELOG[0].tag.length).toBeGreaterThan(5);
   });
   it('mỗi bản có tóm tắt và ít nhất 2 việc đã làm, câu chữ đủ dài để đọc hiểu', () => {

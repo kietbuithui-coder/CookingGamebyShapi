@@ -9,6 +9,9 @@ import { buildPlace, marketStall, spotMark } from './places';
 import { buildSide } from './side';
 import { plasticStool, plasticTable, basketModel, potModel } from '../gfx/props';
 
+/** Chữ trên biển "CHỖ BÁN HÀNG": đọc thẳng từ phí chỗ của SPOTS nên biển không bao giờ lệch giá trong game. */
+const feeText = (fee: number) => `Phí chỗ ${fee.toLocaleString('vi-VN')}₫/ngày`;
+
 const PAL = {
   mid: [0xf2d98c, 0xbfe3d0, 0xf4c7b8, 0xbcd9ee, 0xf3ead2, 0xe8b59a, 0xd9e6a8, 0xe6d0e8, 0xf7e3a8, 0xc8e0e8],
   poor: [0xd9cdb0, 0xc9c2b2, 0xb8c4c0, 0xd6c1a8, 0xc4b79c, 0xcfc6b0, 0xc9d1c4, 0xd9b8a0],
@@ -317,7 +320,7 @@ function market(b: Builder, R: RNG) {
   }
   // chỗ bán "Cổng Chợ"
   const sp = SPOTS.find((s) => s.id === 'cho')!; b.frame({ tx: sp.x, tz: sp.z, yaw: sp.yaw + Math.PI }); spotMark(b, 0, 0);
-  b.signAt(-2.2, 1.5, 0.9, 1.5, 0.5, 'CHỖ BÁN HÀNG', { bg: '#ffd400', fg: '#1b1c1f', border: '#1b1c1f', sub: 'Phí chỗ 30.000₫/ngày', subFg: '#c8102e' }, 0, -1, 56, true); L.box(-2.2, 0, 0.9, 0.06, 1.5, 0.06, 0x55585e);
+  b.signAt(-2.2, 1.5, 0.9, 1.5, 0.5, 'CHỖ BÁN HÀNG', { bg: '#ffd400', fg: '#1b1c1f', border: '#1b1c1f', sub: feeText(sp.fee), subFg: '#c8102e' }, 0, -1, 56, true); L.box(-2.2, 0, 0.9, 0.06, 1.5, 0.06, 0x55585e);
 }
 
 function park(b: Builder, R: RNG) {
@@ -400,7 +403,7 @@ function park(b: Builder, R: RNG) {
   for (const [x, z] of [[cx - 3, z1 - 3], [cx + 3, z0 + 12], [x0 + 12, cz + 3], [x1 - 12, cz - 3], [cx + 8.5, cz + 8.5], [cx - 8.5, cz - 8.5]] as const) b.lamp(x, z, 0.4, 0.4);
   // chỗ bán "Cổng Công Viên"
   const sp = SPOTS.find((s) => s.id === 'cv')!; b.frame({ tx: sp.x, tz: sp.z, yaw: sp.yaw + Math.PI }); spotMark(b, 0, 0);
-  b.signAt(2.4, 1.5, 0.8, 1.5, 0.5, 'CHỖ BÁN HÀNG', { bg: '#ffd400', fg: '#1b1c1f', border: '#1b1c1f', sub: 'Phí chỗ 20.000₫/ngày', subFg: '#c8102e' }, 0, -1, 56, true); L.box(2.4, 0, 0.8, 0.06, 1.5, 0.06, 0x55585e);
+  b.signAt(2.4, 1.5, 0.8, 1.5, 0.5, 'CHỖ BÁN HÀNG', { bg: '#ffd400', fg: '#1b1c1f', border: '#1b1c1f', sub: feeText(sp.fee), subFg: '#c8102e' }, 0, -1, 56, true); L.box(2.4, 0, 0.8, 0.06, 1.5, 0.06, 0x55585e);
   // dây cờ lễ hội (chỉ hiện khi có lễ hội)
   b.frame({ tx: 0, tz: 0, yaw: 0 });
   const F = b.festive, keep = b.detail; (b as any).detail = F;

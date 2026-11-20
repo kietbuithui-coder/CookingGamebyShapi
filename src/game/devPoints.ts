@@ -5,6 +5,7 @@ import { ctx, QUALITY, saveSettings } from './ctx';
 import * as R from '../sim/rules';
 import { RECIPES } from '../data/recipes';
 import { SPOTS, CORR } from '../world/layout';
+import { HOUSING } from '../data/gear';
 import { toast } from '../core/bus';
 import { downloadForOffline } from '../core/offline';
 import { addStack } from '../sim/state';
@@ -13,7 +14,7 @@ import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Sửa lỗi mở game trên điện thoại: có bảng báo lỗi + nút Sửa lỗi tải, không còn màn hình đen';
+export const DEV_BUILD_TAG = 'Xe cộ chỉ chạy trên đường thật (hết mọc từ gầm cầu), thêm 3 màu sơn và còi riêng từng loại xe hơi';
 
 export interface DevAction {
   id: string;
@@ -72,40 +73,44 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Sửa lỗi “màn hình đen” trên điện thoại (lượt 47)',
+      title: 'Mới nhất — Xe chạy đúng đường, 3 màu mới, còi xe hơi (lượt 49)',
       items: [
         {
-          id: 'kiem_tra_tai',
-          label: 'Kiểm tra bộ nhớ đệm & bản đang chạy',
-          sub: 'Xem máy có đang giữ bản cũ không',
+          id: 'kiem_xe',
+          label: 'Theo dõi xe: có chiếc nào ra ngoài đường không?',
+          sub: 'Chạy 600 khung hình rồi đếm',
           tone: 'green',
           closePanel: false,
           run: () => {
-            const sw = 'serviceWorker' in navigator ? navigator.serviceWorker.controller : null;
-            const cache = typeof caches !== 'undefined' ? caches : null;
-            const dem = (ks: readonly string[]) => ks.length;
-            Promise.resolve(cache ? cache.keys() : []).then((ks) => {
-              const ban = (document.querySelector('script[type=module]') as HTMLScriptElement | null)?.src.split('/').pop() ?? 'không rõ';
-              const n = dem(ks as readonly string[]);
-              toast(`Bản đang chạy: ${ban}. Bộ nhớ đệm: ${n} mục${sw ? '' : ' · chưa có service worker'}.`, n > 6 ? 'warn' : 'info', 'gear', true);
-            }).catch(() => toast('Trình duyệt này chặn xem bộ nhớ đệm.', 'warn', 'gear', true));
+            const T = ctx.traffic, CORR = [-88.5, -29.5, 29.5, 88.5];
+            let kiem = 0, ngoai = 0, trongBai = 0;
+            for (let i = 0; i < 600; i++) {
+              T.update(0.05);
+              if (i % 20) continue;
+              for (const rd of T.list) {
+                if (rd.pending) continue;
+                kiem++;
+                const px = rd.axis === 0 ? rd.pos : rd.road + rd.lane;
+                const pz = rd.axis === 0 ? rd.road : rd.pos;
+                if (pz > 92.5 || pz > 92) trongBai++;
+                const on = Math.abs(px) <= 92.6 && Math.abs(pz) <= 92.6 && CORR.some((c) => Math.abs(px - c) < 3.7 || Math.abs(pz - c) < 3.7);
+                if (!on) ngoai++;
+              }
+            }
+            toast(`Kiểm ${kiem} lượt: ngoài mặt đường ${ngoai} · lọt vào bãi gầm cầu ${trongBai}.`, ngoai + trongBai ? 'bad' : 'good', 'gear', true);
           },
         },
         {
-          id: 'sua_loi_tai',
-          label: 'Sửa lỗi tải (xoá bộ nhớ đệm cũ)',
-          sub: 'Giữ nguyên tiến trình chơi, chỉ tải lại tệp game',
+          id: 'thu_ba_coi',
+          label: 'Nghe thử ba tiếng còi xe hơi',
+          sub: 'Xe nhỏ bíp bíp · sedan bìm bìm · tải bừm',
           tone: 'yellow',
           closePanel: false,
           run: () => {
-            const go = () => location.replace(location.pathname + '?v=' + Date.now());
-            try {
-              if (typeof caches === 'undefined' || !('serviceWorker' in navigator)) return go();
-              caches.keys().then((ks) => Promise.all(ks.map((k) => caches.delete(k))))
-                .then(() => navigator.serviceWorker.getRegistrations())
-                .then((rs) => Promise.all(rs.map((r) => r.unregister())))
-                .then(go).catch(go);
-            } catch { go(); }
+            ctx.sound.unlock(); ctx.sound.play('horn_beep');
+            setTimeout(() => ctx.sound.play('horn_honk'), 700);
+            setTimeout(() => ctx.sound.play('horn_truck'), 1500);
+            toast('Còi xe nhỏ → sedan → xe tải. Mỗi loại một tiếng khác nhau.', 'info', 'gear', true);
           },
         },
       ],

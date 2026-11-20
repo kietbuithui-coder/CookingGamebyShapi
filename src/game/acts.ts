@@ -1220,7 +1220,8 @@ export class Acts {
   /** Nghỉ trên ghế đá (công viên, vỉa hè): miễn phí, chậm mà chắc. */
   rest() {
     const g = this.g;
-    R.advance(g, 20, this.act()); R.consume(g, { m: 7, e: 4, t: -1 });
+    // Nghỉ ghế đá: tăng nhẹ hiệu quả (tinh thần +9 thay vì +7, năng lượng +6 thay vì +4), vẫn miễn phí.
+    R.advance(g, 20, this.act()); R.consume(g, { m: 9, e: 6, t: -1 });
     sfx('good'); toast('Ngồi trên ghế đá, ngắm cây và người qua lại. Tinh thần dễ chịu hơn.', 'info', 'heart');
   }
   /** Công một ca chạy bàn: theo uy tín và tinh thần lúc nhận việc. */
