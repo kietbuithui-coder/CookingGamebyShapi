@@ -1154,13 +1154,37 @@ Trước đây ghế đá và khách sạn **đều chạm trần 43** sau 8 ti�
 `feeText(fee)` trong `city.ts` và `SPOTS.find((q) => q.id === l.id)?.fee` trong `places.ts`. Chỗ phí 0 vẫn ghi "Hẻm Công Nhân — tự do".
 Đọc lại atlas chữ vẽ ra: Mặt bằng Phố Văn Phòng **160.000**, Phố Văn Phòng **60.000**, Mặt bằng Khu Căn Hộ **120.000**, Hẻm "tự do". Hai biển chợ/công viên dùng đúng chuỗi `Phí chỗ 18.000₫/ngày` và `Phí chỗ 12.000₫/ngày` (đo trong trình duyệt: `SPOTS` trả 18000 / 12000, chuỗi sinh ra đúng).
 
+### 49 — xe cộ chỉ chạy trên đường thật + 3 màu sơn mới + còi xe hơi riêng
+Người chơi: *"sửa các xe sau cho chúng không xuất hiện từ chỗ không hợp lí (chỗ gầm cầu là 1 ví dụ), thêm 3 màu cho xe và tiếng còi cảnh báo của xe hơi"*.
+
+**Lỗi gốc.** `Traffic` chỉ biết tâm tuyến (`CORR`) rồi đặt xe vào làn và chạy thẳng, trong khi mặt đường thật chỉ có trong `z ∈ [−92; 92]`, `x ∈ [−96; 96]` (`ground()` trong `city.ts`). Ngoài khoảng đó là **bãi đất gầm cầu** (z 94,5–107), **bờ kênh** (z ≥ 108,4) và đất trống hai bên → xe "mọc" từ gầm cầu và chạy xuyên bãi rác.
+
+**Sửa: tách luật đường đi ra `src/game/roads.ts`** (không phụ thuộc 3D nên kiểm thử được):
+- `roadSpan(axis, sign, road)` — mặt đường thật theo chiều xe chạy: dọc trục x là −92 → +92; dọc trục z, ba tuyến giữa −92 → +92, còn vành ngoài ±88,5 chỉ nối tới giao lộ cuối (nam 88,5, bắc 92).
+- `pickSpawn(...)` — sinh xe **sau lưng** người chơi 35–85 m (lùi dần nếu sát mép), nếu hết chỗ phía sau thì nhận điểm rất xa phía trước (≥ 140 m), **không bao giờ kẹp vị trí** (kẹp = hiện ra trước mặt). Tuyến vành ngoài hết chỗ thì tự rẽ sang tuyến giữa. Không còn chỗ nào hợp lệ → `pos: null`, hệ xe **hoãn** (ẩn, thử lại sau 0,5 s) thay vì đặt bừa.
+- `inWasherGround(x, z)` — chốt an toàn trong `update()`: lỡ xe rơi vào bãi gầm cầu thì sinh lại ngay.
+- Chạy hết mặt đường (`front`) thì sinh lại từ phía sau, không phóng ra bãi đất.
+
+**Màu & còi.** `CAR_EXTRA_COLORS = [đỏ đô #8e2b2b, xanh rêu #2f5f4a, vàng taxi #e0b235]` — mỗi mẫu xe con 3 màu cũ + 3 màu mới (xe tải thêm 3 màu thùng riêng).
+Phát hiện khi đo: hệ xe **tái dùng cùng một mesh** cho mỗi "chỗ" trên đường, nên cả phiên chơi chỉ thấy đúng màu ban đầu → thêm `repaint()` sơn lại mỗi lần xe vào lại đường (đo được **31 geometry** khác nhau sau 30 lần vào lại).
+Còi: `CarSpec.horn` = `beep` (Matiz — "bíp bíp" 880/1100 Hz) · `honk` (Corolla, CD5 — "bìm" 370/466 Hz) · `truck` (xe tải — "bừm" 196/247 Hz, ngân 0,42 s). Ba tiếng mới `horn_beep`/`horn_honk`/`horn_truck`; xe máy/xe đạp vẫn dùng `horn` cũ.
+
+**Đo trên trình duyệt (game chạy thật, `?debug`).**
+| Phép đo | Kết quả |
+|---|---|
+| 6.000 khung hình × 6 vị trí người chơi (có gầm cầu) | 1.200 lượt kiểm: **0 ngoài đường, 0 trong bãi gầm cầu** |
+| 1.000 lượt kiểm ở gầm cầu (đứng tại `49, 100`) | **0 xe** trong bãi |
+| Sơn lại 30 lần | **31 geometry khác nhau**, kho màu 6 |
+| Ảnh chụp 6 xe cạnh nhau | vàng taxi · xanh rêu · đỏ đô hiện rõ cạnh 3 màu cũ |
+
 ### Kiểm chứng
+- `tests/xe49.test.ts` — **13 bài mới**: bãi gầm cầu/bờ kênh không có đường, mọi tuyến không vượt 92, vành ngoài là đường cụt, sinh 5.000 xe ở mọi hướng đều nằm trên đường (0 lọt bãi), không sinh xe trước mặt, 3 màu mới (6 màu/mẫu, không trùng), ba kiểu còi đúng tần số và dùng đúng chỗ.
 - `tests/nghi48.test.ts` — **11 bài mới**: mức tụt đói/khát theo từng chỗ ngủ (khách sạn < 60 % ghế đá), chỗ tử tế giảm ≥ 20 %, vẫn tụt chút ít, năng lượng theo chất lượng giường, ghế đá +9/+6, và **mọi** biển đọc giá từ `SPOTS` (không còn chuỗi 30.000 / 20.000 / 60.000 ghi cứng).
 - `tests/boot47.test.ts` — **7 bài mới** canh: bảng báo lỗi + 2 nút có trong trang, xoá cache/SW, hẹn giờ 15 s, bắt lỗi thẻ script, CSS nằm trong trang, `?reset`, và service worker v2 "mạng trước".
 - `tests/mua46.test.ts` — **8 bài mới** (tỉ lệ mưa 3 hạt giống, nắng vẫn nhiều nhất, phí chỗ + thuê chi nhánh giảm 40 %, chỗ khác không đụng).
 - `tests/android45.test.ts` — **4 bài mới** canh đúng 3 nguyên nhân trên.
 - `tests/muc44.test.ts` — **3 bài mới** (bồn hoa, xe máy, hồ nước).
 - `tests/nhay42.test.ts` — **7 bài mới** (lượt 42) + **3 bài mức 2** (lượt 43): nhảy qua ghế đá, vẫn chặn khi chưa đủ cao, tường cao chặn ở mọi độ cao, `lowTopAt` đúng.
-- Tổng **547 bài / 45 tệp** pass; `tsc` sạch; `npm run build` + `build:pages` OK.
-- Nhật ký trong game: bản **Lượt 48** ở đầu (bỏ bản 40 cho đúng trần 8 bản).
+- Tổng **560 bài / 46 tệp** pass; `tsc` sạch; `npm run build` + `build:pages` OK.
+- Nhật ký trong game: bản **Lượt 49** ở đầu (bỏ bản 41 cho đúng trần 8 bản).
 - Ảnh: `/tmp/probe/nhay42/66_nhay.png`.

@@ -128,6 +128,18 @@ export class Sound {
       case 'spit': N(0.14, 'highpass', 2800, 0.15, 0, 0.9, 0.5); N(0.07, 'bandpass', 800, 0.07, 0.04); break;
       case 'shout': T(185, 0.26, 'sawtooth', 0.09, 0, 1.25); T(240, 0.2, 'sawtooth', 0.06, 0.07, 1.1); break;
       case 'horn': T(430, 0.1, 'square', 0.07); T(430, 0.09, 'square', 0.05, 0.15); break;
+      // ── còi xe hơi: ba kiểu, nghe là biết xe gì (xe nhỏ · sedan · xe tải) ──
+      // "bíp bíp" hai tiếng cao và ngắn của xe nhỏ (Matiz), "bìm" hai tiếng dày của sedan,
+      // và tiếng "bừm" trầm kéo dài của xe tải. Mỗi kiểu dùng quãng khác nhau nên phân biệt được.
+      case 'horn_beep':
+        T(880, 0.07, 'square', 0.06); T(1100, 0.07, 'square', 0.05, 0.005);
+        T(880, 0.07, 'square', 0.05, 0.16); T(1100, 0.07, 'square', 0.045, 0.165); break;
+      case 'horn_honk':
+        T(370, 0.13, 'square', 0.07); T(466, 0.13, 'sawtooth', 0.045);
+        T(370, 0.2, 'square', 0.06, 0.19); T(466, 0.2, 'sawtooth', 0.04, 0.19); break;
+      case 'horn_truck':
+        T(196, 0.42, 'square', 0.075, 0, 0.9); T(247, 0.42, 'sawtooth', 0.05, 0, 0.9);
+        N(0.3, 'lowpass', 700, 0.06, 0.02); break;
       // ── đấm, nhảy, ngất, xe đụng ──
       case 'thud': N(0.09, 'lowpass', 700, 0.5, 0, 0.7, 0.4); T(95, 0.13, 'triangle', 0.28, 0, 0.6); break;
       case 'bonk': N(0.06, 'bandpass', 950, 0.3, 0, 1.1, 0.5); T(165, 0.08, 'triangle', 0.2, 0, 0.75); break;

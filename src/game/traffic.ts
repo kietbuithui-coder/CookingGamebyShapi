@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { ctx, QUALITY } from './ctx';
 import { CORR } from '../world/layout';
+import { roadSpan, pickSpawn, inWasherGround } from './roads';
 import { RNG, dist2 } from '../core/util';
 import { MB, MAT } from '../gfx/mb';
 import { Rig, lookFromArch } from '../gfx/people';
@@ -12,6 +13,9 @@ import { CARS, CAR_BY, CAR_SHARE, CarKind } from '../data/cars';
 import { applyVehicleImpactToStats, classifyVehicleHit, VehicleKind } from '../sim/impact';
 import { toast } from '../core/bus';
 
+/** Còi riêng của từng mẫu xe hơi: xe nhỏ "bíp bíp", sedan "bìm", tải "bừm". */
+const hornOf = (k: CarKind) => (CAR_BY[k].horn === 'beep' ? 'horn_beep' : CAR_BY[k].horn === 'truck' ? 'horn_truck' : 'horn_honk');
+
 const BIKE_COLS = [0xd9261e, 0x2f6fb5, 0x1e1e22, 0xf3f0e8, 0x3f8a6a, 0xf08a2f, 0x8a5fd0, 0x5a6a7a];
 const RIDERS: ArchId[] = ['taixe', 'shipper', 'congnhan', 'vanphong', 'hangrong', 'dukhach'];
 
@@ -20,6 +24,8 @@ interface Rider {
   axis: 0 | 1;                 // 0: chạy dọc trục x (z cố định) · 1: chạy dọc trục z (x cố định)
   sign: 1 | -1; road: number; lane: number; pos: number;
   speed: number; hornT: number; smokeT?: number; brakeT?: number;
+  /** Chưa tìm được chỗ sinh hợp lệ (đang ở ngoài tầm nhìn) — chờ lần sau. */
+  pending?: boolean; retryT?: number;
 }
 /** Hình xe máy, hướng +z là phía trước. */
 function motoGeo(col: number, dark: number) {
@@ -37,7 +43,8 @@ function motoGeo(col: number, dark: number) {
 }
 /** Ô tô đời 2005–2010: hộp vuông, kính phẳng, bánh nhỏ. Hướng +z là phía trước. */
 /** Dựng ô tô; trả về thân xe đã đặt trên mặt đất. */
-function carGeo(kind: CarKind, col: number, dark: number) {
+/** Dựng hình ô tô (xuất ra để kiểm thử và dùng lại được). */
+export function carGeo(kind: CarKind, col: number, dark: number) {
   const m = new MB(), truck = kind === 'truck';
   const spec = CAR_BY[kind], L = spec.len, W = spec.w;
   const bodyH = truck ? 0.62 : 0.52, bodyY = 0.46 + bodyH / 2;
@@ -109,6 +116,7 @@ export class Traffic {
     grp.add(mesh, rig.root); this.group.add(grp);
     // ô tô chạy làn ngoài, chậm hơn xe máy; xe tải còn chậm hơn
     const lane = car ? (R.chance(0.5) ? -2.1 : 2.1) : (R.chance(0.5) ? -1.7 : 1.7);
+    // xe hơi có còi riêng theo từng mẫu (tiếng còi khác nhau: xe nhỏ "bíp bíp", tải "bừm" trầm)
     const r: Rider = {
       grp, rig, moto, car, axis: R.chance(0.5) ? 0 : 1, sign: R.chance(0.5) ? 1 : -1, road: 0, lane, pos: 0,
       speed: car ? R.range(CAR_BY[car].speed[0], CAR_BY[car].speed[1]) : moto ? R.range(7, 11) : R.range(3.6, 4.8),
@@ -117,12 +125,29 @@ export class Traffic {
     this.enter(r);
     return r;
   }
+  /** Sơn lại xe hơi bằng một màu ngẫu nhiên (gồm cả ba màu mới) — gọi mỗi lần xe vào lại đường. */
+  private repaint(r: Rider) {
+    if (!r.car) return;
+    const mesh = r.grp.children.find((c) => (c as THREE.Mesh).isMesh) as THREE.Mesh | undefined;
+    if (!mesh) return;
+    const g = carGeo(r.car, this.R.pick(CAR_BY[r.car].colors), 0x8a8578);
+    mesh.geometry.dispose();
+    mesh.geometry = g.geo;
+  }
   /** Đặt xe vào một con đường gần người chơi (để có chuyện mà nhìn), rồi cho chạy tới. */
   private enter(r: Rider) {
-    const R = this.R, p = ctx.player, along = r.axis === 0 ? p.x : p.z, across = r.axis === 0 ? p.z : p.x;
-    // 3/4 số xe chọn con đường gần nhất theo trục của nó, còn lại chạy đường xa cho phố đỡ trống
-    r.road = R.chance(0.75) ? CORR.reduce((b, c) => (Math.abs(c - across) < Math.abs(b - across) ? c : b), CORR[0]) : R.pick(CORR);
-    r.pos = along - r.sign * R.range(35, 85);
+    const p = ctx.player, along = r.axis === 0 ? p.x : p.z, across = r.axis === 0 ? p.z : p.x;
+    // Luật đường đi nằm ở ./roads.ts: chọn tuyến + điểm sinh SAU lưng người chơi nhưng luôn trên mặt đường thật,
+    // nên xe không còn "mọc" từ bãi đất gầm cầu, bờ kênh hay ngoài rìa thành phố.
+    // Không có chỗ hợp lệ (người chơi đứng sát đường cụt) thì ẩn xe đi và thử lại sau — thà trống phố
+    // còn hơn để xe hiện ra ngay trước mặt.
+    const sp = pickSpawn(r.axis, r.sign, along, across, this.R);
+    r.road = sp.road; r.lane = sp.lane * (r.car ? (Math.abs(sp.lane) > 1.9 ? 1 : 1.24) : 1);
+    // Xe hơi đổi màu sơn mỗi lần vào lại đường: hệ xe tái dùng cùng một mesh cho mỗi "chỗ", nếu không
+    // đổi thì cả phiên chơi chỉ thấy đúng mấy màu ban đầu và ba màu mới thêm gần như không bao giờ gặp.
+    if (r.car) this.repaint(r);
+    if (sp.pos === null) { r.pending = true; r.pos = along - r.sign * 60; r.grp.visible = false; return; }
+    r.pending = false; r.pos = sp.pos;
   }
   private px(r: Rider) { return r.axis === 0 ? r.pos : r.road + r.lane; }
   private pz(r: Rider) { return r.axis === 0 ? r.road + r.lane : r.pos; }
@@ -137,12 +162,19 @@ export class Traffic {
     this.group.visible = on;
     if (!on) return;
     for (const r of this.list) {
+      // Xe chưa có chỗ sinh hợp lệ: thử lại mỗi ~0,5 s, trong lúc đó nằm ngoài tầm nhìn và không va chạm.
+      if (r.pending) { if ((r.retryT = (r.retryT ?? 0) - dt) <= 0) { r.retryT = 0.5; this.enter(r); } continue; }
       if ((r.brakeT ?? 0) > 0) r.brakeT = Math.max(0, r.brakeT! - dt);
       const curSp = r.speed * ((r.brakeT ?? 0) > 0 ? 0.25 : 1);
       r.pos += r.sign * curSp * dt;
-      const lim = (r.axis === 0 ? p.x : p.z) + r.sign * 105;      // ra khỏi tầm nhìn thì vào lại từ phía sau
-      if (r.sign > 0 ? r.pos > lim : r.pos < lim) this.enter(r);
+      const along = r.axis === 0 ? p.x : p.z;
+      const span = roadSpan(r.axis, r.sign, r.road);
+      const ahead = r.sign > 0 ? r.pos > Math.min(span.front, along + 105) : r.pos < Math.max(span.front, along - 105);
+      // Chạy hết mặt đường (giao lộ cuối / mép đường) hoặc ra khỏi tầm nhìn → sinh lại từ phía sau.
+      if (ahead) this.enter(r);
       const x = this.px(r), z = this.pz(r);
+      // Chốt an toàn: bãi đất gầm cầu / bờ kênh không có mặt đường nên không được có xe ở đó.
+      if (inWasherGround(x, z)) { this.enter(r); continue; }
       r.grp.position.set(x, 0, z);
       r.grp.rotation.y = r.axis === 0 ? (r.sign > 0 ? Math.PI / 2 : -Math.PI / 2) : (r.sign > 0 ? 0 : Math.PI);
       const d2 = dist2(x, z, p.x, p.z);
@@ -152,7 +184,7 @@ export class Traffic {
       r.hornT -= dt;
       if (r.hornT <= 0) {
         r.hornT = this.R.range(7, 22);
-        if (d2 < 15 * 15 && this.R.chance(r.car ? 0.8 : 0.45)) ctx.sound.play('horn');
+        if (d2 < 15 * 15 && this.R.chance(r.car ? 0.8 : 0.45)) ctx.sound.play(r.car ? hornOf(r.car) : 'horn');
       }
       // va chạm xe cộ với người chơi và người đi đường (nhẹ · trung bình · nặng)
       const kind: VehicleKind = r.car ? (r.car === 'truck' ? 'truck' : 'car') : r.moto ? 'moto' : 'bicycle';
@@ -172,7 +204,7 @@ export class Traffic {
           p.knockback(kx, kz, spec.knockSpeed, spec.liftVy, spec.stunSec, spec.shake, spec.fallSec);
           p.hitCd = 1.35; r.brakeT = 1.15;
           ctx.ui.hitFlash(spec.flash);
-          ctx.sound.play('horn');
+          ctx.sound.play(r.car ? hornOf(r.car) : 'horn');
           ctx.sound.play(spec.tier === 'heavy' ? 'crash' : spec.tier === 'medium' ? 'skid' : 'bonk');
           const res = applyVehicleImpactToStats(ctx.g, spec);
           toast(`${spec.label} (Máu −${spec.hpLoss})`, spec.tier === 'light' ? 'warn' : 'bad', spec.tier === 'heavy' ? 'skull' : 'bolt', spec.tier === 'heavy');
@@ -194,7 +226,7 @@ export class Traffic {
             ctx.npcs.knock(n, kx, kz, spec.knockSpeed * 0.9, spec.liftVy, Math.max(spec.fallSec, spec.tier === 'medium' ? 0.55 : 0.25), spec.tier);
             r.brakeT = 0.85;
             if (d2 < 22 * 22) {
-              ctx.sound.play('horn');
+              ctx.sound.play(r.car ? hornOf(r.car) : 'horn');
               ctx.sound.play(spec.tier === 'heavy' ? 'crash' : spec.tier === 'medium' ? 'thud' : 'bonk');
             }
           }

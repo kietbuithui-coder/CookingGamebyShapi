@@ -14,6 +14,17 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 49',
+    tag: 'Xe cộ chạy đúng đường, thêm 3 màu xe, còi xe hơi riêng',
+    items: [
+      'Xe không còn “mọc” từ chỗ không có đường nữa: hết cảnh xe hiện ra giữa bãi đất gầm cầu, trên bờ kênh hay ngoài rìa thành phố.',
+      'Xe chỉ xuất hiện sau lưng bạn hoặc ở rất xa phía trước, không còn đột ngột hiện ra ngay trước mặt.',
+      'Chạy hết mặt đường thì xe quay đầu ở giao lộ cuối, không phóng ra bãi đất.',
+      'Ba màu sơn mới cho xe hơi: đỏ đô, xanh rêu, vàng taxi — và xe đổi màu mỗi lần vào lại đường nên gặp đủ màu.',
+      'Còi xe hơi riêng từng loại: xe nhỏ “bíp bíp”, sedan “bìm bìm”, xe tải “bừm” trầm — nghe là biết xe gì đang tới.',
+    ],
+  },
+  {
     v: 'Lượt 48',
     tag: 'Ngủ ở trọ/khách sạn đỡ đói, ghế đá nghỉ tốt hơn, biển chỗ bán đúng giá',
     items: [
@@ -82,20 +93,6 @@ export const CHANGELOG: LogEntry[] = [
       'Có 80 vật thấp nhảy qua được trong thành phố, khai báo đúng chiều cao thật của từng món (bệ cửa sổ cố ý giữ nguyên làm ranh giới nhà).',
       'Tường nhà, cột, vách vẫn chặn tuyệt đối — bay cao bao nhiêu cũng không lọt vào trong.',
       'Rơi trúng nóc vật thấp thì đứng trên đó được, bước ra mép là rơi xuống đất, không bị kẹt trong đồ.',
-    ],
-  },
-  {
-    v: 'Lượt 41',
-    tag: 'Rau củ để được lâu, ăn quán no lâu, và bệnh đau bụng có thuốc chữa',
-    items: [
-      'Rau củ mua ở chợ để được lâu gấp 3–3,5 lần: rau muống 30 → 105 giờ, cà rốt 120 → 360 giờ, cà chua 72 → 216 giờ…',
-      'Khoai tây, khoai lang, hành tây, tỏi, gừng, sả giữ nguyên như cũ — nhóm này vốn đã rất bền.',
-      'Ăn ở quán cơm, quán ăn, chùa hay uống ở quán cà phê thì no lâu hơn 2,5 lần, giá không đổi.',
-      'Có bệnh đau bụng: ăn uống bậy (đồ mua sẵn, nước ở vòi công cộng, nước quán cà phê) là có thể bị, máu tụt dần chứ không mất một cục.',
-      'Mua thuốc đau bụng ở nhà thuốc An Tâm hoặc quầy thuốc bệnh viện là khỏi ngay — không mua thì vài giờ cũng tự dịu.',
-      'Món mình tự nấu từ 2 sao trở lên thì gần như không đau bụng; dưới 2 sao mới có rủi ro.',
-      'Mức “Cao” trên điện thoại được trả lại như cũ (2 điểm ảnh, bóng đổ 2048) — máy khoẻ chọn “Cao” là hình đẹp nhất, không bị hạ nữa.',
-      'Thịt, cá, hải sản tươi để trong quầy được đúng 2 ngày thay vì 3,5–5 giờ như trước: thịt heo/bò 58 giờ, gà vịt 53 giờ, tôm cá cua 48 giờ.',
     ],
   },
 ];

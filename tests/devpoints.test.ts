@@ -3,12 +3,12 @@ import { DEV_BUILD_TAG, getDevSections } from '../src/game/devPoints';
 
 describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
   it('chỉ gồm mục của tính năng mới nhất + nhóm địa điểm tele nhanh', () => {
-    expect(DEV_BUILD_TAG).toContain('khách sạn');
-    expect(DEV_BUILD_TAG).toContain('biển chỗ bán');
+    expect(DEV_BUILD_TAG).toContain('gầm cầu');
+    expect(DEV_BUILD_TAG).toContain('3 màu');
     const sections = getDevSections();
     expect(sections.length).toBe(2);
-    expect(sections[0].title.toLowerCase()).toContain('ghế đá');
-    expect(sections[0].title).toContain('lượt 48');
+    expect(sections[0].title.toLowerCase()).toContain('còi xe hơi');
+    expect(sections[0].title).toContain('lượt 49');
     expect(sections[1].title).toContain('Địa điểm');
     const ids = new Set<string>();
     for (const sec of sections) {
@@ -22,7 +22,7 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
       }
     }
     // mục của lượt này: nhảy thử qua ghế đá + đếm vật thấp nhảy qua được
-    for (const id of ['ngu_do_doi', 'bien_gia']) expect(ids.has(id)).toBe(true);
+    for (const id of ['kiem_xe', 'thu_ba_coi']) expect(ids.has(id)).toBe(true);
     // tele nhanh vẫn còn nguyên
     const loc = sections[1].items.map((i) => i.id);
     for (const id of ['tp_equip', 'tp_matbang_tb', 'tp_ongtu', 'tp_scrap2', 'tp_canho']) expect(loc).toContain(id);
@@ -64,6 +64,8 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
       // lượt 46 (ít mưa + giảm giá thuê)
       'mua_it', 'gia_cho_re',
       // lượt 47 (hotfix màn hình đen)
-      'kiem_tra_tai', 'sua_loi_tai']) expect(ids).not.toContain(old);
+      'kiem_tra_tai', 'sua_loi_tai',
+      // lượt 48 (ngủ đỡ đói + biển đúng giá)
+      'ngu_do_doi', 'bien_gia']) expect(ids).not.toContain(old);
   });
 });

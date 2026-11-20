@@ -14,7 +14,7 @@ import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Ngủ ở trọ/khách sạn đỡ tụt đói-khát (khách sạn −50%), nghỉ ghế đá tốt hơn, biển chỗ bán hết sai giá';
+export const DEV_BUILD_TAG = 'Xe cộ chỉ chạy trên đường thật (hết mọc từ gầm cầu), thêm 3 màu sơn và còi riêng từng loại xe hơi';
 
 export interface DevAction {
   id: string;
@@ -73,39 +73,44 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Ngủ đỡ đói, ghế đá tốt hơn, biển đúng giá (lượt 48)',
+      title: 'Mới nhất — Xe chạy đúng đường, 3 màu mới, còi xe hơi (lượt 49)',
       items: [
         {
-          id: 'ngu_do_doi',
-          label: 'Đo mức tụt đói/khát khi ngủ 8 tiếng',
-          sub: 'So chỗ tử tế với gầm cầu, ghế đá',
+          id: 'kiem_xe',
+          label: 'Theo dõi xe: có chiếc nào ra ngoài đường không?',
+          sub: 'Chạy 600 khung hình rồi đếm',
           tone: 'green',
           closePanel: false,
           run: () => {
-            const g = ctx.g;
-            const save = { ...g.st };
-            const ra: string[] = [];
-            for (const id of ['ghe', 'khachsan', 'tro']) {
-              const h = HOUSING[id];
-              Object.assign(g.st, { hunger: 60, thirst: 60, energy: 40 });
-              const h0 = g.st.hunger, t0 = g.st.thirst, e0 = g.st.energy;
-              const a = { moving: false, running: false, sleeping: true, sheltered: true, working: false, load: 0, sleepQ: h.sleep };
-              for (let i = 0; i < 480; i++) R.tickStats(g, 1, a);
-              ra.push(`${h.name}: đói −${(h0 - g.st.hunger).toFixed(0)} · khát −${(t0 - g.st.thirst).toFixed(0)} · năng lượng +${(g.st.energy - e0).toFixed(0)}`);
+            const T = ctx.traffic, CORR = [-88.5, -29.5, 29.5, 88.5];
+            let kiem = 0, ngoai = 0, trongBai = 0;
+            for (let i = 0; i < 600; i++) {
+              T.update(0.05);
+              if (i % 20) continue;
+              for (const rd of T.list) {
+                if (rd.pending) continue;
+                kiem++;
+                const px = rd.axis === 0 ? rd.pos : rd.road + rd.lane;
+                const pz = rd.axis === 0 ? rd.road : rd.pos;
+                if (pz > 92.5 || pz > 92) trongBai++;
+                const on = Math.abs(px) <= 92.6 && Math.abs(pz) <= 92.6 && CORR.some((c) => Math.abs(px - c) < 3.7 || Math.abs(pz - c) < 3.7);
+                if (!on) ngoai++;
+              }
             }
-            Object.assign(g.st, save);   // trả lại chỉ số cũ, không phá ván đang chơi
-            toast(ra.join('  |  '), 'info', 'moon', true);
+            toast(`Kiểm ${kiem} lượt: ngoài mặt đường ${ngoai} · lọt vào bãi gầm cầu ${trongBai}.`, ngoai + trongBai ? 'bad' : 'good', 'gear', true);
           },
         },
         {
-          id: 'bien_gia',
-          label: 'Giá thật trên các biển “CHỖ BÁN HÀNG”',
-          sub: 'Biển đọc thẳng từ dữ liệu chỗ bán',
+          id: 'thu_ba_coi',
+          label: 'Nghe thử ba tiếng còi xe hơi',
+          sub: 'Xe nhỏ bíp bíp · sedan bìm bìm · tải bừm',
           tone: 'yellow',
           closePanel: false,
           run: () => {
-            const list = SPOTS.filter((s) => s.fee > 0).map((s) => `${s.name} ${s.fee.toLocaleString('vi-VN')}₫`).join(' · ');
-            toast(`Biển ghi: ${list} (mỗi ngày).`, 'info', 'shop', true);
+            ctx.sound.unlock(); ctx.sound.play('horn_beep');
+            setTimeout(() => ctx.sound.play('horn_honk'), 700);
+            setTimeout(() => ctx.sound.play('horn_truck'), 1500);
+            toast('Còi xe nhỏ → sedan → xe tải. Mỗi loại một tiếng khác nhau.', 'info', 'gear', true);
           },
         },
       ],
