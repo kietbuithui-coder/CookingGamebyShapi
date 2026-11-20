@@ -14,6 +14,16 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 47',
+    tag: 'Sửa lỗi mở game trên điện thoại: không còn màn hình đen',
+    items: [
+      'Hết cảnh mở game ra chỉ thấy màn hình đen, không vào được menu: nếu tệp game không tải được, máy sẽ hiện bảng báo lỗi kèm hai nút.',
+      'Nút “Sửa lỗi tải”: tự xoá bộ nhớ đệm cũ trên máy rồi mở lại. Tiến trình chơi vẫn giữ nguyên.',
+      'Game luôn mở bản mới nhất khi có mạng, chỉ dùng bản lưu khi mất mạng — không còn kẹt ở bản cũ sau mỗi lần cập nhật.',
+      'Đang tải mà quá 15 giây chưa lên thì có lời báo thay vì đứng im.',
+    ],
+  },
+  {
     v: 'Lượt 46',
     tag: 'Ít mưa hơn, thuê chỗ chợ & công viên rẻ 40 %',
     items: [
@@ -87,15 +97,6 @@ export const CHANGELOG: LogEntry[] = [
       'Không có bóng đổ thì tắt hẳn bộ vẽ bóng; điện thoại không bật khử răng cưa (MSAA) ở bất cứ mức nào.',
       'Tự hạ đồ hoạ thông minh hơn: hạ sau 5 giây giật thay vì 6, máy dưới 22 FPS thì hạ thẳng 2 mức, và không hạ oan khi khung hình vẫn trên 45.',
       'Chơi offline: Cài đặt có nút “Lưu để chơi offline” — lưu xong thì tắt mạng, mở lại game vẫn vào và chơi tiếp bình thường.',
-    ],
-  },
-  {
-    v: 'Lượt 39',
-    tag: 'Bánh phở, bún và đồ nguội cũng để được 2 ngày',
-    items: [
-      'Bánh phở 30 → 60 giờ, bún tươi 26 → 52 giờ: mua hôm nay, để qua đêm vẫn bán được.',
-      'Đồ nguội ăn liền (xúc xích, giò lụa, chả cá, đậu hũ) cũng tăng gấp đôi hạn dùng.',
-      'Thịt, cá, hải sản tươi sống thì vẫn hỏng trong ngày như cũ — để lâu là mất thật.',
     ],
   },
 ];

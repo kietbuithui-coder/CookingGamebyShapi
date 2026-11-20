@@ -13,7 +13,7 @@ import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Trời mưa 37% xuống 18% thời gian; phí chỗ và thuê chi nhánh ở chợ/công viên giảm 40%';
+export const DEV_BUILD_TAG = 'Sửa lỗi mở game trên điện thoại: có bảng báo lỗi + nút Sửa lỗi tải, không còn màn hình đen';
 
 export interface DevAction {
   id: string;
@@ -72,38 +72,40 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Ít mưa hơn, thuê chỗ rẻ 40 % (lượt 46)',
+      title: 'Mới nhất — Sửa lỗi “màn hình đen” trên điện thoại (lượt 47)',
       items: [
         {
-          id: 'mua_it',
-          label: 'Đo tỉ lệ mưa thật trong game',
-          sub: 'Chạy 3.000 lần chuyển thời tiết bằng chính luật của game rồi đếm',
+          id: 'kiem_tra_tai',
+          label: 'Kiểm tra bộ nhớ đệm & bản đang chạy',
+          sub: 'Xem máy có đang giữ bản cũ không',
           tone: 'green',
           closePanel: false,
           run: () => {
-            const g = ctx.g;
-            let wet = 0; const N = 3000, dem: Record<string, number> = {};
-            const save = { now: g.weather.now, until: g.weather.until, next: g.weather.next };
-            for (let i = 0; i < N; i++) {
-              g.weather.until = -1e9;
-              R.setWeather(g, g.weather.next, undefined, false);
-              dem[g.weather.now] = (dem[g.weather.now] ?? 0) + 1;
-              if (['mua', 'muato', 'giong', 'bao'].includes(g.weather.now)) wet++;
-            }
-            Object.assign(g.weather, save);          // trả lại thời tiết cũ, không phá ván đang chơi
-            toast(`Đo ${N} lần: mưa ${(wet / N * 100).toFixed(1)} % thời gian (trước là 37 %).`, 'info', 'rain', true);
+            const sw = 'serviceWorker' in navigator ? navigator.serviceWorker.controller : null;
+            const cache = typeof caches !== 'undefined' ? caches : null;
+            const dem = (ks: readonly string[]) => ks.length;
+            Promise.resolve(cache ? cache.keys() : []).then((ks) => {
+              const ban = (document.querySelector('script[type=module]') as HTMLScriptElement | null)?.src.split('/').pop() ?? 'không rõ';
+              const n = dem(ks as readonly string[]);
+              toast(`Bản đang chạy: ${ban}. Bộ nhớ đệm: ${n} mục${sw ? '' : ' · chưa có service worker'}.`, n > 6 ? 'warn' : 'info', 'gear', true);
+            }).catch(() => toast('Trình duyệt này chặn xem bộ nhớ đệm.', 'warn', 'gear', true));
           },
         },
         {
-          id: 'gia_cho_re',
-          label: 'Giá phí chỗ và thuê chi nhánh',
-          sub: 'Chợ / công viên sau khi giảm 40 %',
+          id: 'sua_loi_tai',
+          label: 'Sửa lỗi tải (xoá bộ nhớ đệm cũ)',
+          sub: 'Giữ nguyên tiến trình chơi, chỉ tải lại tệp game',
           tone: 'yellow',
           closePanel: false,
           run: () => {
-            const p = (id: string) => SPOTS.find((s) => s.id === id)?.fee ?? 0;
-            const cn = (id: string) => R.branchSite(id)?.rent ?? 0;
-            toast(`Cổng Chợ ${p('cho').toLocaleString('vi-VN')}₫/ngày · Công Viên ${p('cv').toLocaleString('vi-VN')}₫/ngày. Thuê chi nhánh: chợ ${cn('cho').toLocaleString('vi-VN')}₫ · công viên ${cn('cv').toLocaleString('vi-VN')}₫ (giảm 40 %).`, 'info', 'shop', true);
+            const go = () => location.replace(location.pathname + '?v=' + Date.now());
+            try {
+              if (typeof caches === 'undefined' || !('serviceWorker' in navigator)) return go();
+              caches.keys().then((ks) => Promise.all(ks.map((k) => caches.delete(k))))
+                .then(() => navigator.serviceWorker.getRegistrations())
+                .then((rs) => Promise.all(rs.map((r) => r.unregister())))
+                .then(go).catch(go);
+            } catch { go(); }
           },
         },
       ],

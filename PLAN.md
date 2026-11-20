@@ -1112,11 +1112,30 @@ W+F đấm `punchCd 0,7` **vẫn đi**, kéo chuột nhìn quanh trong lúc đi 
 Đo trên trình duyệt bằng chính hàm thu tiền (`stallRent` / `payStallRent`): `cho 18.000`, `cv 12.000`, `vp 60.000`, `hem 0`;
 thu tiền thật thì ví trừ đúng **18.000** và **12.000**, `paidDay` khớp ngày. `branchSite` trả 72.000 / 54.000 / 150.000.
 
+### 47 — hotfix: điện thoại mở lên không vào được menu (màn hình đen)
+**Tái hiện đúng lỗi.** Chặn tệp JS của bản build (như khi mạng chập chờn, hoặc service worker đời cũ trả về tệp JS đã bị xoá sau một lần cập nhật) rồi mở trên khung 390×844:
+`document.body.innerText` = **rỗng**, **0 nút** bấm được, ảnh chụp chỉ một màu `#1b1512` trơn. Đo được: `#bootload`/`#booterr` **không tồn tại** vì toàn bộ giao diện do JS dựng; còn service worker cũ thì "bộ nhớ đệm trước" cho cả trang lẫn tài nguyên → điện thoại kẹt vĩnh viễn ở bản cũ, tệp JS cũ đã bị xoá nên 404.
+
+**Sửa.**
+- `index.html`: tự mang `#bootload` (Đang dựng thành phố…) + `#booterr` (bảng báo lỗi) + 2 nút **Thử lại** / **Sửa lỗi tải** + CSS riêng, tất cả nằm ngay trong trang nên **không phụ thuộc tệp JS/CSS của game**. Bắt lỗi bằng: sự kiện `error` của thẻ `<script>`, hẹn giờ 15 giây, và `?reset` để xoá bản cũ. "Sửa lỗi tải" xoá `caches` + `serviceWorker.unregister()` rồi mở lại `?v=<thời gian>` (giữ nguyên tiến trình trong localStorage).
+- `src/main.ts`: gọi `__boot.stage()` khi dựng xong khung hình, `__boot.ok()` khi menu thật đã lên, và `__boot.fail(...)` trong `boot().catch(...)` → không bao giờ còn màn hình đen câm.
+- `public/sw.js` (và bản trong `docs/`): `ganhhang-v1 → v2`, đổi sang **mạng trước, mất mạng mới dùng bản lưu** cho cả trang lẫn tài nguyên.
+- `devPoints.ts`: thêm nhóm "Kiểm tra bộ nhớ đệm & bản đang chạy" và "Sửa lỗi tải" để người chơi tự cứu máy mình ngay trong Cài đặt.
+
+**Đo lại trên bản build (390×844, DPR 3).**
+| Tình huống | Kết quả |
+|---|---|
+| Chạy bình thường | menu lên, bảng lỗi **ẩn**, chữ chờ ẩn ✔ |
+| Tệp JS 404 | bảng lỗi **hiện**, lời báo đúng, nút "Sửa lỗi tải" **111×47 px**, `elementFromPoint` = chính nút → bấm được ✔ |
+| Bấm "Sửa lỗi tải" | `caches` `["ganhhang-v2"]` → **`[]`**, địa chỉ thành `?v=…` ✔ |
+| CPU chậm 6× | vẫn lên menu sau **5,1 s** (bình thường 1,5 s) — không phải lỗi máy yếu ✔ |
+
 ### Kiểm chứng
+- `tests/boot47.test.ts` — **7 bài mới** canh: bảng báo lỗi + 2 nút có trong trang, xoá cache/SW, hẹn giờ 15 s, bắt lỗi thẻ script, CSS nằm trong trang, `?reset`, và service worker v2 "mạng trước".
 - `tests/mua46.test.ts` — **8 bài mới** (tỉ lệ mưa 3 hạt giống, nắng vẫn nhiều nhất, phí chỗ + thuê chi nhánh giảm 40 %, chỗ khác không đụng).
 - `tests/android45.test.ts` — **4 bài mới** canh đúng 3 nguyên nhân trên.
 - `tests/muc44.test.ts` — **3 bài mới** (bồn hoa, xe máy, hồ nước).
 - `tests/nhay42.test.ts` — **7 bài mới** (lượt 42) + **3 bài mức 2** (lượt 43): nhảy qua ghế đá, vẫn chặn khi chưa đủ cao, tường cao chặn ở mọi độ cao, `lowTopAt` đúng.
-- Tổng **526 bài / 43 tệp** pass; `tsc` sạch; `npm run build` + `build:pages` OK.
-- Nhật ký trong game: bản **Lượt 46** ở đầu (bỏ bản 38 cho đúng trần 8 bản).
+- Tổng **536 bài / 44 tệp** pass; `tsc` sạch; `npm run build` + `build:pages` OK.
+- Nhật ký trong game: bản **Lượt 47** ở đầu (bỏ bản 39 cho đúng trần 8 bản).
 - Ảnh: `/tmp/probe/nhay42/66_nhay.png`.
