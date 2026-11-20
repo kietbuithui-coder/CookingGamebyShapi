@@ -103,6 +103,10 @@ async function boot() {
     };
   };
   ctx.toMenu = menu;
+  ctx.resetSave = () => {
+    try { localStorage.removeItem(SAVE_KEY); } catch { /* trình duyệt chặn bộ nhớ */ }
+    dirty = false; menu(); toast('Đã xoá bản lưu trên máy này. Lần sau bấm "Chơi mới" là bắt đầu lại từ đầu.', 'good', 'bin');
+  };
   window.addEventListener('pointerdown', () => ctx.sound.unlock(), { passive: true });
   document.addEventListener('visibilitychange', () => { if (document.hidden) ctx.save(); }); window.addEventListener('pagehide', () => ctx.save());
   let summary = false; bus.on('day', () => { summary = true; }); let bankrupt = false; bus.on('bankrupt', () => { bankrupt = true; });

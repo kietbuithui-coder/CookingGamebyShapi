@@ -25,15 +25,30 @@ export const BTN_KEYS: BtnKey[] = ['act', 'run', 'menu', 'cook', 'hit', 'jump'];
 /** x, y: độ lệch so với chỗ mặc định, tính bằng phần bề ngang / bề cao màn hình (để xoay máy, đổi máy vẫn hợp lý) · s: hệ số phóng. */
 export interface BtnPlace { x: number; y: number; s: number; }
 /** scale: cỡ chữ và nút của cả giao diện · L / P: cách xếp riêng cho màn ngang và màn dọc. */
-export interface UiLayout { scale: number; L: Partial<Record<BtnKey, BtnPlace>>; P: Partial<Record<BtnKey, BtnPlace>>; }
+export interface UiLayout {
+  scale: number; L: Partial<Record<BtnKey, BtnPlace>>; P: Partial<Record<BtnKey, BtnPlace>>;
+  /** Đã nhắc một lần cách dùng nút Chạy chưa (đừng nhắc lại mỗi lần mở game). */
+  runTip?: boolean;
+}
 export const UI_SCALE: [number, number] = [0.7, 1.6], BTN_SCALE: [number, number] = [0.6, 1.8];
 const num = (v: unknown, lo: number, hi: number, def: number) => (typeof v === 'number' && isFinite(v) ? Math.max(lo, Math.min(hi, v)) : def);
 /** Làm sạch phần giao diện đọc từ bộ nhớ (có thể thiếu, hỏng hoặc do bản cũ ghi). */
 export function cleanLayout(raw: any): UiLayout {
   const side = (o: any) => { const out: Partial<Record<BtnKey, BtnPlace>> = {}; if (o && typeof o === 'object') for (const k of BTN_KEYS) { const p = o[k]; if (p && typeof p === 'object') out[k] = { x: num(p.x, -1, 1, 0), y: num(p.y, -1, 1, 0), s: num(p.s, BTN_SCALE[0], BTN_SCALE[1], 1) }; } return out; };
-  return { scale: num(raw?.scale, UI_SCALE[0], UI_SCALE[1], 1), L: side(raw?.L), P: side(raw?.P) };
+  const out: UiLayout = { scale: num(raw?.scale, UI_SCALE[0], UI_SCALE[1], 1), L: side(raw?.L), P: side(raw?.P) };
+  if (raw?.runTip === true) out.runTip = true;
+  return out;
 }
-export interface Settings { quality: number; sfx: number; music: number; sens: number; fps: boolean; auto: boolean; ui: UiLayout; /** Góc nhìn thứ ba (nhìn thấy chính mình). */ cam3: boolean; }
+export interface Settings {
+  quality: number; sfx: number; music: number; sens: number; fps: boolean; auto: boolean; ui: UiLayout;
+  /** Góc nhìn thứ ba (nhìn thấy chính mình). */ cam3: boolean;
+  /** Đã bấm "Cứ chơi dọc" một lần — lần sau mở game ở màn dọc thì không hỏi lại nữa. */
+  portraitOk: boolean;
+  /** Khoá con trỏ vào khung hình (rê chuột là xoay, không cần giữ nút) — mặc định tắt vì nhiều người quen giữ chuột. */
+  mouseLock: boolean;
+  /** Máy tính vẫn hiện bốn nút cảm ứng (Tương tác / Chạy / Đấm / Nhảy). Mặc định tắt trên máy tính. */
+  touchBtns: boolean;
+}
 /**
  * pr: tỉ lệ điểm ảnh tối đa (so với điểm ảnh CSS) · blob: bóng tròn dưới chân NPC khi không có bóng đổ thật.
  * msaa: bật khử răng cưa của WebGL (tốn pin trên điện thoại) · detail: cho phép vẽ lớp chi tiết của khu phố.
@@ -65,11 +80,19 @@ export interface Ctx {
   /** Cho phép vẽ lớp chi tiết của khu phố (mức đồ hoạ thấp thì tắt hẳn). */
   detailOn?: boolean;
   save(reason?: string): void; applyQuality(): void; newGame(ac: 'anh' | 'chị'): void; toMenu(): void;
+  /** Xoá bản lưu trên máy này rồi về màn hình chính (menu sẽ không còn nút "Chơi tiếp"). */
+  resetSave(): void;
 }
 export const ctx = { mode: 'menu', time: 0, speed: MIN_PER_SEC } as Ctx;
 export const SAVE_KEY = 'ganhhang.save.v1', SET_KEY = 'ganhhang.settings.v1';
 export function loadSettings(mobile: boolean): Settings {
-  const def: Settings = { quality: mobile ? Q_DEFAULT_MOBILE : Q_DEFAULT_DESKTOP, sfx: 0.8, music: 0.5, sens: 1, fps: true, auto: true, ui: cleanLayout(null), cam3: false };
+  // FPS mặc định TẮT trên điện thoại: con số "60 FPS · n lệnh vẽ" chỉ dành cho người chỉnh đồ hoạ,
+  // mà nó chiếm nguyên một dòng HUD ngay dưới hàng nút, chữ chỉ 10–11 px. Máy tính vẫn bật như trước.
+  const def: Settings = {
+    quality: mobile ? Q_DEFAULT_MOBILE : Q_DEFAULT_DESKTOP, sfx: 0.8, music: 0.5, sens: 1,
+    fps: !mobile, auto: true, ui: cleanLayout(null), cam3: false,
+    portraitOk: false, mouseLock: false, touchBtns: mobile,
+  };
   try { const s = { ...def, ...JSON.parse(localStorage.getItem(SET_KEY) || '{}') }; s.quality = Math.max(0, Math.min(QUALITY.length - 1, s.quality | 0)); s.ui = cleanLayout(s.ui); return s; } catch { return def; }
 }
 export function saveSettings() { try { localStorage.setItem(SET_KEY, JSON.stringify(ctx.set)); } catch { /* bộ nhớ đầy hoặc bị chặn */ } }

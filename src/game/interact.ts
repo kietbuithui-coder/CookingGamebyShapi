@@ -21,6 +21,10 @@ interface Cand { kind: Kind; ref: any; x: number; y: number; z: number; r: numbe
 export interface Focus { label: string; sub?: string; act: () => void; alt?: { label: string; act: () => void }; x: number; y: number; z: number; }
 const _v = new THREE.Vector3(), _f = new THREE.Vector3();
 export class Interact {
+  /** Chạm-để-tương-tác chỉ ăn khi vật ở trong tầm này (mét) — xa hơn thì cú chạm là để xoay camera. */
+  TAP_REACH = 1.3;
+  /** Bán kính nhận chạm trên màn hình: rộng rãi ở màn cao, siết lại ở màn thấp để không bấm nhầm. */
+  tapRadius() { return Math.max(44, window.innerHeight * 0.075); }
   focus: Focus | null = null; private cands: Cand[] = []; private doors: { d: any; m: THREE.Mesh; open: number; want: number; bellUntil?: number }[] = []; private shut: { s: any; m: THREE.Mesh; k: number }[] = []; private T = 0;
   constructor() {
     const W = ctx.world;
@@ -186,9 +190,12 @@ export class Interact {
     // chạm trực tiếp vào vật trên màn hình
     const taps = ctx.input.taps;
     if (taps.length) {
-      const t = taps[taps.length - 1]; taps.length = 0; let tb: Cand | null = null, td = Math.max(64, window.innerHeight * 0.11);
+      const t = taps[taps.length - 1]; taps.length = 0; let tb: Cand | null = null, td = this.tapRadius();
       for (const c of this.cands) {
-        const dh = Math.sqrt(dist2(c.x, c.z, p.x, p.z)); if (dh > c.r) continue;
+        const dh = Math.sqrt(dist2(c.x, c.z, p.x, p.z));
+        // Phải đứng ĐỦ GẦN mới tính là "chạm vào vật": trước đây chỉ cần trong bán kính tương tác (tới 2,6 m)
+        // nên đang xoay camera quanh quầy là mở bảng Quầy, đang đi ngang là mở hộp thoại người đi đường.
+        if (dh > this.TAP_REACH) continue;
         _v.set(c.x, c.y, c.z).project(cam); if (_v.z > 1) continue;
         const sx = (_v.x * 0.5 + 0.5) * window.innerWidth, sy = (-_v.y * 0.5 + 0.5) * window.innerHeight, d = Math.hypot(sx - t.x, sy - t.y) - c.prio * 40;
         if (d < td) { td = d; tb = c; }

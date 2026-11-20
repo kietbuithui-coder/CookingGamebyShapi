@@ -28,6 +28,9 @@ import * as PH from '../sim/phone';
 import { applyLayout, editLayout } from './layout';
 import * as PUI from './phoneUI';
 
+/** Các bảng người chơi mở bằng phím tắt — bấm lại đúng phím đó thì đóng (không áp cho bảng tự mở như tổng kết ngày). */
+const TABS_CLOSE = ['bag', 'book', 'map', 'phone', 'settings'];
+
 const IC: Record<string, string> = {
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/>',
   hot: '<circle cx="12" cy="12" r="5" fill="currentColor"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3M4 4l2 2M18 18l2 2M4 20l2-2M18 6l2-2"/>',
@@ -86,19 +89,21 @@ export class UI {
     add('hud-tl', `<div class="row"><span class="chip" id="clock" data-tip="Giờ trong ngày — một ngày trong game dài khoảng 24 phút thật"></span><span class="chip" id="wx" data-tip="Thời tiết hôm nay"></span><span class="chip" id="place" data-tip="Bạn đang đứng ở khu nào"></span></div><div class="row"><span class="chip danger hide" id="jailclock" data-tip="Thời gian còn lại trong buồng tạm giữ"></span></div><div id="stats"></div>`);
     add('hud-tr', `<div class="row"><span class="chip" id="rep"></span><span class="chip" id="money"></span></div><div class="row" id="menub"><button class="ib hide" id="stowb" title="Cất gánh vào ba lô">${ic('box')}</button><button class="ib" data-p="bag" data-tip="Túi đồ — nguyên liệu, món ăn, đồ nghề đang mang (Tab)">${ic('bag')}<span class="dot hide" id="bagdot"></span></button><button class="ib" data-p="book" data-tip="Sổ tay — công thức, sổ sách, nợ và khách quen (B)">${ic('book')}</button><button class="ib hide" id="phoneb" data-p="phone" data-tip="Điện thoại — pin, danh bạ, tin nhắn, radio (P)">${ic('phone')}<span class="dot hide" id="phonedot"></span></button><button class="ib" data-p="map" data-tip="Bản đồ thành phố — chạm một chỗ để ghim đường đi (M)">${ic('map')}</button><button class="ib" data-p="settings" data-tip="Cài đặt — đồ hoạ, cỡ chữ, âm thanh, sắp xếp nút">${ic('gear')}</button></div><div class="row"><span class="chip hide" id="wanted" data-tip="Mức bị để ý — càng cao công an càng hay gọi lại hỏi giấy tờ"></span><span class="chip hide" id="debt" data-tip="Tổng nợ và hạn trả gần nhất"></span><span class="chip" id="fps" data-tip="Khung hình mỗi giây và số lệnh vẽ"></span></div>`);
     add('quest', '<div class="qh"><small>MỤC TIÊU</small><button class="qmin" id="qmin" data-tip="Thu gọn / mở lại ô mục tiêu">–</button></div><span></span>'); add('way', '', 'chip hide'); add('events'); add('cross'); add('focus'); add('stam', '<b></b>', 'hide');
-    add('act', `<button class="alt hide"></button><button class="main dim">${ic('hand')}</button>`); add('runb', `<button class="run">${ic('run')}</button>`);
-    add('act2', `<button class="hit" title="Đấm (F)">${ic('fist')}</button><button class="jump" title="Nhảy (Space)">${ic('jump')}</button>`);
+    add('act', `<button class="alt hide"></button><button class="main dim">${ic('hand')}</button>`); add('runb', `<button class="run" data-tip="Chạy nhanh / đi bộ — chạm để bật tắt, hoặc giữ Shift trên máy tính"><i class="rl">ĐI</i>${ic('run')}</button>`);
+    add('act2', `<button class="hit" data-tip="Đấm — phím F">${ic('fist')}</button><button class="jump" data-tip="Nhảy — phím Space">${ic('jump')}</button>`);
     add('tip', '', 'tip hide');
     add('stick', '<i></i>', 'hide'); add('cart', '', 'chip hide'); add('stallchip', '', 'chip hide'); add('toasts');
     add('cook', `<button class="btn small red quit">${ic('x')} Bỏ dở</button><div class="top"><div class="title"></div><div class="steps"></div><div class="hint"></div><div class="prog hide"><div class="meter"><div class="z"></div><div class="v"></div></div><small></small></div></div><div class="heat hide"><small>LỬA</small><div class="meter"><div class="z"></div><div class="v"></div><div class="n"></div></div></div><div class="slider hide"><i>LỬA</i></div><div class="card hide"></div><div class="custom hide"></div><div class="btns"></div>`, 'hide');
-    add('grade', '', 'hide'); add('dlg', '', 'hide'); add('fade'); add('hitflash'); add('zzz', '', 'hide'); add('modal', '', 'hide'); add('menu', '', 'hide'); add('load', 'Đang dựng thành phố…<small>Gánh Hàng Đường Phố</small>'); add('rotate', 'Hãy xoay ngang điện thoại để chơi thoải mái hơn.<br><br><button class="btn" id="rotok">Cứ chơi dọc</button>', 'want');
+    add('grade', '', 'hide'); add('dlg', '', 'hide'); add('fade'); add('hitflash'); add('zzz', '', 'hide'); add('modal', '', 'hide'); add('menu', '', 'hide'); add('load', 'Đang dựng thành phố…<small>Gánh Hàng Đường Phố</small>'); add('rotate', 'Hãy xoay ngang điện thoại để chơi thoải mái hơn.<br><br><button class="btn" id="rotok">Cứ chơi dọc</button>', ctx.set?.portraitOk ? '' : 'want');
     for (const id of ['clock', 'wx', 'place', 'jailclock', 'stats', 'rep', 'money', 'bagdot', 'debt', 'fps', 'stowb', 'wanted', 'phoneb', 'phonedot']) E[id] = document.getElementById(id)!;
     E.stowb.onclick = () => { if (ctx.mode === 'play') ctx.stall.stow(); };
     E.stats.innerHTML = ([['dish', 'hunger', 'Độ no', 'no bụng — tụt thì đói, kiệt sức'], ['drop', 'thirst', 'Nước', 'khát — tụt thì khô cổ, dễ cảm'], ['bolt', 'energy', 'Năng lượng', 'sức lực — tụt thì đi chậm, ngất được'], ['heart', 'health', 'Sức khoẻ', 'máu — tụt vì bệnh, bị đánh, ngất'], ['sparkle', 'hygiene', 'Sạch sẽ', 'tắm rửa — bẩn thì khách chê'], ['smile', 'mood', 'Vui vẻ', 'tinh thần — thấp thì nấu kém, khách bỏ đi']] as const)
-      .map(([i, k, t, note]) => `<div class="stat" data-k="${k}" data-title="${t}" data-note="${note}" data-tip="${t} (0/${STAT_MAX}): ${note}">${ic(i)}<i><b></b></i></div>`).join('');
-    document.getElementById('rotok')!.onclick = () => E.rotate.classList.remove('want');
+      .map(([i, k, t, note]) => `<div class="stat" data-k="${k}" data-title="${t}" data-note="${note}" data-tip="${t} (0/${STAT_MAX}): ${note}">${ic(i)}<i><b></b></i><span class="n"></span></div>`).join('');
+    // Nhớ lựa chọn: bấm "Cứ chơi dọc" một lần là lần sau mở game ở màn dọc không bị chặn nữa
+    // (trước đây tải lại trang là lớp phủ hiện lại và che mất nút Chơi mới / Chơi tiếp).
+    document.getElementById('rotok')!.onclick = () => { E.rotate.classList.remove('want'); ctx.set.portraitOk = true; saveSettings(); };
     // Gợi ý khi rê chuột (máy tính) hoặc chạm (điện thoại): hiện số liệu và giải thích ngay dưới biểu tượng.
-    const tip = E.tip; let tipT = 0;
+    const tip = E.tip;
     const hideTip = () => { this.tipEl = null; tip.classList.add('hide'); };
     const showTip = (el: HTMLElement) => {
       const t = el.dataset.tip; if (!t) return;
@@ -114,11 +119,23 @@ export class UI {
     const tipTarget = (e: Event) => ((e.target as HTMLElement)?.closest('[data-tip]') as HTMLElement | null);
     R.addEventListener('pointerover', (e) => { if (e.pointerType !== 'mouse') return; const el = tipTarget(e); if (el) showTip(el); else hideTip(); });
     R.addEventListener('pointerout', (e) => { if (e.pointerType !== 'mouse') return; const next = (e.relatedTarget as HTMLElement | null)?.closest?.('[data-tip]'); if (!next) hideTip(); });
-    R.addEventListener('pointerdown', (e) => { const el = tipTarget(e); if (!el) { hideTip(); return; } showTip(el); clearTimeout(tipT); tipT = window.setTimeout(hideTip, 2800); });
+    // Chạm vào biểu tượng: hiện gợi ý và GIỮ lại; chạm lại đúng biểu tượng đó thì tắt.
+    // Trước đây gợi ý tự tắt sau 2,8 giây nên vừa đọc tới nửa câu là nó biến mất.
+    R.addEventListener('pointerdown', (e) => {
+      const el = tipTarget(e); if (!el) { hideTip(); return; }
+      if (this.tipEl === el && !tip.classList.contains('hide')) { hideTip(); return; }
+      showTip(el);
+    });
     window.addEventListener('pointerdown', (e) => { if (!tipTarget(e)) hideTip(); });
     R.addEventListener('click', (e) => { const b = (e.target as HTMLElement).closest('[data-p]') as HTMLElement | null; if (b && ctx.mode === 'play') { ctx.sound.play('ui'); this.panel(b.dataset.p!); } });
     const main = E.act.querySelector('.main') as HTMLElement, alt = E.act.querySelector('.alt') as HTMLElement, run = E.runb.querySelector('.run') as HTMLElement;
-    main.onclick = () => ctx.interact.trigger(); alt.onclick = () => ctx.interact.triggerAlt(); run.onclick = () => { ctx.input.runLock = !ctx.input.runLock; run.classList.toggle('on', ctx.input.runLock); };
+    main.onclick = () => ctx.interact.trigger(); alt.onclick = () => ctx.interact.triggerAlt(); run.onclick = () => {
+      const inp = ctx.input; inp.runLock = !inp.runLock; run.classList.toggle('on', inp.runLock);
+      // Nút không có chữ nên trước đây người chơi không biết đây là công tắc. Giờ có nhãn ĐI/CHẠY và lần bật đầu tiên có nhắc.
+      (run.querySelector('.rl') as HTMLElement).textContent = inp.runLock ? 'CHẠY' : 'ĐI';
+      run.dataset.tip = inp.runLock ? 'Đang chạy nhanh — chạm để về đi bộ' : 'Đang đi bộ — chạm để chạy nhanh';
+      if (inp.runLock && !ctx.set.ui.runTip) { ctx.set.ui.runTip = true; saveSettings(); this.toast({ text: 'Bật chạy: đẩy cần ảo mạnh hơn một chút là chạy. Chạm lại nút để về đi bộ.', kind: 'info' }); }
+    };
     const hitB = E.act2.querySelector('.hit') as HTMLElement, jumpB = E.act2.querySelector('.jump') as HTMLElement;
     // Nhảy/đấm phải ăn ngay lúc CHẠM, và không để cú chạm rơi xuống canvas.
     // Trước đây dùng `click`: ngón thứ hai chạm nút trong lúc đang giữ cần ảo thì trình duyệt
@@ -139,10 +156,21 @@ export class UI {
     E.cart.onclick = () => { const c = ctx.acts.cart; if (c) { const v = ctx.npcs.fixed.get(c.shop); if (v) ctx.acts.way = { x: v.x, z: v.z, name: 'Tính tiền: ' + SHOPS[c.shop].name }; } };
     E.stallchip.onclick = () => { const s = ctx.g.stall; if (s.where === 'placed' || s.where === 'home') ctx.acts.way = { x: s.x, z: s.z, name: 'Quầy của bạn' }; };
     // lớp nấu ăn
-    const C = E.cook; (C.querySelector('.quit') as HTMLElement).onclick = () => this.onCookBtn?.('quit', true);
+    // "Bỏ dở" huỷ cả mẻ đang nấu → bấm lần đầu chỉ đổi nhãn thành "Chắc chưa?", bấm lần hai mới bỏ.
+    const C = E.cook, quit = C.querySelector('.quit') as HTMLElement; let quitT = 0;
+    const QUIT_HTML = `${ic('x')} Bỏ dở`, QUIT_ASK = `${ic('x')} Chắc chưa?`;
+    quit.onclick = () => {
+      if (!quit.dataset.arm) {
+        quit.dataset.arm = '1'; quit.innerHTML = QUIT_ASK;
+        quitT = window.setTimeout(() => { delete quit.dataset.arm; quit.innerHTML = QUIT_HTML; }, 3000);
+        return;
+      }
+      clearTimeout(quitT); delete quit.dataset.arm; quit.innerHTML = QUIT_HTML; this.onCookBtn?.('quit', true);
+    };
     C.querySelector('.btns')!.addEventListener('pointerdown', (e) => { const b = (e.target as HTMLElement).closest('button'); if (b) { e.preventDefault(); this.onCookBtn?.(b.dataset.id!, true); } });
     const sl = C.querySelector('.slider') as HTMLElement, setS = (e: PointerEvent) => { const r = sl.getBoundingClientRect(), v = clamp(1 - (e.clientY - r.top) / r.height); this.sliderV = v; (sl.firstElementChild as HTMLElement).style.bottom = v * 100 + '%'; this.onCookSlide?.(v); };
     sl.addEventListener('pointerdown', (e) => { sl.setPointerCapture(e.pointerId); setS(e); }); sl.addEventListener('pointermove', (e) => { if (e.buttons || e.pointerType === 'touch') setS(e); });
+    this.applyTouchBtns();
     applyLayout(); window.addEventListener('resize', () => applyLayout()); window.addEventListener('orientationchange', () => setTimeout(applyLayout, 250));
     // Luật vừa đổi trạng thái (mở/đóng bán, khách vào, chi nhánh…) → vẽ lại bảng đang mở để nút và số liệu khớp thật.
     const live = (n: string) => { if (this.modalName === n) this.reopenPanel(n); };
@@ -192,6 +220,25 @@ export class UI {
   $(id: string) { return this.E[id]; }
   /** Áp lại cỡ giao diện và vị trí nút (sau khi đổi cài đặt). */
   layout() { applyLayout(); }
+  /**
+   * Ô MỤC TIÊU nằm giữa hai khối HUD. Ở cửa sổ hẹp (PC 1280–1440, điện thoại ngang nhỏ) hai khối đó rộng ra
+   * tới mức ô mục tiêu đè lên thanh chỉ số. Đo thật rồi đẩy nó xuống dưới HUD khi không đủ chỗ,
+   * và dời các chip hướng đi / sự kiện xuống theo. Chỉ tính lại khi kích thước đổi hoặc HUD đổi chiều cao.
+   */
+  private fitQuest() {
+    const E = this.E, W = window.innerWidth, q = E.quest;
+    const tl = E['hud-tl'].getBoundingClientRect(), tr = E['hud-tr'].getBoundingClientRect();
+    const hudBottom = Math.round(Math.max(tl.bottom, tr.bottom)), half = q.offsetWidth / 2, cx = W / 2;
+    const clash = cx - half < tl.right + 6 || cx + half > tr.left - 6;
+    // Màn dọc đã có luật riêng trong CSS (ô mục tiêu nằm dưới hàng nút) nên không áp ở đây.
+    const low = clash && W > window.innerHeight;
+    // Chỉ ghi style khi cần: ghi mỗi khung hình sẽ làm trình duyệt tính lại bố cục liên tục.
+    const top = low ? hudBottom + 5 + 'px' : '';
+    if (this.root.style.getPropertyValue('--q-top') !== top) this.root.style.setProperty('--q-top', top);
+    if (this.root.classList.contains('qlow') !== low) this.root.classList.toggle('qlow', low);
+  }
+  /** Máy tính (chuột + bàn phím) thì ẩn bốn nút cảm ứng; người chơi bật lại được trong Cài đặt. */
+  applyTouchBtns() { this.root.classList.toggle('no-touch', !ctx.set.touchBtns); }
   /** Mở màn hình cho người chơi tự xếp vị trí và độ lớn các nút. Game tạm dừng nhận điều khiển trong lúc xếp. */
   editLayout() {
     this.closePanel(); this.closeDialog(); ctx.mode = 'panel'; ctx.input.reset();
@@ -199,8 +246,11 @@ export class UI {
   }
   loading(t: string | null) { this.E.load.classList.toggle('hide', t === null); if (t) this.E.load.firstChild!.textContent = t; }
   toast(t: Toast) {
-    const box = this.E.toasts, e = el('div', 'toast ' + (t.kind ?? 'info'), (t.icon ? ic(t.icon) : '') + `<span>${esc(t.text)}</span>`, box);
-    while (box.children.length > 4) box.firstChild!.remove();
+    const box = this.E.toasts;
+    // Gộp: trên điện thoại 4–5 thông báo cùng lúc dựng thành một mảng cao 200 px ngay giữa tầm nhìn.
+    // Chỉ giữ 2 cái gần nhất — cái cũ biến ngay, không phải chờ hết 3,6 giây.
+    while (box.children.length >= 2) box.firstElementChild!.remove();
+    const e = el('div', 'toast ' + (t.kind ?? 'info'), (t.icon ? ic(t.icon) : '') + `<span>${esc(t.text)}</span>`, box);
     setTimeout(() => { e.classList.add('out'); setTimeout(() => e.remove(), 320); }, t.long ? 6500 : 3600);
   }
   // ───────── phần tử bám theo thế giới 3D ─────────
@@ -262,6 +312,9 @@ export class UI {
   modalArg: any = null;
   panel(name: string, arg?: any) {
     if (ctx.mode !== 'play' && ctx.mode !== 'panel') return;
+    // Bấm lại đúng phím tắt (M, B, Tab, P) khi bảng đang mở thì ĐÓNG bảng, không phải vẽ lại.
+    // Trước đây bấm M lần hai không có gì xảy ra, người chơi tưởng phím hỏng.
+    if (!arg && this.modalName === name && TABS_CLOSE.includes(name)) { this.closePanel(); return; }
     // Mở máy mới thật sự (không phải vẽ lại) thì mới đưa điện thoại về màn hình chính
     if (name === 'phone' && this.modalName !== 'phone') PUI.resetPhoneView();
     this.modalArg = arg ?? null; if (ctx.anim?.active) ctx.anim.stop(); this.closeDialog(); this.modalName = name; ctx.mode = 'panel'; ctx.input.reset(); this.E.modal.classList.remove('hide'); openPanel(this, name); }
@@ -334,11 +387,15 @@ export class UI {
       const v = (g.st as any)[s.dataset.k!] as number;
       (s.querySelector('b') as HTMLElement).style.width = clamp((v / STAT_MAX) * 100, 0, 100) + '%';
       s.classList.toggle('low', v < 22); s.classList.toggle('mid', v >= 22 && v < 45);
+      // Thanh chỉ số chỉ là một vạch màu — không ai đoán được còn 12 % hay 40 %. Thấp thì hiện số thật.
+      const num = s.querySelector('.n') as HTMLElement | null;
+      if (num) num.textContent = v < 45 ? String(Math.round(v)) : '';
       const t = `${s.dataset.title} (${Math.round(v)}/${STAT_MAX}): ${s.dataset.note}`;
       s.dataset.tip = t;
       if (this.tipEl === s && !E.tip.classList.contains('hide')) E.tip.textContent = t;
     }
     (E.quest.lastElementChild as HTMLElement).textContent = ctx.acts.quest(); E.quest.classList.toggle('min', this.questMin || (g.stall.open && g.stall.where === 'placed' && dist2(p.x, p.z, g.stall.x, g.stall.z) < 25));
+    this.fitQuest();
     const way = ctx.acts.way, giaoHang = ctx.acts.job?.kind === 'delivery';
     E.way.classList.toggle('hide', !way); E.way.classList.toggle('giao', !!way && giaoHang);
     if (way) { const dx = way.x - p.x, dz = way.z - p.z, ang = Math.atan2(dx, dz) - p.yaw; E.way.innerHTML = `<svg class="ic" viewBox="0 0 24 24" style="transform:rotate(${(-ang * 180 / Math.PI).toFixed(0)}deg)">${IC.arrow}</svg>${giaoHang ? ic('box') : ''}${esc(way.name)} · ${Math.round(Math.hypot(dx, dz))} m`; }

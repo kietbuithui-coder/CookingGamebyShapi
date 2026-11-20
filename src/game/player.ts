@@ -111,7 +111,8 @@ export class Player {
     if (!this.frozen && !this.camTo) {
       const k = 0.0042 * s.sens * (ctx.mobile ? 1.15 : 1);
       this.yaw -= lx * k; this.pitch = clamp(this.pitch - ly * k, -1.35, 1.2);
-      if (inp.keys.has('q')) this.yaw += dt * 2; if (inp.keys.has('e') && false) this.yaw -= dt * 2;
+      // Q xoay trái, Z xoay phải — máy tính không có phím xoay phải nào trước đây (nhánh E bị khoá bằng `&& false`).
+      if (inp.keys.has('q')) this.yaw += dt * 2; if (inp.keys.has('z')) this.yaw -= dt * 2;
     }
     // di chuyển (tạm khoá bước chủ động trong lúc đang bị hất văng/choáng)
     let mx = inp.mx, mz = inp.mz; if (this.frozen || this.camTo || this.stunT > 0 || this.fallT > 0) mx = mz = 0;

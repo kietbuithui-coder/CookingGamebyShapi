@@ -25,6 +25,8 @@ import { toast, sfx, bus } from '../core/bus';
 import { BX, CORR, SPOTS, LOTS, lotPoint, DISTRICT, MAP } from '../world/layout';
 
 let tab = '';
+/** Cài đặt: nút "Xoá bản lưu" đã hỏi lại chưa (bấm hai lần mới xoá). */
+let resetArmed = false;
 const fresh = (s: Stack) => { const d = INGS[s.id]; if (d.shelf > 9000) return ''; const f = Math.round(s.fresh); return `<span class="tag ${f < 35 ? 'bad' : f < 60 ? 'warn' : 'good'}">${f < 10 ? 'hỏng' : 'tươi ' + f + '%'}</span>`; };
 export const profitOf = (l: LedgerDay) => l.revenue + l.tips + l.side - l.cogs - l.fees - l.rent - l.gear - l.loss - l.interest - l.food - l.other;
 const stallNear = (g: Game) => R.nearStall(g, ctx.player.x, ctx.player.z);
@@ -446,11 +448,27 @@ export function openPanel(ui: UI, name: string) {
       // Chưa đọc bản mới nhất thì nút có nhãn "mới" — chỉ để người chơi biết vừa có gì đổi.
       const newestVer = Number(((CHANGELOG[0]?.v ?? '').replace(/\D/g, '')) || 0);
       const unreadLog = (g.flags.logSeen ?? 0) !== newestVer;
-      acts.q = (i) => { st.quality = i; st.auto = false; ctx.applyQuality(); saveSettings(); }; acts.cam3 = () => { ctx.ui.switchView(); ctx.ui.panel('settings'); }; acts.fps = () => { st.fps = !st.fps; saveSettings(); }; acts.auto = () => { st.auto = !st.auto; saveSettings(); };
+      acts.q = (i) => { st.quality = i; st.auto = false; ctx.applyQuality(); saveSettings(); }; acts.cam3 = () => { ctx.ui.switchView(); ctx.ui.reopenPanel('settings'); }; acts.fps = () => { st.fps = !st.fps; saveSettings(); }; acts.auto = () => { st.auto = !st.auto; saveSettings(); };
       acts.log = () => ui.panel('changelog');
-      acts.offline = () => { void downloadForOffline().then((m) => { toast(m, 'good', 'download'); ui.panel('settings'); }); };
+      acts.offline = () => { void downloadForOffline().then((m) => { toast(m, 'good', 'download'); ui.reopenPanel('settings'); }); };
+      // Máy tính: bật/tắt bốn nút cảm ứng (mặc định ẩn trên PC, hiện trên điện thoại).
+      acts.touch = () => { st.touchBtns = !st.touchBtns; saveSettings(); ui.applyTouchBtns(); ui.reopenPanel('settings'); };
+      // Khoá con trỏ: rê chuột là xoay góc nhìn, không phải giữ nút trái. Xin khoá ngay trong cú bấm cho hợp lệ.
+      acts.lock = () => {
+        st.mouseLock = !st.mouseLock; saveSettings();
+        if (st.mouseLock) { const c = document.getElementById('gl'); void (c as any)?.requestPointerLock?.(); }
+        else if (document.pointerLockElement) void document.exitPointerLock?.();
+        ui.reopenPanel('settings');
+      };
+      // Xoá bản lưu: bấm lần đầu chỉ hỏi lại, lần hai mới xoá thật.
+      acts.resetSave = () => {
+        if (!resetArmed) { resetArmed = true; ui.reopenPanel('settings'); toast('Bấm lần nữa để xoá hẳn bản lưu trên máy này.', 'warn', 'bin'); setTimeout(() => { resetArmed = false; if (ui.modalName === 'settings') ui.reopenPanel('settings'); }, 5000); return; }
+        resetArmed = false; ctx.resetSave();
+      };
       acts.fs = () => { void toggleFullscreen(); }; acts.layout = () => ui.editLayout(); acts.save = () => { ctx.save('thu cong'); toast('Đã lưu game.', 'good'); }; acts.menu = () => { ctx.save('ve menu'); ui.closePanel(); ctx.toMenu(); };
       draw(`${ic('gear')} <span id="dev-unlock" style="cursor:pointer;user-select:none">Cài đặt</span>`, [], `<h4>Đồ hoạ</h4><div style="display:flex;gap:.4em;flex-wrap:wrap">${QUALITY.map((q, i) => `<button class="btn${st.quality === i ? ' yellow' : ''}" data-a="q" data-i="${i}">${q.name}</button>`).join('')}<button class="btn${st.auto ? ' green' : ''}" data-a="auto">Tự hạ khi giật: ${st.auto ? 'bật' : 'tắt'}</button><button class="btn${st.fps ? ' green' : ''}" data-a="fps">Hiện FPS: ${st.fps ? 'bật' : 'tắt'}</button>${canFullscreen() ? '<button class="btn" data-a="fs">Toàn màn hình</button>' : ''}</div>
+        <h4>Cách điều khiển</h4><div style="display:flex;gap:.6em;align-items:center;flex-wrap:wrap"><button class="btn ${st.touchBtns ? 'green' : ''}" data-a="touch">Nút cảm ứng trên màn hình: ${st.touchBtns ? 'hiện' : 'ẩn'}</button><button class="btn ${st.mouseLock ? 'green' : ''}" data-a="lock">Khoá con trỏ chuột: ${st.mouseLock ? 'bật' : 'tắt'}</button></div>
+        <p class="muted">Máy tính: W A S D đi, Shift chạy, phím Q / Z xoay trái phải, giữ chuột trái kéo để nhìn (hoặc bật khoá con trỏ thì chỉ cần rê chuột), E tương tác, F đấm, Space nhảy. Điện thoại: xem mục "Cách chơi" bên dưới.</p>
         <h4>Góc nhìn</h4><div style="display:flex;gap:.6em;align-items:center;flex-wrap:wrap"><button class="btn ${st.cam3 ? 'green' : ''}" data-a="cam3">${st.cam3 ? 'Đang ở góc nhìn thứ ba' : 'Đang ở góc nhìn thứ nhất'} — bấm để đổi</button><span class="muted">Góc nhìn thứ ba cho thấy quần áo, kiểu tóc bạn mua. Phím tắt: V.</span></div>
         <h4>Nút bấm và cỡ chữ</h4><div style="display:flex;gap:.6em;align-items:center;flex-wrap:wrap"><button class="btn yellow" data-a="layout">Sắp xếp vị trí, độ lớn các nút</button><span class="muted">Kéo từng nút tới chỗ vừa tay, phóng to hay thu nhỏ tuỳ ý.</span></div>
         <h4>Cỡ chữ, nút và thanh trạng thái <span class="muted" id="uiscale-v">${Math.round(st.ui.scale * 100)}%</span></h4>
@@ -459,7 +477,8 @@ export function openPanel(ui: UI, name: string) {
         <h4>Âm thanh hiệu ứng</h4><input type="range" min="0" max="100" value="${Math.round(st.sfx * 100)}" data-r="sfx"><h4>Nhạc nền</h4><input type="range" min="0" max="100" value="${Math.round(st.music * 100)}" data-r="music"><h4>Độ nhạy xoay góc nhìn</h4><input type="range" min="30" max="250" value="${Math.round(st.sens * 100)}" data-r="sens">
         <h4>Chơi offline</h4><div style="display:flex;gap:.6em;align-items:center;flex-wrap:wrap">${canOffline() ? `<button class="btn ${offlineState() === 'san sang' ? 'green' : 'yellow'}" data-a="offline">Lưu để chơi offline</button><span class="muted">${offlineState() === 'san sang' ? 'Đã lưu' : 'Đang lưu'}${offlineBytes() ? ` · ${(offlineBytes() / 1048576).toFixed(1)} MB` : ''} — mất mạng vẫn mở được</span>` : '<span class="muted">Trình duyệt này không hỗ trợ lưu offline</span>'}</div>
         <h4>Nhật ký phát triển</h4><div style="display:flex;gap:.6em;align-items:center;flex-wrap:wrap"><button class="btn yellow" data-a="log">Xem các bản gần đây${unreadLog ? ' <span class="tag good">mới</span>' : ''}</button><span class="muted">${CHANGELOG[0]?.v ?? ''} · ${CHANGELOG[0]?.tag ?? ''}</span></div>
-        <h4>Cách chơi</h4><p class="muted">Điện thoại: ngón trái kéo để đi, ngón phải vuốt để nhìn, chạm vào người hoặc đồ vật (hay nút tròn vàng) để tương tác. Máy tính: W A S D đi, giữ Shift chạy, kéo chuột để nhìn, E tương tác, Tab túi đồ, B sổ tay, M bản đồ. Game tự lưu sau mỗi việc quan trọng.</p>`,
+        <h4>Bản lưu trên máy này</h4><div style="display:flex;gap:.6em;align-items:center;flex-wrap:wrap"><button class="btn ${resetArmed ? 'red' : ''}" data-a="resetSave">${resetArmed ? 'Bấm lần nữa để XOÁ bản lưu' : 'Xoá bản lưu, chơi lại từ đầu'}</button><span class="muted">Bản lưu nằm trong trình duyệt này. Xoá xong không lấy lại được.</span></div>
+        <h4>Cách chơi</h4><p class="muted">Điện thoại: ngón trái kéo để đi, ngón phải vuốt để nhìn, chạm vào người hoặc đồ vật (hay nút tròn vàng) để tương tác. Máy tính: W A S D đi, giữ Shift chạy, phím Q và Z xoay trái/phải, kéo chuột để nhìn, E tương tác, R tương tác phụ, F đấm, Space nhảy, Tab túi đồ, B sổ tay, M bản đồ, P điện thoại, V đổi góc nhìn, Esc mở Cài đặt — bấm lại đúng phím đó để đóng bảng. Game tự lưu sau mỗi việc quan trọng.</p>`,
         `<button class="btn green" data-a="save">Lưu ngay</button><button class="btn" data-a="menu">Về màn hình chính</button>`);
       M.querySelectorAll('input[type=range]').forEach((inp) => ((inp as HTMLInputElement).oninput = () => { const k = (inp as HTMLElement).dataset.r as 'sfx' | 'music' | 'sens' | 'uiscale', v = +(inp as HTMLInputElement).value / 100; if (k === 'uiscale') { st.ui.scale = v; ui.layout(); const lab = M.querySelector('#uiscale-v'); if (lab) lab.textContent = Math.round(v * 100) + '%'; } else st[k] = v; ctx.sound.setVol(st.sfx, st.music); saveSettings(); }));
     } else if (name === 'summary') {

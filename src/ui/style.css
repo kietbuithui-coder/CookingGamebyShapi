@@ -3,7 +3,7 @@
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1512; color: var(--ink); font-family: "Baloo 2", system-ui, -apple-system, "Segoe UI", sans-serif; user-select: none; -webkit-user-select: none; overscroll-behavior: none; touch-action: none; }
 canvas#gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
-#ui { position: fixed; inset: 0; pointer-events: none; font-size: calc(clamp(11.5px, 3.5vh, 17px) * var(--ui-scale, 1)); line-height: 1.25; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+#ui { position: fixed; inset: 0; pointer-events: none; font-size: calc(clamp(12.5px, 3.5vh, 17px) * var(--ui-scale, 1)); line-height: 1.25; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
 #ui > * { position: absolute; }
 .hide { display: none !important; }
 svg.ic { width: 1.25em; height: 1.25em; vertical-align: -0.24em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
@@ -24,6 +24,7 @@ button { font: inherit; color: inherit; border: 0; background: none; padding: 0;
 #stats { display: grid; grid-template-columns: repeat(3, auto); gap: .22em .4em; background: rgba(40, 26, 16, .62); padding: .3em .5em; border-radius: .8em; }
 .stat { display: flex; align-items: center; gap: .25em; color: #fff7e4; pointer-events: auto; cursor: help; touch-action: manipulation; }
 #hud-tl [data-tip], #hud-tr [data-tip] { pointer-events: auto; touch-action: manipulation; }
+.stat .n { font-size: max(.68em, 10px); font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
 .stat i { display: block; width: 3.3em; height: .5em; background: rgba(255, 255, 255, .22); border-radius: .3em; overflow: hidden; }
 .stat i b { display: block; height: 100%; background: var(--green); border-radius: .3em; transition: width .4s; }
 .stat.low i b { background: var(--red); } .stat.mid i b { background: var(--yellow); } .stat.low svg { color: #ff8f84; animation: pulse 1s infinite; }
@@ -37,14 +38,21 @@ button { font: inherit; color: inherit; border: 0; background: none; padding: 0;
 .ib:active { transform: translateY(2px); border-bottom-width: 2px; } .ib svg.ic { width: 1.5em; height: 1.5em; }
 .ib .dot { position: absolute; right: -.25em; top: -.25em; min-width: 1.2em; height: 1.2em; border-radius: 1em; background: var(--red); color: #fff; font-size: .7em; font-weight: 800; display: grid; place-items: center; padding: 0 .25em; }
 #fps { font-size: .78em; opacity: .85; }
-#quest { left: 50%; top: .5em; transform: translateX(-50%); max-width: min(40vw, 34em, calc(100vw - 31em)); background: rgba(255, 247, 228, .93); border: 2px solid var(--ink); border-radius: .8em; padding: .22em .7em; font-size: .86em; font-weight: 600; text-align: center; pointer-events: auto; }
-#quest small { display: block; color: var(--red); font-weight: 800; letter-spacing: .04em; font-size: .82em; }
+/* Chừa đủ chỗ cho CẢ HAI khối HUD hai bên: 31em cũ nhỏ hơn bề rộng thật của #hud-tl (≈27em) cộng #hud-tr (≈15em),
+   nên ở 1280–1440 px ô mục tiêu đè lên ba thanh chỉ số. 56em = 2 × (27 + lề) là mốc an toàn. */
+#quest { left: 50%; top: .5em; transform: translateX(-50%); max-width: min(40vw, 34em, max(12em, calc(100vw - 56em))); background: rgba(255, 247, 228, .93); border: 2px solid var(--ink); border-radius: .8em; padding: .22em .7em; font-size: .86em; font-weight: 600; text-align: center; pointer-events: auto; }
+#quest small { display: block; color: var(--red); font-weight: 800; letter-spacing: .04em; font-size: max(.82em, 11px); }
 #quest .qh { display: flex; align-items: center; justify-content: center; gap: .4em; }
-#quest .qmin { width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--paper2); border: 1.5px solid var(--ink); font-weight: 800; line-height: 1; display: grid; place-items: center; pointer-events: auto; flex: none; }
+#quest .qmin { width: 1.6em; height: 1.6em; min-width: 30px; min-height: 30px; border-radius: 50%; background: var(--paper2); border: 1.5px solid var(--ink); font-weight: 800; line-height: 1; display: grid; place-items: center; pointer-events: auto; flex: none; }
 #quest.min .qmin { background: var(--yellow); }
 /* gợi ý khi rê chuột / chạm vào biểu tượng trên HUD */
 .tip { position: absolute; background: rgba(40, 26, 16, .95); color: #fff7e4; border: 2px solid rgba(255, 247, 228, .28); border-radius: .6em; padding: .28em .65em; font-size: .88em; font-weight: 600; max-width: 17em; white-space: normal; text-align: center; z-index: 9; pointer-events: none; box-shadow: 0 3px 0 var(--shadow); }
 #quest.min { max-width: 9em; } #quest.min span { display: none; }
+/* Khi ô mục tiêu phải tụt xuống (.qlow, do ui.fitQuest đặt): kéo theo chip hướng đi và chip sự kiện. */
+/* `!important` là cần: luật @media (max-height: 540px) ở dưới đặt `#quest{top:...}` với độ ưu tiên tương đương. */
+#ui.qlow #quest { top: var(--q-top, 3.6em) !important; }
+#ui.qlow #way { top: calc(var(--q-top, 3.6em) + 5.2em); }
+#ui.qlow #events { top: calc(var(--q-top, 3.6em) + 7.2em); }
 #way { left: 50%; top: 5.2em; transform: translateX(-50%); font-size: 1.02em; } #way svg { transition: transform .1s; }
 #way.giao { background: rgba(217, 70, 60, .95); color: #fff; box-shadow: 0 0 0 2px var(--yellow), 0 2px 0 var(--shadow); font-weight: 800; }
 #events { left: 50%; top: 7.2em; transform: translateX(-50%); display: flex; gap: .3em; flex-wrap: wrap; justify-content: center; max-width: min(60vw, 34em); font-size: .82em; pointer-events: auto; }
@@ -56,12 +64,12 @@ button { font: inherit; color: inherit; border: 0; background: none; padding: 0;
 #focus b { display: inline-block; background: rgba(40, 26, 16, .82); color: #fff; padding: .15em .7em; border-radius: .7em; font-weight: 700; }
 #focus small { display: block; margin-top: .2em; color: #fff; text-shadow: 0 1px 3px #000, 0 0 6px #000; font-size: .84em; }
 #act { right: 1em; bottom: 1.1em; display: flex; flex-direction: column; align-items: flex-end; gap: .5em; }
-#runb { right: 7.2em; bottom: 1.1em; }
+#runb { right: 8.4em; bottom: 1.1em; }
 /* hai nút đấm & nhảy, xếp dọc phía trên nút chạy */
-#act2 { right: 11.6em; bottom: 1.4em; display: flex; flex-direction: column; gap: .5em; }
+#act2 { right: 12.9em; bottom: 1.4em; display: flex; flex-direction: column; gap: .5em; }
 /* pointer-events: auto là BẮT BUỘC — #ui có pointer-events:none, thiếu dòng này là nút nhảy/đấm
    không nhận được chạm, ngón tay rơi thẳng xuống canvas và cướp mất cần ảo đang giữ. */
-#act2 button { width: 3.1em; height: 3.1em; border-radius: 50%; background: var(--paper); border: 2px solid var(--ink); border-bottom-width: 4px; display: grid; place-items: center; color: var(--ink); box-shadow: 0 2px 0 var(--shadow); pointer-events: auto; touch-action: none; }
+#act2 button { width: 3.1em; height: 3.1em; min-width: 44px; min-height: 44px; border-radius: 50%; background: var(--paper); border: 2px solid var(--ink); border-bottom-width: 4px; display: grid; place-items: center; color: var(--ink); box-shadow: 0 2px 0 var(--shadow); pointer-events: auto; touch-action: none; }
 #act2 button svg.ic { width: 1.7em; height: 1.7em; }
 #act2 button:active { transform: translateY(3px); border-bottom-width: 2px; }
 #act2 .hit { background: #ffe0dc; }
@@ -69,7 +77,9 @@ button { font: inherit; color: inherit; border: 0; background: none; padding: 0;
 #act .main svg.ic { width: 2.4em; height: 2.4em; } #act .main:active { transform: translateY(3px); border-bottom-width: 3px; }
 #act .main.dim { opacity: .4; background: var(--paper2); }
 #act .alt { min-width: 3em; height: 3em; border-radius: 1.5em; padding: 0 .6em; background: var(--paper); border: 2px solid var(--ink); border-bottom-width: 4px; font-weight: 800; }
-#runb .run { width: 3em; height: 3em; border-radius: 50%; background: var(--paper); border: 2px solid var(--ink); border-bottom-width: 4px; display: grid; place-items: center; } #runb .run.on { background: var(--green); color: #fff; }
+#runb .run { position: relative; width: 3em; height: 3em; min-width: 44px; min-height: 44px; border-radius: 50%; background: var(--paper); border: 2px solid var(--ink); border-bottom-width: 4px; display: grid; place-items: center; } #runb .run.on { background: var(--green); color: #fff; }
+/* Nhãn chữ nhỏ ngay dưới nút: nút chỉ đổi màu xanh nên trước đây người chơi không biết đây là công tắc chạy. */
+#runb .run .rl { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); margin-top: .1em; font-size: max(.62em, 10px); font-weight: 800; letter-spacing: .04em; white-space: nowrap; color: #fff; text-shadow: 0 1px 3px #000, 0 0 5px #000; pointer-events: none; }
 #stick { width: 8em; height: 8em; margin: -4em; border-radius: 50%; border: 3px solid rgba(255, 255, 255, .5); background: rgba(255, 255, 255, .1); }
 #stick i { position: absolute; left: 50%; top: 50%; width: 3.4em; height: 3.4em; margin: -1.7em; border-radius: 50%; background: rgba(255, 255, 255, .75); box-shadow: 0 2px 6px rgba(0, 0, 0, .4); }
 #cart { left: 50%; bottom: 1em; transform: translateX(-50%); pointer-events: auto; max-width: 60vw; white-space: normal; text-align: center; background: rgba(255, 247, 228, .95); color: var(--ink); border: 2px solid var(--ink); }
@@ -216,6 +226,12 @@ input[type=range] { width: 100%; accent-color: var(--red); pointer-events: auto;
 #rotate { inset: 0; background: rgba(27, 21, 18, .92); color: #fff; display: none; place-items: center; text-align: center; font-size: 1.2em; padding: 2em; pointer-events: auto; }
 @media (max-aspect-ratio: 3/4) and (pointer: coarse) { #rotate.want { display: grid; } }
 
+/* Màn ngang thấp: hộp thoại 4 lựa chọn chỉ cao 29 px mỗi nút — chạm nhầm "Từ chối" là mất việc. */
+@media (max-height: 460px) and (pointer: coarse) {
+  #dlg .opts .btn { min-height: 40px; }
+  #dlg { max-height: 96vh; }
+}
+
 /* Màn ngang thấp (điện thoại): thu gọn phần chữ phía trên để bàn bếp chiếm trọn màn hình */
 @media (orientation: landscape) and (max-height: 540px) {
   #cook .top { top: .3em; gap: .15em; flex-direction: row; flex-wrap: wrap; justify-content: center; width: min(74vw, 46em); }
@@ -223,7 +239,9 @@ input[type=range] { width: 100%; accent-color: var(--red); pointer-events: auto;
 }
 
 /* Đang nấu: chỉ giữ đồng hồ (dời xuống dưới nút Bỏ dở), thông báo dạt sang phải để không che bàn bếp */
-#ui.cooking #hud-tl { top: 2.9em; } #ui.cooking #hud-tl .row:nth-child(2), #ui.cooking #stats, #ui.cooking #wx { display: none; }
+#ui.cooking #hud-tl { top: 2.9em; }
+/* Màn ngang thấp: dải hướng dẫn nấu ăn cao tới ~5,4em nên đồng hồ phải xuống góc dưới trái mới không bị cắt đôi. */
+@media (orientation: landscape) and (max-height: 540px) { #ui.cooking #hud-tl { top: auto; bottom: .5em; } } #ui.cooking #hud-tl .row:nth-child(2), #ui.cooking #stats, #ui.cooking #wx { display: none; }
 #ui.cooking #toasts { left: 50%; transform: translateX(-50%); top: 5.7em; width: min(62vw, 30em); align-items: center; }
 #ui.cooking .toast { font-size: .78em; padding: .08em .6em; max-width: 100%; } #ui.cooking .toast span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } #ui.cooking .toast:not(:last-child) { display: none; }
 #hitflash { position: fixed; inset: 0; pointer-events: none; z-index: 45; opacity: 0; background: radial-gradient(circle at center, rgba(217, 70, 60, 0) 35%, rgba(217, 45, 35, .82) 100%); transition: opacity .4s ease-out; }
@@ -251,37 +269,45 @@ input[type=range] { width: 100%; accent-color: var(--red); pointer-events: auto;
 @media (max-width: 980px) {
   #hud-tl, #hud-tr { gap: .22em; }
   #hud-tl .row { max-width: 62vw; gap: .28em; }
-  .chip { font-size: .8em; padding: .1em .5em; }
+  .chip { font-size: max(.8em, 11px); padding: .1em .5em; }
   #money { font-size: 1.08em; }
   #stats { grid-template-columns: repeat(3, auto); gap: .18em .5em; padding: .2em .45em; border-radius: .7em; }
   .stat { gap: .18em; }
   .stat i { width: 2.3em; height: .44em; }
   .stat svg.ic { width: 1.1em; height: 1.1em; }
   #clock b { font-size: 1.05em; }
-  .ib { width: 2.15em; height: 2.15em; border-radius: .68em; border-bottom-width: 3px; }
+  .ib { width: 2.15em; height: 2.15em; min-width: 38px; min-height: 38px; border-radius: .68em; border-bottom-width: 3px; }
   .ib svg.ic { width: 1.28em; height: 1.28em; }
   #menub { gap: .26em; }
   #quest { font-size: .8em; padding: .18em .6em; max-width: min(54vw, 24em); }
-  #way { top: 4.4em; } #events { top: 8.6em; font-size: .78em; max-width: 94vw; justify-content: flex-start; left: .6em; right: .6em; transform: none; }
+  #way { top: 4.4em; } #events { top: 8.6em; font-size: max(.78em, 11px); max-width: 94vw; justify-content: flex-start; left: .6em; right: .6em; transform: none; }
+  /* Màn ngang thấp: khi ô mục tiêu đã tụt xuống .qlow thì chip hướng đi / sự kiện cũng theo xuống. */
+  #ui.qlow #way { top: calc(var(--q-top, 3.6em) + 4.4em) !important; }
+  #ui.qlow #events { top: calc(var(--q-top, 3.6em) + 8.6em) !important; }
 }
 @media (max-width: 560px) {
   #hud-tl .row { max-width: 70vw; }
   .stat i { width: 1.9em; }
-  .ib { width: 2em; height: 2em; }
+  .ib { width: 2em; height: 2em; min-width: 38px; min-height: 38px; }
 }
 
 /* ───── Màn dọc: chơi được, nhưng game khuyên xoay ngang ───── */
 @media (orientation: portrait) {
-  #ui { font-size: calc(clamp(11px, 3.6vw, 16px) * var(--ui-scale, 1)); }
+  #ui { font-size: calc(clamp(12.5px, 3.6vw, 16px) * var(--ui-scale, 1)); }
   #hud-tl { right: .6em; }
   #hud-tl .row { max-width: 100%; }
   /* màn dọc: sáu chỉ số xếp 2 hàng 3 cột cho khỏi chui xuống dưới hàng nút menu */
   #stats { grid-template-columns: repeat(3, auto); gap: .18em .5em; }
   .stat i { width: 2.3em; }
   #hud-tr .row:first-child { flex-direction: column-reverse; align-items: flex-end; }
-  #quest { left: .6em; right: .6em; top: 9.5em; transform: none; max-width: none; font-size: .8em; }
+  /* 9,5em tính theo cỡ chữ của chính ô này (0,8em ≈ 11 px) nên chỉ ra 107 px — chui xuống dưới hàng nút menu
+     và đè lên chip FPS. 12,4em ≈ 139 px mới thật sự nằm dưới hàng nút. */
+  #quest { left: .6em; right: .6em; top: 12.4em; transform: none; max-width: none; font-size: .8em; }
   #quest.min { right: auto; max-width: 9em; }
-  #toasts { top: 14.2em; width: min(92vw, 26em); }
+  /* Thông báo dạt xuống dưới, ngay trên hàng nút cảm ứng: trước đây 4 thông báo dựng thành mảng 200 px
+     ngay giữa tầm nhìn và che mất bàn bếp. */
+  #toasts { top: auto; bottom: 8.6em; width: min(92vw, 26em); }
+  #stallchip { bottom: 13.6em; }
   #cook .top { top: 3.1em; width: 95vw; }
   #cook .card { top: auto; bottom: 1em; left: .7em; right: auto; }
   #ui.cooking #hud-tl { top: .5em; left: auto; right: .6em; }
@@ -342,7 +368,7 @@ svg.pg { width: 1.85em; height: 1.85em; fill: none; stroke: currentColor; stroke
 .pring .cur svg.pg { width: 2.6em; height: 2.6em; }
 /* phím mềm + phím cứng */
 .psoft { display: flex; gap: .3em; padding: .25em .4em; }
-.sbtn { flex: 1; font: inherit; font-size: .72em; font-weight: 800; background: #e9eef2; border: 2px solid #101014; border-radius: .4em; padding: .2em .3em; color: #101014; }
+.sbtn { flex: 1; font: inherit; font-size: max(.72em, 11px); font-weight: 800; background: #e9eef2; border: 2px solid #101014; border-radius: .4em; padding: .2em .3em; color: #101014; }
 .sbtn.go { background: #cfd9e6; }
 .pkeys { display: flex; gap: .3em; justify-content: center; padding: .35em .35em .15em; }
 .pkeys .key { width: 3em; height: 1.5em; border-radius: .45em; background: linear-gradient(#6a6a72, #45454d); color: #fff; font: inherit; font-size: .8em; font-weight: 800; border: 2px solid #14141a; box-shadow: 0 2px 0 rgba(0, 0, 0, .4); }
@@ -351,9 +377,19 @@ svg.pg { width: 1.85em; height: 1.85em; fill: none; stroke: currentColor; stroke
 .pkeys.touch { padding-top: .3em; }
 .pkeys.touch .key.home { width: 2.2em; height: 2.2em; border-radius: 50%; font-size: .95em; }
 @media (max-width: 520px) { .phonewrap { gap: .5em; } .phoneside { min-width: 9em; font-size: .92em; } }
-/* ───── Máy cảm ứng thật (Android): vùng chạm ≥ 30 px, chữ trong điện thoại đọc được, màn hình máy tự cuộn ───── */
+/* Máy tính dùng WASD + chuột thì bốn nút cảm ứng chỉ che màn hình — ẩn đi, muốn hiện lại thì bật trong Cài đặt. */
+#ui.no-touch #act, #ui.no-touch #act2, #ui.no-touch #runb, #ui.no-touch #stick { display: none !important; }
+
+/* ───── Máy cảm ứng thật (Android): vùng chạm ≥ 42 px, chữ trong điện thoại đọc được, màn hình máy tự cuộn ───── */
 @media (pointer: coarse) {
-  .ib { width: 2.9em; height: 2.9em; border-radius: .85em; }
+  /* Bảng Bản đồ / Quầy / Cài đặt: mọi hàng bấm chỉ cao 31–33 px, mà Bản đồ là chỗ CHẠM để ghim đường đi. */
+  .panel .btn, #dlg .opts .btn, .panel .tab { min-height: 42px; }
+  .panel .list .item button, .panel .body button:not(.x) { min-height: 42px; }
+  #dlg .opts .btn { padding-top: .45em; padding-bottom: .45em; }
+  /* Nút "Bỏ dở" huỷ cả mẻ nấu mà lại nhỏ nhất màn hình — cho cao bằng nút khác và có nhãn xác nhận. */
+  #cook .quit { min-height: 44px; padding-left: .8em; padding-right: .9em; }
+  /* Chuẩn chạm là 44 px. Trước đây chỉ 2,9em nên ở máy nhỏ còn 36 px, cửa sổ PC hẹp còn 32 px. */
+  .ib { width: 2.9em; height: 2.9em; min-width: 44px; min-height: 44px; border-radius: .85em; }
   .x { width: 2.6em; height: 2.6em; min-width: 2.6em; font-size: 1.05em; flex: none; }
   .panel header { padding: .4em .55em; }
   /* chữ trong điện thoại: trên máy thật phải đọc được, không phải soi */
@@ -362,9 +398,9 @@ svg.pg { width: 1.85em; height: 1.85em; fill: none; stroke: currentColor; stroke
   .phonebox .ph .pfoot { font-size: .8em; }
   .phonebox .ph .plist .row { font-size: .9em; }
   .ib svg.ic { width: 1.7em; height: 1.7em; }
-  #quest .qmin { width: 2.8em; height: 2.8em; min-width: 30px; min-height: 30px; font-size: 1.05em; }
+  #quest .qmin { width: 2.8em; height: 2.8em; min-width: 44px; min-height: 44px; font-size: 1.05em; }
   #quest { padding-right: .2em; }
-  .btn.small { min-height: 32px; min-width: 30px; padding: .3em .75em; font-size: .95em; }
+  .btn.small { min-height: 38px; min-width: 34px; padding: .3em .75em; font-size: .95em; }
   .tab { min-height: 2.3em; padding: .22em .7em; display: flex; align-items: center; justify-content: center; }
   .panel header .tabs { gap: .25em .3em; }
   /* màn hình điện thoại: không phình theo nội dung, cuộn bên trong khung máy */
