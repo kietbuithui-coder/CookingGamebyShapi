@@ -363,8 +363,14 @@ function findPed() {
 function findLitter() {
   const a = ACTS(), p = P();
   if (!a?.litter || !p) return null;
+  // Clean old blacklist entries (> 20 minutes old)
+  if (B.blacklistLit) {
+    B.blacklistLit = B.blacklistLit.filter(bl => B.tick - bl.tick < 1200);
+  }
   let best=null, bd=30;
   for (const l of a.litter) {
+    // Skip blacklisted positions (within 5m of stuck location)
+    if (B.blacklistLit?.some(bl => D(bl.x, bl.z, l.x, l.z) < 5)) continue;
     const d = D(p.x, p.z, l.x, l.z);
     if (d < bd) { bd=d; best=l; }
   }
@@ -443,7 +449,10 @@ function antiStuck() {
         B.lockedLit = null;
         B.target = null;
         B.action = '';
-        B.giveUpUntil = B.tick + 200; // don't set distant targets for a while
+        B.giveUpUntil = B.tick + 600; // don't set distant targets for 10 minutes
+        // Blacklist current target position if it's litter
+        if (B.blacklistLit) B.blacklistLit.push({x: B.lx, z: B.lz, tick: B.tick});
+        else B.blacklistLit = [{x: B.lx, z: B.lz, tick: B.tick}];
         stuckUntil = 0;
       }
     }
