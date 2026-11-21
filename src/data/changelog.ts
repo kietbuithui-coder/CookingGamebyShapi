@@ -24,6 +24,7 @@ export const CHANGELOG: LogEntry[] = [
       'Nước tăng lực nhãn Shapi mới ra lò: 9.000₫/lon, bán ở MiniMart 24h (kệ đá cuối tiệm) và Tạp hoá Cô Ba (ô cuối quầy).',
       'Uống một lon Shapi là thanh chạy hồi ngay 30 %, cạn pin mà còn lon trong túi thì chạy tiếp được — nhưng đừng uống khi thanh đã gần đầy, phí.',
       'Kệ MiniMart và quầy tạp hoá được nới thêm ô để mỗi mặt hàng chỉ nằm đúng một chỗ, không còn cảnh lấy hàng ở ô trống.',
+      'Ba loại bánh mới được vẽ hình riêng: bánh mì que là ổ dài và mảnh hơn bánh mì, một đầu quấn giấy; bánh tiêu là đĩa dẹt phồng rắc mè; bánh su kem có vỏ nâu và núm kem trắng trên đầu — trước đây cả ba trông giống hệt nhau.',
     ],
   },
   {

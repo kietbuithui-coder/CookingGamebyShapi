@@ -1361,3 +1361,19 @@ chọn: **5–6 loại bánh chỉ bán sẵn (không thêm công thức)**, **S
 
 **Chưa kiểm được:** cảm giác ăn bánh trên điện thoại thật; probe chạy màn ngang 844×390 nên chưa xem lại quầy tạp hoá
 13 ô ở màn dọc 390×844 (biển giá trên quầy dày 0,78 m — nếu chật sẽ phải giảm còn 6+6 ô).
+
+### Vẽ lại hình 3 chiếc bánh (theo yêu cầu sau lượt 54)
+
+Người chơi: *"vẽ lại bánh su kem, bánh tiêu và bánh mì que pa-tê (giống bánh mì nhưng dài và nhỏ hơn chứ)"*. Ba loại này
+trước đó mượn hình chung (`long` / `round` / `round`) nên trên quầy giống hệt nhau.
+
+- `src/data/ingredients.ts`: thêm ba mã hình `baguette`, `sesame`, `choux` và gán cho `banhmique`, `banhtieu`, `banhsu`;
+  đổi màu cho khớp thực tế (vỏ bánh mì que vàng nâu, bánh tiêu vàng đậm, vỏ su kem nâu).
+- `src/gfx/props.ts`: ba `case` mới trong `ingModel` — bánh mì que ngắn/mảnh, thon hai đầu, nứt dọc lưng, giấy gói
+  quấn ngang một đầu; bánh tiêu đĩa dẹt phồng + 9 hạt mè; bánh su kem vỏ choux + kem trắng trên đầu.
+- `tests/banh54.test.ts` thêm 1 bài canh hình riêng (không tái dùng `loaf`/`round`/`long`).
+- Probe `tools/probe/steps/banhdraw54.mjs` (mới, chụp cận cảnh từng loại + đặt cạnh nhau) và ảnh `banh54_counter.png`
+  trong `banh54.mjs`; `npm test` **602/602**; console sạch.
+
+Bài học ghi vào PLAYBOOK: tự đặt `camera.position` trong probe **không ăn** — `player.update()` ghi đè mỗi khung hình,
+phải dùng `player.camTo`.

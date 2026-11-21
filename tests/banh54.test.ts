@@ -26,6 +26,20 @@ describe('tiệm bánh có thêm bánh bán sẵn (lượt 54)', () => {
     }
   });
 
+  it('mỗi loại bánh có hình 3D riêng (không dùng chung hình với ổ bánh mì hay bánh khác)', () => {
+    // Người chơi: "vẽ lại bánh su kem, bánh tiêu và bánh mì que pa-tê (giống bánh mì nhưng dài và nhỏ hơn)".
+    // Trước đây cả ba đều mượn hình 'long'/'round' nên trên quầy trông giống hệt nhau.
+    expect(INGS.banhmique.shape).toBe('baguette');   // ổ dài, nhỏ, thon hai đầu + giấy gói
+    expect(INGS.banhtieu.shape).toBe('sesame');      // đĩa dẹt phồng, rắc mè
+    expect(INGS.banhsu.shape).toBe('choux');         // vỏ choux + kem trắng trên đầu
+    expect(INGS.banhmi.shape).toBe('loaf');
+    for (const id of ['banhmique', 'banhtieu', 'banhsu', 'banhbao', 'banhbonglan'] as const) {
+      for (const other of ['banhmi', 'banhpho', 'bun', 'mi'] as const) expect(INGS[id].shape, id).not.toBe(INGS[other].shape);
+    }
+    const shapes = ['banhmique', 'banhtieu', 'banhsu'].map((id) => INGS[id].shape);
+    expect(new Set(shapes).size).toBe(3);
+  });
+
   it('bánh là đồ ăn liền: bấm Ăn được ngay trong túi, có hạn dùng thật', () => {
     for (const id of CAKES) {
       expect(INGS[id].eat, id).toBeDefined();

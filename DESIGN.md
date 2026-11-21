@@ -871,6 +871,20 @@ không phải cùng một ổ bánh gắn giá khác. Bánh mì ổ đứng ngo�
 mì trứng, bánh mì thịt…) chứ không phải món ăn vặt; menu test của người làm game tách riêng hai nhóm cho khỏi đọc nhầm.
 Bánh mua ở quầy vào túi là bấm **Ăn** được ngay, không qua mini-game nấu.
 
+**Hình 3D riêng cho từng loại** (`gfx/props.ts`, `case` mới trong `ingModel`): lượt 54 vẽ lại ba loại vì trước đó chúng
+mượn hình chung — bánh mì que dùng `long` (ống tròn), bánh tiêu và bánh su kem đều dùng `round` (cục tròn), nên trên
+quầy nhìn không phân biệt được. Nay mỗi loại một mã hình (`baguette` / `sesame` / `choux`), `tests/banh54.test.ts` canh
+để không ai gán lại `round`/`long`:
+
+| Mã hình | Vẽ gì | Dùng cho |
+|---|---|---|
+| `baguette` | ổ **dài và nhỏ hơn bánh mì** (0,26 m so với 0,22 m nhưng mảnh hơn nhiều), thon hai đầu, đường nứt dọc lưng, giấy nâu quấn quanh **một đầu** theo chiều nằm ngang | bánh mì que pa-tê |
+| `sesame` | đĩa tròn **dẹt và phồng**, đáy chiên vàng đậm, mè trắng rắc 9 hạt lốm đốm, mặt trên phồng cao | bánh tiêu |
+| `choux` | vỏ choux tròn nâu vàng, đế nhỏ, 4 vết nứt rời trên lưng, **kem trắng ngà phía trên** (không phủ sô-cô-la) | bánh su kem |
+
+Ảnh soi cận cảnh: `tools/probe/out/banhdraw_mique.png`, `banhdraw_tieu.png`, `banhdraw_su.png`,
+`banhdraw_lineup.png` (đặt cạnh nhau) và `banh54_counter.png` (trên quầy thật).
+
 **Nước tăng lực Shapi** (`shapi`, 9.000₫/lon) là lon **rẻ nhất** trong nhóm đồ uống có ga, bán ở MiniMart 24h (kệ đá
 cuối tiệm, ô số 2) và Tạp hoá Cô Ba. Vì thanh thể lực nằm trên **người chơi** (`player.stamina`) chứ không nằm trong
 `g.st`, `src/sim` không tự cộng được: `data/ingredients.ts` khai `eat.st = 0,3`, `sim/rules.ts` có hai hàm thuần

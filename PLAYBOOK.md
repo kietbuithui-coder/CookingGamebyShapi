@@ -19,11 +19,11 @@
 | Quầy hàng & nấu ở world | `src/game/stall.ts` (1.557), `src/cook/*` |
 | Hội thoại / menu NPC | `src/game/acts.ts` (1.390) |
 | HUD / bảng | `src/ui/ui.ts` (424), `src/ui/panels.ts` (517), `src/ui/style.css` (563) |
-| Test | `tests/*.test.ts` — **49 tệp, 601 bài**, `environment: 'node'` |
-| Thử giao diện thật | `tools/probe/` (75 kịch bản `.mjs` trong `steps/`, Chrome headless) |
+| Test | `tests/*.test.ts` — **49 tệp, 602 bài**, `environment: 'node'` |
+| Thử giao diện thật | `tools/probe/` (76 kịch bản `.mjs` trong `steps/`, Chrome headless) |
 | Bản phát hành | `docs/` — **sinh ra bởi `build:pages`, không sửa tay** |
 
-Trạng thái đo được hôm nay (2026-11-21, sau lượt 54): **typecheck ✅ · 601/601 test ✅ (49 tệp, ~12 s) · build ✅ · build:pages ✅**.
+Trạng thái đo được hôm nay (2026-11-21, sau lượt 54): **typecheck ✅ · 602/602 test ✅ (49 tệp, ~12 s) · build ✅ · build:pages ✅**.
 
 ---
 
@@ -87,7 +87,7 @@ xác định luật + dữ liệu (sim/data)
 
 ## 3. Hợp đồng kiến trúc (đừng phá)
 
-1. **`src/sim` không được biết DOM/three.** Nó chỉ báo việc ra ngoài qua `src/core/bus.ts` (`bus.emit('toast' | 'sfx' | 'cash' | 'save' | 'day' | 'ui' | 'quest' | 'bankrupt')`, tiện dụng: `toast()`, `sfx()`). Đây là lý do 601 bài kiểm thử chạy trong Node chỉ ~12 giây.
+1. **`src/sim` không được biết DOM/three.** Nó chỉ báo việc ra ngoài qua `src/core/bus.ts` (`bus.emit('toast' | 'sfx' | 'cash' | 'save' | 'day' | 'ui' | 'quest' | 'bankrupt')`, tiện dụng: `toast()`, `sfx()`). Đây là lý do 602 bài kiểm thử chạy trong Node chỉ ~12 giây.
 2. **Mọi ngẫu nhiên trong luật nhận `RNG` có hạt giống** làm tham số cuối (`advance(g, dm, act, R)`, `decideGroup(g, p, size, fem, R)`, `newDay(g, R)`). Test phải truyền RNG cố định, không dùng `Math.random()`.
 3. **UI không tự tính luật kinh tế.** Giá, giá vốn, lượng khách, hư hỏng, phí chỗ đều ở `sim/rules.ts`; UI chỉ hiển thị và gọi hàm.
 4. **`src/world/layout.ts` là nguồn chuẩn của toạ độ.** `LOTS`, `SPOTS`, `PLACES`, `NAV`, `DISTRICT`, `MAP`. Thêm địa điểm phải có lô đất + neo `v_<id>` + nút NAV liên thông (có test lo việc này, xem §5).
@@ -140,7 +140,7 @@ xác định luật + dữ liệu (sim/data)
 
 ### 4.3 Sau khi sửa
 ```bash
-npm test            # 601 bài hiện tại; đếm lại nếu bạn thêm bài
+npm test            # 602 bài hiện tại; đếm lại nếu bạn thêm bài
 npm run typecheck
 npm run build
 git diff --check    # lỗi khoảng trắng / xung đột sót
@@ -204,6 +204,8 @@ Những test "gác cổng" dễ bị quên:
 - Biển hiệu cắm lọt tường / bị cây che ⇒ chạy `steps/audit.mjs` sau khi thêm biển.
 - Hai mặt phẳng trùng nhau cùng hướng khác màu ⇒ nhấp nháy; lệch ≥ 2 mm hoặc bỏ một mặt.
 - Món mới thêm vào `items` của tiệm mà không kiểm **số ô bày**: sạp chợ 10 ô (chia theo nhóm 8), MiniMart 22 ô (8+8+8), tạp hoá 13 ô (7+6). Thiếu ô thì món vẫn tồn tại nhưng **không hiện ra**, người chơi tưởng tiệm không bán — probe `steps/banh54.mjs` kiểm `slots` + `uniq` cho từng tiệm.
+- Probe muốn "soi cận cảnh" mà tự đặt `camera.position`/`lookAt` thì **không ăn**: `player.update()` chạy mỗi khung hình và ghi đè camera. Dùng `player.camTo = { pos, look, fov }` (cơ chế camera cố định của game) rồi `wait` ~1 s cho camera trượt tới.
+- Nguyên liệu mới mà gán hình chung (`round`, `long`) thì trên quầy **không phân biệt được** — thêm `Shape` mới trong `data/ingredients.ts` + `case` trong `ingModel` (`gfx/props.ts`), và canh bằng test như `tests/banh54.test.ts`.
 - Đăng ký `b.slot()` cho cùng một `idx` ở hai chỗ trong tiệm ⇒ ô trống vẫn lấy được hàng. Mỗi mặt hàng chỉ được một ô; đồ trưng bày thì dựng hộp thường, đừng gọi `display()`.
 
 ### 6.3 Chống side effect lặp
@@ -215,7 +217,7 @@ Những test "gác cổng" dễ bị quên:
 ### 6.4 Đo được gì, không đo được gì (trung thực)
 | Đo được | Không đo được ở sandbox |
 |---|---|
-| Luật chơi (601 test), typecheck, build, bundle size | FPS thật trên GPU (máy không có GPU; gói JS đo được 1.335 kB / gzip 420 kB + 120 kB phông chữ) |
+| Luật chơi (602 test), typecheck, build, bundle size | FPS thật trên GPU (máy không có GPU; gói JS đo được 1.335 kB / gzip 420 kB + 120 kB phông chữ) |
 | Luồng UI trong Chrome headless ở 844×390 và 390×844 | Cảm giác chạm trên điện thoại thật, tai nghe/loa thật |
 | Hình học: mặt trùng phẳng, biển bị che (`audit.mjs`) | Chơi trọn nhiều giờ liên tục, trộm đêm, chuỗi mục tiêu theo trình tự thật |
 
@@ -272,7 +274,7 @@ xem mục 9b — khi đó đã sửa lại 9 chỗ lệch mới phát sinh):
 
 | Tệp | Ghi cũ | Sự thật trong mã |
 |---|---|---|
-| `PLAYBOOK.md` §0 | “322/322 test” · rules.ts 1.088 · data 11 tệp/1.232 dòng · 53 probe | **601 bài/49 tệp** · rules.ts **1.856** · data **14 tệp/1.572** · **75** probe |
+| `PLAYBOOK.md` §0 | “322/322 test” · rules.ts 1.088 · data 11 tệp/1.232 dòng · 53 probe | **602 bài/49 tệp** · rules.ts **1.856** · data **14 tệp/1.572** · **76** probe |
 | `PLAYBOOK.md` §2 | “52 tệp ~14.772 dòng” + số dòng từng thư mục | **59 tệp / 17.806 dòng** + 563 dòng CSS; thiếu `core/`, `news.ts`, `roads.ts`, `shopbrowse.ts` |
 | `PLAYBOOK.md` §3/§7 | `SAVE_VERSION = 13`, mốc dừng ở v13 | **`SAVE_VERSION = 16`** (v14 chi nhánh · v15 chuyến đi chợ · v16 ca làm) |
 | `PLAYBOOK.md` §6.4 | “322 test” · “1,23 MB JS / ~384 kB gzip” | 560 test · **1.335 kB / gzip 420 kB** |

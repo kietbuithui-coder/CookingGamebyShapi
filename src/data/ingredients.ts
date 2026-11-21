@@ -1,9 +1,11 @@
 // NGUYÊN LIỆU — thêm dòng mới vào bảng RAW là có ngay nguyên liệu mới (nhớ thêm vào một cửa hàng trong shops.ts).
 // Cột: id, tên, nhóm, đơn vị, giá gốc (₫/đơn vị), kg/đơn vị, hạn dùng (giờ, ở nhiệt độ thường), cần giữ lạnh,
-//      hình dạng 3D, màu chính, màu phụ, tác dụng khi ăn trực tiếp {h: đói, t: khát, m: tinh thần, hp: sức khoẻ}.
+//      hình dạng 3D, màu chính, màu phụ, tác dụng khi ăn trực tiếp {h: đói, t: khát, m: tinh thần, hp: sức khoẻ, st: thể lực}.
 export type Cat = 'meat' | 'seafood' | 'veg' | 'starch' | 'spice' | 'drink' | 'special' | 'other';
 export type Shape = 'round' | 'long' | 'leafy' | 'head' | 'slab' | 'bird' | 'fish' | 'shrimp' | 'crab' | 'squid' | 'shell' | 'balls' | 'bag' | 'nest'
-  | 'bottle' | 'jar' | 'can' | 'carton' | 'box' | 'egg' | 'block' | 'mushroom' | 'stack' | 'roll' | 'cubes' | 'coal' | 'gascan' | 'loaf' | 'corn';
+  | 'bottle' | 'jar' | 'can' | 'carton' | 'box' | 'egg' | 'block' | 'mushroom' | 'stack' | 'roll' | 'cubes' | 'coal' | 'gascan' | 'loaf' | 'corn'
+  // Bánh sẵn của lượt 54 — mỗi loại một hình riêng, không dùng chung 'round'/'long' nữa:
+  | 'baguette' | 'sesame' | 'choux';
 export interface Eat { h?: number; t?: number; m?: number; hp?: number; /** hồi thanh thể lực (thang 0–1, 0,3 = đầy thêm 30 %) */ st?: number; }
 export interface IngDef {
   id: string; name: string; cat: Cat; unit: string; price: number; kg: number; shelf: number; cold: boolean;
@@ -74,10 +76,10 @@ const RAW: Row[] = [
   // cột tác dụng đặt theo đúng giá gốc: cứ 1.000₫ ≈ 1,6 no và 0,5 vui (làm tròn). Nhờ vậy bánh đắt
   // thật sự no hơn và vui hơn, không phải cùng một ổ bánh mà gắn giá khác. Vui cộng thêm phần “món
   // quà tuổi thơ” cho hai món vặt, để món rẻ vẫn có chỗ đứng chứ không chỉ là bản thu nhỏ của món đắt.
-  ['banhmique', 'Bánh mì que pa-tê', 'starch', 'cây', 5000, 0.05, 30, 0, 'long', 0xc98a4a, 0xe0a05a, { h: 8, m: 3 }],
-  ['banhtieu', 'Bánh tiêu', 'starch', 'cái', 7000, 0.06, 26, 0, 'round', 0xe0a94a, 0xf3cf8a, { h: 11, m: 4 }],
+  ['banhmique', 'Bánh mì que pa-tê', 'starch', 'cây', 5000, 0.05, 30, 0, 'baguette', 0xc98a4a, 0xf3dcb0, { h: 8, m: 3 }],
+  ['banhtieu', 'Bánh tiêu', 'starch', 'cái', 7000, 0.06, 26, 0, 'sesame', 0xd99b3c, 0xfaf3dc, { h: 11, m: 4 }],
   ['banhbao', 'Bánh bao nhân thịt', 'starch', 'cái', 12000, 0.15, 30, 0, 'round', 0xf7f3ea, 0xe9dcc0, { h: 19, m: 6 }],
-  ['banhsu', 'Bánh su kem', 'starch', 'cái', 15000, 0.08, 24, 1, 'round', 0xf0d2a0, 0xfaf0dc, { h: 24, m: 8 }],
+  ['banhsu', 'Bánh su kem', 'starch', 'cái', 15000, 0.08, 24, 1, 'choux', 0xdb9b52, 0xfaf0dc, { h: 24, m: 8 }],
   ['banhbonglan', 'Bánh bông lan', 'starch', 'ổ', 25000, 0.25, 40, 0, 'round', 0xf3d98a, 0xe9c46a, { h: 40, m: 13 }],
   ['botmi', 'Bột mì', 'starch', 'kg', 17000, 1, F, 0, 'bag', 0xf0ead8, 0xf0a92e],
   ['banhtrang', 'Bánh tráng', 'starch', 'xấp', 15000, 0.3, F, 0, 'stack', 0xf3ead0, 0xe0d2a8],

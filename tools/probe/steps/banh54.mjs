@@ -60,8 +60,29 @@ export default [boot, fresh(9 * 60),
   { eval: () => ({ name: 'Tiệm bánh Anh Bảo', anchor: !!window.__game.world.anchors.v_bakery }) },
   goShop('v_bakery'),
   { eval: () => { const g0 = window.__game; const slots = g0.world.slots.filter((s) => s.shop === 'bakery'); return { slots: slots.length, xs: [...new Set(slots.map((s) => +s.x.toFixed(2)))], idx: slots.map((s) => s.idx) }; } },
+  // Soi cận cảnh từng chiếc bánh mới để thấy hình đã vẽ lại (ảnh riêng: banhdraw_*.png)
+  { eval: async () => {
+    const g0 = window.__game, p = g0.player, mod = await import('/src/gfx/props.ts');
+    if (!window.__bakeProbe) window.__bakeProbe = { mod, list: [] };
+    const { list } = window.__bakeProbe;
+    list.forEach((m) => g0.scene.remove(m)); list.length = 0;
+    const fx = Math.sin(p.yaw), fz = Math.cos(p.yaw), rx = Math.cos(p.yaw), rz = -Math.sin(p.yaw);
+    const ids = ['banhtieu', 'banhsu', 'banhmique'];
+    ids.forEach((id, i) => {
+      const o = (i - 1) * 0.32, m = mod.ingMesh(id, 2.2);
+      m.position.set(p.x + fx * 1.2 + rx * o, 1.25, p.z + fz * 1.2 + rz * o); g0.scene.add(m); list.push(m);
+    });
+    const bx = p.x + fx * 1.2, bz = p.z + fz * 1.2;
+    p.camTo = { pos: g0.camera.position.clone().set(bx - fx * 1.1, 1.62, bz - fz * 1.1), look: g0.camera.position.clone().set(bx, 1.25, bz), fov: 44 };
+    g0.ui.$('quest').style.display = 'none';
+    return ids;
+  }, wait: 1100 },
+  { shot: 'banh54_shapes' },
+  { eval: () => { const g0 = window.__game; g0.player.camTo = null; g0.ui.$('quest').style.display = ''; window.__bakeProbe.list.forEach((m) => g0.scene.remove(m)); window.__bakeProbe.list.length = 0; return 1; }, quiet: true, wait: 500 },
   { eval: () => { window.__game.ui.$('quest').style.display = 'none'; return 1; }, quiet: true },
   viewShop('bakery', 1.9, 0.35, 2.5), { shot: 'banh54_shop' },
+  // nhìn chếch xuống mặt quầy để thấy 3 loại bánh mới nằm cạnh nhau (bánh mì que · bánh tiêu · bánh su kem)
+  standAt('bakery', 2, 1.05), { shot: 'banh54_counter' },
   { eval: () => { window.__game.ui.$('quest').style.display = ''; return 1; }, quiet: true },
 
   { label: '② đứng sát ô bánh bông lan (1 m) rồi chạm vào ô — xem ô có ăn không' },
