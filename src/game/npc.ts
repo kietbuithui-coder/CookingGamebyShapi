@@ -9,6 +9,7 @@ import { hourCurve, WeatherDef } from '../data/world';
 import { STAT_MAX, hourOf } from '../sim/state';
 import { wx, mods, Persona, Order, say, shopOpen } from '../sim/rules';
 import { SHOPS } from '../data/shops';
+import { placeHours } from '../data/hours';
 import { MB, MAT } from '../gfx/mb';
 import { EXPR } from '../gfx/tex';
 import { toast } from '../core/bus';
@@ -34,21 +35,13 @@ export interface Npc {
   /** Chủ nhà bước ra ngoài cửa sau khi khách bấm chuông. */
   bellOut?: { x: number; z: number; yaw: number; until: number };
 }
-/** Giờ mở cửa của những nơi không phải cửa hàng nguyên liệu. */
-export const PLACE_HOURS: Record<string, [number, number]> = { equip: [7, 20], bank: [8, 17], eatery: [6, 21.5], pawn: [8, 21], scrap: [6, 19], scrap2: [6, 19], dock: [4.5, 10], motel: [0, 24], hotel: [0, 24], tro: [6, 22], shark: [9, 24], hobo: [0, 24],
-  canho: [6, 22], nharieng: [6, 22], cuahang: [6, 21],
-  cafe: [0, 24],
-  police: [0, 24],
-  hospital: [0, 24],
-  // nhân vật phụ: mỗi người chỉ ở chỗ của mình trong một quãng giờ nhất định
-  net: [6, 23], net_bi: [16, 22], net_nhung: [18, 22.5],
-  dua: [14.5, 18], dua_mai: [14.5, 18], dua_thao: [14.5, 18],
-  tra_da: [5.5, 22], rap: [14.5, 23], sua_xe: [7, 19], hat_rong: [9, 21], danh_co: [6.5, 18.5], danh_giay: [6, 19.5],
-  hot_toc: [7, 19], thoi_trang: [7.5, 20] };
+// Bảng giờ mở cửa nay nằm ở `data/hours.ts` (dữ liệu thuần) để `src/sim` dùng được khi chỉ đường;
+// ở đây re-export lại đúng tên cũ nên mọi call site cũ vẫn chạy nguyên.
+export { PLACE_HOURS } from '../data/hours';
 export function placeOpen(id: string): boolean {
   const g = ctx.g, h = hourOf(g);
   if (SHOPS[id]) return shopOpen(g, SHOPS[id]);
-  const p = PLACE_HOURS[id]; return !p || (h >= p[0] && h < p[1]);
+  const p = placeHours(id); return !p || (h >= p[0] && h < p[1]);
 }
 let _newsGeo: THREE.BufferGeometry | null = null, _cupGeo: THREE.BufferGeometry | null = null;
 /** Tờ báo gấp đôi — cầm ở tay phải khi đứng đọc. */

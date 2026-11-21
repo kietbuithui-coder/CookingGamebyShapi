@@ -93,7 +93,7 @@ export const SEEN: Record<ArchId, string> = {
 /** Người đứng quầy mà ta chưa từng nói chuyện: chỉ biết họ làm gì ở đó (nhìn là thấy), chưa biết tên. */
 export const FIXED_ROLE: Record<string, string> = {
   m_rau: 'Người bán rau', m_cu: 'Người bán củ quả', m_thit: 'Người bán thịt', m_haisan: 'Người bán hải sản', m_kho: 'Người bán đồ khô',
-  m_giavi: 'Người bán gia vị', m_trung: 'Người bán trứng', bakery: 'Thợ làm bánh', mart: 'Nhân viên siêu thị', kiosk: 'Cô bán tạp hoá',
+  m_giavi: 'Người bán gia vị', m_trung: 'Người bán trứng, sữa, giò chả', bakery: 'Thợ làm bánh', mart: 'Nhân viên siêu thị', kiosk: 'Cô bán tạp hoá',
   wholesale: 'Chủ vựa sỉ', pharmacy: 'Dược sĩ', equip: 'Chủ tiệm đồ nghề', eatery: 'Bà chủ quán cơm', scrap: 'Chủ vựa ve chai', scrap2: 'Chủ vựa ve chai',
   pawn: 'Chủ tiệm cầm đồ', bank: 'Nhân viên ngân hàng', shark: 'Gã mặt sẹo', motel: 'Chủ nhà nghỉ', tro: 'Ông chủ trọ',
   hotel: 'Lễ tân khách sạn', dock: 'Cai bốc vác', hobo: 'Ông lão lang thang',

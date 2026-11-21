@@ -1255,3 +1255,175 @@ Commit `a152a6f`. Chủ yếu là **CSS + vòng đời giao diện**, không đ�
 **Chưa kiểm được:** probe lượt này chạy trên Chrome không giao diện (không GPU) nên FPS thật, cảm giác chạm trên
 điện thoại thật, và pointer-lock trên Safari/iOS vẫn chưa ai thử. Không có test tự động mới cho lượt này —
 `tools/probe/steps/` là lưới an toàn duy nhất.
+
+---
+
+## Lượt 52 — Ông Bảy gợi ý đúng lúc ✅ đã xong
+
+**Người chơi:** *"tạo 1 pull rq cho repo… đọc các thứ cần thiết trong repo"* → làm tiếp mục 3 của `TODO.md`:
+`case 'hobo'` bốc ngẫu nhiên trong 6 câu viết sẵn, không biết người chơi đang ở đâu trong ván.
+
+### Luật mới: `src/sim/advice.ts` (thuần, test được trong Node)
+
+`advice(g, where)` trả về mảng câu **đã sắp theo mức cấp thiết**, mỗi câu `{ id, text, place, urgent }`:
+máu < 30 → bệnh viện · đói/sức < 20–25 → quán cơm nếu đang mở, không thì chùa 11–13h, không nữa thì
+MiniMart/Tạp hoá còn mở · tiền < 30.000₫ → bến bốc hàng (4h30–10h) → rửa chén Bà Tư → bảng việc làm ·
+chưa có gánh → Đồ Nghề Ba Tài (7–20h) / gầm cầu · có quầy → nhắc đặt xuống, mở bán, giờ đông nhất
+(`hourCurve` của đúng khu), **món thiếu nguyên liệu + sạp đang mở bán món đó** · nợ Hùng Sẹo ≤ 2 ngày →
+số tiền + số ngày (đêm: nói rõ 9h sáng mới gặp) · sắp mưa → áo mưa · 22h–5h → về đúng căn đang thuê
+(`HOME_LANDMARK`). Không câu nào gấp → câu chung, cũng chỉ vào chỗ **đang mở**.
+
+### Dữ liệu & phụ thuộc
+
+- `src/data/landmarks.ts` — **31 đích đến**: mã, tên, `anchor` hoặc `spot`, cờ `always` (dùng được bất kể giờ),
+  `openWith` (Chợ Xóm Chiều gộp 7 sạp: một sạp mở là chợ dùng được), `HOME_LANDMARK`. Bản đồ và lời khuyên
+  cùng đọc danh sách này nên không lệch nhau.
+- `src/data/hours.ts` — `PLACE_HOURS` rời khỏi `game/npc.ts` (tệp có three/DOM) để `sim` đọc được;
+  `game/npc.ts` **re-export đúng tên cũ**, thêm `R.placeOpenAt(g, id)` dùng chung.
+- `Acts.places()` đọc `LANDMARK_LIST`; thêm `placeOf(id)` / `goPlace(id)` để nút ghim đường đi dùng chung
+  cơ chế cột sáng vàng với Bản đồ.
+
+### Trong hộp thoại (`acts.ts`, `case 'hobo'`)
+
+Câu đầu = câu cấp thiết nhất (kèm khoảng cách thật tới neo), nút **“Chỉ con đường tới …”** ghim `acts.way`,
+thêm tối đa 2 câu khác đang đúng. `rememberAdvice` giữ 3 mã câu gần nhất (`g.flags.hoboSeen` chỉ để biết đã
+nói lần nào) nên ghé liền ba lần là ba câu khác nhau.
+
+### Kiểm chứng
+
+- `tests/hobo.test.ts` — **23 bài**: 120 trạng thái ngẫu nhiên (giờ, tiền, chỉ số, thời tiết, chỗ ở, nợ,
+  quầy đóng/mở) → mọi câu trỏ đích **có thật** và **đang dùng được**; 9 tình huống cụ thể; không lặp câu;
+  `shopFor` không chọn sạp đã đóng và trả `null` khi không chỗ nào đang bán; dữ liệu đích đến không trùng.
+- Probe `tools/probe/steps/hobo.mjs` (844×390, Chrome không giao diện) — 4 trạng thái, ảnh trong
+  `tools/probe/out/hobo_*.png`; bấm nút ghim thì `acts.way` = “MiniMart 24h (17, 22)”, console sạch.
+- `npm test` 583/583 (47 tệp) · `npm run typecheck` ✅ · `npm run build` ✅.
+
+### Menu ẩn: cập nhật nội dung + đặt mã PIN
+
+- **Nội dung làm mới theo lượt 52**: *Ông Bảy đang khuyên gì lúc này?* (in cả danh sách câu đang đúng, kèm mức cấp
+  thiết), *Tele tới gầm cầu, hỏi Ông Bảy ngay*, *Soát 96 mốc giờ* (quét 0h→23h45, đo được **316 câu / 0 câu sai**).
+  Nhóm tele thêm **Gầm cầu — Ông Bảy** và **MiniMart 24h**.
+- **Mã PIN `7777`** (`DEV_PIN`, hàm thuần `devPinInput()`): bấm 7 lần chữ “Cài đặt” → bàn phím số 4 chấm → gõ đúng
+  mới vào. Mở đúng một lần thì nhớ trong phiên chơi; “Ẩn & khoá lại” thì lần sau phải nhập lại. Không phải bảo mật —
+  chỉ để người chơi không vô tình mở bảng test (đã ghi rõ trong README).
+- Test `tests/devpoints.test.ts` (6 bài, thêm 4 bài cho PIN): mã đúng 7777, nhập đủ thì mở, sai một số là xoá sạch,
+  không nhận số thứ 5, `777/7778/1111/0000/1234` đều không mở. Probe `tools/probe/steps/devpin.mjs` (40 bước):
+  bấm sai 1234 → ở lại bàn phím; bấm 7777 → menu mở với 3 mục lượt 52 + 15 mục tele; chạy nút soát → “316 câu, 0 sai”;
+  đóng/mở lại vẫn vào; “Ẩn & khoá lại” → phải nhập lại; console sạch.
+
+**Chưa kiểm được:** đọc trên điện thoại thật (môi trường không có GPU); câu chữ dài trên màn dọc 390×844 —
+probe lượt này chỉ chạy màn ngang. Chưa có câu cho sự kiện đang diễn ra (đã ghi vào `TODO.md`).
+
+### Lượt 53 — thanh chạy hồi theo máu và pin
+
+Người chơi hỏi: *"chỉnh lại tốc độ hồi của thanh dùng để chạy (nhanh chậm dựa theo sức và máu nhân vật)"*.
+Hỏi lại ba câu trước khi làm, người chơi chọn: **máu + năng lượng**, đổi **cả hồi lẫn tụt**, máu thấp thì hồi
+**khoảng một nửa**.
+
+- `src/sim/rules.ts`: `staminaHpMul` (máu 20 ⇒ 0,5, sàn 0,3), `staminaEnergyMul` (pin cạn ⇒ 0,45),
+  `staminaRegenMul` gộp lại = `clamp(hpMul · (0,6 + 0,4·pinMul), 0,28, 1)`, `staminaRegen(g, moving)`,
+  `staminaDrain` (0,1 → tối đa 0,16/giây), `staminaRunSecs`, `staminaRefillSecs`.
+- `src/game/player.ts`: hai hằng số cứng 0,1 / 0,05 / 0,09 thay bằng `staminaDrain(g)` / `staminaRegen(g, moving)`.
+- `src/ui/ui.ts`: thanh thể lực có `data-tip` nói rõ hồi bao nhiêu phần trăm tốc độ, vì mất máu hay thiếu ngủ,
+  chạy liền được mấy giây, cạn rồi chờ bao lâu.
+- Menu ẩn làm mới theo luật “mỗi lượt thay mục test cũ”: bốn mục `stam_now` / `stam_compare` / `stam_hurt` / `stam_heal`;
+  `DEV_BUILD_TAG` mô tả thanh chạy; `tests/devpoints.test.ts` cập nhật theo.
+- `tests/stamina53.test.ts` (6 bài) + probe `tools/probe/steps/stam53.mjs` đo bằng đồng hồ mô phỏng sau khi giữ Shift thật:
+  máu 90 → 0,09/giây, máu 20 → 0,045/giây, máu 20 + pin 10 → 0,037/giây, tụt khi chạy 0,1 → 0,13/giây.
+- Changelog **Lượt 53** (7 dòng) + `tests/changelog.test.ts` trỏ sang bản mới; DESIGN §4.36 (bảng công thức) và §4.1;
+  README mục “Thanh chạy”; PLAYBOOK cập nhật hằng số + số test/probe.
+- `npm test` **593/593 (48 tệp)** · typecheck ✅ · `build:pages` ✅ · probe `errors: none` (ảnh `stam53_menu.png`,
+  `stam53_compare.png`).
+
+**Chưa kiểm được:** cảm giác chạy trên điện thoại thật (môi trường không có GPU); probe chạy 844×390 nên chưa đo lại
+bố cục thanh thể lực trên màn dọc 390×844.
+
+### Lượt 54 — bánh ở Tiệm bánh Anh Bảo + nước tăng lực Shapi
+
+Người chơi xin ba việc: *“nước tăng lực có nhãn Shapi bán ở kệ minimart/tạp hoá”*, *“ở chợ thêm một số loại bánh ở tiệm
+bánh mì và sửa tiệm bánh mì thành tiệm bánh”*, *“bánh no và vui vẻ tuỳ giá”*. Hỏi lại 4 câu trước khi làm, người chơi
+chọn: **5–6 loại bánh chỉ bán sẵn (không thêm công thức)**, **Shapi hồi 30 % thanh giá 9.000₫**, **“Tiệm bánh Anh Bảo”**,
+**no và vui tăng tuyến tính theo giá**.
+
+- `src/data/ingredients.ts`: 5 bánh mới (`banhmique` 5.000₫, `banhtieu` 7.000₫, `banhbao` 12.000₫, `banhsu` 15.000₫,
+  `banhbonglan` 25.000₫) + `shapi` 9.000₫; cột `Eat` thêm `st` (hồi thanh thể lực). No/vui theo công thức
+  1.000₫ ≈ 1,6 no + 0,5 vui.
+- `src/data/shops.ts`: `bakery` đổi tên **Tiệm bánh Anh Bảo**, bán 6 món; `mart` (22 ô) và `kiosk` (13 ô) thêm `shapi`.
+- `src/sim/rules.ts`: `staminaGain`, `staminaAfter` (kẹp theo trần) — thanh thể lực nằm trên player nên sim chỉ cung cấp
+  luật, `game/acts.ts` mới cộng vào thanh khi ăn/uống (`if (d.eat.st)`), gỡ `tired`, báo toast.
+- `src/world/places.ts`: sạp chợ chia ô theo nhóm 8 (trước 5, tiệm bánh 6 món bị rơi mất 1), MiniMart 8+8+8 ô,
+  tạp hoá 7+6 ô trên quầy, kệ giữa MiniMart thôi đăng ký ô trùng.
+- Menu ẩn làm mới theo lượt: `banh_list` (bảng bánh), `banh_tele`, `shapi_drink` (uống thử), `shapi_tele`;
+  `tests/devpoints.test.ts` cập nhật.
+- `tests/banh54.test.ts` (8 bài) + probe `tools/probe/steps/banh54.mjs` (bấm thật: chạm ô, tính tiền, ăn, uống).
+- Changelog **Lượt 54**, `tests/changelog.test.ts` trỏ sang bản mới (bản Lượt 45 rơi khỏi danh sách 8 bản).
+  DESIGN §4.37 + README; PLAYBOOK cập nhật số test/probe/hằng số.
+
+**Chưa kiểm được:** cảm giác ăn bánh trên điện thoại thật; probe chạy màn ngang 844×390 nên chưa xem lại quầy tạp hoá
+13 ô ở màn dọc 390×844 (biển giá trên quầy dày 0,78 m — nếu chật sẽ phải giảm còn 6+6 ô).
+
+### Vẽ lại hình 3 chiếc bánh (theo yêu cầu sau lượt 54)
+
+Người chơi: *"vẽ lại bánh su kem, bánh tiêu và bánh mì que pa-tê (giống bánh mì nhưng dài và nhỏ hơn chứ)"*. Ba loại này
+trước đó mượn hình chung (`long` / `round` / `round`) nên trên quầy giống hệt nhau.
+
+- `src/data/ingredients.ts`: thêm ba mã hình `baguette`, `sesame`, `choux` và gán cho `banhmique`, `banhtieu`, `banhsu`;
+  đổi màu cho khớp thực tế (vỏ bánh mì que vàng nâu, bánh tiêu vàng đậm, vỏ su kem nâu).
+- `src/gfx/props.ts`: ba `case` mới trong `ingModel` — bánh mì que ngắn/mảnh, thon hai đầu, nứt dọc lưng, giấy gói
+  quấn ngang một đầu; bánh tiêu đĩa dẹt phồng + 9 hạt mè; bánh su kem vỏ choux + kem trắng trên đầu.
+- `tests/banh54.test.ts` thêm 1 bài canh hình riêng (không tái dùng `loaf`/`round`/`long`).
+- Probe `tools/probe/steps/banhdraw54.mjs` (mới, chụp cận cảnh từng loại + đặt cạnh nhau) và ảnh `banh54_counter.png`
+  trong `banh54.mjs`; `npm test` **602/602**; console sạch.
+
+Bài học ghi vào PLAYBOOK: tự đặt `camera.position` trong probe **không ăn** — `player.update()` ghi đè mỗi khung hình,
+phải dùng `player.camTo`.
+
+---
+
+## Lượt 55 — tên sạp Dì Sáu, khách không xuyên quầy, hết kẹt khi ngủ, buồng tắm có vòi sen ✅ đã xong
+
+Người chơi: *"Trứng - Giò chả Dì Sáu đổi tên thành Trứng - Sữa - Giò Dì Sáu"* · *"sửa lỗi khi bán gánh ở chợ và cv npc
+đi từng đằng sau lưng rồi đi xuyên qua quầy (đt pc đều bị)"* · *"sửa lỗi khi sử dụng giường nhà nghỉ / trọ người chơi
+bị văng vào 1 khung gian khác và kẹt (có thể dời vị trí giường nếu cần), vẽ thêm chi tiết một tí cho vòi hoa sen và
+phòng"*. Người chơi cho phép **dời giường** nếu cần — kết luận là không cần, chỉ cần tìm chỗ đứng ngoài khung giường.
+
+### 55a — tên sạp (`data/shops.ts`, `data/people.ts`)
+- `m_trung`: `name` = “Trứng – Sữa – Giò Dì Sáu”, `items` thêm `suatuoi` (32.000₫, hộp, cần giữ lạnh) và `suadac`
+  (24.000₫, lon) — cả hai đã có sẵn trong `data/ingredients.ts` nên không đẻ thêm mặt hàng ma.
+- `say` của Dì Sáu nhắc cả sữa; `FIXED_ROLE.m_trung` = “Người bán trứng, sữa, giò chả”.
+
+### 55b — khách xuyên quầy (`game/stall.ts`)
+- `counterBox()`: `hw` theo bậc (0,95 / 1,4 / 2,3 / 2,9), `z0` −0,5 hoặc −0,6, `z1` 0,62; `onCounter()` ráp bán kính thân người.
+- `safeApproach()` chạy cho **mọi bậc**: bậc < 5 đi vòng qua đầu quầy `±(hw + 0,85)` rồi ra `z = z1 + 1,05`.
+- `resolveNpcWalls()` có nhánh bậc < 5: đẩy NPC lọt trong quầy ra mép gần nhất, và chèn waypoint vòng đầu quầy cho
+  khách `toStall`/`actor` đang ở phía sau.
+- **Đo:** `fix55b5.mjs` — chợ và CV, ba khách dừng ở local `z ≈ 1,5`, `cross: []` (trước khi sửa: khách đứng trong
+  quầy ở local `(−0,28; 0,38)`, `blocked: true`). Bán ở chợ vẫn chạy: 40 phần trà, tiền 112.000 → 327.000₫.
+
+### 55c — kẹt giường (`game/acts.ts`)
+- `bedSpot(a)` quét `d` 1,55 / 1,75 / 1,35 / 1,95 / 1,15 × 7 hướng, lấy chỗ `!blocked(x, z, 0,36)`.
+- `sleep()` đặt người chơi ở chỗ đó thay vì đúng tâm nệm; `wake()` bước ra nếu `blocked(p0, 0,32)`.
+- `bedStand()` (công khai) trả chỗ đứng + hướng quay vào giường, để menu test tele tới mà không chui vào giường.
+- **Đo:** `fix55a3.mjs` — nhà nghỉ (−8,15; 39,9) và nhà trọ (39,35; −3,6), `after.blocked: false` cả hai, bước ra bốn
+  hướng vẫn quanh chỗ cũ (3,35 m là do vướng tường rồi `resolve` trượt dọc tường, không phải xuyên vách).
+
+### 55d — buồng tắm + đồ đạc (`world/places.ts`)
+- Hàm mới `shower(b, x, z, nx, nz, h)` thay hai khay phẳng ở `wash_nhanghi` (7,0; 4,6) và `wash_tro` (3,7; 5,3):
+  tường ốp gạch có ron, khay men + lỗ thoát, cột sen + tay gạt đỏ, ống đứng, tay vươn, đầu sen 16 cạnh có 6 lỗ phun,
+  kệ ba chai, khăn, gương + đèn, tấm chắn kính có `collide`.
+- Nhà nghỉ thêm tủ đầu giường + đèn + sách, quạt treo tường, ti vi, rèm hai tấm, thảm, móc áo, ghế nhựa, bàn tròn;
+  nhà trọ thêm kệ đầu giường + đèn + khăn, quạt cây, dây phơi ba áo, ấm nước + ly, lịch + công tắc, chiếu.
+- **Lỗi đã vấp:** `mb.cyl(x,y,z,r,h,col,seg,rTop)` — tham số cuối là bán kính **ĐỈNH tuyệt đối**; truyền 0,82 làm cái
+  đĩa sen thành mâm 4 m. Dùng 0,105 cho đĩa bán kính 0,125.
+
+### 55e — menu test & tài liệu
+- `devPoints.ts`: bỏ bộ test lượt 54, thêm 7 mục lượt 55 (bảng hàng Dì Sáu · tele sạp · ngủ thử nhà nghỉ / trọ ·
+  buồng tắm nhà nghỉ / trọ · dựng gánh trà đá ở Cổng Chợ). `DEV_BUILD_TAG` đổi theo.
+- Thêm hai helper dùng chung cho menu: `tpFront(a, msg)` (đứng phía khách của sạp, thử 4 khoảng cách) và
+  `standNear(x, z, msg)` (chỗ trống quanh một món đồ). Cả hai có nhánh báo “chỗ này chật quá” thay vì đứng trong vách.
+- **Bẫy đã vấp:** mỏ neo sạp `v_m_trung` quay mặt VÀO quầy (yaw = π sau khi cộng khung chợ), cộng `z + 2` là ra sau
+  lưng sạp; và viết `v_trung` (thiếu `m_`) thì `tpTo(undefined…)` ra NaN rồi `resolve` ném người chơi sang toạ độ rác
+  (49; 100,3). `tpFront` nay kiểm `blocked` và báo khi không thấy mỏ neo.
+- Test: `tests/nghi55.test.ts` (12 bài) + `tests/devpoints.test.ts` và `tests/changelog.test.ts` cập nhật theo bộ mục mới.
+- Probe: `fix55a3.mjs`, `fix55b5.mjs`, `fix55c.mjs` (4 ảnh), `fix55d.mjs` (bấm cả bộ mục + cho khách kéo tới quầy),
+  `fix55e.mjs` (kiểm `interact.focus` sau mỗi lần tele).

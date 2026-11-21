@@ -10,6 +10,7 @@ import { ARCH, ArchDef, HELPER_POOL, HelperDef, SOUS_POOL, SousDef, KEEPER_POOL,
 import { EVENTS, EVENT_LIST, EventDef, WEATHER, WeatherDef, WeatherId, floodZone, hourCurve } from '../data/world';
 import { EXPR } from '../data/expr';
 import { District, DISTRICT, SPOTS, districtAt, spotById } from '../world/layout';
+import { PLACE_HOURS } from '../data/hours';
 import { Game, Stack, Helper, Booking, Branch, Ready, Errand, STAT_MAX, absMin, addStack, countOf, hourOf, newLedger, purge, spoil, takeFrom, weightOf, junkWeight, emptyStall, Debt, coldWeightOf } from './state';
 import * as PH from './phone';
 
@@ -114,6 +115,16 @@ export function shopPrice(g: Game, shop: ShopDef, ingId: string): number {
   return Math.max(500, p >= 5000 ? round500(p) : Math.round(p / 100) * 100);
 }
 export const shopHas = (g: Game, shop: ShopDef, ingId: string) => !(shop.id.startsWith('m_') && g.wd.outOf.includes(ingId));
+/**
+ * Việc ở một địa danh có đang mở ở giờ hiện tại không: sạp bán nguyên liệu theo giờ của sạp,
+ * nơi khác theo `PLACE_HOURS`, nơi không ghi giờ thì coi như mở cả ngày.
+ * Dùng chung cho lời khuyên của Ông Bảy và cho Bản đồ (để câu “đang mở” không bao giờ sai).
+ */
+export function placeOpenAt(g: Game, id: string): boolean {
+  const h = hourOf(g), shop = SHOPS[id];
+  if (shop) return shopOpen(g, shop);
+  const p = PLACE_HOURS[id]; return !p || (h >= p[0] && h < p[1]);
+}
 /** Độ tươi của hàng: chợ sáng tươi nhất, càng về chiều càng kém. */
 export function shopFresh(g: Game, shop: ShopDef, ingId: string, R: RNG = rnd): number {
   const d = INGS[ingId]; if (d.shelf > 9000) return 100;
@@ -442,6 +453,43 @@ export function lostCustomer(g: Game, why: 'wait' | 'price' | 'none' | 'dirty') 
 // ───────────────────────── Chỉ số sinh tồn ─────────────────────────
 export interface Activity { moving: boolean; running: boolean; sleeping: boolean; sheltered: boolean; working: boolean; load: number; sleepQ: number; }
 export const staminaMax = (g: Game) => clamp(0.35 + 0.65 * Math.min(g.st.hunger, g.st.thirst) / 55, 0.35, 1);
+
+// ───────────── Thanh chạy: hồi nhanh hay chậm tuỳ MÁU và PIN (lượt 53) ─────────────
+// Trước đây thanh thể lực hồi với một con số cố định (0,09/giây khi đứng, 0,05/giây khi đi),
+// nên người đang mất máu 20 vẫn chạy khoẻ y như người đầy đủ. Giờ tốc độ hồi do hai chỉ số quyết định:
+// máu (đang thương/ốm thì thở dốc) và pin năng lượng (thiếu ngủ thì hụt hơi), và người yếu còn
+// TỤT nhanh hơn khi chạy — chạy được quãng ngắn hơn hẳn.
+/** Hệ số hồi thể lực theo máu: 0,5 khi máu 20 (hồi đúng một nửa), 1 khi máu từ 70 trở lên, sàn 0,3. */
+export function staminaHpMul(g: Game): number {
+  return clamp(0.5 + 0.5 * (g.st.health - 20) / 50, 0.3, 1);
+}
+/** Hệ số hồi thể lực theo pin năng lượng: 1 khi pin từ 60 trở lên, 0,45 khi cạn pin. */
+export function staminaEnergyMul(g: Game): number {
+  return clamp(0.45 + 0.55 * g.st.energy / 60, 0.45, 1);
+}
+/**
+ * Gộp máu và pin thành MỘT hệ số hồi: máu là thứ chính (máu 20 ⇒ đúng một nửa), pin chỉ phụ
+ * (cạn pin thì chậm thêm nhiều nhất 22 %, không cộng dồn cho thành gần như không hồi).
+ * Sàn 0,28 khi cả hai cùng tệ, để người chơi vẫn hồi được chứ không kẹt vĩnh viễn.
+ */
+export function staminaRegenMul(g: Game): number {
+  return clamp(staminaHpMul(g) * (0.6 + 0.4 * staminaEnergyMul(g)), 0.28, 1);
+}
+/**
+ * Thể lực hồi mỗi giây (thang 0–1). Đứng yên hồi nhanh hơn vừa đi bộ — y như cũ,
+ * chỉ khác là nhân thêm hệ số sức khoẻ. Người khoẻ: 11 giây đầy thanh; máu 20: 22 giây.
+ */
+export function staminaRegen(g: Game, moving: boolean): number {
+  return (moving ? 0.05 : 0.09) * staminaRegenMul(g);
+}
+/** Thể lực mất mỗi giây khi chạy — máu thấp/pin cạn thì mau đuối hơn, tối đa gấp 1,6 lần. */
+export function staminaDrain(g: Game): number {
+  return 0.1 * clamp(1 + (1 - staminaHpMul(g)) * 0.6 + (1 - staminaEnergyMul(g)) * 0.4, 1, 1.6);
+}
+/** Chạy liên tục được bao nhiêu giây từ thanh đầy (thang 0–1) — để menu test và tài liệu so sánh. */
+export const staminaRunSecs = (g: Game) => 1 / staminaDrain(g);
+/** Hồi từ cạn tới đầy mất bao nhiêu giây (đứng yên) — dùng để so người khoẻ với người đang thương. */
+export const staminaRefillSecs = (g: Game) => 1 / staminaRegen(g, false);
 /** Thể trạng cơ thể: 0 gọn gàng (đi nhanh, mau đói), 1 vừa, 2 đậm (chậm hơn nhưng lì sức). Đổi ở tiệm may. */
 export function bodyType(g: Game): 0 | 1 | 2 {
   const fat = g.look.fat;
@@ -502,13 +550,21 @@ export function tickStats(g: Game, dm: number, a: Activity) {
   for (const k of Object.keys(s) as (keyof typeof s)[]) s[k] = clamp(s[k], 0, STAT_MAX);
 }
 /** Ăn/uống một món. */
-export function consume(g: Game, eff: { h?: number; t?: number; m?: number; hp?: number; e?: number; hy?: number }, risky = 0) {
+export function consume(g: Game, eff: { h?: number; t?: number; m?: number; hp?: number; e?: number; hy?: number; st?: number }, risky = 0) {
   const s = g.st;
   s.hunger = clamp(s.hunger + (eff.h ?? 0), 0, STAT_MAX); s.thirst = clamp(s.thirst + (eff.t ?? 0), 0, STAT_MAX); s.mood = clamp(s.mood + (eff.m ?? 0), 0, STAT_MAX);
   s.health = clamp(s.health + (eff.hp ?? 0), 0, STAT_MAX); s.energy = clamp(s.energy + (eff.e ?? 0), 0, STAT_MAX); s.hygiene = clamp(s.hygiene + (eff.hy ?? 0), 0, STAT_MAX);
   if ((eff.hp ?? 0) >= 20 && g.flags.sick) { delete g.flags.sick; toast('Hết cảm rồi, khoẻ lại rồi!', 'good', 'heart'); }
   if (risky > 0 && rnd.chance(risky)) sickStomach(g, 'Ăn đồ ôi thiu');
 }
+/**
+ * Một món/đồ uống hồi thanh thể lực (cột `st`, thang 0–1 — vd nước tăng lực Shapi: 0,3).
+ * Thanh thể lực nằm trên NGƯỜI CHƠI chứ không nằm trong `g.st`, nên `src/sim` không tự cộng được:
+ * `game/acts.ts` gọi hàm này để lấy lượng hồi (đã kẹp theo trần hiện tại), rồi tự cộng vào thanh.
+ * Hàm vẫn để ở đây để test Node kiểm được luật “uống là hồi, nhưng không vượt trần”.
+ */
+export const staminaGain = (amount: number) => clamp(amount, 0, 1);
+export const staminaAfter = (now: number, cap: number, amount: number) => Math.min(cap, now + staminaGain(amount));
 
 // ───────────────────────── Đau bụng (lượt 41) ─────────────────────────
 /**

@@ -43,20 +43,19 @@ thỉnh thoảng cho spawn. **Không có** xe, không có chỗ đứng, không 
 - [ ] Test: `tests/xeom.test.ts` — giá theo quãng/tình trạng mưa, trừ tiền đúng, không cho đi khi thiếu tiền, gọi điện giới hạn
       ngày, thân thiết thì giảm giá, tin radio chỉ xuất hiện khi NPC tồn tại. Probe ảnh NPC + xe ở đầu hẻm, bảng chọn điểm đến.
 
-## 3. Ông Bảy gợi ý đúng lúc — mới có 6 câu cứng
+## 3. Ông Bảy gợi ý đúng lúc — ✅ đã xong (lượt 52)
 
-`src/game/acts.ts` (nhánh `case 'hobo'`) đang `rnd.pick` trong **6 câu viết sẵn**, không biết người chơi đang ở đâu trong ván.
-Muốn “hỏi gợi ý” thật thì:
+Trước đây `case 'hobo'` bốc ngẫu nhiên trong **6 câu viết sẵn**. Nay `src/sim/advice.ts` trả về câu theo trạng thái thật
+của ván, xếp theo mức cấp thiết (máu → ăn uống → việc đang mở theo giờ → quầy → nguyên liệu thiếu → nợ → mưa → đêm),
+mỗi câu có **đích đến thật** trong `src/data/landmarks.ts` + khoảng cách tính từ `ctx.player`, và nút **ghim đường đi**
+(`acts.way`). Không lặp: nhớ 3 câu gần nhất (`g.flags.hoboSeen`). Test canh: `tests/hobo.test.ts` — 120 trạng thái
+ngẫu nhiên, mọi câu phải trỏ địch **có thật** và **đang dùng được** ở giờ đó. Probe: `tools/probe/steps/hobo.mjs`.
 
-- [ ] Đổi mảng cứng thành hàm `hoboAdvice(g)` trả về câu **theo trạng thái thật**, xếp theo mức cấp thiết:
-      máu/thanh lực thấp → ăn gì ở đâu · tiền < 30.000₫ → việc gần nhất đang mở (`dock` sáng, `dishes` 10–14h30) ·
-      chưa có gánh → nhắc tiệm Đồ Nghề Ba Tài · có quán nhưng vắng khách → nhắc giờ đông, món thiếu nguyên liệu ·
-      nợ Hùng Sẹo sắp tới hạn → cảnh báo số ngày · trời sắp mưa → nhắc mua áo mưa/đổi món · đêm khuya → nhắc chỗ ngủ.
-- [ ] Mỗi câu phải **trỏ đúng chỗ**: tên quán/tiệm + khoảng cách thật tính từ `ctx.player`, và bấm một nút là **ghim đường đi**
-      (`acts.way`) tới đó thay vì chỉ nói suông.
-- [ ] Không lặp: nhớ câu vừa nói trong `g.flags` để lần sau nói câu khác; hết câu mới thì quay lại câu chung.
-- [ ] Câu phải khớp dữ liệu — có test canh: mỗi câu gợi ý sinh ra trong 50 trạng thái ngẫu nhiên đều phải nhắc một địa điểm
-      **có thật** trong `places()` và việc **đang mở được** ở giờ đó (giống bài canh tin bịa của `news.test.ts`).
+Còn thiếu (để lượt sau, chưa làm):
+
+- [ ] Ông Bảy chưa nhớ chuyện **đã kể** giữa các ngày (mới nhớ 3 câu gần nhất trong cùng buổi ghé).
+- [ ] Chưa có câu riêng cho **sự kiện đang diễn ra** (lễ hội, cấm đường, thu tiền bảo kê) — hiện chỉ tin radio/WAP nói.
+- [ ] Chưa có "hỏi giá" / "hỏi đường tới một chỗ bất kỳ" (chỉ gợi ý chỗ đang cần tới).
 
 ## 4. Băng nhóm
 
@@ -88,6 +87,10 @@ Muốn “hỏi gợi ý” thật thì:
 
 - **Âm thanh**: chưa nghe thử trên tai nghe/loa điện thoại thật để cân lại nhạc nền với hiệu ứng.
 - **Nhịp độ**: chưa chơi thử dài để cân tốc độ kiếm vốn ngày đầu, lượng khách khi uy tín thấp, độ khó các mini-game (nấu, đua xe đạp).
+- **Bánh & nước tăng lực (lượt 54)**: đã có 5 loại bánh bán sẵn và lon Shapi. Còn thiếu: **bánh bao hấp nóng** (mua về còn nóng, ăn vui hơn), **tự nướng bánh để bán ở quầy** (người chơi lượt 54 chọn không thêm công thức — nếu sau này muốn thì phải thêm cả dụng cụ lò nướng), **lon Shapi trong tủ lạnh quầy** (bán lại cho khách), và **giá Shapi tăng khi MiniMart có sự kiện khuyến mãi**.
+- **Thể lực (lượt 53)**: mới có hệ số theo máu + pin. Còn thiếu: **thể trạng cơ thể** (gọn/đậm) tác động lên hệ số này, **mang nặng** (bao gạo, thùng hàng) làm tụt nhanh hơn hiện tại (mới chỉ phạt tốc độ đi), và **đồ uống tăng lực** (nước tăng lực bán ở MiniMart) hồi thanh ngay một phần.
+- **Buồng tắm (lượt 55)**: nhà nghỉ và nhà trọ đã có vòi sen dựng thật, nhưng **khách sạn Hoa Sen / căn hộ An Bình / nhà riêng / cửa hàng** vẫn dùng khay phẳng cũ (`HOUSING[*].shower = true` mà chưa có buồng). Muốn vẽ tiếp thì gọi `places.shower()` — hàm đã tham số hoá hướng `nx/nz`, chỉ cần chọn chỗ trống trong từng lô.
+- **Chỗ đứng khi ngủ (lượt 55)**: `bedSpot` quét quanh mỏ neo giường, nên nếu sau này kê thêm đồ sát giường thì nó vẫn tìm được chỗ — nhưng nếu bịt kín cả 35 điểm thử thì người chơi quay về đứng **đúng tâm nệm** (như cũ). Chưa có test hình học nào canh chuyện đó vì vitest không dựng được `World`.
 - **Màn dọc**: HUD vẫn chật khi điện thoại để dọc (đã có thanh cỡ giao diện 70–160% và lời khuyên xoay ngang, nhưng chưa bố trí lại riêng cho màn dọc).
 - **Bậc 6 chưa có probe giao diện**: luật đã có test (`tests/nhahang.test.ts`), nhưng chưa chạy `tools/probe` cho nhà hàng bình dân (8 ghế, khách đoàn, bảng đặt bàn trước, phụ bếp) ở cả màn ngang và màn dọc.
 

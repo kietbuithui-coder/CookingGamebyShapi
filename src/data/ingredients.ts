@@ -1,10 +1,12 @@
 // NGUYÊN LIỆU — thêm dòng mới vào bảng RAW là có ngay nguyên liệu mới (nhớ thêm vào một cửa hàng trong shops.ts).
 // Cột: id, tên, nhóm, đơn vị, giá gốc (₫/đơn vị), kg/đơn vị, hạn dùng (giờ, ở nhiệt độ thường), cần giữ lạnh,
-//      hình dạng 3D, màu chính, màu phụ, tác dụng khi ăn trực tiếp {h: đói, t: khát, m: tinh thần, hp: sức khoẻ}.
+//      hình dạng 3D, màu chính, màu phụ, tác dụng khi ăn trực tiếp {h: đói, t: khát, m: tinh thần, hp: sức khoẻ, st: thể lực}.
 export type Cat = 'meat' | 'seafood' | 'veg' | 'starch' | 'spice' | 'drink' | 'special' | 'other';
 export type Shape = 'round' | 'long' | 'leafy' | 'head' | 'slab' | 'bird' | 'fish' | 'shrimp' | 'crab' | 'squid' | 'shell' | 'balls' | 'bag' | 'nest'
-  | 'bottle' | 'jar' | 'can' | 'carton' | 'box' | 'egg' | 'block' | 'mushroom' | 'stack' | 'roll' | 'cubes' | 'coal' | 'gascan' | 'loaf' | 'corn';
-export interface Eat { h?: number; t?: number; m?: number; hp?: number; }
+  | 'bottle' | 'jar' | 'can' | 'carton' | 'box' | 'egg' | 'block' | 'mushroom' | 'stack' | 'roll' | 'cubes' | 'coal' | 'gascan' | 'loaf' | 'corn'
+  // Bánh sẵn của lượt 54 — mỗi loại một hình riêng, không dùng chung 'round'/'long' nữa:
+  | 'baguette' | 'sesame' | 'choux';
+export interface Eat { h?: number; t?: number; m?: number; hp?: number; /** hồi thanh thể lực (thang 0–1, 0,3 = đầy thêm 30 %) */ st?: number; }
 export interface IngDef {
   id: string; name: string; cat: Cat; unit: string; price: number; kg: number; shelf: number; cold: boolean;
   shape: Shape; c: number; c2: number; eat?: Eat;
@@ -70,6 +72,15 @@ const RAW: Row[] = [
   ['bun', 'Bún tươi', 'starch', 'kg', 12000, 1, 52, 0, 'nest', 0xfaf7f0, 0xece6d6],
   // Bánh mì nay để được 44 giờ (22 × 2): mua chiều nay, sáng mai vẫn bán được — trước đây qua một ngày là bỏ.
   ['banhmi', 'Bánh mì', 'starch', 'ổ', 3500, 0.1, 44, 0, 'loaf', 0xd9a05a, 0xf0d9a0, { h: 26, m: 1 }],
+  // ── Bánh bán sẵn ở Tiệm bánh Anh Bảo (lượt 54). Người chơi: “bánh no và vui vẻ tuỳ giá” —
+  // cột tác dụng đặt theo đúng giá gốc: cứ 1.000₫ ≈ 1,6 no và 0,5 vui (làm tròn). Nhờ vậy bánh đắt
+  // thật sự no hơn và vui hơn, không phải cùng một ổ bánh mà gắn giá khác. Vui cộng thêm phần “món
+  // quà tuổi thơ” cho hai món vặt, để món rẻ vẫn có chỗ đứng chứ không chỉ là bản thu nhỏ của món đắt.
+  ['banhmique', 'Bánh mì que pa-tê', 'starch', 'cây', 5000, 0.05, 30, 0, 'baguette', 0xc98a4a, 0xf3dcb0, { h: 8, m: 3 }],
+  ['banhtieu', 'Bánh tiêu', 'starch', 'cái', 7000, 0.06, 26, 0, 'sesame', 0xd99b3c, 0xfaf3dc, { h: 11, m: 4 }],
+  ['banhbao', 'Bánh bao nhân thịt', 'starch', 'cái', 12000, 0.15, 30, 0, 'round', 0xf7f3ea, 0xe9dcc0, { h: 19, m: 6 }],
+  ['banhsu', 'Bánh su kem', 'starch', 'cái', 15000, 0.08, 24, 1, 'choux', 0xdb9b52, 0xfaf0dc, { h: 24, m: 8 }],
+  ['banhbonglan', 'Bánh bông lan', 'starch', 'ổ', 25000, 0.25, 40, 0, 'round', 0xf3d98a, 0xe9c46a, { h: 40, m: 13 }],
   ['botmi', 'Bột mì', 'starch', 'kg', 17000, 1, F, 0, 'bag', 0xf0ead8, 0xf0a92e],
   ['banhtrang', 'Bánh tráng', 'starch', 'xấp', 15000, 0.3, F, 0, 'stack', 0xf3ead0, 0xe0d2a8],
   // ── Gia vị
@@ -89,6 +100,9 @@ const RAW: Row[] = [
   ['suatuoi', 'Sữa tươi', 'drink', 'hộp', 32000, 1, 96, 1, 'carton', 0xf7f7ff, 0x2f8fd5],
   ['suadac', 'Sữa đặc', 'drink', 'lon', 24000, 0.4, F, 0, 'can', 0xf3ead0, 0x2f6fb5],
   ['nuocngot', 'Nước ngọt', 'drink', 'lon', 8000, 0.35, F, 0, 'can', 0xd9261e, 0xf7f7f7, { t: 30, m: 3 }],
+  // Nước tăng lực nhãn Shapi (lượt 54): +30 % thanh thể lực uống là có liền, 9.000₫/lon — lon rẻ nhất trong quầy,
+  // nên uống được nhiều, và vẫn đỡ khát như nước ngọt. Muốn chạy dai thì phải trả tiền.
+  ['shapi', 'Nước tăng lực Shapi', 'drink', 'lon', 9000, 0.35, F, 0, 'can', 0xf5c531, 0xd9261e, { t: 30, m: 4, st: 0.3 }],
   ['cam', 'Cam', 'drink', 'quả', 6000, 0.2, 200, 0, 'round', 0xf59a2a, 0xe07f1a, { t: 15, h: 6, m: 1 }],
   ['da', 'Đá viên', 'drink', 'bịch', 5000, 1, 9, 1, 'cubes', 0xd0ecf7, 0xffffff],
   // ── Đặc biệt

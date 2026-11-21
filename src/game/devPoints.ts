@@ -1,4 +1,4 @@
-// MENU TEST & DỊCH CHUYỂN ẨN (mở bằng cách bấm 7 lần vào chữ "Cài đặt").
+// MENU TEST & DỊCH CHUYỂN ẨN (mở bằng cách bấm 7 lần vào chữ "Cài đặt", rồi nhập mã PIN của dev).
 // Lưu ý bảo trì: mỗi lượt thêm tính năng mới thì THAY mục test cũ bằng mục của tính năng mới,
 // chỉ giữ lại nhóm "Địa điểm — tele nhanh". Đừng để menu phình thành bãi rác test cũ.
 import { ctx, QUALITY, saveSettings } from './ctx';
@@ -12,9 +12,37 @@ import { addStack } from '../sim/state';
 import * as PUI from '../ui/phoneUI';
 import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
+import { advice, destOpen, nowText } from '../sim/advice';
+import { LANDMARK_BY_ID } from '../data/landmarks';
+import { SHOPS } from '../data/shops';
+import { INGS } from '../data/ingredients';
+import { money } from '../core/util';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Xe cộ chỉ chạy trên đường thật (hết mọc từ gầm cầu), thêm 3 màu sơn và còi riêng từng loại xe hơi';
+export const DEV_BUILD_TAG = 'Sạp Dì Sáu đổi tên thành Trứng – Sữa – Giò + khách không còn đi xuyên quầy gánh + hết kẹt khi ngủ ở nhà nghỉ/nhà trọ, buồng tắm có vòi sen dựng thật';
+
+/**
+ * MÃ PIN CỦA MENU ẨN. Bấm 7 lần chữ "Cài đặt" chỉ mở bàn phím số; nhập đúng mã này mới thấy menu test.
+ * Đây KHÔNG phải bảo mật (mã nằm trong gói JavaScript, ai mở DevTools cũng thấy) — chỉ để người chơi
+ * không vô tình mở trúng bảng test rồi tưởng là tính năng của game. Mở xong thì nhớ trong phiên chơi,
+ * mở lại Cài đặt là vào thẳng menu cho tiện làm việc.
+ */
+export const DEV_PIN = '7777';
+/** Độ dài mã PIN (4 số) — dùng chung cho bàn phím số và test. */
+export const DEV_PIN_LEN = 4;
+/**
+ * Kết quả một lần bấm phím số: `'ok'` mở menu, `'wrong'` là sai (xoá hết số đã nhập), `'more'` là còn nhập tiếp.
+ * Số SAI không bao giờ gần đúng: so cả chuỗi, nhập 4 số là phán một lần.
+ */
+export function devPinInput(entered: string, digit: string): { next: string; result: 'ok' | 'wrong' | 'more' } {
+  const next = (entered + digit).slice(0, DEV_PIN_LEN);
+  if (next.length < DEV_PIN_LEN) {
+    // Nhập tới đâu đã sai tới đó thì báo luôn, không bắt gõ đủ 4 số mới biết sai.
+    if (!DEV_PIN.startsWith(next)) return { next: '', result: 'wrong' };
+    return { next, result: 'more' };
+  }
+  return next === DEV_PIN ? { next, result: 'ok' } : { next: '', result: 'wrong' };
+}
 
 export interface DevAction {
   id: string;
@@ -45,6 +73,38 @@ function tpSpot(id: string, label: string) {
   tpTo(sp.x + 4.6 * sn, sp.z + 4.6 * c, sp.yaw + Math.PI, `Đã tới ${label}.`);
 }
 
+/**
+ * Đứng trước mặt một sạp trong chợ. Mỏ neo `v_<shop>` nằm đúng chỗ NGƯỜI BÁN đứng (quay vào quầy), nên chỗ của
+ * khách là lùi về phía sau lưng người bán — cộng thẳng vào trục z như trước là ra sau lưng sạp, chẳng bấm được gì.
+ */
+function tpFront(a: { x: number; z: number; yaw: number } | undefined, msg: string) {
+  if (!a) { toast('Không tìm thấy sạp này ngoài phố.', 'warn'); return; }
+  // Mỏ neo quay mặt VÀO quầy, nên chỗ khách là đi tiếp qua quầy theo đúng hướng đó ~3 m.
+  const dx = Math.sin(a.yaw), dz = Math.cos(a.yaw);
+  for (const d of [2.95, 2.7, 3.2, 2.4]) {
+    const x = a.x + dx * d, z = a.z + dz * d;
+    if (ctx.world.blocked(x, z, 0.34)) continue;
+    tpTo(x, z, Math.atan2(a.x - x, a.z - z), msg);
+    return;
+  }
+  toast('Chỗ này chật quá, không tìm được chỗ đứng trước sạp.', 'warn');
+}
+
+/**
+ * Đứng ở chỗ TRỐNG gần một món đồ rồi quay mặt vào nó. Buồng tắm nằm sát vách nên toạ độ cứng rất dễ rơi
+ * vào khung kính / thành khay — quét vài khoảng cách quanh món đồ, chỗ nào đi được thì đứng.
+ */
+function standNear(ax: number, az: number, msg: string): boolean {
+  for (const d of [1.7, 1.5, 1.9, 2.1, 1.3]) for (const a of [0, 0.4, -0.4, 0.8, -0.8, Math.PI / 2, -Math.PI / 2, 2.2, -2.2]) {
+    const x = ax + Math.sin(a) * d, z = az + Math.cos(a) * d;
+    if (ctx.world.blocked(x, z, 0.34)) continue;
+    tpTo(x, z, Math.atan2(ax - x, az - z), msg);
+    return true;
+  }
+  toast('Chỗ này chật quá, không tìm được chỗ đứng — đi bộ lại gần xem.', 'warn');
+  return false;
+}
+
 /** Dựng sẵn Chuỗi cửa hàng (bậc 7) + một chi nhánh có người trông coi và món sẵn để thử. */
 function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
   const g = ctx.g, S = ctx.stall;
@@ -73,44 +133,109 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Xe chạy đúng đường, 3 màu mới, còi xe hơi (lượt 49)',
+      title: 'Mới nhất — tên sạp Dì Sáu, khách không xuyên quầy, ngủ ở nhà nghỉ/trọ, buồng tắm (lượt 55)',
       items: [
         {
-          id: 'kiem_xe',
-          label: 'Theo dõi xe: có chiếc nào ra ngoài đường không?',
-          sub: 'Chạy 600 khung hình rồi đếm',
+          id: 't55_sap_tensach',
+          label: 'Sạp Dì Sáu giờ tên gì, bán những gì?',
+          sub: 'Đọc thẳng bảng hàng của sạp trong chợ: trứng, sữa, giò chả — kèm giá và giờ mở',
           tone: 'green',
-          closePanel: false,
+          closePanel: true,
           run: () => {
-            const T = ctx.traffic, CORR = [-88.5, -29.5, 29.5, 88.5];
-            let kiem = 0, ngoai = 0, trongBai = 0;
-            for (let i = 0; i < 600; i++) {
-              T.update(0.05);
-              if (i % 20) continue;
-              for (const rd of T.list) {
-                if (rd.pending) continue;
-                kiem++;
-                const px = rd.axis === 0 ? rd.pos : rd.road + rd.lane;
-                const pz = rd.axis === 0 ? rd.road : rd.pos;
-                if (pz > 92.5 || pz > 92) trongBai++;
-                const on = Math.abs(px) <= 92.6 && Math.abs(pz) <= 92.6 && CORR.some((c) => Math.abs(px - c) < 3.7 || Math.abs(pz - c) < 3.7);
-                if (!on) ngoai++;
-              }
-            }
-            toast(`Kiểm ${kiem} lượt: ngoài mặt đường ${ngoai} · lọt vào bãi gầm cầu ${trongBai}.`, ngoai + trongBai ? 'bad' : 'good', 'gear', true);
+            const s = SHOPS.m_trung;
+            const lines = s.items.map((id) => {
+              const d = INGS[id];
+              return `· ${d.name} — ${money(d.price)}/${d.unit}`;
+            });
+            ctx.ui.dialog({
+              who: s.vendor,
+              text: `Sạp ${s.name}, mở ${s.open[0]}h–${s.open[1]}h trong chợ.\n\n${lines.join('\n')}\n\n“${s.say}”`,
+              opts: [{ t: 'Đóng' }],
+            });
           },
         },
         {
-          id: 'thu_ba_coi',
-          label: 'Nghe thử ba tiếng còi xe hơi',
-          sub: 'Xe nhỏ bíp bíp · sedan bìm bìm · tải bừm',
+          id: 't55_sap_tele',
+          label: 'Tele tới sạp Trứng – Sữa – Giò Dì Sáu',
+          sub: 'Đứng ngay trước sạp trong chợ để bấm hỏi mua từng món',
           tone: 'yellow',
-          closePanel: false,
+          closePanel: true,
           run: () => {
-            ctx.sound.unlock(); ctx.sound.play('horn_beep');
-            setTimeout(() => ctx.sound.play('horn_honk'), 700);
-            setTimeout(() => ctx.sound.play('horn_truck'), 1500);
-            toast('Còi xe nhỏ → sedan → xe tải. Mỗi loại một tiếng khác nhau.', 'info', 'gear', true);
+            tpFront(ctx.world.anchors.v_m_trung, 'Đã tới sạp Dì Sáu trong chợ — bấm vào ô hàng để hỏi mua.');
+          },
+        },
+        {
+          id: 't55_ngu_nhanghi',
+          label: 'Ngủ thử ở nhà nghỉ — xem có tỉnh dậy trong gian khác không',
+          sub: 'Thuê sẵn phòng 3 đêm rồi mở bảng ngủ; tỉnh dậy phải đứng cạnh giường, không lọt sang gian bên',
+          tone: 'green',
+          closePanel: true,
+          run: () => {
+            const g = ctx.g;
+            g.housing = 'nhanghi'; g.paidUntil = Math.max(g.paidUntil, g.day + 3);
+            const sp = ctx.acts.bedStand('nhanghi');
+            if (sp) tpTo(sp.x, sp.z, sp.yaw, 'Nhà nghỉ Bình Dân — bấm vào giường rồi chọn ngủ.');
+          },
+        },
+        {
+          id: 't55_ngu_tro',
+          label: 'Ngủ thử ở phòng trọ — cùng phép thử',
+          sub: 'Thuê sẵn phòng trọ 1 tuần rồi mở bảng ngủ ở giường cuối phòng',
+          tone: 'green',
+          closePanel: true,
+          run: () => {
+            const g = ctx.g;
+            g.housing = 'tro'; g.paidUntil = Math.max(g.paidUntil, g.day + 7);
+            const sp = ctx.acts.bedStand('tro');
+            if (sp) tpTo(sp.x, sp.z, sp.yaw, 'Phòng trọ Bác Năm — bấm vào giường rồi chọn ngủ.');
+          },
+        },
+        {
+          id: 't55_sen_nhanghi',
+          label: 'Buồng tắm nhà nghỉ — vòi sen vừa vẽ lại',
+          sub: 'Nhìn vào góc tắm cuối phòng: tường ốp gạch, khay có lỗ thoát, đầu sen có lỗ phun',
+          tone: 'yellow',
+          closePanel: true,
+          run: () => {
+            const g = ctx.g; g.housing = 'nhanghi'; g.paidUntil = Math.max(g.paidUntil, g.day + 3);
+            const w = ctx.world.anchors.wash_nhanghi;
+            if (w) standNear(w.x, w.z - 0.3, 'Buồng tắm nhà nghỉ — đứng đây ngắm vòi sen.');
+          },
+        },
+        {
+          id: 't55_sen_tro',
+          label: 'Buồng tắm nhà trọ — cùng vòi sen đó',
+          sub: 'Góc tắm cuối phòng trọ: sen treo trên vách ngăn, cạnh bàn thấp có ấm nước',
+          tone: 'yellow',
+          closePanel: true,
+          run: () => {
+            const g = ctx.g; g.housing = 'tro'; g.paidUntil = Math.max(g.paidUntil, g.day + 7);
+            const w = ctx.world.anchors.wash_tro;
+            if (w) standNear(w.x, w.z - 0.3, 'Góc tắm phòng trọ — đứng đây ngắm vòi sen.');
+          },
+        },
+        {
+          id: 't55_ganh_cho',
+          label: 'Bán gánh ở Cổng Chợ — xem khách có đi xuyên quầy',
+          sub: 'Đặt gánh ở chợ, dọn 40 phần trà đá rồi mở bán: khách phải vòng qua đầu quầy, không cắt ngang thân quầy',
+          tone: 'green',
+          closePanel: true,
+          run: () => {
+            const g = ctx.g, S = ctx.stall;
+            if (g.stall.tier > 2) { toast('Phép thử này dành cho gánh / xe đẩy (bậc 1–2) — quầy của anh chị đang ở bậc cao hơn.', 'warn'); return; }
+            g.cash = Math.max(g.cash, 500000);
+            for (const id of ['ganh', 'daothot', 'bepthan', 'noi', 'chao']) if (!R.has(g, id)) R.buyGear(g, id);
+            if (g.stall.tier > 2) { toast('Không mua được gánh — quầy đang ở bậc cao hơn.', 'warn'); return; }
+            for (const [id, n] of [['tra', 80], ['da', 80]] as const) addStack(g.stall.store, { id, n, fresh: 95, q: 0.9, cost: 1000 });
+            g.rec.tra_da.known = true; g.rec.tra_da.on = true;
+            if (!g.stall.ready.some((r) => r.rid === 'tra_da')) g.stall.ready.push({ rid: 'tra_da', n: 40, q: 0.9, cost: 3000, at: g.min });
+            const sp = SPOTS.find((s) => s.id === 'cho');
+            if (!sp) return;
+            if (!S.placeAt(sp)) return;
+            const [px, pz] = S.standPos();
+            ctx.player.place(px, pz, g.stall.yaw, -0.2);
+            S.open();
+            toast('Gánh trà đá đã mở ở Cổng Chợ — đứng đây nhìn khách đi vòng qua đầu quầy.', 'good', 'shop', true);
           },
         },
       ],
@@ -142,6 +267,14 @@ export function getDevSections(): DevSection[] {
         { id: 'tp_ongtu', label: 'Bàn cờ Ông Tư', sub: 'Ghế đánh cờ cạnh hồ công viên', run: () => {
           const a = ctx.world.anchors.v_danh_co;
           if (a) tpTo(a.x, a.z - 0.9, 0, 'Đã tới bàn cờ của Ông Tư.');
+        } },
+        { id: 'tp_hobo', label: 'Gầm cầu — Ông Bảy', sub: 'Chỗ hỏi lời khuyên; ban đêm có thùng lửa sưởi', run: () => {
+          const a = ctx.world.anchors.v_hobo;
+          if (a) tpTo(a.x, a.z + 2.2, Math.PI, 'Đã tới gầm cầu — chỗ Ông Bảy ngồi.');
+        } },
+        { id: 'tp_mart', label: 'MiniMart 24h', sub: 'Chỗ mua đồ ăn/nguyên liệu lúc khuya mà quán khác đóng', run: () => {
+          const a = ctx.world.anchors.v_mart;
+          if (a) tpTo(a.x, a.z + 1.5, Math.PI, 'Đã tới MiniMart 24h.');
         } },
         { id: 'tp_lavabo', label: 'Bồn rửa tay trong nhà hàng', sub: 'Lắp bồn rửa (nếu chưa có) rồi đứng cạnh để thử rửa tay', run: () => {
           const g = ctx.g;

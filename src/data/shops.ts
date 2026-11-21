@@ -1,6 +1,7 @@
 // NHÀ CUNG CẤP — mỗi cửa hàng là một không gian thật trong thành phố; hàng bày ở các "ô" để người chơi tự tay lấy.
 // priceMul: hệ số giá so với giá gốc. fresh: độ tươi lúc mua [thấp, cao]. q: chất lượng hàng (0–1).
 // haggle: độ dễ mặc cả (0 = không). bulk: số đơn vị mỗi lần lấy. cold: tủ lạnh/tủ mát của cửa hàng (ô phải mở cửa tủ).
+// Mỗi sạp chợ bày được tối đa 10 ô (5 ô × 2 hàng), MiniMart 22 ô, tạp hoá 13 ô — xem world/places.ts.
 export interface ShopDef {
   id: string; name: string; vendor: string; vendorLook: number; open: [number, number]; priceMul: number; fresh: [number, number]; q: number;
   haggle: number; bulk?: number; card?: boolean; items: string[]; coldFrom?: number; lateSale?: boolean; say: string;
@@ -18,16 +19,19 @@ export const SHOP_LIST: ShopDef[] = [
     items: ['gao', 'nep', 'mi', 'banhpho', 'bun', 'botmi', 'banhtrang', 'dauxanh', 'dauphong'], say: 'Gạo thơm, bún mới ra lò nghen.' },
   { id: 'm_giavi', name: 'Gia vị Cô Út', vendor: 'Cô Út', vendorLook: 1, open: [5, 18], priceMul: 1, fresh: [100, 100], q: 0.9, haggle: 0.3,
     items: ['muoi', 'duong', 'tieu', 'nuocmam', 'nuoctuong', 'tuongot', 'dauan', 'giam', 'giavipho'], say: 'Mắm muối đủ cả, thiếu gì cứ hỏi.' },
-  { id: 'm_trung', name: 'Trứng – Giò chả Dì Sáu', vendor: 'Dì Sáu', vendorLook: 4, open: [5, 18], priceMul: 1, fresh: [88, 100], q: 0.92, haggle: 0.45, lateSale: true,
-    items: ['trung', 'dauhu', 'gio', 'chaca', 'nam'], say: 'Trứng gà ta, giò chả nhà làm.' },
+  // Lượt 55: người chơi đổi tên sạp thành “Trứng – Sữa – Giò Dì Sáu”, nên sạp bán thêm sữa tươi và sữa đặc
+  // (món có thật trong bảng nguyên liệu) cho khớp với tên — không bán thứ mình không có.
+  { id: 'm_trung', name: 'Trứng – Sữa – Giò Dì Sáu', vendor: 'Dì Sáu', vendorLook: 4, open: [5, 18], priceMul: 1, fresh: [88, 100], q: 0.92, haggle: 0.45, lateSale: true,
+    items: ['trung', 'dauhu', 'gio', 'chaca', 'nam', 'suatuoi', 'suadac'], say: 'Trứng gà ta, giò chả nhà làm, sữa tươi sữa đặc đủ cả.' },
   { id: 'mart', name: 'MiniMart 24h', vendor: 'Bé Na', vendorLook: 1, open: [0, 24], priceMul: 1.18, fresh: [90, 96], q: 0.96, haggle: 0, card: true, coldFrom: 14,
-    items: ['nuocloc', 'nuocngot', 'tra', 'caphe', 'suadac', 'nuocdua', 'tranchau', 'duong', 'muoi', 'dauan', 'tuongot', 'nuoctuong', 'mi', 'botmi',
+    items: ['nuocloc', 'nuocngot', 'shapi', 'tra', 'caphe', 'suadac', 'nuocdua', 'tranchau', 'duong', 'muoi', 'dauan', 'tuongot', 'nuoctuong', 'mi', 'botmi',
       'suatuoi', 'xucxich', 'cavien', 'pate', 'phomai', 'bolat', 'trungca', 'da'], say: 'Dạ, em chào anh chị ạ.' },
   { id: 'kiosk', name: 'Tạp hoá Cô Ba', vendor: 'Cô Ba', vendorLook: 4, open: [5.5, 23], priceMul: 1.12, fresh: [72, 90], q: 0.8, haggle: 0.2,
-    items: ['trung', 'mi', 'nuocmam', 'duong', 'muoi', 'dauan', 'tuongot', 'da', 'nuocloc', 'nuocngot', 'than', 'gas'], say: 'Mua gì đó con? Thiếu thì cô ghi sổ.' },
-  // Lò bánh mì: chiều muộn xả hàng như các sạp thực phẩm khác (bánh nguội rồi thì bán rẻ cho hết).
-  { id: 'bakery', name: 'Lò bánh mì Anh Bảo', vendor: 'Anh Bảo', vendorLook: 0, open: [5, 20], priceMul: 1, fresh: [90, 100], q: 0.95, haggle: 0, lateSale: true,
-    items: ['banhmi'], say: 'Bánh mì nóng giòn đây!' },
+    items: ['trung', 'mi', 'nuocmam', 'duong', 'muoi', 'dauan', 'tuongot', 'da', 'nuocloc', 'nuocngot', 'shapi', 'than', 'gas'], say: 'Mua gì đó con? Thiếu thì cô ghi sổ.' },
+  // Tiệm bánh (trước là “Lò bánh mì Anh Bảo”): nay bán cả bánh mì lẫn bánh ngọt bán sẵn.
+  // Chiều muộn vẫn xả hàng như các sạp thực phẩm khác — bánh nguội rồi thì bán rẻ cho hết.
+  { id: 'bakery', name: 'Tiệm bánh Anh Bảo', vendor: 'Anh Bảo', vendorLook: 0, open: [5, 20], priceMul: 1, fresh: [90, 100], q: 0.95, haggle: 0, lateSale: true,
+    items: ['banhmi', 'banhmique', 'banhtieu', 'banhbao', 'banhsu', 'banhbonglan'], say: 'Bánh mới ra lò, còn nóng đây!' },
   { id: 'wholesale', name: 'Vựa đầu mối Tám Lúa', vendor: 'Chú Tám', vendorLook: 7, open: [3, 9], priceMul: 0.78, fresh: [85, 98], q: 0.86, haggle: 0.25, bulk: 10,
     items: ['gao', 'nep', 'duong', 'dauan', 'heo', 'ga', 'tom', 'bun', 'banhpho', 'da', 'than'], say: 'Bán sỉ thôi nghe, mười ký trở lên.' },
   { id: 'pharmacy', name: 'Nhà thuốc An Tâm', vendor: 'Cô Hiền', vendorLook: 5, open: [7, 21], priceMul: 1, fresh: [100, 100], q: 1, haggle: 0, card: true,

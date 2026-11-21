@@ -1,6 +1,6 @@
 // CÁC BẢNG LỚN: túi đồ, quầy hàng (thực đơn – giá – sơ chế – kho), chỗ cất đồ, sổ tay (công thức, sổ sách, nợ), bản đồ, cài đặt.
 import { ctx, QUALITY, saveSettings, canFullscreen, toggleFullscreen, UI_SCALE } from '../game/ctx';
-import { DEV_BUILD_TAG, getDevSections } from '../game/devPoints';
+import { DEV_BUILD_TAG, DEV_PIN_LEN, devPinInput, getDevSections } from '../game/devPoints';
 import { CHANGELOG } from '../data/changelog';
 import type { UI } from './ui';
 import { ic, el, esc, dishIcon } from './ui';
@@ -61,9 +61,17 @@ function errandBlock(g: Game): string {
     `<div style="display:flex;gap:.4em;flex-wrap:wrap;margin-top:.4em"><button class="btn small green" data-a="errandOpen">Giao đi chợ…</button></div>`;
 }
 
+/** Menu ẩn đã mở trong phiên chơi này chưa (đóng Cài đặt rồi mở lại thì không phải nhập mã nữa). */
+let DEV_UNLOCKED = false;
+/** Chỉ dùng cho test: khoá lại menu ẩn như vừa tải trang. */
+export function resetDevUnlock() { DEV_UNLOCKED = false; }
+
 export function openPanel(ui: UI, name: string) {
   const M = ui.$('modal'), g = ctx.g;
-  let devTaps = 0, devOpen = false;
+  // Menu ẩn: bấm 7 lần chữ "Cài đặt" mở bàn phím số, nhập đúng DEV_PIN (7777) mới vào menu test.
+  let devTaps = 0, devOpen = false, devPin = '', devPinErr = '';
+  // Đã mở menu ẩn một lần trong phiên chơi này thì lần sau vào Cài đặt là thấy menu luôn (đỡ gõ lại 7777).
+  if (DEV_UNLOCKED) devOpen = true;
   const draw = (title: string, tabs: [string, string][], body: string, foot = '') => {
     M.innerHTML = `<div class="panel"><header><h2>${title}</h2><div class="tabs">${tabs.map(([id, t]) => `<button class="tab${id === tab ? ' on' : ''}" data-tab="${id}">${t}</button>`).join('')}</div><button class="x" data-a="close">${ic('x')}</button></header><div class="body">${body}</div>${foot ? `<div class="foot">${foot}</div>` : ''}</div>`;
   };
@@ -82,8 +90,25 @@ export function openPanel(ui: UI, name: string) {
     const t = e.target as HTMLElement; if (t === M) { ui.closePanel(); return; }
     if (name === 'settings' && !devOpen && t.closest('#dev-unlock')) {
       devTaps++;
-      if (devTaps >= 7) { devOpen = true; sfx('coin'); toast('Đã mở bảng Test & Dịch chuyển ẩn!', 'good', 'bolt'); render(); }
+      if (devTaps >= 7) { devTaps = 0; devPin = ''; devPinErr = 'v'; sfx('ui'); render(); }   // mở bàn phím số
       return;
+    }
+    // Bàn phím số của menu ẩn: bấm số thì ghép vào mã, đủ 4 số là so; sai thì xoá sạch và báo.
+    if (name === 'settings' && !devOpen && devPinErr) {
+      const dg = t.closest('[data-pin]') as HTMLElement | null;
+      if (dg) {
+        const r = devPinInput(devPin, dg.dataset.pin!);
+        devPin = r.next;
+        if (r.result === 'ok') {
+          devOpen = true; devPinErr = ''; DEV_UNLOCKED = true; sfx('coin');
+          toast('Đúng mã — đã mở bảng Test & Dịch chuyển ẩn!', 'good', 'bolt'); render();
+        } else if (r.result === 'wrong') {
+          devPin = ''; devPinErr = 'Sai mã — thử lại'; sfx('nope'); render();
+        } else { devPinErr = 'v'; sfx('ui'); render(); }
+        return;
+      }
+      const back = t.closest('[data-a="devPinBack"]');
+      if (back) { devPinErr = ''; devPin = ''; devTaps = 0; sfx('ui'); render(); return; }
     }
     const tb = t.closest('[data-tab]') as HTMLElement | null; if (tb) { tab = tb.dataset.tab!; sfx('ui'); render(); return; }
     const a = t.closest('[data-a]') as HTMLElement | null; if (a && !a.classList.contains('off')) { const f = acts[a.dataset.a!]; if (f) { f(+(a.dataset.i ?? 0), a); if (ui.modalName === name) render(); } }
@@ -424,10 +449,23 @@ export function openPanel(ui: UI, name: string) {
       };
       draw(`${ic('book')} Nhật ký phát triển`, [], `<p class="muted">Những bản gần đây và việc đã làm trong từng bản. Bản mới nhất ở trên cùng.</p>` + CHANGELOG.map(tag).join(''));
     } else if (name === 'settings') {
+      if (devPinErr) {
+        // Bàn phím số 4 phím (chỉ để người chơi không vô tình mở menu test — không phải bảo mật thật).
+        const dots = Array.from({ length: DEV_PIN_LEN }, (_, i) => `<span style="display:inline-block;width:1.15em;height:1.15em;border-radius:50%;margin:0 .18em;background:${i < devPin.length ? 'var(--ink,#3b2a1e)' : 'transparent'};border:2px solid var(--ink,#3b2a1e)"></span>`).join('');
+        const key = (k: string) => `<button class="btn small" data-pin="${k}" style="min-width:2.9em;justify-content:center;font-size:1.1em">${k}</button>`;
+        const pad = ['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(key).join('') +
+          `<span style="display:inline-block;width:2.9em"></span>` + key('0') + `<span style="display:inline-block;width:2.9em"></span>`;
+        draw(`${ic('bolt')} Mã PIN`, [], `<p class="muted">Bảng test dành cho người làm game. Nhập mã 4 số để mở.</p>
+          <div style="text-align:center;margin:.6em 0 1em">${dots}</div>
+          <div style="display:grid;grid-template-columns:repeat(3,auto);gap:.45em;justify-content:center">${pad}</div>
+          <p class="muted" style="text-align:center;margin-top:.8em">${devPinErr === 'v' ? '&nbsp;' : devPinErr}</p>`,
+          `<button class="btn" data-a="devPinBack">Quay lại Cài đặt</button>`);
+        return;
+      }
       if (devOpen) {
         const sections = getDevSections();
         acts.devBack = () => { devOpen = false; };
-        acts.devLock = () => { devOpen = false; devTaps = 0; toast('Đã ẩn lại menu Test & Dịch chuyển.', 'info'); };
+        acts.devLock = () => { devOpen = false; devTaps = 0; devPin = ''; devPinErr = ''; DEV_UNLOCKED = false; toast('Đã ẩn lại menu Test & Dịch chuyển — lần sau phải bấm 7 lần và nhập lại mã.', 'info'); };
         acts.devRun = (_i, el) => {
           const id = el.dataset.k;
           for (const sec of sections) {
@@ -441,7 +479,7 @@ export function openPanel(ui: UI, name: string) {
         };
         const body = `<p class="muted"><b>Phiên bản mới nhất:</b> ${DEV_BUILD_TAG}. Danh sách này được làm mới mỗi lần cập nhật tính năng.</p>` +
           sections.map((sec) => `<h4>${sec.title}</h4><div class="list">${sec.items.map((it) => `<div class="item"><div class="grow"><b>${it.label}</b><small>${it.sub}</small></div><button class="btn small${it.tone ? ' ' + it.tone : ''}" data-a="devRun" data-k="${it.id}">Chạy</button></div>`).join('')}</div>`).join('');
-        draw(`${ic('bolt')} Menu Test & Dịch chuyển (Ẩn)`, [], body, `<button class="btn" data-a="devBack">Quay lại Cài đặt</button><button class="btn" data-a="devLock">Ẩn & Reset (7 lần)</button>`);
+        draw(`${ic('bolt')} Menu Test & Dịch chuyển (Ẩn)`, [], body, `<button class="btn" data-a="devBack">Quay lại Cài đặt</button><button class="btn" data-a="devLock">Ẩn & khoá lại (7 lần + mã PIN)</button>`);
         return;
       }
       const st = ctx.set;

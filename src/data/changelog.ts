@@ -14,6 +14,64 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 55',
+    tag: 'Sạp Dì Sáu đổi tên, khách không còn đi xuyên quầy, và ngủ ở nhà nghỉ / nhà trọ không còn bị văng sang gian khác',
+    items: [
+      'Sạp “Trứng – Giò chả Dì Sáu” trong chợ đổi tên thành “Trứng – Sữa – Giò Dì Sáu”, và quầy bán thêm sữa tươi hộp 32.000₫ cùng sữa đặc lon 24.000₫ cho đúng cái tên.',
+      'Khách tới mua ở gánh hàng rong và xe đẩy không còn đi từ sau lưng người bán rồi xuyên thẳng qua thân quầy: họ vòng qua đầu quầy rồi mới bước ra trước mặt, đúng như khách ngoài đời.',
+      'Lỗi xuyên quầy sửa cho mọi cỡ quầy chứ không riêng nhà hàng: gánh, xe đẩy, sạp và quán ăn nhỏ đều có thân quầy chắn hẳn hoi, cả trên máy tính lẫn điện thoại.',
+      'Ngủ ở nhà nghỉ Bình Dân hay phòng trọ Bác Năm không còn bị văng sang khung gian bên cạnh rồi kẹt cứng: người chơi giờ nằm ở chỗ trống ngay cạnh giường, và tỉnh dậy mà chân còn trong khung giường thì tự bước ra trước khi trả lại quyền đi lại.',
+      'Buồng tắm của nhà nghỉ và nhà trọ được dựng lại tử tế: tường ốp gạch men có đường ron, khay tắm có gờ và lỗ thoát nước, cột sen inox có tay gạt nóng lạnh màu đỏ, đầu vòi hoa sen tròn có sáu lỗ phun.',
+      'Trong buồng tắm còn có kệ ba chai dầu gội, khăn treo, gương soi có đèn, và một tấm chắn kính để nước không bắn ra ngoài.',
+      'Phòng nghỉ và phòng trọ được kê thêm đồ cho ra dáng chỗ ở: tủ đầu giường có đèn ngủ và cuốn sách, quạt treo tường, ti vi nhỏ, rèm cửa, thảm chân giường, móc áo; bên trọ có thêm dây phơi đồ, quạt cây, ấm nước, lịch treo tường và chiếu trải giữa phòng.',
+      'Bảng test của người làm game đổi sang việc của bản này: đọc bảng hàng sạp Dì Sáu, tele tới ba chỗ mới sửa, và dựng sẵn gánh trà đá ở Cổng Chợ để xem khách có vòng qua đầu quầy không.',
+    ],
+  },
+  {
+    v: 'Lượt 54',
+    tag: 'Tiệm bánh Anh Bảo bán thêm năm loại bánh, và nước tăng lực Shapi hồi thẳng thanh chạy',
+    items: [
+      'Lò bánh mì Anh Bảo đổi thành Tiệm bánh Anh Bảo — giờ bán cả bánh ngọt, không chỉ bánh mì.',
+      'Quầy có thêm bánh mì que pa-tê, bánh tiêu, bánh bao nhân thịt, bánh su kem và bánh bông lan; cả sáu loại bày trên cùng một quầy giữa chợ.',
+      'Bánh càng đắt thì ăn càng no và càng vui: bánh mì que 5.000₫ no 8 vui 3, bánh bông lan 25.000₫ no 40 vui 13 — không có chuyện trả nhiều tiền mà bụng y như nhau.',
+      'Bánh mua về ăn liền trong Túi, không phải nấu; bánh su kem phải giữ lạnh, còn bánh bông lan để được gần hai ngày.',
+      'Nước tăng lực nhãn Shapi mới ra lò: 9.000₫/lon, bán ở MiniMart 24h (kệ đá cuối tiệm) và Tạp hoá Cô Ba (ô cuối quầy).',
+      'Uống một lon Shapi là thanh chạy hồi ngay 30 %, cạn pin mà còn lon trong túi thì chạy tiếp được — nhưng đừng uống khi thanh đã gần đầy, phí.',
+      'Kệ MiniMart và quầy tạp hoá được nới thêm ô để mỗi mặt hàng chỉ nằm đúng một chỗ, không còn cảnh lấy hàng ở ô trống.',
+      'Ba loại bánh mới được vẽ hình riêng: bánh mì que là ổ dài và mảnh hơn bánh mì, một đầu quấn giấy; bánh tiêu là đĩa dẹt phồng rắc mè; bánh su kem có vỏ nâu và núm kem trắng trên đầu — trước đây cả ba trông giống hệt nhau.',
+    ],
+  },
+  {
+    v: 'Lượt 53',
+    tag: 'Thanh thể lực hồi nhanh hay chậm tuỳ máu và pin — người khoẻ chạy dai, người đang thương thở dốc',
+    items: [
+      'Thanh chạy không còn hồi một tốc độ cố định cho mọi người: máu càng thấp và pin năng lượng càng cạn thì thanh càng lâu đầy.',
+      'Máu 20 thì thanh chỉ hồi khoảng một nửa tốc độ bình thường — đứng chờ 22 giây mới đầy, thay vì 11 giây như người khoẻ.',
+      'Cạn pin năng lượng thì hồi chậm thêm, nhưng không cộng dồn thành đứng im: cùng lúc tệ nhất vẫn hồi được khoảng 40 % tốc độ.',
+      'Người đang thương còn TỤT thanh nhanh hơn khi chạy: máu 25 thì chạy liền được khoảng 8 giây thay vì 10 giây, cạn pin thì ngắn hơn nữa.',
+      'Chạm vào thanh thể lực là biết vì sao lâu đầy: nó ghi rõ hồi bao nhiêu phần trăm tốc độ, đang mất máu hay thiếu ngủ, chạy liền được mấy giây và cạn rồi phải chờ bao lâu.',
+      'Muốn chạy dai trở lại thì ăn cho no, ngủ cho đủ pin và đi khám khi mất máu — không có cách nào khác.',
+      'Bảng test của người làm game có thêm mục đọc thanh chạy hiện tại, so ba mức khoẻ / máu 45 / máu 20, và hai nút đặt sẵn chỉ số để thử.',
+    ],
+  },
+  {
+    v: 'Lượt 52',
+    tag: 'Ông Bảy dưới gầm cầu gợi ý theo đúng tình cảnh của bạn, bấm một nút là ghim đường đi',
+    items: [
+      'Hỏi Ông Bảy không còn ra mấy câu thuộc lòng: ông nhìn máu, cái bụng, túi tiền, giờ trong ngày và cái quầy của bạn mà nói.',
+      'Sắp ngất thì ông chỉ vô Bệnh viện Phước An, kèm giá khám 20.000₫ và phòng hồi sức 5.000₫/giờ.',
+      'Đói thì chỉ Quán cơm Bà Tư; quán đóng cửa rồi thì chỉ MiniMart 24h hoặc Tạp hoá Cô Ba — chỗ nào còn mở mới chỉ.',
+      'Hết tiền thì ông giục đúng cái việc đang mở ở giờ đó: sáng ra bến bốc hàng, trưa ghé quán Bà Tư xin rửa chén, khuya thì ra Bảng việc làm.',
+      'Đang bán mà món chính hết nguyên liệu: ông nói thiếu món gì và sạp nào đang mở, bán món đó.',
+      'Quầy vắng khách: ông nói giờ nào đông nhất ở đúng khu bạn đang đặt quầy, ngồi giữ tới đó.',
+      'Nợ Hùng Sẹo còn hai ngày là ông cảnh báo, kèm số tiền và số ngày còn lại; đêm thì dặn sáng 9 giờ mới gặp được nó.',
+      'Trời sắp mưa mà chưa có áo mưa thì ông nhắc mua; khuya thì ông đuổi về đúng căn mình đang thuê mà ngủ.',
+      'Câu nào cũng ghi cách đây bao nhiêu mét, và có nút "Chỉ con đường tới…" là cắm cột sáng vàng chỉ đường như trên Bản đồ.',
+      'Ghé liền ba lần thì ông nói ba câu khác nhau, không lải nhải một câu.',
+      'Bảng test của người làm game (bấm 7 lần chữ "Cài đặt") nay hỏi mã 4 số trước khi mở, người chơi lỡ tay không mở nhầm nữa.',
+    ],
+  },
+  {
     v: 'Lượt 51',
     tag: 'Sửa giao diện theo báo cáo lượt 50: màn thấp hết chồng, chạm đúng chỗ, chơi dọc nhớ lựa chọn',
     items: [
@@ -57,47 +115,6 @@ export const CHANGELOG: LogEntry[] = [
       'Nút “Sửa lỗi tải”: tự xoá bộ nhớ đệm cũ trên máy rồi mở lại. Tiến trình chơi vẫn giữ nguyên.',
       'Game luôn mở bản mới nhất khi có mạng, chỉ dùng bản lưu khi mất mạng — không còn kẹt ở bản cũ sau mỗi lần cập nhật.',
       'Đang tải mà quá 15 giây chưa lên thì có lời báo thay vì đứng im.',
-    ],
-  },
-  {
-    v: 'Lượt 46',
-    tag: 'Ít mưa hơn, thuê chỗ chợ & công viên rẻ 40 %',
-    items: [
-      'Trời mưa ít hẳn: từ 37 % thời gian xuống còn 18 % (mưa nhỏ 22 % → 11 %, mưa to 10 % → 2,6 %, giông 5,8 % → 4,5 %).',
-      'Mưa tan nhanh hơn, nắng quay lại sớm — bớt cảnh dầm mưa liên miên.',
-      'Phí chỗ Cổng Chợ: 30.000 → 18.000₫/ngày. Cổng Công Viên: 20.000 → 12.000₫/ngày (giảm 40 %).',
-      'Giá thuê chi nhánh ở chợ và công viên cũng giảm 40 %: chợ 120.000 → 72.000₫, công viên 90.000 → 54.000₫/ngày.',
-      'Các chỗ khác giữ nguyên giá.',
-    ],
-  },
-  {
-    v: 'Lượt 45',
-    tag: 'Điện thoại: vừa đi vừa nhảy/đấm được',
-    items: [
-      'Trên điện thoại, đang giữ cần ảo mà bấm Nhảy hoặc Đấm thì trước đây vừa không nhảy được, vừa khựng lại — nay chạy đúng.',
-      'Đo thật: đang đi, bấm Nhảy vẫn đi tiếp (mz 0,86, quãng đường tăng đều); bấm Đấm cũng vậy.',
-      'Nguyên nhân: nút nằm trong lớp #ui trong suốt với chạm nên ngón tay rơi xuống canvas, canvas cướp mất cần ảo.',
-      'Trên máy tính không đổi gì: W + Space, W + F, kéo chuột nhìn quanh trong lúc đi vẫn như cũ.',
-    ],
-  },
-  {
-    v: 'Lượt 44',
-    tag: 'Nhảy qua bồn hoa, hồ nước, xe máy',
-    items: [
-      'Nhảy qua được 8 bồn hoa công viên, thành hồ nước và cả 69 chiếc xe máy đỗ ven đường.',
-      'Hồ nước chỉ nhảy qua được thôi — đứng vào là chìm xuống đáy, không lơ lửng trên mặt nước.',
-      'Hàng rào chợ nâng lên cho chắc: chợ vẫn phải đi cổng, không nhảy rào được.',
-      'Sửa lỗi chữ dính nhau khi bới thùng rác: nay gộp thành một dòng, ví dụ “+1 Chai nhựa · +2 Lon nhôm”.',
-    ],
-  },
-  {
-    v: 'Lượt 43',
-    tag: 'Đứng được trên nóc vật thấp',
-    items: [
-      'Nhảy lên đứng hẳn trên nóc ghế đá, bàn nhựa, thùng rác… rồi đi lại trên đó như đi trên mặt đất.',
-      'Bước ra khỏi mép là rơi xuống đất, không lơ lửng giữa không trung.',
-      'Đứng trên nóc chỉ nhảy thêm được 0,5 m — không nhảy vọt lên nóc cao hơn.',
-      'Thùng rác tròn chỉ đỡ khi đứng thật trên miệng thùng.',
     ],
   },
 ];

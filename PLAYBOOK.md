@@ -15,15 +15,15 @@
 | Kiểm đầy đủ trước khi phát hành | `npm run build:pages` (typecheck + test + đóng gói vào `docs/`) |
 | Luật chơi ở đâu | `src/sim/rules.ts` (1.800 dòng), `src/sim/state.ts` (335) |
 | Dữ liệu ở đâu | `src/data/*.ts` (12 tệp, 1.456 dòng) |
-| Bản đồ / toạ độ | `src/world/layout.ts` (281) |
+| Bản đồ / toạ độ | `src/world/layout.ts` (281) · tên đích đến + giờ mở cửa: `src/data/landmarks.ts`, `src/data/hours.ts` |
 | Quầy hàng & nấu ở world | `src/game/stall.ts` (1.557), `src/cook/*` |
-| Hội thoại / menu NPC | `src/game/acts.ts` (1.347) |
+| Hội thoại / menu NPC | `src/game/acts.ts` (1.390) |
 | HUD / bảng | `src/ui/ui.ts` (424), `src/ui/panels.ts` (517), `src/ui/style.css` (563) |
-| Test | `tests/*.test.ts` — **46 tệp, 560 bài**, `environment: 'node'` |
-| Thử giao diện thật | `tools/probe/` (71 kịch bản `.mjs` trong `steps/`, Chrome headless) |
+| Test | `tests/*.test.ts` — **50 tệp, 614 bài**, `environment: 'node'` |
+| Thử giao diện thật | `tools/probe/` (87 kịch bản `.mjs` trong `steps/`, Chrome headless) |
 | Bản phát hành | `docs/` — **sinh ra bởi `build:pages`, không sửa tay** |
 
-Trạng thái đo được hôm nay (2026-11-21, `a152a6f`): **typecheck ✅ · 560/560 test ✅ (46 tệp, ~15 s) · build ✅ (1.335 kB JS, gzip 420 kB) · build:pages ✅**.
+Trạng thái đo được hôm nay (2026-11-21, sau lượt 55): **typecheck ✅ · 614/614 test ✅ (50 tệp, ~12 s) · build ✅ · build:pages ✅**.
 
 ---
 
@@ -81,17 +81,18 @@ xác định luật + dữ liệu (sim/data)
 ### Mấy tệp "nặng" cần cẩn thận
 - `src/game/anim.ts` (1.567 dòng) gánh cả hoạt ảnh NPC lẫn bàn cờ. Sửa ở đây phải chạy thêm `tests/chess.test.ts`.
 - `src/game/stall.ts` (1.403) là nơi khách, phụ việc, phụ bếp, bàn ghế cùng sống. Side effect theo frame rất dễ sinh ở đây (xem §6.3).
-- `src/game/acts.ts` (1.124) chứa toàn bộ menu hội thoại; nút nào cũng phải có đường thoát ("Thôi…", "Để con tính lại").
+- `src/game/acts.ts` (1.390) chứa toàn bộ menu hội thoại; nút nào cũng phải có đường thoát ("Thôi…", "Để con tính lại").
 
 ---
 
 ## 3. Hợp đồng kiến trúc (đừng phá)
 
-1. **`src/sim` không được biết DOM/three.** Nó chỉ báo việc ra ngoài qua `src/core/bus.ts` (`bus.emit('toast' | 'sfx' | 'cash' | 'save' | 'day' | 'ui' | 'quest' | 'bankrupt')`, tiện dụng: `toast()`, `sfx()`). Đây là lý do 560 bài kiểm thử chạy trong Node chỉ ~15 giây.
+1. **`src/sim` không được biết DOM/three.** Nó chỉ báo việc ra ngoài qua `src/core/bus.ts` (`bus.emit('toast' | 'sfx' | 'cash' | 'save' | 'day' | 'ui' | 'quest' | 'bankrupt')`, tiện dụng: `toast()`, `sfx()`). Đây là lý do 602 bài kiểm thử chạy trong Node chỉ ~12 giây.
 2. **Mọi ngẫu nhiên trong luật nhận `RNG` có hạt giống** làm tham số cuối (`advance(g, dm, act, R)`, `decideGroup(g, p, size, fem, R)`, `newDay(g, R)`). Test phải truyền RNG cố định, không dùng `Math.random()`.
 3. **UI không tự tính luật kinh tế.** Giá, giá vốn, lượng khách, hư hỏng, phí chỗ đều ở `sim/rules.ts`; UI chỉ hiển thị và gọi hàm.
 4. **`src/world/layout.ts` là nguồn chuẩn của toạ độ.** `LOTS`, `SPOTS`, `PLACES`, `NAV`, `DISTRICT`, `MAP`. Thêm địa điểm phải có lô đất + neo `v_<id>` + nút NAV liên thông (có test lo việc này, xem §5).
 5. **Save là hợp đồng với người chơi.** Xem §7 — không đổi cấu trúc mà không tăng `SAVE_VERSION` và viết nhánh `migrate()`.
+6. **Câu chỉ đường phải khớp dữ liệu.** Lời khuyên của NPC (`sim/advice.ts`) chỉ được trỏ tới đích trong `data/landmarks.ts` và — nếu đích đó mở theo giờ — chỉ khi `R.placeOpenAt(g, id)` đúng. Giờ mở cửa nằm ở `data/hours.ts` (thuần): `sim` **không** import `game/npc.ts`. `tests/hobo.test.ts` canh việc này.
 
 ### Hằng số gốc phải nhớ
 | Hằng | Giá trị | Ở đâu |
@@ -101,7 +102,11 @@ xác định luật + dữ liệu (sim/data)
 | `MAP` | x −96…96, z −96…108 | `world/layout.ts:8` |
 | `BLOCK / DEPTH / SIDEWALK / ROAD_HALF` | 46 / 11 / 3 / 3.5 | `world/layout.ts:5` |
 | Khoá localStorage | `ganhhang.save.v1`, `ganhhang.settings.v1` | `game/ctx.ts:59` |
-| `DEV_BUILD_TAG` | chuỗi phiên bản + danh sách mục trong menu ẩn (bấm 7 lần chữ “Cài đặt”) | `game/devPoints.ts` |
+| `DEV_BUILD_TAG` | chuỗi phiên bản + danh sách mục trong menu ẩn (bấm 7 lần chữ “Cài đặt”, nhập PIN **`7777`**) | `game/devPoints.ts` |
+| `DEV_PIN` | `'7777'` — mã 4 số của menu ẩn (không phải bảo mật, chỉ để người chơi không mở nhầm; `devPinInput()` so mã) | `game/devPoints.ts` |
+| `staminaRegenMul` | hệ số hồi thanh thể lực = `clamp(hpMul · (0,6 + 0,4·pinMul), 0,28, 1)`; máu 20 ⇒ 0,5 | `sim/rules.ts` |
+| `staminaDrain` | 0,1/giây khi chạy, nhân tới 1,6 lần khi máu thấp/pin cạn | `sim/rules.ts` |
+| `staminaAfter(now, cap, amount)` | cộng `amount` (thang 0–1) vào thanh thể lực, kẹp theo trần — dùng cho lon Shapi (`eat.st = 0,3`) | `sim/rules.ts` |
 
 ### Số liệu nội dung (kiểm bằng `tests/data.test.ts`)
 60 công thức · 75 nguyên liệu · 12 nơi bán · 37 món đồ nghề (7 bậc quầy + 5 dụng cụ + 3 bếp + 2 kho + 14 tiện nghi + 2 đồ mang + 1 đồ nhà + 3 điện thoại) · 8 kiểu chỗ ở · 8 bậc quầy (`TIERS[0..7]`, `FUTURE_TIERS = []`) · 6 chỗ bán (`SPOTS`) · 3 chỗ mở chi nhánh (`BRANCH_SITES`) · 16 nhóm người · 44 nhân vật cố định · 11 khách quen · 5 người phụ việc · 3 phụ bếp · 3 người trông coi chi nhánh (`KEEPER_POOL`) · 22 sự kiện · 8 thời tiết.
@@ -135,7 +140,7 @@ xác định luật + dữ liệu (sim/data)
 
 ### 4.3 Sau khi sửa
 ```bash
-npm test            # 560 bài hiện tại; đếm lại nếu bạn thêm bài
+npm test            # 602 bài hiện tại; đếm lại nếu bạn thêm bài
 npm run typecheck
 npm run build
 git diff --check    # lỗi khoảng trắng / xung đột sót
@@ -198,6 +203,14 @@ Những test "gác cổng" dễ bị quên:
 - Neo nhân vật đặt cao hơn mặt ghế (người bay lơ lửng) ⇒ neo theo tư thế, không theo đồ vật.
 - Biển hiệu cắm lọt tường / bị cây che ⇒ chạy `steps/audit.mjs` sau khi thêm biển.
 - Hai mặt phẳng trùng nhau cùng hướng khác màu ⇒ nhấp nháy; lệch ≥ 2 mm hoặc bỏ một mặt.
+- Món mới thêm vào `items` của tiệm mà không kiểm **số ô bày**: sạp chợ 10 ô (chia theo nhóm 8), MiniMart 22 ô (8+8+8), tạp hoá 13 ô (7+6). Thiếu ô thì món vẫn tồn tại nhưng **không hiện ra**, người chơi tưởng tiệm không bán — probe `steps/banh54.mjs` kiểm `slots` + `uniq` cho từng tiệm.
+- Probe muốn "soi cận cảnh" mà tự đặt `camera.position`/`lookAt` thì **không ăn**: `player.update()` chạy mỗi khung hình và ghi đè camera. Dùng `player.camTo = { pos, look, fov }` (cơ chế camera cố định của game) rồi `wait` ~1 s cho camera trượt tới.
+- Nguyên liệu mới mà gán hình chung (`round`, `long`) thì trên quầy **không phân biệt được** — thêm `Shape` mới trong `data/ingredients.ts` + `case` trong `ingModel` (`gfx/props.ts`), và canh bằng test như `tests/banh54.test.ts`.
+- Đăng ký `b.slot()` cho cùng một `idx` ở hai chỗ trong tiệm ⇒ ô trống vẫn lấy được hàng. Mỗi mặt hàng chỉ được một ô; đồ trưng bày thì dựng hộp thường, đừng gọi `display()`.
+- **Mỏ neo `v_<shop>` của sạp chợ nằm ở chỗ NGƯỜI BÁN đứng và quay mặt VÀO quầy** (`marketStall` dựng `b.anchor('v_' + shop, 0, 0.12, 1.35, Math.PI)`). Muốn tele khách tới trước sạp thì đi **tiếp qua quầy** theo hướng `yaw` của mỏ neo ~2,9 m, đừng cộng `z` — cộng `z` là ra sau lưng sạp (`devPoints.ts` có `tpFront`). Gõ thiếu tiền tố `m_` (viết `v_trung`) thì `anchors.x` là `undefined` ⇒ `tpTo` ra `NaN` ⇒ `resolve` ném người chơi sang toạ độ rác (đã đo: 49; 100,3).
+- **Đặt người chơi đúng tâm một món đồ có va chạm** (giường, khay tắm) thì `World.resolve` bắn ra mép gần nhất — xuyên cả vách sang gian bên. Luôn tìm chỗ trống trước (`acts.bedSpot`, `devPoints.standNear`).
+- **`mb.cyl`/`U.cyl` tham số cuối là bán kính ĐỈNH tuyệt đối**, không phải tỉ lệ của bán kính đáy. Truyền 0,82 cho cái đĩa bán kính 0,125 là ra cái mâm 4 m (đã vấp khi vẽ đầu vòi hoa sen).
+- **NPC không đụng vật cản của người chơi.** Quầy bậc 1–4 phải tự khai hộp thân quầy (`stall.counterBox`) rồi đẩy NPC ra, và chèn waypoint vòng đầu quầy — nếu không khách sẽ đi từ sau lưng người bán xuyên thẳng qua quầy như trước lượt 55.
 
 ### 6.3 Chống side effect lặp
 - Trong `update(dt)` chỉ **tính**, đừng **phát** (toast, sfx, earn). Phát khi chuyển trạng thái.
@@ -208,7 +221,7 @@ Những test "gác cổng" dễ bị quên:
 ### 6.4 Đo được gì, không đo được gì (trung thực)
 | Đo được | Không đo được ở sandbox |
 |---|---|
-| Luật chơi (560 test), typecheck, build, bundle size | FPS thật trên GPU (máy không có GPU; gói JS đo được 1.335 kB / gzip 420 kB + 120 kB phông chữ) |
+| Luật chơi (614 test), typecheck, build, bundle size | FPS thật trên GPU (máy không có GPU; gói JS đo được 1.335 kB / gzip 420 kB + 120 kB phông chữ) |
 | Luồng UI trong Chrome headless ở 844×390 và 390×844 | Cảm giác chạm trên điện thoại thật, tai nghe/loa thật |
 | Hình học: mặt trùng phẳng, biển bị che (`audit.mjs`) | Chơi trọn nhiều giờ liên tục, trộm đêm, chuỗi mục tiêu theo trình tự thật |
 
@@ -265,7 +278,7 @@ xem mục 9b — khi đó đã sửa lại 9 chỗ lệch mới phát sinh):
 
 | Tệp | Ghi cũ | Sự thật trong mã |
 |---|---|---|
-| `PLAYBOOK.md` §0 | “322/322 test” · rules.ts 1.088 · data 11 tệp/1.232 dòng · 53 probe | **560 bài/46 tệp** · rules.ts **1.800** · data **12 tệp/1.456** · **71** probe |
+| `PLAYBOOK.md` §0 | “322/322 test” · rules.ts 1.088 · data 11 tệp/1.232 dòng · 53 probe | **602 bài/49 tệp** · rules.ts **1.856** · data **14 tệp/1.572** · **76** probe |
 | `PLAYBOOK.md` §2 | “52 tệp ~14.772 dòng” + số dòng từng thư mục | **59 tệp / 17.806 dòng** + 563 dòng CSS; thiếu `core/`, `news.ts`, `roads.ts`, `shopbrowse.ts` |
 | `PLAYBOOK.md` §3/§7 | `SAVE_VERSION = 13`, mốc dừng ở v13 | **`SAVE_VERSION = 16`** (v14 chi nhánh · v15 chuyến đi chợ · v16 ca làm) |
 | `PLAYBOOK.md` §6.4 | “322 test” · “1,23 MB JS / ~384 kB gzip” | 560 test · **1.335 kB / gzip 420 kB** |

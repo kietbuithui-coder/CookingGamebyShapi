@@ -14,6 +14,53 @@ export function ingModel(mb: MB, d: IngDef, x: number, y: number, z: number, s =
     case 'long': mb.rod(x, y + 0.028 * s, z, 0.028 * s, 0.19 * s, c, 0, Math.PI / 2, 7, r(-0.3, 0.3), 0.016 * s); mb.sph(x - 0.1 * s, y + 0.028 * s, z, 0.02 * s, 0.02 * s, 0.02 * s, c2, 5); break;
     case 'corn': mb.rod(x, y + 0.035 * s, z, 0.034 * s, 0.2 * s, c, 0, Math.PI / 2, 8, 0, 0.022 * s); mb.rod(x - 0.07 * s, y + 0.035 * s, z, 0.04 * s, 0.1 * s, c2, 0, Math.PI / 2, 6, 0, 0.03 * s); break;
     case 'loaf': mb.sph(x, y + 0.035 * s, z, 0.11 * s, 0.036 * s, 0.042 * s, c, 8, shade(c, 1.15)); for (let i = -1; i <= 1; i++) mb.box(x + i * 0.05 * s, y + 0.062 * s, z, 0.012 * s, 0.01 * s, 0.05 * s, c2); break;
+    // ── Ba loại bánh của lượt 54, mỗi loại một hình riêng (trước đây dùng chung 'long'/'round' nên
+    // bấm vào đâu cũng ra một cục giống nhau) ──
+    // Bánh mì que pa-tê: ổ bánh mì THU NHỎ và DÀI đúng kiểu bánh mì que — thon hai đầu, nứt dọc trên lưng,
+    // lớp vỏ vàng nâu bóng, một đầu nhô ra khỏi vỏ giấy gói (giấy nâu quấn quanh thân).
+    case 'baguette': {
+      const len = 0.26 * s, rad = 0.02 * s;
+      mb.rod(x, y + rad + 0.004 * s, z, rad, len, c, 0, Math.PI / 2, 8, r(-0.25, 0.25), rad * 0.82);
+      // hai đầu bầu tròn cho khỏi cụt
+      for (const sx of [-1, 1]) mb.sph(x + sx * len * 0.48, y + rad + 0.004 * s, z, rad * 0.95, rad * 0.85, rad * 0.82, shade(c, 1.05), 7);
+      // đường nứt dọc trên lưng (màu ruột bánh) + vài vết rắc bột
+      for (let i = -2; i <= 2; i++) mb.box(x + i * len * 0.16, y + rad * 1.72, z, len * 0.1, 0.004 * s, rad * 0.5, c2);
+      mb.box(x, y + rad * 1.85, z, len * 0.35, 0.003 * s, rad * 0.22, shade(c2, 1.1));
+      // giấy gói: một ống giấy BỌC QUANH một đầu ổ bánh (nằm ngang theo ổ bánh, không phải ống đứng),
+      // đầu kia hở để thấy vỏ bánh — đúng kiểu bánh mì que bán ngoài tiệm.
+      mb.rod(x - len * 0.22, y + rad + 0.004 * s, z, rad * 1.14, len * 0.52, 0xcaa972, 0, Math.PI / 2, 8, 0, rad * 1.14);
+      mb.rod(x - len * 0.46, y + rad + 0.004 * s, z, rad * 1.2, rad * 0.34, 0xb08f52, 0, Math.PI / 2, 8, 0, rad * 1.06);
+      break;
+    }
+    // Bánh tiêu: đĩa tròn dẹt, phồng ở giữa, rắc mè trắng — nhìn là biết bánh chiên, không phải ổ bánh mì.
+    case 'sesame': {
+      const R0 = 0.082 * s;
+      mb.sph(x, y + 0.03 * s, z, R0, 0.026 * s, R0, c, 14, shade(c, 1.12));            // thân phồng
+      mb.cyl(x, y + 0.004 * s, z, R0 * 0.94, 0.012 * s, shade(c, 0.86), 14);            // đáy chiên vàng đậm
+      mb.sph(x, y + 0.05 * s, z, R0 * 0.55, 0.03 * s, R0 * 0.55, shade(c, 1.15), 8);    // chỗ phồng cao nhất
+      // mè trắng rắc lốm đốm trên mặt
+      for (let i = 0; i < 9; i++) {
+        const a = i * 0.7 + r(-0.2, 0.2), rr = (i % 3) * 0.24 * R0 + 0.1 * R0;
+        mb.box(x + Math.cos(a) * rr, y + 0.05 * s + Math.cos(a * 2) * 0.006 * s, z + Math.sin(a) * rr, 0.012 * s, 0.005 * s, 0.008 * s, c2);
+      }
+      break;
+    }
+    // Bánh su kem: vỏ choux nở tròn, nâu vàng, có rãnh nứt ngang; kem trắng phía trên lộ ra (không phủ sô-cô-la).
+    case 'choux': {
+      const R0 = 0.045 * s;
+      mb.sph(x, y + R0 * 0.95, z, R0, R0 * 0.98, R0, c, 12, shade(c, 1.14));
+      mb.cyl(x, y, z, R0 * 0.6, 0.005 * s, shade(c, 0.84), 10);                         // đế bánh (nằm gọn dưới đáy)
+      // vết nứt ngang lưng bánh — vẽ 4 mẩu rời cho khỏi thành cái đĩa phẳng
+      for (let i = 0; i < 4; i++) {
+        const a = i * 1.57 + 0.4;
+        mb.box(x + Math.cos(a) * R0 * 0.62, y + R0 * 0.86, z + Math.sin(a) * R0 * 0.62, 0.016 * s, 0.006 * s, 0.008 * s, shade(c, 1.24));
+      }
+      // kem bơm phía trên: một núm xoáy trắng ngà
+      mb.sph(x, y + R0 * 1.62, z, R0 * 0.62, R0 * 0.4, R0 * 0.62, c2, 8);
+      mb.sph(x, y + R0 * 1.92, z, R0 * 0.34, R0 * 0.3, R0 * 0.34, 0xffffff, 7);
+      mb.cyl(x, y + R0 * 2.08, z, R0 * 0.1, R0 * 0.16, 0xffffff, 5);
+      break;
+    }
     case 'leafy': for (let i = 0; i < 5; i++) { const a = (i - 2) * 0.22; mb.rod(x + Math.sin(a) * 0.05 * s, y + 0.02 * s + i % 2 * 0.012 * s, z, 0.022 * s, 0.24 * s, i % 2 ? c : c2, Math.PI / 2, 0, 5, a, 0.006 * s); }
       mb.cyl(x, y, z + 0.1 * s, 0.03 * s, 0.03 * s, 0xc9b28a, 6); break;
     case 'head': mb.sph(x, y + 0.075 * s, z, 0.085 * s, 0.075 * s, 0.085 * s, c, 8, c2); mb.sph(x + 0.03 * s, y + 0.06 * s, z + 0.03 * s, 0.07 * s, 0.06 * s, 0.07 * s, shade(c, 0.9), 6); break;
