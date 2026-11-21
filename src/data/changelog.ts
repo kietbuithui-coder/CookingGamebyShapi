@@ -14,6 +14,21 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 51',
+    tag: 'Sửa giao diện theo báo cáo lượt 50: màn thấp hết chồng, chạm đúng chỗ, chơi dọc nhớ lựa chọn',
+    items: [
+      'Trên màn hình thấp (điện thoại nằm ngang, cửa sổ nhỏ) ô mục tiêu không còn đè lên thanh chỉ số: hết chỗ thì nó tự tụt xuống dưới, các chip hướng đi và sự kiện xuống theo.',
+      'Chạm để tương tác phải đứng đủ gần: đang xoay camera quanh quầy hay đi ngang qua người lạ thì không còn mở nhầm bảng Quầy hay hộp thoại.',
+      'Cần ảo nhận ngón tay từ cao hơn (bỏ 28 % màn hình trên xuống còn 12 %) nên máy ngang thấp đặt ngón cái đâu cũng đi được; đẩy mạnh hơn một chút là chạy, không phải đẩy hết cỡ.',
+      'Nút Chạy có chữ ĐI/CHẠY và nhắc đúng một lần cách dùng; FPS mặc định tắt trên điện thoại cho gọn HUD.',
+      'Máy tính: phím Z xoay phải (trước chỉ có Q), bật được khoá con trỏ chuột để rê chuột là xoay, và tuỳ chọn ẩn bốn nút cảm ứng.',
+      'Bấm lại đúng phím tắt (M, B, Tab, P) thì bảng đang mở tự đóng; chạm vào biểu tượng chỉ số thì lời giải thích giữ lại trên màn hình, chạm lại mới tắt; thanh chỉ số không còn chen số vào giữa hàng.',
+      'Bấm “Bỏ dở” giữa lúc nấu: lần đầu chỉ hỏi lại “Chắc chưa?”, lần hai mới bỏ mẻ — hết mất cả mẻ vì lỡ tay.',
+      'Cài đặt có nút xoá bản lưu (bấm hai lần mới xoá) và mục “Cách điều khiển” ghi rõ phím cho máy tính lẫn điện thoại.',
+      'Màn dọc: đã chọn “Cứ chơi dọc” thì lần sau mở game không bị lớp phủ che mất nút Chơi mới / Chơi tiếp nữa.',
+    ],
+  },
+  {
     v: 'Lượt 49',
     tag: 'Xe cộ chạy đúng đường, thêm 3 màu xe, còi xe hơi riêng',
     items: [
@@ -83,16 +98,6 @@ export const CHANGELOG: LogEntry[] = [
       'Bước ra khỏi mép là rơi xuống đất, không lơ lửng giữa không trung.',
       'Đứng trên nóc chỉ nhảy thêm được 0,5 m — không nhảy vọt lên nóc cao hơn.',
       'Thùng rác tròn chỉ đỡ khi đứng thật trên miệng thùng.',
-    ],
-  },
-  {
-    v: 'Lượt 42',
-    tag: 'Nhảy giờ thật sự vượt được vật thấp',
-    items: [
-      'Nhảy cao hơn (0,99 m thay vì 0,46 m): vượt được ghế đá công viên, bàn nhựa trà đá, bàn cờ ông Tư, thùng rác, băng ngồi, kệ thấp và lề đường.',
-      'Có 80 vật thấp nhảy qua được trong thành phố, khai báo đúng chiều cao thật của từng món (bệ cửa sổ cố ý giữ nguyên làm ranh giới nhà).',
-      'Tường nhà, cột, vách vẫn chặn tuyệt đối — bay cao bao nhiêu cũng không lọt vào trong.',
-      'Rơi trúng nóc vật thấp thì đứng trên đó được, bước ra mép là rơi xuống đất, không bị kẹt trong đồ.',
     ],
   },
 ];

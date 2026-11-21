@@ -1188,3 +1188,70 @@ Còi: `CarSpec.horn` = `beep` (Matiz — "bíp bíp" 880/1100 Hz) · `honk` (Cor
 - Tổng **560 bài / 46 tệp** pass; `tsc` sạch; `npm run build` + `build:pages` OK.
 - Nhật ký trong game: bản **Lượt 49** ở đầu (bỏ bản 41 cho đúng trần 8 bản).
 - Ảnh: `/tmp/probe/nhay42/66_nhay.png`.
+
+### 50 — soát giao diện trên màn thấp (báo cáo, không phải bản phát hành)
+
+**Lượt này không sinh ra mã và không có commit riêng.** Nó là một vòng *soát* giao diện: chạy probe trên khổ màn thấp
+(740×360) rồi liệt kê chỗ hỏng để lượt sau sửa. Vì vậy đừng tìm commit hay PR tên “Lượt 50”.
+Báo cáo này chỉ còn được nhắc trong commit message của lượt 51 — chi tiết gốc không nằm trong repo.
+
+Những gì lượt 51 phải sửa (suy ra từ danh sách đó, đã **xác minh lại trong mã** ngày 2026-11-21):
+
+| Chỗ hỏng | Bằng chứng trong mã hiện tại |
+|---|---|
+| Ô mục tiêu đè lên thanh chỉ số khi cửa sổ hẹp | `ui.ts:228 fitQuest()` — đo `#hud-tl`/`#hud-tr` rồi bật `.qlow` |
+| Chữ HUD nhỏ, số chỉ số không đọc được | `style.css:6` `clamp(12.5px, …)` · `.stat .n` chỉ hiện khi < 45 (sau đó **bỏ hẳn**, xem dưới) |
+| Nút dưới 44 px | `style.css:37 .ib` 2,5em · `#act2 button` min 44 px · `#cook .quit` |
+| Toast chồng thành mảng giữa màn hình | `ui.ts toast()` — chỉ giữ 2 thẻ |
+| Bấm lại phím tắt (M/B/Tab/P) không đóng bảng | `ui.ts panel()` — `TABS_CLOSE` |
+| Chạm xa vẫn tương tác nhầm | `interact.ts:25 TAP_REACH = 1.3`, `tapRadius()` |
+| Nút Chạy không có nhãn, ngưỡng chạy 0,93 gần như không bấm được | `input.ts RUN_AT = 0.8` · nút đổi nhãn ĐI/CHẠY |
+| “Bỏ dở” mất cả mẻ khi lỡ tay | `ui.ts` — bấm lần đầu đổi nhãn “Chắc chưa?” |
+
+### 51 — sửa hết mục báo cáo lượt 50 (giao diện màn thấp + điều khiển máy tính)
+
+Commit `a152a6f`. Chủ yếu là **CSS + vòng đời giao diện**, không đụng luật chơi kinh tế và **không thêm tệp test mới**
+(giữ chốt `changelog` = Lượt 49, `devpoints` = lượt 49 theo quy tắc menu ẩn). Tổng kết: `tsc` sạch · **560/560** test ·
+`build` + `build:pages` OK.
+
+**Giao diện (src/ui/style.css, +57/−21):**
+
+- `#ui` cỡ chữ gốc `clamp(12.5px, 3.5vh, 17px)`; màn hẹp `clamp(12.5px, 3.6vw, 16px)`.
+- Ô mục tiêu: `max-width: min(40vw, 34em, max(12em, calc(100vw − 56em)))` để chừa chỗ cho **cả hai** khối HUD;
+  thêm `.qlow` (kèm `!important`) đẩy ô mục tiêu + chip hướng đi + chip sự kiện xuống dưới HUD khi hai khối bên
+  chạm vào nhau.
+- `.ib` 2,5em; `#act2 button` ≥ 44×44 px; `#cook .quit` ≥ 44 px; `.qmin` ≥ 30 px.
+- `#hud-tl` xuống `.5em` ở màn ≤ 540 px chiều cao; `#runb` right 8,4em · `#act2` right 12,9em (hết chồng nhau).
+- ~~`.stat .n` hiện số thật khi chỉ số < 45~~ → **đã bỏ cùng ngày** (người chơi: *"mình hong muốn có 2 số đó"*):
+  hai con số chen giữa hai thanh chỉ số trông rối, và màn hẹp thì hai thanh sát nhau nên số dễ bị hiểu là của thanh bên cạnh.
+  Mức thấp vẫn báo bằng **thanh đỏ + nhấp nháy** như trước; số chính xác vẫn xem được trong lời giải thích (rê/chạm).
+  Đã xoá cả `<span class="n">` trong `ui.ts` và luật `.stat .n` trong `style.css`.
+
+**Đo được (probe 740×360, 640/740/844 cho màn nấu ăn):** `qlow` top **81 px**, chồng `#hud-tl` = **0**;
+`#cook .top` chồng 0 ở cả ba khổ; toast tối đa 2 thẻ (~57–74 px).
+
+**Điều khiển & vòng đời (TS):**
+
+- **Chạm để tương tác phải đứng đủ gần** (`interact.ts`): `TAP_REACH = 1.3 m` — trước đây chỉ cần trong bán kính
+  tương tác (tới 2,6 m) nên đang xoay camera quanh quầy là mở bảng Quầy. `tapRadius()` = `max(44, 7,5 % chiều cao)`
+  thay cho `max(64, 11 %)` (màn thấp bấm nhầm nhiều).
+- **Cần ảo**: vùng nhận tính từ **12 %** chiều cao (trước 28 %) — trên 740×360 vùng cũ đã bị HUD chiếm hết;
+  `RUN_AT = 0,8` (trước 0,93 chỉ còn ~4 px hữu dụng ở mép cần).
+- **Khoá con trỏ chuột** (tuỳ chọn mới `Settings.mouseLock`, mặc định tắt): rê chuột là xoay, Esc nhả khoá thì có
+  toast giải thích, không bám khoá lại ngay.
+- **Nút cảm ứng trên máy tính** (`Settings.touchBtns`, mặc định chỉ bật trên điện thoại) + mục Cài đặt mới.
+- **Phím Z xoay phải** (`player.ts`) — nhánh `e && false` trước đây là mã chết, máy tính không có phím xoay phải.
+- **Xoá bản lưu** (`ctx.resetSave`, `SAVE_KEY`) trong Cài đặt — bấm hai lần mới xoá (lần đầu chỉ hỏi lại, tự hết hạn 5 s).
+- **`fitQuest()`** đo HUD thật rồi đặt `--q-top`/`.qlow`; chỉ ghi style khi giá trị đổi (không tính lại bố cục mỗi khung hình).
+- **Bấm lại phím tắt để đóng bảng** (`TABS_CLOSE`: túi, sổ tay, bản đồ, điện thoại).
+- **Tooltip**: chạm để mở và **giữ**, chạm lại đúng biểu tượng thì tắt (trước tự tắt sau 2,8 s khi đang đọc).
+- **“Bỏ dở” mẻ nấu**: bấm lần đầu chỉ đổi nhãn thành “Chắc chưa?” trong 3 s.
+- **Toast** tối đa 2 thẻ cùng lúc (trước 4–5 thẻ dựng thành mảng ~200 px giữa tầm nhìn).
+- **Màn dọc**: nút “Cứ chơi dọc” nhớ lựa chọn (`portraitOk`) — tải lại trang không bị lớp phủ che nút Chơi mới/Chơi tiếp.
+- **FPS mặc định tắt trên điện thoại** (con số chỉ dành cho người chỉnh đồ hoạ).
+- **Nút Chạy** có nhãn **ĐI/CHẠY** + nhắc một lần (`ui.runTip`, lưu vào cài đặt nên không nhắc lại).
+- Cài đặt có mục “Cách điều khiển” viết rõ phím cho máy tính và điện thoại.
+
+**Chưa kiểm được:** probe lượt này chạy trên Chrome không giao diện (không GPU) nên FPS thật, cảm giác chạm trên
+điện thoại thật, và pointer-lock trên Safari/iOS vẫn chưa ai thử. Không có test tự động mới cho lượt này —
+`tools/probe/steps/` là lưới an toàn duy nhất.

@@ -20,7 +20,7 @@ export default [boot, fresh(10 * 60),
       const txt = document.querySelector('#modal .body')?.textContent?.replace(/\s+/g, ' ') ?? '';
       window.__shot1 = { heads, txt };
       return { đầuĐề: heads, sốViệc: [...document.querySelectorAll('#modal .item')].length,
-        cóLượt37: /Lượt 37/.test(txt), cóLượt31: /Lượt 31/.test(txt), logSeenTrước: before, logSeenSau: g.flags.logSeen };
+        cóLượt51: /Lượt 51/.test(txt), cóLượt49: /Lượt 49/.test(txt), khôngCóLượt42: !/Lượt 42/.test(txt), logSeenTrước: before, logSeenSau: g.flags.logSeen };
     }, wait: 700 },
   { shot: 'log-02-danh-sach.png' },
   { label: '③ mở lại Cài đặt: nhãn "mới" đã biến mất', eval: async () => {

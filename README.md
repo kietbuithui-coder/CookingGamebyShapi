@@ -26,6 +26,7 @@ Sổ tay (nút hình cuốn sổ) có công thức, sổ sách lời lỗ, nợ 
 | Tương tác | Chạm vào người/đồ vật, hoặc nút tròn vàng | Bấm vào vật, hoặc E / Enter |
 | Đấm · Nhảy | Nút nắm tay và nút mũi tên cạnh nút vàng | F · Space |
 | Hành động phụ (×5…) | Nút nhỏ cạnh nút vàng | R |
+| Xoay trái · xoay phải | — | Q · Z |
 | Túi · Sổ tay · Bản đồ · Cài đặt | Bốn nút góc trên phải | Tab · B · M · Esc |
 
 **Điện thoại đời 2005–2010:** ba mẫu bán ở tiệm Đồ Nghề — cục gạch (180.000₫), nắp gập (520.000₫), cảm ứng (1.450.000₫). Mở bằng nút trên màn hình hoặc phím `P`: sổ thu chi, danh bạ (gọi khách quen 1.000₫/lần), tin nhắn (nhắc nợ, nhắc tiền phòng, tin lừa, dự báo thời tiết), nghe radio, nghe nhạc, lướt web WAP. Pin tụt dần theo giờ, sạc qua đêm ở nhà có điện hoặc sạc nhờ ở tạp hoá 5.000₫.
@@ -110,7 +111,7 @@ Danh sách đầy đủ những gì còn lại (1 bậc kinh doanh, băng nhóm,
 | Vừa (mặc định điện thoại) | tối đa 1,5× | 1024 | 22 | 3 | 4 | 165 m |
 | Cao (mặc định máy tính) | tối đa 2× | 2048 | 32 | 5 | 7 | 210 m |
 
-Trong tầm nhìn có khoảng 50–280 nghìn tam giác và 25–150 lệnh vẽ (hình học được gộp sẵn theo từng khu: ô phố, chợ, công viên…). Nếu dưới 23 khung hình/giây trong 6 giây, game tự hạ một mức (tắt được trong Cài đặt). Toàn bộ game tải về khoảng 280 kB JavaScript (đã nén) + 110 kB phông chữ.
+Trong tầm nhìn có khoảng 50–280 nghìn tam giác và 25–150 lệnh vẽ (hình học được gộp sẵn theo từng khu: ô phố, chợ, công viên…). Nếu dưới 23 khung hình/giây trong 6 giây, game tự hạ một mức (tắt được trong Cài đặt). Toàn bộ game tải về khoảng 420 kB JavaScript (đã nén; đo trên bản build 2026-11-21) + 120 kB phông chữ.
 
 ## Chạy trên máy
 

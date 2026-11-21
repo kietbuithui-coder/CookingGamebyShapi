@@ -19,7 +19,7 @@ Một vòng chơi trọn vẹn và thật sự chạy được: **tay trắng �
 
 Hai nguyên tắc giữ cho mã kiểm thử được:
 
-1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 560 bài kiểm thử (46 tệp) chạy trong Node trong khoảng 7 giây.
+1. **`src/sim` không biết gì về đồ hoạ hay DOM.** Nó báo việc cần hiển thị qua `core/bus.ts` (toast, âm thanh, yêu cầu lưu). Nhờ vậy 560 bài kiểm thử (46 tệp) chạy trong Node trong khoảng 15 giây.
 2. **Mọi ngẫu nhiên trong luật chơi nhận một `RNG` có hạt giống** làm tham số cuối, nên kết quả kiểm thử lặp lại được.
 
 Vòng lặp chính (`src/main.ts`): đọc điều khiển → `advance()` cho thời gian game trôi (0,75 phút game mỗi giây thật, một ngày = 32 phút thật; khi ngủ 48 phút game mỗi giây) → cập nhật người chơi, NPC, quầy, nấu ăn, môi trường → vẽ. `dt` bị chặn ở 50 ms nên máy rất chậm thì game chạy chậm lại chứ không nhảy cóc.
@@ -833,6 +833,8 @@ dòng "Cửa hàng" trong danh sách; **console sạch**.
 
 Ba bài mới ở lượt 2: mỗi nhân vật phụ phải có tên, nhãn việc, câu mở đầu và ít nhất hai câu chuyện đủ dài; bảng `RUDE` chỉ được có tối đa 8 nhóm và phải có đủ lời cho cả năm kiểu (giấy, khạc nhổ, mắng, đuổi, khạc nhổ khi bị xin tiền); khách quen không được trùng id hay tên và phải có cả tên kiểu học sinh.
 
+Các tệp còn lại (mỗi tệp canh đúng một lượt việc, tên tệp theo hệ): `rau41`, `nhay42`, `muc44`, `android45`, `mua46`, `boot47`, `nghi48`, `xe49`, `changelog`, `devpoints`, `settings`, `quality`, `music`, `phoneanim`, `news`, `phone3`, `phone4`, `shopapp`, `vua2`, `dicho`, `baocao`, `nguoi`, `helper`, `hong`, `polish5`, `impact` — tổng cộng **560 bài / 46 tệp** (`npm test`, `environment: 'node'`, chạy ~15 giây).
+
 Phần đồ hoạ và thao tác được chạy thử bằng các kịch bản trong `tools/probe/`: một trình chạy Puppeteer điều khiển Chrome không giao diện (WebGL phần mềm, giả lập cảm ứng), bấm chạm như người chơi, chụp màn hình để xem bằng mắt, và soát hình học cả thành phố (mặt trùng phẳng, biển hiệu bị che). Danh sách cụ thể những gì đã và chưa chạy thử nằm trong README.
 
 ## 8. Việc còn dang dở
@@ -857,9 +859,9 @@ Còn lại:
 - Đo trên điện thoại thật: người chơi báo máy của họ chạy trên 50 khung hình/giây, nhưng chưa rõ đó là máy nào. Nếu máy yếu chạy chậm: gộp các khối cơ thể NPC thành một lưới, dùng instancing cho đồ vật lặp lại, bỏ sương mù theo điểm ảnh ở mức thấp, thêm LOD cho khu ở xa.
 - Nghe thử và cân chỉnh âm thanh.
 - Cân bằng nhịp độ qua chơi thử: tốc độ kiếm vốn ngày đầu, lượng khách lúc uy tín thấp, độ khó các mini-game.
-- Kỹ thuật: tách gói JavaScript (hiện một tệp khoảng 930 kB, nén còn 280 kB), service worker để chơi ngoại tuyến, nội thất cửa hàng chi tiết hơn.
+- Kỹ thuật: tách gói JavaScript (một tệp 1.335 kB, nén còn 420 kB — đo trên bản build 2026-11-21) và nội thất cửa hàng chi tiết hơn. Chơi ngoại tuyến đã xong (lượt 40: service worker `public/sw.js` + nút trong Cài đặt).
 
-Lỗi nhỏ đã biết: dòng "Dụng cụ" và "Sơ chế" trong Sổ tay còn thừa dấu "·" ở cuối; ở màn dọc HUD chật (game khuyên xoay ngang).
+Lỗi nhỏ đã biết: ở màn dọc HUD chật (game khuyên xoay ngang). Dòng "Dụng cụ"/"Sơ chế" trong Sổ tay đã rà ngày 2026-11-21 (`src/ui/panels.ts:273`) — không còn dấu "·" thừa.
 
 ### 4.33 Hai tổng đài trong danh bạ: 1080 (dự báo mai) và 1900 1234 (lừa đảo, một lần)
 

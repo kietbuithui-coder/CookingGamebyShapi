@@ -2,7 +2,7 @@
 
 > Cẩm nang làm việc cho agent và contributor: đọc gì trước, sửa ở đâu, giữ luật gì, kiểm bằng lệnh nào, và những cái bẫy đã biết.
 > Tài liệu này **không** thay `README.md` (người chơi) / `DESIGN.md` (thiết kế & con số) / `TODO.md` (việc còn lại) / `PLAN.md` (lộ trình từng lượt).
-> Mọi con số trong đây được **đo từ mã** ngày 2026-11-17 trên `main` = `ca6c3d6`; khi sửa mã làm số liệu đổi thì sửa luôn tệp này.
+> Mọi con số trong đây được **đo từ mã** ngày 2026-11-21 trên `main` = `a152a6f` (lượt 51); khi sửa mã làm số liệu đổi thì sửa luôn tệp này.
 
 ---
 
@@ -13,17 +13,17 @@
 | Cài & chạy | `npm install` → `npm run dev` (bind `0.0.0.0`, `allowedHosts: true`) |
 | Kiểm tối thiểu trước khi báo xong | `npm test` → `npm run typecheck` → `npm run build` |
 | Kiểm đầy đủ trước khi phát hành | `npm run build:pages` (typecheck + test + đóng gói vào `docs/`) |
-| Luật chơi ở đâu | `src/sim/rules.ts` (1.088 dòng), `src/sim/state.ts` (236) |
-| Dữ liệu ở đâu | `src/data/*.ts` (11 tệp, 1.232 dòng) |
-| Bản đồ / toạ độ | `src/world/layout.ts` (275) |
-| Quầy hàng & nấu ở world | `src/game/stall.ts` (1.403), `src/cook/*` |
-| Hội thoại / menu NPC | `src/game/acts.ts` (1.124) |
-| HUD / bảng | `src/ui/ui.ts` (308), `src/ui/panels.ts` (297), `src/ui/style.css` |
+| Luật chơi ở đâu | `src/sim/rules.ts` (1.800 dòng), `src/sim/state.ts` (335) |
+| Dữ liệu ở đâu | `src/data/*.ts` (12 tệp, 1.456 dòng) |
+| Bản đồ / toạ độ | `src/world/layout.ts` (281) |
+| Quầy hàng & nấu ở world | `src/game/stall.ts` (1.557), `src/cook/*` |
+| Hội thoại / menu NPC | `src/game/acts.ts` (1.347) |
+| HUD / bảng | `src/ui/ui.ts` (424), `src/ui/panels.ts` (517), `src/ui/style.css` (563) |
 | Test | `tests/*.test.ts` — **46 tệp, 560 bài**, `environment: 'node'` |
-| Thử giao diện thật | `tools/probe/` (53 kịch bản `.mjs` trong `steps/`, Chrome headless) |
+| Thử giao diện thật | `tools/probe/` (71 kịch bản `.mjs` trong `steps/`, Chrome headless) |
 | Bản phát hành | `docs/` — **sinh ra bởi `build:pages`, không sửa tay** |
 
-Trạng thái đo được hôm nay: **typecheck ✅ · 322/322 test ✅ · build ✅ · build:pages ✅**.
+Trạng thái đo được hôm nay (2026-11-21, `a152a6f`): **typecheck ✅ · 560/560 test ✅ (46 tệp, ~15 s) · build ✅ (1.335 kB JS, gzip 420 kB) · build:pages ✅**.
 
 ---
 
@@ -39,27 +39,31 @@ Trạng thái đo được hôm nay: **typecheck ✅ · 322/322 test ✅ · buil
 
 ---
 
-## 2. Bản đồ mã nguồn (52 tệp `.ts`, ~14.772 dòng)
+## 2. Bản đồ mã nguồn (59 tệp `.ts`, 17.806 dòng + 563 dòng CSS)
 
 ```
 src/
-├── sim/        1.837 dòng — LUẬT THUẦN, không DOM, không three
-│   ├── rules.ts     kinh tế, khách, đánh giá, sự kiện, nợ, bậc quầy, đặt bàn, phụ bếp
-│   ├── state.ts     kiểu Game/Stack/Stall, newGame, migrate, kho đồ, hư hỏng
-│   ├── phone.ts     pin, sổ thu chi, tin nhắn      life.ts  lịch sinh hoạt theo giờ
-│   ├── police.ts    mức bị để ý, tạm giữ            impact.ts va chạm xe
-│   ├── net.ts       quán net                        race.ts   đua xe đạp
-├── data/       1.232 dòng — dữ liệu tĩnh: ingredients(75), recipes(60), shops(12),
-│               gear(36 món + 7 bậc + 8 chỗ ở), people(44 nhân vật + 11 khách quen),
-│               world(8 thời tiết, 22 sự kiện), phone, looks, fun, expr, cars
-├── world/      2.462 dòng — layout.ts (lô đất, SPOTS, NAV), city.ts, build.ts, places.ts, side.ts, env.ts, birds.ts
-├── gfx/          930 dòng — mb.ts (gộp lưới), tex.ts (hoạ tiết canvas), props.ts, people.ts
-├── game/       6.534 dòng — anim.ts(1.567), stall.ts(1.403), acts.ts(1.124), npc.ts(706),
-│               chess.ts(537), devPoints.ts, player.ts, interact.ts, traffic.ts, input.ts, who.ts, race.ts, ctx.ts
-├── cook/        609 dòng — cook.ts (điều phối) + games.ts (5 mini-game)
-├── ui/          709 dòng + 289 dòng CSS — ui.ts (HUD), panels.ts (bảng), layout.ts (tự xếp nút)
-├── audio/       196 dòng — tổng hợp Web Audio, không tệp âm thanh
-└── main.ts      154 dòng — vòng lặp chính, khởi động
+├── sim/        2.942 dòng — LUẬT THUẦN, không DOM, không three
+│   ├── rules.ts     kinh tế, khách, đánh giá, sự kiện, nợ, bậc quầy, đặt bàn, phụ bếp (1.800)
+│   ├── state.ts     kiểu Game/Stack/Stall, newGame, migrate, kho đồ, hư hỏng (335)
+│   ├── phone.ts     pin, sổ thu chi, tin nhắn, hai tổng đài   news.ts  tin & giá thật cho radio/WAP
+│   ├── life.ts      lịch sinh hoạt theo giờ          police.ts  mức bị để ý, tạm giữ
+│   ├── impact.ts    va chạm xe                        net.ts     quán net
+│   └── race.ts      đua xe đạp
+├── data/       1.456 dòng (12 tệp) — dữ liệu tĩnh: ingredients(75), recipes(60), shops(12),
+│               gear(37 món + 8 mục TIERS + 8 chỗ ở), people(44 nhân vật + 11 khách quen),
+│               world(8 thời tiết, 22 sự kiện), phone, looks, fun, expr, cars, changelog
+├── world/      2.593 dòng — layout.ts (lô đất, SPOTS, NAV), city.ts, build.ts, places.ts(895), side.ts, env.ts, birds.ts
+├── gfx/          942 dòng — mb.ts (gộp lưới), tex.ts (hoạ tiết canvas), props.ts, people.ts
+├── game/       7.172 dòng — anim.ts(1.567), stall.ts(1.557), acts.ts(1.347), npc.ts(708),
+│               chess.ts(537), traffic.ts(260), player.ts(225), interact.ts(208), devPoints.ts(158),
+│               shopbrowse.ts, race.ts, ctx.ts, input.ts, roads.ts, who.ts
+├── cook/         609 dòng — cook.ts (điều phối) + games.ts (5 mini-game)
+├── ui/         1.457 dòng + 563 dòng CSS — ui.ts (HUD, 424), panels.ts (bảng, 517),
+│               phoneUI.ts (màn hình điện thoại, 412), layout.ts (tự xếp nút, 104)
+├── audio/        272 dòng — audio.ts (tổng hợp Web Audio, không tệp âm thanh) + songs.ts
+├── core/         170 dòng — bus.ts (sự kiện), offline.ts (service worker), util.ts
+└── main.ts       193 dòng — vòng lặp chính, khởi động
 ```
 
 Luồng chuẩn khi thêm/sửa một tính năng:
@@ -83,7 +87,7 @@ xác định luật + dữ liệu (sim/data)
 
 ## 3. Hợp đồng kiến trúc (đừng phá)
 
-1. **`src/sim` không được biết DOM/three.** Nó chỉ báo việc ra ngoài qua `src/core/bus.ts` (`bus.emit('toast' | 'sfx' | 'cash' | 'save' | 'day' | 'ui' | 'quest' | 'bankrupt')`, tiện dụng: `toast()`, `sfx()`). Đây là lý do 322 test chạy trong Node ~7 giây.
+1. **`src/sim` không được biết DOM/three.** Nó chỉ báo việc ra ngoài qua `src/core/bus.ts` (`bus.emit('toast' | 'sfx' | 'cash' | 'save' | 'day' | 'ui' | 'quest' | 'bankrupt')`, tiện dụng: `toast()`, `sfx()`). Đây là lý do 560 bài kiểm thử chạy trong Node chỉ ~15 giây.
 2. **Mọi ngẫu nhiên trong luật nhận `RNG` có hạt giống** làm tham số cuối (`advance(g, dm, act, R)`, `decideGroup(g, p, size, fem, R)`, `newDay(g, R)`). Test phải truyền RNG cố định, không dùng `Math.random()`.
 3. **UI không tự tính luật kinh tế.** Giá, giá vốn, lượng khách, hư hỏng, phí chỗ đều ở `sim/rules.ts`; UI chỉ hiển thị và gọi hàm.
 4. **`src/world/layout.ts` là nguồn chuẩn của toạ độ.** `LOTS`, `SPOTS`, `PLACES`, `NAV`, `DISTRICT`, `MAP`. Thêm địa điểm phải có lô đất + neo `v_<id>` + nút NAV liên thông (có test lo việc này, xem §5).
@@ -93,7 +97,7 @@ xác định luật + dữ liệu (sim/data)
 | Hằng | Giá trị | Ở đâu |
 |---|---|---|
 | `STAT_MAX` | 125 | `sim/state.ts:23` |
-| `SAVE_VERSION` | 13 | `sim/state.ts:10` |
+| `SAVE_VERSION` | 16 | `sim/state.ts:10` |
 | `MAP` | x −96…96, z −96…108 | `world/layout.ts:8` |
 | `BLOCK / DEPTH / SIDEWALK / ROAD_HALF` | 46 / 11 / 3 / 3.5 | `world/layout.ts:5` |
 | Khoá localStorage | `ganhhang.save.v1`, `ganhhang.settings.v1` | `game/ctx.ts:59` |
@@ -204,7 +208,7 @@ Những test "gác cổng" dễ bị quên:
 ### 6.4 Đo được gì, không đo được gì (trung thực)
 | Đo được | Không đo được ở sandbox |
 |---|---|
-| Luật chơi (322 test), typecheck, build, bundle size | FPS thật trên GPU (máy không có GPU; README đang ghi 1,23 MB JS / ~384 kB gzip) |
+| Luật chơi (560 test), typecheck, build, bundle size | FPS thật trên GPU (máy không có GPU; gói JS đo được 1.335 kB / gzip 420 kB + 120 kB phông chữ) |
 | Luồng UI trong Chrome headless ở 844×390 và 390×844 | Cảm giác chạm trên điện thoại thật, tai nghe/loa thật |
 | Hình học: mặt trùng phẳng, biển bị che (`audit.mjs`) | Chơi trọn nhiều giờ liên tục, trộm đêm, chuỗi mục tiêu theo trình tự thật |
 
@@ -213,7 +217,7 @@ Những test "gác cổng" dễ bị quên:
 ## 7. Save & di trú
 
 - Khoá: `ganhhang.save.v1` (trạng thái) · `ganhhang.settings.v1` (cài đặt). Tự lưu sau việc quan trọng, mỗi 45 giây, khi rời trang.
-- `SAVE_VERSION = 13`. Bản lưu hiện tại đã đi qua các mốc: v4 sổ `met` · v5 bệnh viện + `lostBag` · v6 công an · v7 điện thoại · v8 quán net · v9 đua xe · v10 người phụ việc + `firstSale` · v11 ngoại hình (`look`) · v12 nhà hàng (`sous`, `bookings`, `bookSeq`) · v13 slot nhân sự thứ 2 (`help2`, `sous2`).
+- `SAVE_VERSION = 16`. Bản lưu hiện tại đã đi qua các mốc: v4 sổ `met` · v5 bệnh viện + `lostBag` · v6 công an · v7 điện thoại · v8 quán net · v9 đua xe · v10 người phụ việc + `firstSale` · v11 ngoại hình (`look`) · v12 nhà hàng (`sous`, `bookings`, `bookSeq`) · v13 slot nhân sự thứ 2 (`help2`, `sous2`) · v14 chi nhánh (`branch`) · v15 chuyến đi chợ (`errands`) · v16 ca làm của người phụ quầy (`helpShift`).
 - **Quy tắc**: cần đổi cấu trúc ⇒ tăng `SAVE_VERSION` + thêm nhánh `if ((raw.v ?? 0) < N)` trong `migrate()`, chịu được **dữ liệu cũ thiếu trường** *và* **dữ liệu hỏng** (kiểu sai, `null`, mảng không phải mảng). Không đụng tiến trình không liên quan (tiền, ngày, quan hệ, công thức).
 - Bản lưu hỏng nặng ⇒ `migrate()` trả `null` và game mở ván mới; đừng để crash trắng màn hình.
 - Sửa `migrate()` ⇒ thêm test kiểu `bản lưu v11 lên v13` trong `tests/nhahang.test.ts` / `look.test.ts`.
@@ -234,9 +238,10 @@ Quy ước cập nhật: `README` = cái người chơi thấy & lệnh chạy *
 
 ---
 
-## 9. Nợ tài liệu — đã trả (2026-11-17)
+## 9. Nợ tài liệu — đã trả (2026-11-17, rà lại 2026-11-21)
 
-Trước đây tài liệu lệch mã khá nhiều; nay đã sửa xong cả 8 chỗ, các con số dưới là **đã khớp** với mã:
+Trước đây tài liệu lệch mã khá nhiều; các con số dưới là **đã khớp** với mã (kiểm lại một lượt ngày 2026-11-21,
+xem mục 9b — khi đó đã sửa lại 9 chỗ lệch mới phát sinh):
 
 1. `README.md` – **7/7 bậc** kinh doanh chơi được (bậc 6 `nhahang`, bậc 7 `chuoi`) + giao người làm đi chợ.
 2. `README.md` – số bài kiểm thử luôn theo mã: nay **560 bài / 46 tệp** (thêm `tests/quality.test.ts` canh 4 mức đồ hoạ, `tests/rau41.test.ts` canh rau củ/đau bụng) (thêm `tests/quality.test.ts` canh 4 mức đồ hoạ) (kèm 17 bài `tests/nhahang.test.ts`, 25 bài `tests/chuoi.test.ts`, 17 bài `tests/dicho.test.ts`, 17 bài `tests/baocao.test.ts`, 11 bài `tests/vua2.test.ts`, 5 bài `tests/phone3.test.ts`, 8 bài `tests/shopapp.test.ts`, 8 bài `tests/phone4.test.ts`, 15 bài `tests/look.test.ts`).
@@ -244,7 +249,7 @@ Trước đây tài liệu lệch mã khá nhiều; nay đã sửa xong cả 8 c
 4. `README.md` – số món đồ nghề / chỗ bán luôn theo mã: nay **37** món, **6** chỗ bán (4 chỗ thường + 2 mặt bằng) và **3** chỗ mở chi nhánh.
 5. `TODO.md` – đầu tệp cập nhật theo mã: 7/7 bậc · 75 nguyên liệu · 12 nơi bán · 37 đồ nghề · 44 nhân vật · 422/32; thêm mục
    "bậc 6 chưa có probe giao diện"; tách khỏi mâu thuẫn "bậc 6 đã xong" ở bảng bên dưới.
-6. `DESIGN.md` – 497 bài; `SAVE_VERSION = 16` kèm nhánh v12–v16; 144 lô đất / 268 nút đường đi; 6 chỗ bán;
+6. `DESIGN.md` – 560 bài; `SAVE_VERSION = 16` kèm nhánh v12–v16; 144 lô đất / 268 nút đường đi; 6 chỗ bán;
    `FUTURE_TIERS` rỗng.
 7. `DESIGN.md` – thêm **mục 4.26** cho bậc 6 (nhà hàng bình dân, đặt bàn trước, phụ bếp, khách đoàn) + dòng mô tả
    `tests/nhahang.test.ts` trong mục 7.
@@ -253,6 +258,25 @@ Trước đây tài liệu lệch mã khá nhiều; nay đã sửa xong cả 8 c
    `shortageLine`, `needsPrepCount`), nút Sơ chế khi thiếu đồ vẫn bấm được (`.need`), probe `steps/shortage.mjs`.
 9. `PLAN.md` / `DESIGN.md` §4.32 – **lượt 24**: công tắc Mở/Đóng bán phải khớp trạng thái thật (ân hạn 20 giây sau khi mở,
    có người phụ việc thì quầy không tự ngưng, `setShopOpen` trả lý do, bảng tự vẽ lại); probe mới `steps/switchfar.mjs`.
+
+### 9b. Lượt rà tài liệu 2026-11-21 (sau lượt 51)
+
+Đo lại toàn bộ từ mã (`npm test`, `npm run build`, `wc -l`, chạy trực tiếp `src/data/*`) rồi sửa 9 chỗ lệch:
+
+| Tệp | Ghi cũ | Sự thật trong mã |
+|---|---|---|
+| `PLAYBOOK.md` §0 | “322/322 test” · rules.ts 1.088 · data 11 tệp/1.232 dòng · 53 probe | **560 bài/46 tệp** · rules.ts **1.800** · data **12 tệp/1.456** · **71** probe |
+| `PLAYBOOK.md` §2 | “52 tệp ~14.772 dòng” + số dòng từng thư mục | **59 tệp / 17.806 dòng** + 563 dòng CSS; thiếu `core/`, `news.ts`, `roads.ts`, `shopbrowse.ts` |
+| `PLAYBOOK.md` §3/§7 | `SAVE_VERSION = 13`, mốc dừng ở v13 | **`SAVE_VERSION = 16`** (v14 chi nhánh · v15 chuyến đi chợ · v16 ca làm) |
+| `PLAYBOOK.md` §6.4 | “322 test” · “1,23 MB JS / ~384 kB gzip” | 560 test · **1.335 kB / gzip 420 kB** |
+| `PLAYBOOK.md` §10 | mẫu báo cáo “322/322” | **560/560** |
+| `README.md` | ~280 kB JS nén + 110 kB font · thiếu phím Z | **~420 kB nén + 120 kB font** · thêm hàng “Xoay trái · xoay phải — Q · Z” |
+| `DESIGN.md` §2/§8 | 7 giây · “930 kB, nén 280 kB” · “chưa có service worker” | **~15 giây** · **1.335 kB / 420 kB** · offline **đã xong từ lượt 40** |
+| `DESIGN.md` §7 | 23 tệp test được mô tả (mục 7 viết từ lượt 13) | 46 tệp: thêm danh sách 26 tệp còn lại + tổng **560 bài** |
+| `TODO.md` | “499 bài / 39 tệp” · “chưa có service worker” · “bản lưu v15” · dấu “·” thừa trong Sổ tay | **560/46** · offline đã xong · **v16** · đã rà `panels.ts:273`, không còn thừa |
+
+Hai mục “lỗi nhỏ đã biết” (dấu “·” trong Sổ tay, service worker) nay đã kiểm bằng mã nên **xoá khỏi danh sách lỗi**.
+`PLAN.md` thêm **Lượt 50** (báo cáo soát giao diện, không phải bản phát hành) và **Lượt 51** (bản sửa thật).
 
 **Quy tắc menu ẩn (`src/game/devPoints.ts`):** mỗi lượt làm xong thì **thay** nhóm “Mới nhất — …” bằng mục test của
 tính năng vừa làm (3–9 mục: dựng sẵn, tới chỗ, mở bảng, tua thời gian, dọn), **xoá** mục test của lượt cũ, và chỉ giữ
@@ -269,7 +293,7 @@ trước khi push là đủ bắt các số cũ quay lại.
 ```
 (1) Đã làm: <một câu nói theo góc người chơi thấy>
 (2) Tệp chính: src/... , tests/... , tài liệu đã cập nhật
-(3) Kiểm tra: npm test → 322/322 · npm run typecheck → sạch · npm run build → OK
+(3) Kiểm tra: npm test → 560/560 · npm run typecheck → sạch · npm run build → OK
     [nếu có] node play.mjs steps/<x>.mjs → errors: none, ảnh tools/probe/out/<x>.png
 (4) Chưa kiểm được: <FPS máy thật / âm thanh / màn dọc trên máy thật / …>
 ```
