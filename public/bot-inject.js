@@ -953,6 +953,30 @@ function doEarn() {
     }
   }
 
+  // ─── SELL JUNK PRIORITY: Convert junk to cash ASAP ───
+  if (hasJunk() && junkN() >= 10 && !(B.giveUpUntil && B.tick < B.giveUpUntil)) {
+    const scrap1 = LOC.scrap || {x:-60, z:79};
+    const scrap2 = LOC.scrap2 || {x:79, z:-7};
+    const d1 = D(p.x, p.z, scrap1.x, scrap1.z);
+    const d2 = D(p.x, p.z, scrap2.x, scrap2.z);
+    const dealer = d1 < d2 ? scrap1 : scrap2;
+    const sd = Math.min(d1, d2);
+    B.target = dealer; B.action = `🗑️ Đi bán ve chai (${sd.toFixed(0)}m, junk=${junkN()})...`;
+    goTo(dealer.x, dealer.z, 3);
+    if (sd < 4) {
+      stop();
+      const tryAngle = (B.tick % 4) * Math.PI * 0.5;
+      const faceX = dealer.x + Math.sin(tryAngle) * 2;
+      const faceZ = dealer.z + Math.cos(tryAngle) * 2;
+      p.face(faceX, faceZ);
+      if (interact()) {
+        lg('🗑️ Nói chuyện vựa ve chai!','good');
+        B.dlgWait = 10;
+      }
+    }
+    return;
+  }
+
   // ─── WORK PRIORITY: Go to dock/eatery when it's work hours (only if not hungry/thirsty) ───
   const hunger = state.st?.hunger ?? 100;
   const thirst = state.st?.thirst ?? 100;
@@ -1067,31 +1091,6 @@ function doEarn() {
     return;
   }
 
-  // Sell junk if have enough - GO TO DEALER if junk >= 10
-  if (hasJunk() && junkN() >= 10 && !(B.giveUpUntil && B.tick < B.giveUpUntil)) {
-    const scrap1 = LOC.scrap || {x:-60, z:79};
-    const scrap2 = LOC.scrap2 || {x:79, z:-7};
-    const d1 = D(p.x, p.z, scrap1.x, scrap1.z);
-    const d2 = D(p.x, p.z, scrap2.x, scrap2.z);
-    const dealer = d1 < d2 ? scrap1 : scrap2;
-    const sd = Math.min(d1, d2);
-    // Go to dealer regardless of distance
-    B.target = dealer; B.action = `🗑️ Đi bán ve chai (${sd.toFixed(0)}m, junk=${junkN()})...`;
-    goTo(dealer.x, dealer.z, 3);
-    if (sd < 4) {
-      stop();
-      // Try multiple angles to find NPC
-      const tryAngle = (B.tick % 4) * Math.PI * 0.5;
-      const faceX = dealer.x + Math.sin(tryAngle) * 2;
-      const faceZ = dealer.z + Math.cos(tryAngle) * 2;
-      p.face(faceX, faceZ);
-      if (interact()) {
-        lg('🗑️ Nói chuyện vựa ve chai!','good');
-        B.dlgWait = 10;
-      }
-    }
-    return;
-  }
   // Sell junk if dealer is close (< 25m) and junk >= 2
   if (hasJunk() && junkN() >= 2 && !(B.giveUpUntil && B.tick < B.giveUpUntil)) {
     const scrap1 = LOC.scrap || {x:-60, z:79};
