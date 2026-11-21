@@ -792,7 +792,14 @@ export class Acts {
     ctx.player.gesture('drink', 0.8);
     // đồ ăn sẵn mua ngoài: rủi ro nền 6 %, thêm nếu để lâu; đồ uống đóng chai thì thấp hơn
     const risk = R.stomachChance(g, { bought: true, risky: s.fresh < 35 ? 0.30 : 0 });
-    R.consume(g, d.eat, risk); g.led.food += s.cost; s.n -= 1; if (s.n <= 1e-6) list.splice(idx, 1); sfx(dr ? 'drink' : 'eat'); bus.emit('ui', 'eat');
+    R.consume(g, d.eat, risk);
+    // Đồ uống tăng lực (cột `st`, vd Shapi): hồi thẳng vào thanh thể lực của người chơi, kẹp theo trần hiện tại.
+    if (d.eat.st) {
+      const p = ctx.player, before = p.stamina, after = R.staminaAfter(before, p.staminaCap, d.eat.st);
+      p.stamina = after; if (after > 0.3) p.tired = false;
+      toast(`${d.name}: thanh thể lực +${Math.round((after - before) * 100)} % — chạy tiếp được rồi.`, 'good', 'bolt');
+    }
+    g.led.food += s.cost; s.n -= 1; if (s.n <= 1e-6) list.splice(idx, 1); sfx(dr ? 'drink' : 'eat'); bus.emit('ui', 'eat');
   }
   eatDish(i: number) {
     const g = this.g, rd = g.stall.ready[i]; if (!rd) return; const r = RECIPES[rd.rid];

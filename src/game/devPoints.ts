@@ -14,10 +14,12 @@ import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
 import { advice, destOpen, nowText } from '../sim/advice';
 import { LANDMARK_BY_ID } from '../data/landmarks';
+import { SHOPS } from '../data/shops';
+import { INGS } from '../data/ingredients';
 import { money } from '../core/util';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Thanh thể lực hồi nhanh/chậm theo máu và pin năng lượng — người khoẻ chạy 10 giây, máu 20 chạy ngắn hơn và đứng chờ lâu gấp đôi mới đầy thanh';
+export const DEV_BUILD_TAG = 'Tiệm bánh Anh Bảo bán thêm 5 loại bánh sẵn (no và vui tăng theo giá) + nước tăng lực Shapi hồi 30 % thanh chạy, bán ở MiniMart và Tạp hoá Cô Ba';
 
 /**
  * MÃ PIN CỦA MENU ẨN. Bấm 7 lần chữ "Cài đặt" chỉ mở bàn phím số; nhập đúng mã này mới thấy menu test.
@@ -99,65 +101,65 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — thanh chạy hồi theo máu & pin (lượt 53)',
+      title: 'Mới nhất — bánh ở Tiệm bánh Anh Bảo + nước tăng lực Shapi (lượt 54)',
       items: [
         {
-          id: 'stam_now',
-          label: 'Thanh chạy của bạn lúc này hồi nhanh hay chậm?',
-          sub: 'Đọc từ chính máu và pin hiện tại: bao nhiêu giây thì đầy, chạy liền được mấy giây',
+          id: 'banh_list',
+          label: 'Tiệm bánh bán những gì, no và vui ra sao?',
+          sub: 'Đọc thẳng bảng nguyên liệu: giá gốc, độ no, độ vui từng loại bánh (đắt hơn ⇒ no và vui hơn)',
           tone: 'green',
           closePanel: true,
           run: () => {
-            const g = ctx.g;
-            const regen = R.staminaRegen(g, false), drain = R.staminaDrain(g), mul = R.staminaRegenMul(g);
+            const line = (id: string) => {
+              const d = INGS[id], e = d.eat!;
+              return `${d.name} — ${money(d.price)}: no +${e.h ?? 0}, vui +${e.m ?? 0}`;
+            };
+            // Bánh mì ổ là mặt hàng nền (mua về làm nguyên liệu, ăn được), nên để riêng:
+            // thang "đắt hơn ⇒ no và vui hơn" chỉ tính 5 loại bánh mới của lượt 54.
+            const ladder = SHOPS.bakery.items.filter((id) => id !== 'banhmi').sort((a, b) => INGS[a].price - INGS[b].price).map(line);
             ctx.ui.dialog({
-              who: 'Thanh chạy lúc này',
-              text: `Máu ${Math.round(g.st.health)}/100 · pin ${Math.round(g.st.energy)}/100 — thanh thể lực hồi ${Math.round(mul * 100)}% tốc độ bình thường.\n\n`
-                + `Đứng yên: +${(regen * 100).toFixed(1)}%/giây → ${(1 / regen).toFixed(0)} giây thì đầy thanh.\n`
-                + `Vừa đi vừa hồi: +${(R.staminaRegen(g, true) * 100).toFixed(1)}%/giây.\n`
-                + `Chạy: −${(drain * 100).toFixed(1)}%/giây → thanh đầy chạy liền được ${(1 / drain).toFixed(1)} giây.\n\n`
-                + `Máu càng thấp và pin càng cạn thì hồi càng chậm, tụt càng nhanh. Ăn no, ngủ đủ, đi khám khi mất máu là chạy dai nhất.`,
+              who: 'Tiệm bánh Anh Bảo',
+              text: `Anh Bảo bán 6 loại, mở 5h–20h (chiều muộn xả giá như mọi sạp).\n\n`
+                + `Thang bánh mới — đắt hơn là no hơn và vui hơn:\n${ladder.join('\n')}\n\n`
+                + `Bánh mì ổ (${line('banhmi')}) là món nền: rẻ nhất, mua về làm nguyên liệu, ăn đỡ đói thì lời nhất.`,
               opts: [{ t: 'Đóng' }],
             });
           },
         },
         {
-          id: 'stam_compare',
-          label: 'So ba mức: khoẻ / máu 45 / máu 20 (pin cạn theo)',
-          sub: 'Bảng số thật của luật mới: hồi mấy giây đầy thanh và chạy liền được bao lâu',
+          id: 'banh_tele',
+          label: 'Tele tới quầy Tiệm bánh Anh Bảo (giữa chợ)',
+          sub: 'Đứng ngay trước quầy bánh để bấm thử từng loại',
           tone: 'yellow',
           closePanel: true,
           run: () => {
-            const rows = [[95, 90], [45, 45], [20, 0]].map(([hp, en]) => {
-              const h0 = ctx.g.st.health, e0 = ctx.g.st.energy;
-              ctx.g.st.health = hp; ctx.g.st.energy = en;
-              const mul = R.staminaRegenMul(ctx.g), drain = R.staminaDrain(ctx.g);
-              ctx.g.st.health = h0; ctx.g.st.energy = e0;
-              return `máu ${hp}/pin ${en}: hồi ${Math.round(mul * 100)}% → ${(1 / (0.09 * mul)).toFixed(0)} giây đầy, chạy liền ${(1 / drain).toFixed(1)} giây`;
-            });
-            ctx.ui.dialog({ who: 'Thanh chạy — hồi theo máu & pin', text: rows.join('\n'), opts: [{ t: 'Đóng' }] });
+            const a = ctx.world.anchors.v_bakery;
+            if (a) tpTo(a.x, a.z + 2.2, a.yaw + Math.PI, 'Đã tới Tiệm bánh Anh Bảo — bấm vào ô bánh để lấy.');
           },
         },
         {
-          id: 'stam_hurt',
-          label: 'Cho mình đang thương: máu 20, pin 10',
-          sub: 'Đặt chỉ số rồi giữ Shift (hoặc đẩy cần ảo) để thấy chạy ngắn hơn và lâu đầy thanh hơn',
-          tone: 'red',
-          closePanel: true,
-          run: () => {
-            const g = ctx.g; g.st.health = 20; g.st.energy = 10;
-            toast(`Máu 20, pin 10 — thanh thể lực giờ chỉ hồi ${Math.round(R.staminaRegenMul(g) * 100)}% tốc độ. Giữ Shift mà chạy thử.`, 'bad', 'heart', true);
-          },
-        },
-        {
-          id: 'stam_heal',
-          label: 'Trả lại người khoẻ: máu 90, pin 90',
-          sub: 'Để thử lại cảm giác chạy đủ đà, hoặc dọn chỉ số sau khi test xong',
+          id: 'shapi_drink',
+          label: 'Uống thử một lon Shapi: thanh chạy +30 %',
+          sub: 'Tự thêm 1 lon vào túi rồi uống ngay, xem thanh thể lực nhảy lên bao nhiêu',
           tone: 'green',
           closePanel: true,
           run: () => {
-            const g = ctx.g; g.st.health = 90; g.st.energy = 90; g.st.hunger = Math.max(g.st.hunger, 70); g.st.thirst = Math.max(g.st.thirst, 70);
-            toast('Đã trả máu 90, pin 90, bụng và nước đủ — thanh thể lực hồi lại bình thường.', 'good', 'heart');
+            const p = ctx.player, before = p.stamina;
+            addStack(ctx.g.bag, { id: 'shapi', n: 1, fresh: 100, q: 1, cost: 9000 });
+            const i = ctx.g.bag.findIndex((s) => s.id === 'shapi');
+            ctx.acts.eat(ctx.g.bag, i);
+            toast(`Thanh thể lực: ${Math.round(before * 100)} % → ${Math.round(p.stamina * 100)} % (lon Shapi 9.000₫ ở MiniMart/Tạp hoá).`, 'info', 'bolt', true);
+          },
+        },
+        {
+          id: 'shapi_tele',
+          label: 'Tele tới MiniMart 24h (kệ đá có lon Shapi)',
+          sub: 'Lon Shapi nằm ở ô số 2 của kệ đá cuối tiệm, cạnh nước ngọt',
+          tone: 'yellow',
+          closePanel: true,
+          run: () => {
+            const a = ctx.world.anchors.v_mart;
+            if (a) tpTo(a.x, a.z + 1.6, Math.PI, 'Đã tới MiniMart 24h — kệ đá cuối tiệm có nước tăng lực Shapi.');
           },
         },
       ],

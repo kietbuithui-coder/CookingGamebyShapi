@@ -87,6 +87,7 @@ Còn thiếu (để lượt sau, chưa làm):
 
 - **Âm thanh**: chưa nghe thử trên tai nghe/loa điện thoại thật để cân lại nhạc nền với hiệu ứng.
 - **Nhịp độ**: chưa chơi thử dài để cân tốc độ kiếm vốn ngày đầu, lượng khách khi uy tín thấp, độ khó các mini-game (nấu, đua xe đạp).
+- **Bánh & nước tăng lực (lượt 54)**: đã có 5 loại bánh bán sẵn và lon Shapi. Còn thiếu: **bánh bao hấp nóng** (mua về còn nóng, ăn vui hơn), **tự nướng bánh để bán ở quầy** (người chơi lượt 54 chọn không thêm công thức — nếu sau này muốn thì phải thêm cả dụng cụ lò nướng), **lon Shapi trong tủ lạnh quầy** (bán lại cho khách), và **giá Shapi tăng khi MiniMart có sự kiện khuyến mãi**.
 - **Thể lực (lượt 53)**: mới có hệ số theo máu + pin. Còn thiếu: **thể trạng cơ thể** (gọn/đậm) tác động lên hệ số này, **mang nặng** (bao gạo, thùng hàng) làm tụt nhanh hơn hiện tại (mới chỉ phạt tốc độ đi), và **đồ uống tăng lực** (nước tăng lực bán ở MiniMart) hồi thanh ngay một phần.
 - **Màn dọc**: HUD vẫn chật khi điện thoại để dọc (đã có thanh cỡ giao diện 70–160% và lời khuyên xoay ngang, nhưng chưa bố trí lại riêng cho màn dọc).
 - **Bậc 6 chưa có probe giao diện**: luật đã có test (`tests/nhahang.test.ts`), nhưng chưa chạy `tools/probe` cho nhà hàng bình dân (8 ghế, khách đoàn, bảng đặt bàn trước, phụ bếp) ở cả màn ngang và màn dọc.

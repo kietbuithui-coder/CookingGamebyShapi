@@ -26,9 +26,10 @@ export default [boot, fresh(9 * 60),
   { eval: () => { const m = document.querySelector('#modal'); return { title: m.querySelector('h2') ? m.querySelector('h2').innerText : '(không có)', sections: [...m.querySelectorAll('h4')].map((h) => h.innerText), items: [...m.querySelectorAll('[data-k]')].map((b) => b.dataset.k) }; } },
   { shot: 'dev_c_unlocked' },
 
-  { label: 'chạy mục "Soát 96 mốc giờ" của lượt 52' },
-  { eval: () => { const b = [...document.querySelectorAll('[data-k]')].find((x) => x.dataset.k === 'hobo_audit'); b.click(); return 1; }, quiet: true, wait: 1200 },
-  { eval: () => (document.querySelector('#toasts') || { innerText: '' }).innerText.replace(/\n+/g, ' | ').slice(0, 220) },
+  { label: 'chạy mục "Tiệm bánh bán những gì" của lượt 54' },
+  { eval: () => { const b = [...document.querySelectorAll('[data-k]')].find((x) => x.dataset.k === 'banh_list'); b.click(); return 1; }, quiet: true, wait: 900 },
+  { eval: () => { const d = document.querySelector('#dlg'); return { open: !!d && !d.classList.contains('hide'), text: (d.innerText || '').replace(/\n+/g, ' | ').slice(0, 300) }; } },
+  { eval: () => { const g0 = window.__game; g0.ui.closeDialog(); g0.mode = 'play'; return 1; }, quiet: true, wait: 400 },
 
   { label: 'đóng Cài đặt rồi mở lại: vẫn còn trong menu (không phải gõ mã)' },
   { eval: () => { const g0 = window.__game; g0.ui.closePanel(); g0.mode = 'play'; return 1; }, quiet: true, wait: 400 },

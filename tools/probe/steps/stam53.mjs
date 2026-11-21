@@ -56,26 +56,6 @@ export default [boot, fresh(9 * 60),
   setStats(95, 95), measureDrain(0.9),
   { eval: () => ({ keysLeft: window.__game.input.keys.size, running: window.__game.player.running }) },
 
-  { label: '⑥ mở menu ẩn bằng mã 7777 rồi xem nhóm "thanh chạy" của lượt 53' },
-  { eval: () => { const g0 = window.__game; g0.ui.panel('settings'); return 1; }, quiet: true, wait: 600 },
-  { eval: () => { const el = document.querySelector('#dev-unlock'); for (let i = 0; i < 7; i++) el.click(); return !!document.querySelector('[data-pin]'); }, quiet: true, wait: 400 },
-  ...['7', '7', '7', '7'].map((k) => ({ eval: (sel, k) => { const el = [...document.querySelectorAll(sel)].find((e) => e.dataset.pin === k); el.click(); return k; }, args: ['[data-pin]', k], quiet: true, wait: 150 })),
-  { eval: () => { const m = document.querySelector('#modal'); return { title: m.querySelector('h2').innerText, sections: [...m.querySelectorAll('h4')].map((h) => h.innerText), stats: [...m.querySelectorAll('[data-k]')].map((b) => b.dataset.k).filter((k) => k.startsWith('stam_')) }; } },
-  { shot: 'stam53_menu' },
-
-  { label: '⑦ bấm "So ba mức" — đọc bảng số thật' },
-  { eval: () => { const b = [...document.querySelectorAll('[data-k]')].find((x) => x.dataset.k === 'stam_compare'); b.click(); return 1; }, quiet: true, wait: 700 },
-  { eval: () => { const d = document.querySelector('#dlg'); return { open: !!d && !d.classList.contains('hide'), text: (d.innerText || '').replace(/\n+/g, ' | ').slice(0, 400) }; } },
-  { shot: 'stam53_compare' },
-  { eval: () => { const g0 = window.__game; g0.ui.closeDialog(); return !!document.querySelector('#dlg').classList.contains('hide'); }, quiet: true, wait: 300 },
-
-  { label: '⑧ bấm "Cho mình đang thương" rồi "Trả lại người khoẻ"' },
-  { eval: () => { const g0 = window.__game; g0.mode = 'play'; g0.ui.panel('settings'); return 1; }, quiet: true, wait: 500 },
-  { eval: () => { const b = [...document.querySelectorAll('[data-k]')].find((x) => x.dataset.k === 'stam_hurt'); b.click(); return 1; }, quiet: true, wait: 500 },
-  { eval: () => ({ hp: window.__game.g.st.health, en: window.__game.g.st.energy, menuClosed: !document.querySelector('[data-a="devRun"]'), toast: (document.querySelector('#toasts') || { innerText: '' }).innerText.replace(/\n+/g, ' | ').slice(0, 160) }) },
-  { label: 'mở lại Cài đặt (menu ẩn còn nhớ trong phiên) để bấm "Trả lại người khoẻ"' },
-  { eval: () => { const g0 = window.__game; g0.mode = 'play'; g0.ui.panel('settings'); return 1; }, quiet: true, wait: 500 },
-  { eval: () => { const b = [...document.querySelectorAll('[data-k]')].find((x) => x.dataset.k === 'stam_heal'); b && b.click(); return !!b; }, quiet: true, wait: 500 },
-  { eval: () => ({ hp: window.__game.g.st.health, en: window.__game.g.st.energy }) },
-  { eval: () => { const g0 = window.__game; g0.ui.closePanel(); g0.mode = 'play'; return 1; }, quiet: true, wait: 300 },
+  // Lượt 54 đã thay các mục menu của lượt 53 bằng mục bánh/Shapi (đúng luật “mỗi lượt thay mục test cũ”),
+  // nên probe này chỉ đo luật tốc độ; menu ẩn do `devpin.mjs` canh.
 ];

@@ -1337,3 +1337,27 @@ Hỏi lại ba câu trước khi làm, người chơi chọn: **máu + năng lư
 
 **Chưa kiểm được:** cảm giác chạy trên điện thoại thật (môi trường không có GPU); probe chạy 844×390 nên chưa đo lại
 bố cục thanh thể lực trên màn dọc 390×844.
+
+### Lượt 54 — bánh ở Tiệm bánh Anh Bảo + nước tăng lực Shapi
+
+Người chơi xin ba việc: *“nước tăng lực có nhãn Shapi bán ở kệ minimart/tạp hoá”*, *“ở chợ thêm một số loại bánh ở tiệm
+bánh mì và sửa tiệm bánh mì thành tiệm bánh”*, *“bánh no và vui vẻ tuỳ giá”*. Hỏi lại 4 câu trước khi làm, người chơi
+chọn: **5–6 loại bánh chỉ bán sẵn (không thêm công thức)**, **Shapi hồi 30 % thanh giá 9.000₫**, **“Tiệm bánh Anh Bảo”**,
+**no và vui tăng tuyến tính theo giá**.
+
+- `src/data/ingredients.ts`: 5 bánh mới (`banhmique` 5.000₫, `banhtieu` 7.000₫, `banhbao` 12.000₫, `banhsu` 15.000₫,
+  `banhbonglan` 25.000₫) + `shapi` 9.000₫; cột `Eat` thêm `st` (hồi thanh thể lực). No/vui theo công thức
+  1.000₫ ≈ 1,6 no + 0,5 vui.
+- `src/data/shops.ts`: `bakery` đổi tên **Tiệm bánh Anh Bảo**, bán 6 món; `mart` (22 ô) và `kiosk` (13 ô) thêm `shapi`.
+- `src/sim/rules.ts`: `staminaGain`, `staminaAfter` (kẹp theo trần) — thanh thể lực nằm trên player nên sim chỉ cung cấp
+  luật, `game/acts.ts` mới cộng vào thanh khi ăn/uống (`if (d.eat.st)`), gỡ `tired`, báo toast.
+- `src/world/places.ts`: sạp chợ chia ô theo nhóm 8 (trước 5, tiệm bánh 6 món bị rơi mất 1), MiniMart 8+8+8 ô,
+  tạp hoá 7+6 ô trên quầy, kệ giữa MiniMart thôi đăng ký ô trùng.
+- Menu ẩn làm mới theo lượt: `banh_list` (bảng bánh), `banh_tele`, `shapi_drink` (uống thử), `shapi_tele`;
+  `tests/devpoints.test.ts` cập nhật.
+- `tests/banh54.test.ts` (8 bài) + probe `tools/probe/steps/banh54.mjs` (bấm thật: chạm ô, tính tiền, ăn, uống).
+- Changelog **Lượt 54**, `tests/changelog.test.ts` trỏ sang bản mới (bản Lượt 45 rơi khỏi danh sách 8 bản).
+  DESIGN §4.37 + README; PLAYBOOK cập nhật số test/probe/hằng số.
+
+**Chưa kiểm được:** cảm giác ăn bánh trên điện thoại thật; probe chạy màn ngang 844×390 nên chưa xem lại quầy tạp hoá
+13 ô ở màn dọc 390×844 (biển giá trên quầy dày 0,78 m — nếu chật sẽ phải giảm còn 6+6 ô).

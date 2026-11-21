@@ -851,6 +851,44 @@ liền được mấy giây, cạn rồi đứng chờ bao lâu mới đầy —
 giữ Shift thật: máu 90 → **0,09/giây**, máu 20 → **0,045/giây**, máu 20 + pin 10 → **0,037/giây**, tụt khi chạy
 **0,1 → 0,13/giây**, console sạch.
 
+### 4.37 Bánh sẵn & nước tăng lực Shapi (lượt 54)
+
+**Tiệm bánh Anh Bảo** (sạp giữa chợ, `shops.ts` id `bakery`) đổi tên từ “Lò bánh mì Anh Bảo” và bán thêm 5 loại bánh
+ăn liền. Mặt hàng mới là nguyên liệu trong `data/ingredients.ts` với cột `eat` — **không có công thức nào dùng chúng**
+(người chơi chọn “chỉ bán sẵn”), và `tests/banh54.test.ts` canh đúng điều đó để sau này không ai lỡ nhét bánh vào món.
+
+| Bánh | Giá | No | Vui | Hạn dùng |
+|---|---|---|---|---|
+| Bánh mì (nền, có từ trước) | 3.500₫ | 26 | 1 | 52,8 giờ |
+| Bánh mì que pa-tê | 5.000₫ | 8 | 3 | 36 giờ |
+| Bánh tiêu | 7.000₫ | 11 | 4 | 31 giờ |
+| Bánh bao nhân thịt | 12.000₫ | 19 | 6 | 36 giờ |
+| Bánh su kem | 15.000₫ | 24 | 8 | 28,8 giờ (phải giữ lạnh) |
+| Bánh bông lan | 25.000₫ | 40 | 13 | 48 giờ |
+
+Luật “bánh no và vui vẻ tuỳ giá”: **cứ 1.000₫ ≈ 1,6 no và 0,5 vui**, làm tròn — bánh đắt thật sự no hơn và vui hơn chứ
+không phải cùng một ổ bánh gắn giá khác. Bánh mì ổ đứng ngoài thang này vì nó là **nguyên liệu nền** (mua về làm bánh
+mì trứng, bánh mì thịt…) chứ không phải món ăn vặt; menu test của người làm game tách riêng hai nhóm cho khỏi đọc nhầm.
+Bánh mua ở quầy vào túi là bấm **Ăn** được ngay, không qua mini-game nấu.
+
+**Nước tăng lực Shapi** (`shapi`, 9.000₫/lon) là lon **rẻ nhất** trong nhóm đồ uống có ga, bán ở MiniMart 24h (kệ đá
+cuối tiệm, ô số 2) và Tạp hoá Cô Ba. Vì thanh thể lực nằm trên **người chơi** (`player.stamina`) chứ không nằm trong
+`g.st`, `src/sim` không tự cộng được: `data/ingredients.ts` khai `eat.st = 0,3`, `sim/rules.ts` có hai hàm thuần
+`staminaGain` / `staminaAfter(now, cap, amount)` (kẹp theo trần hiện tại), còn `game/acts.ts` đọc `st` khi ăn/uống, cộng
+vào thanh, gỡ cờ `tired` và báo bằng toast “thanh thể lực +30 %”. Uống lúc thanh gần đầy thì chỉ đầy tới trần — không
+tích luỹ, nên không có chuyện uống 5 lon rồi chạy vô hạn.
+
+Hai chỗ bày hàng phải nới ô để **mỗi mặt hàng chỉ nằm đúng một chỗ**: sạp chợ chia hàng theo nhóm 8 ô (trước cố định 5
+ô/hàng, tiệm bánh 6 món thì món thứ 6 không hiện), MiniMart 8 + 8 + 8 ô (trước 6 + 6 + 6, thiếu ô nên món 19–22 không
+bày được), tạp hoá 7 + 6 ô trên quầy. Kệ giữa MiniMart trước đây đăng ký trùng ô 12–13 với kệ sau — nay chỉ để trưng
+bày, không đăng ký ô.
+
+**Kiểm:** `tests/banh54.test.ts` (8 bài: 6 món + tên tiệm, không công thức nào dùng bánh, bánh ăn liền, no/vui tăng đơn
+điệu theo giá đúng tỉ lệ, Shapi bán đúng hai chỗ, hồi 30 % và không vượt trần, uống giúp chạy thêm ~2 giây) · probe
+`tools/probe/steps/banh54.mjs` bấm thật: chạm ô bánh bông lan (24.000₫) + bánh mì que (4.500₫) → tính tiền 28.500₫ →
+ăn bánh bông lan no 20→58, bánh mì que no 20→28; chạm lon Shapi ở MiniMart → tính tiền; uống khi thanh 0,1 → **0,40**;
+uống khi thanh 0,85 → **1,0** (không vượt trần); tạp hoá ô 13 lấy được lon Shapi · console sạch.
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.

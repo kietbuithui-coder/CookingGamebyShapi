@@ -14,6 +14,19 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 54',
+    tag: 'Tiệm bánh Anh Bảo bán thêm năm loại bánh, và nước tăng lực Shapi hồi thẳng thanh chạy',
+    items: [
+      'Lò bánh mì Anh Bảo đổi thành Tiệm bánh Anh Bảo — giờ bán cả bánh ngọt, không chỉ bánh mì.',
+      'Quầy có thêm bánh mì que pa-tê, bánh tiêu, bánh bao nhân thịt, bánh su kem và bánh bông lan; cả sáu loại bày trên cùng một quầy giữa chợ.',
+      'Bánh càng đắt thì ăn càng no và càng vui: bánh mì que 5.000₫ no 8 vui 3, bánh bông lan 25.000₫ no 40 vui 13 — không có chuyện trả nhiều tiền mà bụng y như nhau.',
+      'Bánh mua về ăn liền trong Túi, không phải nấu; bánh su kem phải giữ lạnh, còn bánh bông lan để được gần hai ngày.',
+      'Nước tăng lực nhãn Shapi mới ra lò: 9.000₫/lon, bán ở MiniMart 24h (kệ đá cuối tiệm) và Tạp hoá Cô Ba (ô cuối quầy).',
+      'Uống một lon Shapi là thanh chạy hồi ngay 30 %, cạn pin mà còn lon trong túi thì chạy tiếp được — nhưng đừng uống khi thanh đã gần đầy, phí.',
+      'Kệ MiniMart và quầy tạp hoá được nới thêm ô để mỗi mặt hàng chỉ nằm đúng một chỗ, không còn cảnh lấy hàng ở ô trống.',
+    ],
+  },
+  {
     v: 'Lượt 53',
     tag: 'Thanh thể lực hồi nhanh hay chậm tuỳ máu và pin — người khoẻ chạy dai, người đang thương thở dốc',
     items: [
@@ -98,16 +111,6 @@ export const CHANGELOG: LogEntry[] = [
       'Phí chỗ Cổng Chợ: 30.000 → 18.000₫/ngày. Cổng Công Viên: 20.000 → 12.000₫/ngày (giảm 40 %).',
       'Giá thuê chi nhánh ở chợ và công viên cũng giảm 40 %: chợ 120.000 → 72.000₫, công viên 90.000 → 54.000₫/ngày.',
       'Các chỗ khác giữ nguyên giá.',
-    ],
-  },
-  {
-    v: 'Lượt 45',
-    tag: 'Điện thoại: vừa đi vừa nhảy/đấm được',
-    items: [
-      'Trên điện thoại, đang giữ cần ảo mà bấm Nhảy hoặc Đấm thì trước đây vừa không nhảy được, vừa khựng lại — nay chạy đúng.',
-      'Đo thật: đang đi, bấm Nhảy vẫn đi tiếp (mz 0,86, quãng đường tăng đều); bấm Đấm cũng vậy.',
-      'Nguyên nhân: nút nằm trong lớp #ui trong suốt với chạm nên ngón tay rơi xuống canvas, canvas cướp mất cần ảo.',
-      'Trên máy tính không đổi gì: W + Space, W + F, kéo chuột nhìn quanh trong lúc đi vẫn như cũ.',
     ],
   },
 ];

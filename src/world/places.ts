@@ -123,12 +123,18 @@ export function buildPlace(b: Builder, l: Lot, R: RNG) {
       bigSign(b, w, 3.5, 'MiniMart 24h', { bg: '#1f9d55', fg: '#ffffff', sub: 'Tiện lợi · Tươi ngon · Mở cửa 24/7', subFg: '#d9ffe6' }, 1.15, 0.7, 120);
       for (let i = 0; i < 4; i++) b.glow.quad(11.6 - i * 3.1, 4.9, -0.02, 9.4 - i * 3.1, 4.9, -0.02, 9.4 - i * 3.1, 6.4, -0.02, 11.6 - i * 3.1, 6.4, -0.02, i % 2 ? 0xffe2a0 : 0x20262e);
       counter(b, 0.9, 2.3, 4.2, 2.9, 0x2f9d62); U.box(1.6, 1.0, 2.6, 0.4, 0.3, 0.35, 0x2a2c30); b.anchor('v_mart', 2.5, 0.13, 1.5, 0);
-      shelfUnit(b, 0.26, 3.6, 0.85, 9.5, 1.9, WHITE, R, 0.95); for (let i = 0; i < 6; i++) display(b, U, 'mart', i, 0.56, 0.95, 4.1 + i * 0.98, R, [1, 0]);
-      shelfUnit(b, w - 0.85, 1.0, w - 0.26, 9.5, 1.9, WHITE, R, 0.95); for (let i = 0; i < 6; i++) display(b, U, 'mart', 6 + i, w - 0.56, 0.95, 1.7 + i * 1.45, R, [-1, 0]);
-      shelfUnit(b, 6.3, 4.4, 7.7, 8.0, 1.5, WHITE, R, 0.95); display(b, U, 'mart', 12, 6.62, 0.95, 5.3, R, [-1, 0]); display(b, U, 'mart', 13, 7.38, 0.95, 7.1, R, [1, 0]);
+      // Hai kệ bên: 8 ô mỗi bên (trước là 6) để bày đủ 22 mặt hàng của MiniMart, kể cả lon Shapi mới.
+      // (shelfUnit chừa một tầng chân đế thấp hơn, nên 8 ô đặt từ z 3,7→8,9 bằng nhau.)
+      shelfUnit(b, 0.26, 3.6, 0.85, 9.5, 1.9, WHITE, R, 0.95); for (let i = 0; i < 8; i++) display(b, U, 'mart', 8 + i, 0.56, 0.95, 3.7 + i * 0.74, R, [1, 0]);
+      shelfUnit(b, w - 0.85, 1.0, w - 0.26, 9.5, 1.9, WHITE, R, 0.95); for (let i = 0; i < 6; i++) display(b, U, 'mart', 16 + i, w - 0.56, 0.95, 1.7 + i * 1.45, R, [-1, 0]);
+      // Kệ giữa tiệm chỉ để trưng bày (không đăng ký ô) — mỗi mặt hàng giờ có đúng MỘT ô trên kệ,
+      // nếu không thì cùng một món hiện ở hai chỗ và ô cũ vẫn lấy được hàng trong khi kệ đã dọn.
+      shelfUnit(b, 6.3, 4.4, 7.7, 8.0, 1.5, WHITE, R, 0.95);
+      for (const z of [5.0, 6.4, 7.8]) { U.box(6.62, 1.12, z, 0.3, 0.22, 0.34, 0xe9c23a, undefined, 0.06); U.box(7.38, 1.12, z, 0.3, 0.22, 0.34, 0x2f8fd5, undefined, 0.06); }
       // tủ mát cuối tiệm (có dải đèn LED lạnh sáng ban đêm)
       U.box(w / 2, 0.13, di - 0.55, 11.8, 2.0, 0.62, 0xe6eef2, 0xffffff, 0.04); U.box(w / 2, 0.9, di - 0.87, 11.6, 0.9, 0.02, 0xbfe6f7); b.glow.box(w / 2, 2.02, di - 0.87, 11.6, 0.07, 0.04, 0xdff8ff, 0xdff8ff, 0, true); b.collide(1.1, di - 0.9, 12.9, di - 0.2);
-      for (let i = 0; i < 8; i++) display(b, U, 'mart', 14 + i, 1.9 + i * 1.45, 0.98, di - 1.15, R, [0, -1]);
+      // Kệ đá cuối tiệm: 8 ô ĐẦU danh sách MiniMart (nước giải khát — có cả nước tăng lực Shapi), kèm tủ mát.
+      for (let i = 0; i < 8; i++) display(b, U, 'mart', i, 1.9 + i * 1.45, 0.98, di - 1.15, R, [0, -1]);
       U.box(w / 2, 0.13, di - 1.15, 11.8, 0.85, 0.6, 0xdfe9ee, 0xcfe0e8); b.collide(1.1, di - 1.45, 12.9, di - 0.9);
       for (const z of [3, 6, 9]) {
         ceilLight(b, 3.5, 3.37, z, 2); ceilLight(b, 10.5, 3.37, z, 2);
@@ -372,8 +378,10 @@ export function buildPlace(b: Builder, l: Lot, R: RNG) {
       b.anchor('v_' + cfg.shop, w / 2, 0.13, 2.1, Math.PI);
       if (k === 'kiosk') {
         U.box(w / 2, 0.85, 1.12, cw, 0.3, 0.36, 0x8a6a4a, 0xb99a72, 0.1);
-        for (let i = 0; i < 6; i++) display(b, U, 'kiosk', i, 0.95 + i * 0.82, 0.85, 0.66, R);
-        for (let i = 0; i < 6; i++) display(b, U, 'kiosk', 6 + i, 0.95 + i * 0.82, 1.15, 1.12, R, [0, -1]);
+        // 13 ô trên quầy dài 5,1 m: hàng trước 7 ô + hàng sau 6 ô. Bước 0,78 m để biển giá 0,5 m không chồng nhau;
+        // ô cuối hàng trước là nước tăng lực Shapi, chỗ khách hay đứng chờ tính tiền.
+        for (let i = 0; i < 7; i++) display(b, U, 'kiosk', i, 0.72 + i * 0.78, 0.85, 0.66, R);
+        for (let i = 0; i < 6; i++) display(b, U, 'kiosk', 7 + i, 0.72 + i * 0.78, 1.15, 1.12, R, [0, -1]);
         for (let i = 0; i < 5; i++) U.box(0.7 + i * 1.1, 2.3, 0.35, 0.3, 0.26, 0.05, [0xe2402f, 0xf5c531, 0x3fae5a, 0x2f8fd5, 0xe86f9a][i], undefined, 0, true);
       } else if (k === 'pharmacy') { display(b, U, 'pharmacy', 0, w / 2 + 1.2, 0.85, 0.72, R); U.box(w / 2 - 1, 0.85, 0.75, 0.5, 0.4, 0.3, 0xffffff, 0x1e7a3c); }
       else { for (let i = 0; i < 6; i++) U.box(0.9 + i * 1.05, 0.85, 0.75, 0.3, R.range(0.1, 0.3), 0.25, R.pick([0xd9b84a, 0x4a5a6a, 0x8a5a3a, 0xdfe6ea]), undefined, 0.1); for (let i = 0; i < 9; i++) U.box(0.7 + i * 0.8, 0.98, 0.5, 0.03, 1.6, 0.03, 0x55585e); }
@@ -879,9 +887,13 @@ export function marketStall(b: Builder, shop: string, R: RNG, tarp: number) {
   b.collide(-2.25, -0.64, 2.25, 0.62);
   const wet = shop === 'm_thit' || shop === 'm_haisan';
   if (wet) { D.box(0, 0.72, -0.33, 4.4, 0.04, 0.58, 0xdfe9ee, 0xeef6fa); D.box(0, 0.92, 0.3, 4.4, 0.04, 0.58, 0xdfe9ee, 0xeef6fa); }
-  for (let i = 0; i < def.items.length && i < 10; i++) {
-    const row = i < 5 ? 0 : 1, k = i % 5, n = row === 0 ? Math.min(5, def.items.length) : def.items.length - 5;
-    const x = (k - (n - 1) / 2) * 0.88;
+  // Chia hàng theo nhóm 8 ô: sạp ít hàng (5–8 món) vẫn nằm gọn giữa quầy, sạp nhiều (vd tiệm bánh 6 loại)
+  // thì tự sang hàng sau — trước đây cố định 5 ô/hàng nên tiệm bánh chỉ bày được 5 trên 6 loại.
+  const perRow = Math.min(8, Math.ceil(def.items.length / 2));
+  const nItems = Math.min(def.items.length, 10);
+  for (let i = 0; i < nItems; i++) {
+    const row = i < perRow ? 0 : 1, k = row === 0 ? i : i - perRow, n = row === 0 ? Math.min(perRow, nItems) : nItems - perRow;
+    const x = (k - (n - 1) / 2) * (n > 5 ? 0.56 : 0.88);
     display(b, D, shop, i, x, row ? 0.96 : 0.76, row ? 0.3 : -0.33, R);
   }
   for (const sx of [-2.3, 2.3]) for (const sz of [-1.0, 1.9]) L.cyl(sx, 0, sz, 0.035, 2.9, 0x8a8f96, 5);

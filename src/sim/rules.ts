@@ -550,13 +550,21 @@ export function tickStats(g: Game, dm: number, a: Activity) {
   for (const k of Object.keys(s) as (keyof typeof s)[]) s[k] = clamp(s[k], 0, STAT_MAX);
 }
 /** Ăn/uống một món. */
-export function consume(g: Game, eff: { h?: number; t?: number; m?: number; hp?: number; e?: number; hy?: number }, risky = 0) {
+export function consume(g: Game, eff: { h?: number; t?: number; m?: number; hp?: number; e?: number; hy?: number; st?: number }, risky = 0) {
   const s = g.st;
   s.hunger = clamp(s.hunger + (eff.h ?? 0), 0, STAT_MAX); s.thirst = clamp(s.thirst + (eff.t ?? 0), 0, STAT_MAX); s.mood = clamp(s.mood + (eff.m ?? 0), 0, STAT_MAX);
   s.health = clamp(s.health + (eff.hp ?? 0), 0, STAT_MAX); s.energy = clamp(s.energy + (eff.e ?? 0), 0, STAT_MAX); s.hygiene = clamp(s.hygiene + (eff.hy ?? 0), 0, STAT_MAX);
   if ((eff.hp ?? 0) >= 20 && g.flags.sick) { delete g.flags.sick; toast('Hết cảm rồi, khoẻ lại rồi!', 'good', 'heart'); }
   if (risky > 0 && rnd.chance(risky)) sickStomach(g, 'Ăn đồ ôi thiu');
 }
+/**
+ * Một món/đồ uống hồi thanh thể lực (cột `st`, thang 0–1 — vd nước tăng lực Shapi: 0,3).
+ * Thanh thể lực nằm trên NGƯỜI CHƠI chứ không nằm trong `g.st`, nên `src/sim` không tự cộng được:
+ * `game/acts.ts` gọi hàm này để lấy lượng hồi (đã kẹp theo trần hiện tại), rồi tự cộng vào thanh.
+ * Hàm vẫn để ở đây để test Node kiểm được luật “uống là hồi, nhưng không vượt trần”.
+ */
+export const staminaGain = (amount: number) => clamp(amount, 0, 1);
+export const staminaAfter = (now: number, cap: number, amount: number) => Math.min(cap, now + staminaGain(amount));
 
 // ───────────────────────── Đau bụng (lượt 41) ─────────────────────────
 /**
