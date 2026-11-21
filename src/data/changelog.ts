@@ -14,6 +14,20 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 55',
+    tag: 'Sạp Dì Sáu đổi tên, khách không còn đi xuyên quầy, và ngủ ở nhà nghỉ / nhà trọ không còn bị văng sang gian khác',
+    items: [
+      'Sạp “Trứng – Giò chả Dì Sáu” trong chợ đổi tên thành “Trứng – Sữa – Giò Dì Sáu”, và quầy bán thêm sữa tươi hộp 32.000₫ cùng sữa đặc lon 24.000₫ cho đúng cái tên.',
+      'Khách tới mua ở gánh hàng rong và xe đẩy không còn đi từ sau lưng người bán rồi xuyên thẳng qua thân quầy: họ vòng qua đầu quầy rồi mới bước ra trước mặt, đúng như khách ngoài đời.',
+      'Lỗi xuyên quầy sửa cho mọi cỡ quầy chứ không riêng nhà hàng: gánh, xe đẩy, sạp và quán ăn nhỏ đều có thân quầy chắn hẳn hoi, cả trên máy tính lẫn điện thoại.',
+      'Ngủ ở nhà nghỉ Bình Dân hay phòng trọ Bác Năm không còn bị văng sang khung gian bên cạnh rồi kẹt cứng: người chơi giờ nằm ở chỗ trống ngay cạnh giường, và tỉnh dậy mà chân còn trong khung giường thì tự bước ra trước khi trả lại quyền đi lại.',
+      'Buồng tắm của nhà nghỉ và nhà trọ được dựng lại tử tế: tường ốp gạch men có đường ron, khay tắm có gờ và lỗ thoát nước, cột sen inox có tay gạt nóng lạnh màu đỏ, đầu vòi hoa sen tròn có sáu lỗ phun.',
+      'Trong buồng tắm còn có kệ ba chai dầu gội, khăn treo, gương soi có đèn, và một tấm chắn kính để nước không bắn ra ngoài.',
+      'Phòng nghỉ và phòng trọ được kê thêm đồ cho ra dáng chỗ ở: tủ đầu giường có đèn ngủ và cuốn sách, quạt treo tường, ti vi nhỏ, rèm cửa, thảm chân giường, móc áo; bên trọ có thêm dây phơi đồ, quạt cây, ấm nước, lịch treo tường và chiếu trải giữa phòng.',
+      'Bảng test của người làm game đổi sang việc của bản này: đọc bảng hàng sạp Dì Sáu, tele tới ba chỗ mới sửa, và dựng sẵn gánh trà đá ở Cổng Chợ để xem khách có vòng qua đầu quầy không.',
+    ],
+  },
+  {
     v: 'Lượt 54',
     tag: 'Tiệm bánh Anh Bảo bán thêm năm loại bánh, và nước tăng lực Shapi hồi thẳng thanh chạy',
     items: [
@@ -101,17 +115,6 @@ export const CHANGELOG: LogEntry[] = [
       'Nút “Sửa lỗi tải”: tự xoá bộ nhớ đệm cũ trên máy rồi mở lại. Tiến trình chơi vẫn giữ nguyên.',
       'Game luôn mở bản mới nhất khi có mạng, chỉ dùng bản lưu khi mất mạng — không còn kẹt ở bản cũ sau mỗi lần cập nhật.',
       'Đang tải mà quá 15 giây chưa lên thì có lời báo thay vì đứng im.',
-    ],
-  },
-  {
-    v: 'Lượt 46',
-    tag: 'Ít mưa hơn, thuê chỗ chợ & công viên rẻ 40 %',
-    items: [
-      'Trời mưa ít hẳn: từ 37 % thời gian xuống còn 18 % (mưa nhỏ 22 % → 11 %, mưa to 10 % → 2,6 %, giông 5,8 % → 4,5 %).',
-      'Mưa tan nhanh hơn, nắng quay lại sớm — bớt cảnh dầm mưa liên miên.',
-      'Phí chỗ Cổng Chợ: 30.000 → 18.000₫/ngày. Cổng Công Viên: 20.000 → 12.000₫/ngày (giảm 40 %).',
-      'Giá thuê chi nhánh ở chợ và công viên cũng giảm 40 %: chợ 120.000 → 72.000₫, công viên 90.000 → 54.000₫/ngày.',
-      'Các chỗ khác giữ nguyên giá.',
     ],
   },
 ];

@@ -903,6 +903,53 @@ bày, không đăng ký ô.
 ăn bánh bông lan no 20→58, bánh mì que no 20→28; chạm lon Shapi ở MiniMart → tính tiền; uống khi thanh 0,1 → **0,40**;
 uống khi thanh 0,85 → **1,0** (không vượt trần); tạp hoá ô 13 lấy được lon Shapi · console sạch.
 
+### 4.38 Sạp Dì Sáu, khách không xuyên quầy, hết kẹt khi ngủ, buồng tắm (lượt 55)
+
+**Tên sạp.** `shops.ts` id `m_trung` đổi thành **“Trứng – Sữa – Giò Dì Sáu”** và bán thêm hai món có thật trong bảng
+nguyên liệu là `suatuoi` (Sữa tươi, hộp giấy, 32.000₫, phải giữ lạnh) và `suadac` (Sữa đặc, lon, 24.000₫) — quầy không
+treo chữ “Sữa” rồi bán thiếu sữa. Lời chào của Dì Sáu nhắc cả sữa, chức danh người đứng quầy (`data/people.ts`) đổi
+thành “Người bán trứng, sữa, giò chả”.
+
+**Khách đi xuyên quầy (bậc 1–4).** `game/stall.ts` trước đây chỉ chặn NPC ở nhà hàng (bậc 5–6 vốn có tường trong
+`rebuild`), còn gánh / xe đẩy / sạp / quán ăn nhỏ thì NPC không đụng vật cản nào, nên khách đi từ sau lưng người bán
+rồi xuyên thẳng qua thân quầy. Nay mọi bậc đều có **hộp thân quầy** trong toạ độ cục bộ:
+
+| Bậc | Mô hình | Nửa bề ngang `hw` | Khoảng z của thân quầy |
+|---|---|---|---|
+| 1 | Gánh hàng rong | 0,95 | −0,5 … 0,62 |
+| 2 | Xe đẩy | 0,95 | −0,5 … 0,62 |
+| 3 | Sạp cố định | 1,4 | −0,6 … 0,62 |
+| 4 | Quán ăn nhỏ | 2,3 | −0,6 … 0,62 |
+| 5–6 | Quán có chỗ ngồi / nhà hàng | — (đã có tường riêng) | — |
+
+`resolveNpcWalls` đẩy NPC ra khỏi hộp đó theo mép gần nhất (ưu tiên phía trước quầy), còn khách đang trong trạng thái
+`toStall` / `actor` mà ở phía sau thì được **chèn waypoint vòng qua đầu quầy** (ngang `±(hw + 0,85)`, rồi ra
+`z = 0,62 + 1,05 = 1,67`). `safeApproach` cũng chạy cho mọi bậc thay vì chỉ bậc 5–6, nên khách từ xa tới cũng đi
+vòng trước chứ không cắt chéo. Không đụng tới `World.resolve` của người chơi — chỉ đường đi của NPC đổi.
+
+**Kẹt khi ngủ.** Mỏ neo giường nằm **đúng giữa nệm**, mà cả khung giường là vật cản, nên `sleep()` đặt người chơi vào
+trong giường: `World.resolve` bắn ra mép gần nhất, có lần xuyên luôn vách sang gian bên kia rồi kẹt (báo trên điện
+thoại). Nay `acts.bedSpot(a)` quét 5 khoảng cách × 7 hướng quanh mỏ neo, lấy chỗ đầu tiên mà `blocked(x, z, 0,36)`
+sai, và `sleep()` đặt người chơi ở đó; `wake()` kiểm lại một lần nữa — chân còn trong vật cản (bản lưu cũ, giường kê
+sát vách) thì bước ra trước khi trả quyền đi lại. Toạ độ giường **không đổi** (người chơi cho phép dời, nhưng không cần).
+
+**Buồng tắm.** `world/places.ts` có hàm `shower(b, x, z, nx, nz, h)` dựng một góc tắm thật thay cho chiếc khay phẳng
+cũ, dùng cho cả nhà nghỉ (`7,0; 4,6` quay về `−z`) và nhà trọ (`3,7; 5,3`): tường ốp gạch men có đường ron ngang,
+khay men có gờ + nắp thoát nước, hộp khoá nước + tay gạt nóng/lạnh màu đỏ, ống đứng inox, tay vươn, đầu vòi hoa sen
+16 cạnh (bán kính đáy 0,125 m, đỉnh 0,105 m) có **6 lỗ phun**, kệ ba chai dầu gội, khăn treo, gương soi + đèn, và một
+tấm chắn kính có va chạm. Mỏ neo `wash_nhanghi` / `wash_tro` giữ nguyên nên lời mời “Tắm vòi sen” vẫn nằm đúng chỗ.
+
+**Đồ đạc thêm.** Nhà nghỉ: tủ đầu giường + đèn ngủ + sách, quạt treo tường, ti vi nhỏ, rèm hai tấm trên thanh treo,
+thảm chân giường, móc áo trên vách đầu giường, ghế nhựa, bàn tròn. Nhà trọ: kệ đầu giường + đèn + khăn gấp, quạt cây,
+dây phơi với ba cái áo, ấm nước + ly trên bàn thấp, lịch treo tường và công tắc cạnh cửa, chiếu trải giữa phòng. Mọi
+món có va chạm đều khai `b.collide`, nên không mở ra lối đi xuyên đồ.
+
+**Kiểm:** `tests/nghi55.test.ts` (12 bài) · probe `tools/probe/steps/fix55a3.mjs` (ngủ rồi tỉnh ở cả hai chỗ: mọi lần
+`blocked: false`, bước ra 4 hướng không nhảy chỗ) · `fix55b5.mjs` (chợ + công viên: ba khách dừng ở `z ≈ 1,5` phía
+trước quầy, `cross: []`) · `fix55c.mjs` (4 ảnh `f55c_nhanghi_wash`, `f55c_tro_wash`, `f55c_nhanghi_room`,
+`f55c_tro_room`) · `fix55e.mjs` (bấm từng mục test mới: `focus` ra đúng “Nói chuyện với người bán trứng, sữa, giò
+chả”, “Tắm vòi sen” ×2, “Ngủ — Nhà nghỉ Bình Dân”, “Ngủ — Phòng trọ”) · console sạch.
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
@@ -918,6 +965,7 @@ uống khi thanh 0,85 → **1,0** (không vượt trần); tạp hoá ô 13 lấ
 
 ## 7. Kiểm thử
 
+- `tests/nghi55.test.ts` — lượt 55: tên sạp Dì Sáu + hai món sữa, hộp thân quầy đủ mọi bậc, khách vòng đầu quầy, `bedSpot`/`wake` chống kẹt giường, chi tiết buồng tắm.
 - `tests/state.test.ts` — ván mới, kho, hư hỏng, nâng cấp bản lưu.
 - `tests/economy.test.ts` — tiền, giá chợ, mặc cả, giá vốn, nhiên liệu, sơ chế/hoàn thiện, đồ nghề, vay nợ, phá sản.
 - `tests/customers.test.ts` — quyết định mua, đánh giá, lượng khách.

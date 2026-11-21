@@ -19,8 +19,10 @@ export const SHOP_LIST: ShopDef[] = [
     items: ['gao', 'nep', 'mi', 'banhpho', 'bun', 'botmi', 'banhtrang', 'dauxanh', 'dauphong'], say: 'Gạo thơm, bún mới ra lò nghen.' },
   { id: 'm_giavi', name: 'Gia vị Cô Út', vendor: 'Cô Út', vendorLook: 1, open: [5, 18], priceMul: 1, fresh: [100, 100], q: 0.9, haggle: 0.3,
     items: ['muoi', 'duong', 'tieu', 'nuocmam', 'nuoctuong', 'tuongot', 'dauan', 'giam', 'giavipho'], say: 'Mắm muối đủ cả, thiếu gì cứ hỏi.' },
-  { id: 'm_trung', name: 'Trứng – Giò chả Dì Sáu', vendor: 'Dì Sáu', vendorLook: 4, open: [5, 18], priceMul: 1, fresh: [88, 100], q: 0.92, haggle: 0.45, lateSale: true,
-    items: ['trung', 'dauhu', 'gio', 'chaca', 'nam'], say: 'Trứng gà ta, giò chả nhà làm.' },
+  // Lượt 55: người chơi đổi tên sạp thành “Trứng – Sữa – Giò Dì Sáu”, nên sạp bán thêm sữa tươi và sữa đặc
+  // (món có thật trong bảng nguyên liệu) cho khớp với tên — không bán thứ mình không có.
+  { id: 'm_trung', name: 'Trứng – Sữa – Giò Dì Sáu', vendor: 'Dì Sáu', vendorLook: 4, open: [5, 18], priceMul: 1, fresh: [88, 100], q: 0.92, haggle: 0.45, lateSale: true,
+    items: ['trung', 'dauhu', 'gio', 'chaca', 'nam', 'suatuoi', 'suadac'], say: 'Trứng gà ta, giò chả nhà làm, sữa tươi sữa đặc đủ cả.' },
   { id: 'mart', name: 'MiniMart 24h', vendor: 'Bé Na', vendorLook: 1, open: [0, 24], priceMul: 1.18, fresh: [90, 96], q: 0.96, haggle: 0, card: true, coldFrom: 14,
     items: ['nuocloc', 'nuocngot', 'shapi', 'tra', 'caphe', 'suadac', 'nuocdua', 'tranchau', 'duong', 'muoi', 'dauan', 'tuongot', 'nuoctuong', 'mi', 'botmi',
       'suatuoi', 'xucxich', 'cavien', 'pate', 'phomai', 'bolat', 'trungca', 'da'], say: 'Dạ, em chào anh chị ạ.' },

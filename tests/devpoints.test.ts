@@ -3,12 +3,11 @@ import { DEV_BUILD_TAG, DEV_PIN, DEV_PIN_LEN, devPinInput, getDevSections } from
 
 describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
   it('chỉ gồm mục của tính năng mới nhất + nhóm địa điểm tele nhanh', () => {
-    expect(DEV_BUILD_TAG).toContain('Tiệm bánh');
-    expect(DEV_BUILD_TAG).toContain('Shapi');
+    expect(DEV_BUILD_TAG).toContain('Trứng – Sữa – Giò');
+    expect(DEV_BUILD_TAG).toContain('vòi sen');
     const sections = getDevSections();
     expect(sections.length).toBe(2);
-    expect(sections[0].title.toLowerCase()).toContain('tiệm bánh');
-    expect(sections[0].title).toContain('lượt 54');
+    expect(sections[0].title).toContain('lượt 55');
     expect(sections[1].title).toContain('Địa điểm');
     const ids = new Set<string>();
     for (const sec of sections) {
@@ -21,8 +20,9 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
         expect(item.sub.length).toBeGreaterThan(3);
       }
     }
-    // mục của lượt này: bảng bánh, tele tiệm bánh, uống thử Shapi, tele MiniMart
-    for (const id of ['banh_list', 'banh_tele', 'shapi_drink', 'shapi_tele']) expect(ids.has(id)).toBe(true);
+    // mục của lượt này: tên sạp Dì Sáu, ngủ ở nhà nghỉ/trọ, buồng tắm, khách không xuyên quầy
+    for (const id of ['t55_sap_tensach', 't55_sap_tele', 't55_ngu_nhanghi', 't55_ngu_tro',
+      't55_sen_nhanghi', 't55_sen_tro', 't55_ganh_cho']) expect(ids.has(id)).toBe(true);
     // tele nhanh vẫn còn nguyên
     const loc = sections[1].items.map((i) => i.id);
     for (const id of ['tp_equip', 'tp_matbang_tb', 'tp_ongtu', 'tp_scrap2', 'tp_canho', 'tp_hobo', 'tp_mart']) expect(loc).toContain(id);
@@ -69,8 +69,9 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
       'ngu_do_doi', 'bien_gia',
       // lượt 49 (xe chạy đúng đường + còi), lượt 52 (Ông Bảy) — đã thay bằng mục của lượt 53
       'kiem_xe', 'thu_ba_coi', 'hobo_now', 'hobo_tele', 'hobo_audit',
-      // lượt 53 (thanh chạy theo máu/pin) — đã thay bằng mục của lượt 54
-      'stam_now', 'stam_compare', 'stam_hurt', 'stam_heal']) expect(ids).not.toContain(old);
+      // lượt 53 (thanh chạy theo máu/pin), lượt 54 (bánh + Shapi) — đã thay bằng mục của lượt 55
+      'stam_now', 'stam_compare', 'stam_hurt', 'stam_heal',
+      'banh_list', 'banh_tele', 'shapi_drink', 'shapi_tele']) expect(ids).not.toContain(old);
   });
 });
 

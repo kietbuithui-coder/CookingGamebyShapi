@@ -1289,14 +1289,38 @@ export class Acts {
       { t: night ? `Ngủ tới 6 giờ sáng (${hrs.toFixed(1)} tiếng)` : 'Ngủ một giấc dài (8 tiếng)', fn: () => this.sleep(where, night ? hrs : 8) },
       { t: 'Chợp mắt 2 tiếng', fn: () => this.sleep(where, 2) }, { t: 'Chưa buồn ngủ.' }]);
   }
+  /**
+   * Chỗ đứng cạnh giường để ngủ. Mỏ neo giường nằm ĐÚNG GIỮA nệm, mà cả khung giường là vật cản, nên đặt
+   * người chơi ở đó là chui vào trong giường: khung hình bị đẩy ra, có lần lọt luôn qua vách sang gian bên
+   * kia rồi kẹt (lỗi “ngủ ở nhà nghỉ/nhà trọ bị văng sang khung gian khác” — ghi nhận trên điện thoại).
+   * Tìm một chỗ trống THẬT quanh giường, ưu tiên phía chân giường theo hướng của mỏ neo.
+   */
+  private bedSpot(a: { x: number; y: number; z: number; yaw: number }) {
+    const W = ctx.world;
+    for (const d of [1.55, 1.75, 1.35, 1.95, 1.15]) for (const off of [0, 0.45, -0.45, 0.9, -0.9, Math.PI / 2, -Math.PI / 2]) {
+      const ang = a.yaw + off, x = a.x + Math.sin(ang) * d, z = a.z + Math.cos(ang) * d;
+      if (!W.blocked(x, z, 0.36)) return { x, z, yaw: a.yaw };
+    }
+    return { x: a.x, z: a.z, yaw: a.yaw };
+  }
+  /** Chỗ đứng cạnh giường của một chỗ ở — dùng cho menu thử (tele tới giường mà không chui vào khung giường). */
+  bedStand(where: string): { x: number; z: number; yaw: number } | null {
+    const a = ctx.world.anchors[HOUSING[where]?.anchor]; if (!a) return null;
+    const sp = this.bedSpot(a); return { x: sp.x, z: sp.z, yaw: Math.atan2(a.x - sp.x, a.z - sp.z) };
+  }
   sleep(where: string, hours: number) {
     const g = this.g, h = HOUSING[where]; this.sleepWhere = where; this.sleepUntil = absMin(g) + hours * 60;
     const wet = where === 'ghe' && R.wx(g).rain > 0.2; this.sleepQ = h.sleep * (wet ? 0.45 : 1) * (g.st.hunger < 15 ? 0.8 : 1);
     ctx.mode = 'sleep'; ctx.speed = 48; ctx.stall.close(true); ctx.ui.fade(true, 0.8); ctx.ui.sleeping(true); ctx.input.reset(); sfx('sleep');
-    const a = ctx.world.anchors[h.anchor]; if (a) { ctx.player.place(a.x - Math.sin(a.yaw) * 0.2, a.z - Math.cos(a.yaw) * 0.2, a.yaw, 0.2); ctx.player.eyeTarget = Math.max(0.45, a.y - 0.12 + 0.35); }
+    const a = ctx.world.anchors[h.anchor];
+    if (a) { const sp = this.bedSpot(a); ctx.player.place(sp.x, sp.z, sp.yaw, 0.2); ctx.player.eyeTarget = Math.max(0.45, a.y - 0.12 + 0.35); }
   }
   private wake(reason = '') {
     const g = this.g, where = this.sleepWhere, h = HOUSING[where];
+    // Tỉnh dậy mà chân vẫn nằm trong khung giường / trong vách (bản lưu cũ, hoặc giường kê sát vách) thì
+    // bước ra chỗ trống trước khi trả lại quyền điều khiển — nếu không người chơi bị đẩy lúc bước đi và lọt sang gian khác.
+    const p0 = ctx.player;
+    if (ctx.world.blocked(p0.x, p0.z, 0.32)) { const a = ctx.world.anchors[h.anchor]; if (a) { const sp = this.bedSpot(a); p0.place(sp.x, sp.z, sp.yaw); } }
     if (PH.hasPhone(g) && PH.hasPower(g) && PH.battery(g) < 99) { PH.fullCharge(g); toast('Cắm sạc qua đêm, điện thoại đầy pin.', 'info', 'bolt'); } ctx.mode = 'play'; ctx.speed = MIN_PER_SEC; ctx.player.eyeTarget = 1.6; ctx.ui.fade(false, 1.2); ctx.ui.sleeping(false); sfx('wake');
     toast(reason || `Tỉnh giấc lúc ${hhmm(g.min)}. Năng lượng ${Math.round(g.st.energy)}/${STAT_MAX}.`, 'info', 'moon');
     // trộm đêm

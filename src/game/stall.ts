@@ -160,10 +160,36 @@ export class StallSys {
     }
     return false;
   }
-  /** Nếu điểm tiếp cận nằm phía sau hoặc hai bên hông nhà hàng, thêm góc vỉa hè ngoài để không cắt xuyên tường. */
+  /**
+   * Thân quầy theo toạ độ cục bộ (nửa bề ngang + khoảng z) — mọi cấp đều có, để NPC không đi xuyên qua quầy.
+   * Bậc 5–6 có thêm tường nên phần xử lý riêng bên dưới lo; ở đây lấy đúng bề ngang khối quầy.
+   */
+  private counterBox(): { hw: number; z0: number; z1: number } | null {
+    const s = this.s;
+    if (s.where !== 'placed') return null;
+    const hw = s.tier <= 2 ? 0.95 : s.tier === 3 ? 1.4 : s.tier === 4 ? 2.3 : 2.9;
+    return { hw, z0: s.tier <= 1 ? -0.5 : -0.6, z1: 0.62 };
+  }
+  /** Điểm trên quầy (kể cả bề dày thân người) — dùng để dọn đường đi của NPC. */
+  private onCounter(lx: number, lz: number, r = 0.3): boolean {
+    const b = this.counterBox(); if (!b) return false;
+    return Math.abs(lx) < b.hw + r && lz > b.z0 - r && lz < b.z1 + r;
+  }
+  /**
+   * Nếu điểm tiếp cận nằm phía sau hoặc hai bên hông nhà hàng, thêm góc vỉa hè ngoài để không cắt xuyên tường.
+   * Bậc 1–4 (gánh / xe đẩy / sạp / quán ăn nhỏ): khách phải vòng qua ĐẦU QUẦY ra phía trước, không đi thẳng
+   * qua thân quầy — trước đây khách đi từ sau lưng người bán rồi xuyên qua quầy (lỗi bán gánh ở chợ, cả đt lẫn PC).
+   */
   safeApproach(fromX: number, fromZ: number): [number, number][] {
     const s = this.s;
-    if (s.where !== 'placed' || s.tier < 5) return [];
+    if (s.where !== 'placed') return [];
+    if (s.tier < 5) {
+      const b = this.counterBox(); if (!b) return [];
+      const [lx0, lz0] = this.worldToLocal(fromX, fromZ);
+      if (lz0 >= b.z0 - 0.4) return [];                       // đã ở phía trước quầy thì đi thẳng vào
+      const sx = (lx0 < 0 ? -1 : 1) * (b.hw + 0.85);
+      return [this.localPos(sx, lz0), this.localPos(sx, b.z1 + 1.05)];
+    }
     const [lx0, lz0] = this.worldToLocal(fromX, fromZ);
     if (lz0 >= 4.75) return [];
     const sideX = lx0 < 0 ? -4.35 : 4.35;
@@ -175,8 +201,34 @@ export class StallSys {
   /** Chặn NPC không đi xuyên tường nhà hàng bậc 5–6 (chừa cửa chính & cửa bếp) và tự vòng qua vỉa hè trước. */
   resolveNpcWalls(n: Npc, dt = 0.016) {
     const s = this.s;
-    if (s.where !== 'placed' || s.tier < 5 || n.state === 'queue') return;
+    if (s.where !== 'placed' || n.state === 'queue') return;
     if (dist2(n.x, n.z, s.x, s.z) > 9.0 * 9.0) return;
+    // Bậc 1–4: chỉ có thân quầy, không có tường — đẩy NPC ra khỏi quầy, và nếu khách đang tìm vào chỗ xếp hàng
+    // mà bị kẹt ở phía sau thì chèn điểm vòng qua đầu quầy. (Trước đây NPC không đụng vật cản nào nên đi xuyên quầy.)
+    if (s.tier < 5) {
+      const b = this.counterBox(); if (!b) return;
+      let [lx, lz] = this.worldToLocal(n.x, n.z);
+      if (!this.onCounter(lx, lz)) return;
+      if (Math.abs(lx) < b.hw && lz > b.z0 && lz < b.z1) {
+        // tâm nằm trong quầy: đẩy ra theo trục gần mép nhất, ưu tiên phía trước (phía khách)
+        const dl = lx + b.hw, dr = b.hw - lx, dz0 = lz - b.z0, dz1 = b.z1 - lz, m = Math.min(dl, dr, dz0, dz1);
+        if (m === dz1) lz = b.z1 + 0.3; else if (m === dz0) lz = b.z0 - 0.3; else if (m === dl) lx = -b.hw - 0.3; else lx = b.hw + 0.3;
+      } else {
+        const cx = clamp(lx, -b.hw, b.hw), cz = clamp(lz, b.z0, b.z1), dx = lx - cx, dz = lz - cz, d = Math.hypot(dx, dz) || 1;
+        lx = cx + (dx / d) * 0.3; lz = cz + (dz / d) * 0.3;
+      }
+      const [nx, nz] = this.localPos(lx, lz);
+      n.x = nx; n.z = nz; n.vel = 0;
+      // khách đang vào quầy: nếu điểm tới nằm phía trước mà mình đang ở phía sau thì vòng qua đầu quầy
+      if ((n.state === 'toStall' || n.state === 'actor') && n.path.length > n.pi) {
+        const [tlx, tlz] = this.worldToLocal(n.path[n.pi][0], n.path[n.pi][1]);
+        if (tlz > b.z0 - 0.4 && lz < b.z0 - 0.4) {
+          const sx = (lx < 0 ? -1 : 1) * (b.hw + 0.85);
+          n.path.splice(n.pi, 0, this.localPos(sx, lz), this.localPos(sx, b.z1 + 1.05));
+        }
+      }
+      return;
+    }
     let [lx, lz] = this.worldToLocal(n.x, n.z);
     // Nếu người đi đường có lộ trình cắt ngang qua nhà hàng (do vỉa hè mặc định đi xuyên qua mặt bằng), chèn điểm vòng qua trước cửa
     if (n.state === 'walk' && !n.persona && !n.actor && n.path.length && n.pi < n.path.length) {

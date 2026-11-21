@@ -19,11 +19,11 @@
 | Quầy hàng & nấu ở world | `src/game/stall.ts` (1.557), `src/cook/*` |
 | Hội thoại / menu NPC | `src/game/acts.ts` (1.390) |
 | HUD / bảng | `src/ui/ui.ts` (424), `src/ui/panels.ts` (517), `src/ui/style.css` (563) |
-| Test | `tests/*.test.ts` — **49 tệp, 602 bài**, `environment: 'node'` |
-| Thử giao diện thật | `tools/probe/` (76 kịch bản `.mjs` trong `steps/`, Chrome headless) |
+| Test | `tests/*.test.ts` — **50 tệp, 614 bài**, `environment: 'node'` |
+| Thử giao diện thật | `tools/probe/` (87 kịch bản `.mjs` trong `steps/`, Chrome headless) |
 | Bản phát hành | `docs/` — **sinh ra bởi `build:pages`, không sửa tay** |
 
-Trạng thái đo được hôm nay (2026-11-21, sau lượt 54): **typecheck ✅ · 602/602 test ✅ (49 tệp, ~12 s) · build ✅ · build:pages ✅**.
+Trạng thái đo được hôm nay (2026-11-21, sau lượt 55): **typecheck ✅ · 614/614 test ✅ (50 tệp, ~12 s) · build ✅ · build:pages ✅**.
 
 ---
 
@@ -207,6 +207,10 @@ Những test "gác cổng" dễ bị quên:
 - Probe muốn "soi cận cảnh" mà tự đặt `camera.position`/`lookAt` thì **không ăn**: `player.update()` chạy mỗi khung hình và ghi đè camera. Dùng `player.camTo = { pos, look, fov }` (cơ chế camera cố định của game) rồi `wait` ~1 s cho camera trượt tới.
 - Nguyên liệu mới mà gán hình chung (`round`, `long`) thì trên quầy **không phân biệt được** — thêm `Shape` mới trong `data/ingredients.ts` + `case` trong `ingModel` (`gfx/props.ts`), và canh bằng test như `tests/banh54.test.ts`.
 - Đăng ký `b.slot()` cho cùng một `idx` ở hai chỗ trong tiệm ⇒ ô trống vẫn lấy được hàng. Mỗi mặt hàng chỉ được một ô; đồ trưng bày thì dựng hộp thường, đừng gọi `display()`.
+- **Mỏ neo `v_<shop>` của sạp chợ nằm ở chỗ NGƯỜI BÁN đứng và quay mặt VÀO quầy** (`marketStall` dựng `b.anchor('v_' + shop, 0, 0.12, 1.35, Math.PI)`). Muốn tele khách tới trước sạp thì đi **tiếp qua quầy** theo hướng `yaw` của mỏ neo ~2,9 m, đừng cộng `z` — cộng `z` là ra sau lưng sạp (`devPoints.ts` có `tpFront`). Gõ thiếu tiền tố `m_` (viết `v_trung`) thì `anchors.x` là `undefined` ⇒ `tpTo` ra `NaN` ⇒ `resolve` ném người chơi sang toạ độ rác (đã đo: 49; 100,3).
+- **Đặt người chơi đúng tâm một món đồ có va chạm** (giường, khay tắm) thì `World.resolve` bắn ra mép gần nhất — xuyên cả vách sang gian bên. Luôn tìm chỗ trống trước (`acts.bedSpot`, `devPoints.standNear`).
+- **`mb.cyl`/`U.cyl` tham số cuối là bán kính ĐỈNH tuyệt đối**, không phải tỉ lệ của bán kính đáy. Truyền 0,82 cho cái đĩa bán kính 0,125 là ra cái mâm 4 m (đã vấp khi vẽ đầu vòi hoa sen).
+- **NPC không đụng vật cản của người chơi.** Quầy bậc 1–4 phải tự khai hộp thân quầy (`stall.counterBox`) rồi đẩy NPC ra, và chèn waypoint vòng đầu quầy — nếu không khách sẽ đi từ sau lưng người bán xuyên thẳng qua quầy như trước lượt 55.
 
 ### 6.3 Chống side effect lặp
 - Trong `update(dt)` chỉ **tính**, đừng **phát** (toast, sfx, earn). Phát khi chuyển trạng thái.
@@ -217,7 +221,7 @@ Những test "gác cổng" dễ bị quên:
 ### 6.4 Đo được gì, không đo được gì (trung thực)
 | Đo được | Không đo được ở sandbox |
 |---|---|
-| Luật chơi (602 test), typecheck, build, bundle size | FPS thật trên GPU (máy không có GPU; gói JS đo được 1.335 kB / gzip 420 kB + 120 kB phông chữ) |
+| Luật chơi (614 test), typecheck, build, bundle size | FPS thật trên GPU (máy không có GPU; gói JS đo được 1.335 kB / gzip 420 kB + 120 kB phông chữ) |
 | Luồng UI trong Chrome headless ở 844×390 và 390×844 | Cảm giác chạm trên điện thoại thật, tai nghe/loa thật |
 | Hình học: mặt trùng phẳng, biển bị che (`audit.mjs`) | Chơi trọn nhiều giờ liên tục, trộm đêm, chuỗi mục tiêu theo trình tự thật |
 

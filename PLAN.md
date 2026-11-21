@@ -1377,3 +1377,53 @@ trước đó mượn hình chung (`long` / `round` / `round`) nên trên quầy
 
 Bài học ghi vào PLAYBOOK: tự đặt `camera.position` trong probe **không ăn** — `player.update()` ghi đè mỗi khung hình,
 phải dùng `player.camTo`.
+
+---
+
+## Lượt 55 — tên sạp Dì Sáu, khách không xuyên quầy, hết kẹt khi ngủ, buồng tắm có vòi sen ✅ đã xong
+
+Người chơi: *"Trứng - Giò chả Dì Sáu đổi tên thành Trứng - Sữa - Giò Dì Sáu"* · *"sửa lỗi khi bán gánh ở chợ và cv npc
+đi từng đằng sau lưng rồi đi xuyên qua quầy (đt pc đều bị)"* · *"sửa lỗi khi sử dụng giường nhà nghỉ / trọ người chơi
+bị văng vào 1 khung gian khác và kẹt (có thể dời vị trí giường nếu cần), vẽ thêm chi tiết một tí cho vòi hoa sen và
+phòng"*. Người chơi cho phép **dời giường** nếu cần — kết luận là không cần, chỉ cần tìm chỗ đứng ngoài khung giường.
+
+### 55a — tên sạp (`data/shops.ts`, `data/people.ts`)
+- `m_trung`: `name` = “Trứng – Sữa – Giò Dì Sáu”, `items` thêm `suatuoi` (32.000₫, hộp, cần giữ lạnh) và `suadac`
+  (24.000₫, lon) — cả hai đã có sẵn trong `data/ingredients.ts` nên không đẻ thêm mặt hàng ma.
+- `say` của Dì Sáu nhắc cả sữa; `FIXED_ROLE.m_trung` = “Người bán trứng, sữa, giò chả”.
+
+### 55b — khách xuyên quầy (`game/stall.ts`)
+- `counterBox()`: `hw` theo bậc (0,95 / 1,4 / 2,3 / 2,9), `z0` −0,5 hoặc −0,6, `z1` 0,62; `onCounter()` ráp bán kính thân người.
+- `safeApproach()` chạy cho **mọi bậc**: bậc < 5 đi vòng qua đầu quầy `±(hw + 0,85)` rồi ra `z = z1 + 1,05`.
+- `resolveNpcWalls()` có nhánh bậc < 5: đẩy NPC lọt trong quầy ra mép gần nhất, và chèn waypoint vòng đầu quầy cho
+  khách `toStall`/`actor` đang ở phía sau.
+- **Đo:** `fix55b5.mjs` — chợ và CV, ba khách dừng ở local `z ≈ 1,5`, `cross: []` (trước khi sửa: khách đứng trong
+  quầy ở local `(−0,28; 0,38)`, `blocked: true`). Bán ở chợ vẫn chạy: 40 phần trà, tiền 112.000 → 327.000₫.
+
+### 55c — kẹt giường (`game/acts.ts`)
+- `bedSpot(a)` quét `d` 1,55 / 1,75 / 1,35 / 1,95 / 1,15 × 7 hướng, lấy chỗ `!blocked(x, z, 0,36)`.
+- `sleep()` đặt người chơi ở chỗ đó thay vì đúng tâm nệm; `wake()` bước ra nếu `blocked(p0, 0,32)`.
+- `bedStand()` (công khai) trả chỗ đứng + hướng quay vào giường, để menu test tele tới mà không chui vào giường.
+- **Đo:** `fix55a3.mjs` — nhà nghỉ (−8,15; 39,9) và nhà trọ (39,35; −3,6), `after.blocked: false` cả hai, bước ra bốn
+  hướng vẫn quanh chỗ cũ (3,35 m là do vướng tường rồi `resolve` trượt dọc tường, không phải xuyên vách).
+
+### 55d — buồng tắm + đồ đạc (`world/places.ts`)
+- Hàm mới `shower(b, x, z, nx, nz, h)` thay hai khay phẳng ở `wash_nhanghi` (7,0; 4,6) và `wash_tro` (3,7; 5,3):
+  tường ốp gạch có ron, khay men + lỗ thoát, cột sen + tay gạt đỏ, ống đứng, tay vươn, đầu sen 16 cạnh có 6 lỗ phun,
+  kệ ba chai, khăn, gương + đèn, tấm chắn kính có `collide`.
+- Nhà nghỉ thêm tủ đầu giường + đèn + sách, quạt treo tường, ti vi, rèm hai tấm, thảm, móc áo, ghế nhựa, bàn tròn;
+  nhà trọ thêm kệ đầu giường + đèn + khăn, quạt cây, dây phơi ba áo, ấm nước + ly, lịch + công tắc, chiếu.
+- **Lỗi đã vấp:** `mb.cyl(x,y,z,r,h,col,seg,rTop)` — tham số cuối là bán kính **ĐỈNH tuyệt đối**; truyền 0,82 làm cái
+  đĩa sen thành mâm 4 m. Dùng 0,105 cho đĩa bán kính 0,125.
+
+### 55e — menu test & tài liệu
+- `devPoints.ts`: bỏ bộ test lượt 54, thêm 7 mục lượt 55 (bảng hàng Dì Sáu · tele sạp · ngủ thử nhà nghỉ / trọ ·
+  buồng tắm nhà nghỉ / trọ · dựng gánh trà đá ở Cổng Chợ). `DEV_BUILD_TAG` đổi theo.
+- Thêm hai helper dùng chung cho menu: `tpFront(a, msg)` (đứng phía khách của sạp, thử 4 khoảng cách) và
+  `standNear(x, z, msg)` (chỗ trống quanh một món đồ). Cả hai có nhánh báo “chỗ này chật quá” thay vì đứng trong vách.
+- **Bẫy đã vấp:** mỏ neo sạp `v_m_trung` quay mặt VÀO quầy (yaw = π sau khi cộng khung chợ), cộng `z + 2` là ra sau
+  lưng sạp; và viết `v_trung` (thiếu `m_`) thì `tpTo(undefined…)` ra NaN rồi `resolve` ném người chơi sang toạ độ rác
+  (49; 100,3). `tpFront` nay kiểm `blocked` và báo khi không thấy mỏ neo.
+- Test: `tests/nghi55.test.ts` (12 bài) + `tests/devpoints.test.ts` và `tests/changelog.test.ts` cập nhật theo bộ mục mới.
+- Probe: `fix55a3.mjs`, `fix55b5.mjs`, `fix55c.mjs` (4 ảnh), `fix55d.mjs` (bấm cả bộ mục + cho khách kéo tới quầy),
+  `fix55e.mjs` (kiểm `interact.focus` sau mỗi lần tele).
