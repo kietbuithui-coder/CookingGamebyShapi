@@ -24,7 +24,6 @@ button { font: inherit; color: inherit; border: 0; background: none; padding: 0;
 #stats { display: grid; grid-template-columns: repeat(3, auto); gap: .22em .4em; background: rgba(40, 26, 16, .62); padding: .3em .5em; border-radius: .8em; }
 .stat { display: flex; align-items: center; gap: .25em; color: #fff7e4; pointer-events: auto; cursor: help; touch-action: manipulation; }
 #hud-tl [data-tip], #hud-tr [data-tip] { pointer-events: auto; touch-action: manipulation; }
-.stat .n { font-size: max(.68em, 10px); font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
 .stat i { display: block; width: 3.3em; height: .5em; background: rgba(255, 255, 255, .22); border-radius: .3em; overflow: hidden; }
 .stat i b { display: block; height: 100%; background: var(--green); border-radius: .3em; transition: width .4s; }
 .stat.low i b { background: var(--red); } .stat.mid i b { background: var(--yellow); } .stat.low svg { color: #ff8f84; animation: pulse 1s infinite; }

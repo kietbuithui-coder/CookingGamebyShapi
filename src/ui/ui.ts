@@ -98,7 +98,7 @@ export class UI {
     for (const id of ['clock', 'wx', 'place', 'jailclock', 'stats', 'rep', 'money', 'bagdot', 'debt', 'fps', 'stowb', 'wanted', 'phoneb', 'phonedot']) E[id] = document.getElementById(id)!;
     E.stowb.onclick = () => { if (ctx.mode === 'play') ctx.stall.stow(); };
     E.stats.innerHTML = ([['dish', 'hunger', 'Độ no', 'no bụng — tụt thì đói, kiệt sức'], ['drop', 'thirst', 'Nước', 'khát — tụt thì khô cổ, dễ cảm'], ['bolt', 'energy', 'Năng lượng', 'sức lực — tụt thì đi chậm, ngất được'], ['heart', 'health', 'Sức khoẻ', 'máu — tụt vì bệnh, bị đánh, ngất'], ['sparkle', 'hygiene', 'Sạch sẽ', 'tắm rửa — bẩn thì khách chê'], ['smile', 'mood', 'Vui vẻ', 'tinh thần — thấp thì nấu kém, khách bỏ đi']] as const)
-      .map(([i, k, t, note]) => `<div class="stat" data-k="${k}" data-title="${t}" data-note="${note}" data-tip="${t} (0/${STAT_MAX}): ${note}">${ic(i)}<i><b></b></i><span class="n"></span></div>`).join('');
+      .map(([i, k, t, note]) => `<div class="stat" data-k="${k}" data-title="${t}" data-note="${note}" data-tip="${t} (0/${STAT_MAX}): ${note}">${ic(i)}<i><b></b></i></div>`).join('');
     // Nhớ lựa chọn: bấm "Cứ chơi dọc" một lần là lần sau mở game ở màn dọc không bị chặn nữa
     // (trước đây tải lại trang là lớp phủ hiện lại và che mất nút Chơi mới / Chơi tiếp).
     document.getElementById('rotok')!.onclick = () => { E.rotate.classList.remove('want'); ctx.set.portraitOk = true; saveSettings(); };
@@ -387,9 +387,6 @@ export class UI {
       const v = (g.st as any)[s.dataset.k!] as number;
       (s.querySelector('b') as HTMLElement).style.width = clamp((v / STAT_MAX) * 100, 0, 100) + '%';
       s.classList.toggle('low', v < 22); s.classList.toggle('mid', v >= 22 && v < 45);
-      // Thanh chỉ số chỉ là một vạch màu — không ai đoán được còn 12 % hay 40 %. Thấp thì hiện số thật.
-      const num = s.querySelector('.n') as HTMLElement | null;
-      if (num) num.textContent = v < 45 ? String(Math.round(v)) : '';
       const t = `${s.dataset.title} (${Math.round(v)}/${STAT_MAX}): ${s.dataset.note}`;
       s.dataset.tip = t;
       if (this.tipEl === s && !E.tip.classList.contains('hide')) E.tip.textContent = t;
