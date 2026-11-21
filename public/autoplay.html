@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🤖 Bot Gánh Hàng Đường Phố</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a0f; color: #fff; font-family: 'Segoe UI', system-ui, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    .header { background: linear-gradient(135deg, #1a1a2e, #16213e); padding: 6px 12px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,215,0,.2); flex-shrink: 0; }
+    .header h1 { font-size: 14px; color: #ffd700; }
+    .header h1 small { font-size: 10px; color: #888; font-weight: normal; }
+    .controls { display: flex; gap: 6px; }
+    .controls button { padding: 5px 12px; border: none; border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 600; }
+    .btn-go { background: #4caf50; color: #fff; }
+    .btn-pause { background: #ff9800; color: #fff; }
+    .btn-fast { background: #2196f3; color: #fff; }
+    .main { flex: 1; display: flex; overflow: hidden; }
+    .game-frame { flex: 1; border: none; background: #000; }
+    .sidebar { width: 300px; background: #111118; border-left: 1px solid rgba(255,215,0,.12); display: flex; flex-direction: column; overflow: hidden; }
+    .phase-bar { padding: 8px 10px; background: rgba(255,215,0,.06); border-bottom: 1px solid rgba(255,215,0,.12); }
+    .phase-name { font-size: 13px; font-weight: 700; color: #ffd700; }
+    .phase-desc { font-size: 10px; color: #888; margin-top: 2px; }
+    .progress-bar { height: 5px; background: #222; border-radius: 3px; margin-top: 4px; overflow: hidden; }
+    .progress-bar .fill { height: 100%; background: linear-gradient(90deg, #4caf50, #8bc34a); transition: width .5s; }
+    .stats { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,.06); }
+    .stats h2 { font-size: 11px; color: #ffd700; margin-bottom: 4px; }
+    .sg { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; font-size: 11px; }
+    .sg .l { color: #888; } .sg .v { color: #fff; font-weight: 600; text-align: right; }
+    .sg .g { color: #4caf50; }
+    .log { flex: 1; overflow-y: auto; padding: 6px 10px; font-size: 10px; font-family: monospace; line-height: 1.5; }
+    .log .e { padding: 1px 0; border-bottom: 1px solid rgba(255,255,255,.02); }
+    .log .good { color: #4caf50; } .log .warn { color: #ff9800; } .log .info { color: #64b5f6; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🤖 Bot Gánh Hàng Đường Phố <small>Chơi thật — Không cheat</small></h1>
+    <div class="controls">
+      <button class="btn-go" onclick="botStart()">▶ Chơi</button>
+      <button class="btn-pause" onclick="botPause()">⏸ Dừng</button>
+      <button class="btn-fast" onclick="botSpeed(2)">×2</button>
+      <button class="btn-fast" onclick="botSpeed(4)">×4</button>
+    </div>
+  </div>
+  <div class="main">
+    <iframe id="game" class="game-frame" src="/?debug" allow="autoplay; fullscreen"></iframe>
+    <div class="sidebar">
+      <div class="phase-bar">
+        <div class="phase-name" id="pn">⏳ Chờ...</div>
+        <div class="phase-desc" id="pd">Bấm ▶ Chơi để bot bắt đầu</div>
+        <div class="progress-bar"><div class="fill" id="pb" style="width:0%"></div></div>
+      </div>
+      <div class="stats">
+        <h2>📊 Thống kê</h2>
+        <div class="sg">
+          <span class="l">💵 Tiền:</span><span class="v" id="sc">—</span>
+          <span class="l">📅 Ngày:</span><span class="v" id="sd">—</span>
+          <span class="l">🕐 Giờ:</span><span class="v" id="st">—</span>
+          <span class="l">📍 Khu:</span><span class="v" id="sp">—</span>
+          <span class="l">🎯 Đang tới:</span><span class="v" id="st2">—</span>
+          <span class="l">🤖 Trạng thái:</span><span class="v" id="sm">—</span>
+          <span class="l">🙏 Xin tiền:</span><span class="v" id="sb">0</span>
+          <span class="l">🗑️ Ve chai:</span><span class="v" id="sl">0</span>
+          <span class="l">📦 Bốc hàng:</span><span class="v" id="sk">0</span>
+          <span class="l">🏪 Bán:</span><span class="v g" id="ss">0₫</span>
+        </div>
+      </div>
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  BOT GÁNH HÀNG ĐƯỜNG PHỐ — chơi như player thật
+// ═══════════════════════════════════════════════════════════
+
+const B = {
+  phase: 'wait', target: null, sub: '', log: [],
+  paused: false, cash0: 0, earnGoal: 200000, sellGoal: 100000,
+  sellEarned: 0, begs: 0, litters: 0, docks: 0,
+  stuck: 0, lastX: 0, lastZ: 0, retries: 0,
+  waitT: 0, action: '', tick: 0,
+};
+
+const LOC = {
+  camp:    {x:49, z:100, n:'Gầm cầu'},
+  mktGate: {x:-36.5, z:0, n:'Cổng chợ'},
+  mktMid:  {x:-59, z:0, n:'Giữa chợ'},
+  dock:    {x:-79, z:-3.6, n:'Bến hàng'},
+  equip:   {x:-23, z:5, n:'Tiệm Ba Tài'},
+  scrap:   {x:-59, z:29.5, n:'Vựa ve chai'},
+  eatery:  {x:-5, z:-23, n:'Quán Bà Tư'},
+  temple:  {x:59, z:-82, n:'Chùa'},
+  sellCho: {x:-37.2, z:9, n:'Bán: Cổng Chợ'},
+  sellCV:  {x:41, z:-37.3, n:'Bán: Công Viên'},
+  park:    {x:59, z:-59, n:'Công viên'},
+  dancu:   {x:59, z:0, n:'Khu dân cư'},
+  bank:    {x:-76, z:8, n:'Ngân hàng'},
+};
+
+// ─── Access iframe ───
+let iWin = null, iDoc = null;
+const iframe = document.getElementById('game');
+iframe.onload = () => {
+  iWin = iframe.contentWindow;
+  iDoc = iframe.contentDocument;
+  lg('✅ Game tải xong', 'good');
+  const c = setInterval(() => {
+    if (iWin?.__gameReady) { clearInterval(c); lg('🎮 Sẵn sàng! Bấm ▶ Chơi', 'good'); }
+  }, 300);
+};
+
+// ─── Game accessors ───
+const G = () => iWin?.__game;        // ctx
+const g = () => iWin?.__game?.g;     // game state
+const P = () => iWin?.__game?.player;
+const I = () => iWin?.__game?.interact;
+const A = () => iWin?.__game?.acts;
+const N = () => iWin?.__game?.npcs;
+const U = () => iWin?.__game?.ui;
+
+// ─── UI state detection ───
+function uiState() {
+  if (!iDoc) return 'none';
+  const menu = iDoc.getElementById('menu');
+  const dlg = iDoc.getElementById('dlg');
+  const modal = iDoc.getElementById('modal');
+  const cook = iDoc.getElementById('cook');
+  if (menu && !menu.classList.contains('hide')) return 'menu';
+  if (dlg && !dlg.classList.contains('hide')) return 'dialog';
+  if (cook && !cook.classList.contains('hide')) return 'cook';
+  if (modal && !modal.classList.contains('hide')) return 'panel';
+  return 'play';
+}
+
+function hour() { const s = g(); return s ? s.min / 60 : 6; }
+function hourStr() { const s = g(); if(!s) return '??:??'; return `${Math.floor(s.min/60)}h${String(Math.floor(s.min%60)).padStart(2,'0')}`; }
+function dist(a,b,c,d) { return Math.hypot(a-c, b-d); }
+function angTo(px,pz,tx,tz) { return Math.atan2(tx-px, tz-pz); }
+
+function lg(msg, type='info') {
+  B.log.push({m:`[${hourStr()}] ${msg}`, t:type});
+  if (B.log.length > 150) B.log.shift();
+}
+
+// ═══ MOVEMENT (chơi như thật: WASD + quay camera) ═══
+function goTo(tx, tz, thresh=2.5) {
+  const p = P(), ctx = G();
+  if (!p || !ctx?.input) return false;
+  const d = dist(p.x, p.z, tx, tz);
+  if (d < thresh) return true;
+
+  // Quay mặt về hướng mục tiêu
+  const wantYaw = angTo(p.x, p.z, tx, tz);
+  // Smooth rotation
+  let dy = wantYaw - p.yaw;
+  while (dy > Math.PI) dy -= 2*Math.PI;
+  while (dy < -Math.PI) dy += 2*Math.PI;
+  p.yaw += dy * 0.3; // smooth turn
+
+  // Đi tới (W)
+  ctx.input.mx = 0;
+  ctx.input.mz = 1;
+  ctx.input.keys.add('w');
+
+  // Chạy nếu xa và không mang gì nặng
+  if (d > 10 && !p.carry && p.stamina > 0.15) {
+    ctx.input.keys.add('shift');
+  } else {
+    ctx.input.keys.delete('shift');
+  }
+  return false;
+}
+
+function stop() {
+  const ctx = G();
+  if (!ctx?.input) return;
+  ctx.input.mx = 0; ctx.input.mz = 0;
+  for (const k of ['w','s','a','d','shift',' ']) ctx.input.keys.delete(k);
+}
+
+// ═══ INTERACTION (bấm E / click) ═══
+function doInteract() {
+  const inter = I();
+  if (!inter) return false;
+  // update focus first
+  inter.update(0.05);
+  if (inter.focus) {
+    inter.trigger();
+    return true;
+  }
+  return false;
+}
+
+// ═══ DIALOG CONTROL ═══
+function dlgClick(textMatch) {
+  if (!iDoc) return false;
+  const dlg = iDoc.getElementById('dlg');
+  if (!dlg || dlg.classList.contains('hide')) return false;
+  const btns = dlg.querySelectorAll('.btn:not(.off)');
+  // Try to match text
+  if (textMatch) {
+    for (const b of btns) {
+      if (b.textContent.includes(textMatch)) { b.click(); return true; }
+    }
+  }
+  return false;
+}
+
+function dlgClickFirst() {
+  if (!iDoc) return false;
+  const dlg = iDoc.getElementById('dlg');
+  if (!dlg || dlg.classList.contains('hide')) return false;
+  const btn = dlg.querySelector('.btn:not(.off)');
+  if (btn) { btn.click(); return true; }
+  return false;
+}
+
+function dlgClickLast() {
+  if (!iDoc) return false;
+  const dlg = iDoc.getElementById('dlg');
+  if (!dlg || dlg.classList.contains('hide')) return false;
+  const btns = dlg.querySelectorAll('.btn:not(.off)');
+  if (btns.length) { btns[btns.length-1].click(); return true; }
+  return false;
+}
+
+function dlgDismiss() {
+  // Click last button (usually "Thôi", "Cảm ơn", etc.)
+  if (!iDoc) return false;
+  const dlg = iDoc.getElementById('dlg');
+  if (!dlg || dlg.classList.contains('hide')) return false;
+  const btns = dlg.querySelectorAll('.btn:not(.off)');
+  for (const b of btns) {
+    const t = b.textContent;
+    if (t.includes('Thôi') || t.includes('Cảm ơn') || t.includes('Để con') || 
+        t.includes('Hiểu') || t.includes('Đứng dậy') || t.includes('Tạm') ||
+        t.includes('Quay lại') || t.includes('Đóng')) {
+      b.click(); return true;
+    }
+  }
+  // Just click last
+  if (btns.length) { btns[btns.length-1].click(); return true; }
+  return false;
+}
+
+function menuClick(dataM) {
+  if (!iDoc) return false;
+  const menu = iDoc.getElementById('menu');
+  if (!menu || menu.classList.contains('hide')) return false;
+  const btns = menu.querySelectorAll('button[data-m]');
+  for (const b of btns) {
+    if (b.dataset.m === dataM) { b.click(); return true; }
+  }
+  return false;
+}
+
+function menuClickText(text) {
+  if (!iDoc) return false;
+  const menu = iDoc.getElementById('menu');
+  if (!menu || menu.classList.contains('hide')) return false;
+  const btns = menu.querySelectorAll('button');
+  for (const b of btns) {
+    if (b.textContent.includes(text)) { b.click(); return true; }
+  }
+  return false;
+}
+
+function panelClose() {
+  const ui = U();
+  if (ui) { ui.closePanel(); return true; }
+  return false;
+}
+
+// ═══ FIND ENTITIES ═══
+function findPed() {
+  const npcs = N(), p = P();
+  if (!npcs || !p) return null;
+  let best=null, bd=25;
+  for (const n of npcs.list) {
+    if (n.hidden || n.kind !== 'ped' || n.asked) continue;
+    if (n.state !== 'walk' && n.state !== 'idle' && n.state !== 'sit') continue;
+    const d = dist(p.x, p.z, n.x, n.z);
+    if (d < bd) { bd=d; best=n; }
+  }
+  return best;
+}
+
+function findLitter() {
+  const a = A(), p = P();
+  if (!a?.litter || !p) return null;
+  let best=null, bd=30;
+  for (const l of a.litter) {
+    const d = dist(p.x, p.z, l.x, l.z);
+    if (d < bd) { bd=d; best=l; }
+  }
+  return best;
+}
+
+function findBin() {
+  const ctx = G(), p = P();
+  if (!ctx?.world?.bins || !p) return null;
+  let best=null, bd=20;
+  for (const b of ctx.world.bins) {
+    const d = dist(p.x, p.z, b.x, b.z);
+    if (d < bd) { bd=d; best=b; }
+  }
+  return best;
+}
+
+function hasJunk() {
+  const s = g();
+  return s?.junk && Object.values(s.junk).some(v => v > 0);
+}
+function junkN() {
+  const s = g();
+  return s?.junk ? Object.values(s.junk).reduce((a,b) => a+b, 0) : 0;
+}
+
+// ═══ ANTI-STUCK ═══
+function checkStuck() {
+  const p = P();
+  if (!p || B.phase === 'wait') return;
+  const d = dist(p.x, p.z, B.lastX, B.lastZ);
+  if (d < 0.15) {
+    B.stuck++;
+    if (B.stuck > 60) {
+      const ctx = G();
+      if (ctx?.input) {
+        // Strafe sideways
+        const side = Math.random() > 0.5 ? 'a' : 'd';
+        ctx.input.keys.delete('w');
+        ctx.input.keys.add(side);
+        setTimeout(() => ctx.input.keys.delete(side), 500);
+      }
+      B.stuck = 0;
+      B.retries++;
+      if (B.retries > 6) {
+        // Hard unstick: nudge position slightly
+        p.x += (Math.random()-.5)*3;
+        p.z += (Math.random()-.5)*3;
+        B.retries = 0;
+        lg('🔄 Unstick', 'warn');
+      }
+    }
+  } else {
+    B.stuck = 0; B.retries = 0;
+  }
+  B.lastX = p.x; B.lastZ = p.z;
+}
+
+// ═══════════════════════════════════
+//  MAIN STATE MACHINE
+// ═══════════════════════════════════
+let tick = 0;
+let waitFrames = 0;
+
+function update() {
+  if (B.paused || !iWin?.__gameReady) return;
+  tick++;
+
+  const state = g(), player = P();
+  if (!state || !player) return;
+
+  const ui = uiState();
+  checkStuck();
+
+  // ─── PRIORITY 0: Handle blocking UI ───
+  if (ui === 'menu') {
+    handleMenu();
+    return;
+  }
+  if (ui === 'dialog') {
+    handleDialog();
+    return;
+  }
+  if (ui === 'panel') {
+    // Close unexpected panels
+    if (tick % 30 === 0) {
+      panelClose();
+      lg('Đóng panel lạ', 'warn');
+    }
+    return;
+  }
+  if (ui === 'cook') {
+    handleCooking();
+    return;
+  }
+
+  // ─── Now in play mode ───
+  const h = hour();
+
+  // Night → sleep
+  if (h >= 23 && B.phase !== 'sleep' && B.phase !== 'done') {
+    lg('🌙 Khuya, đi ngủ');
+    B.phase = 'sleep'; B.target = LOC.camp;
+  }
+
+  // Earn enough → buy stuff
+  if (B.phase === 'earn' && state.cash >= B.earnGoal) {
+    lg(`💰 Đủ ${state.cash.toLocaleString()}₫! Mua gánh`, 'good');
+    B.phase = 'buy_ganh';
+  }
+
+  switch (B.phase) {
+    case 'wait': break;
+    case 'earn': doEarn(); break;
+    case 'buy_ganh': doBuyGanh(); break;
+    case 'buy_gear': doBuyGear(); break;
+    case 'buy_ing': doBuyIng(); break;
+    case 'sell': doSell(); break;
+    case 'sleep': doSleep(); break;
+    case 'done': stop(); break;
+  }
+}
+
+// ═══ MENU HANDLER ═══
+function handleMenu() {
+  if (B.phase !== 'start') return;
+  // Step 1: Click "Chơi mới"
+  if (menuClick('new')) {
+    lg('🎮 Bấm Chơi mới');
+    return;
+  }
+  // Step 2: Click "Anh Hai"
+  if (menuClick('anh')) {
+    lg('👤 Chọn Anh Hai');
+    waitFrames = 40; // wait for intro dialog
+    return;
+  }
+  // Maybe "Chơi tiếp" is available
+  if (menuClick('cont')) {
+    lg('▶ Chơi tiếp');
+    B.phase = 'earn';
+    return;
+  }
+}
+
+// ═══ DIALOG HANDLER ═══
+function handleDialog() {
+  // Wait a bit for dialog to fully render
+  if (waitFrames > 0) { waitFrames--; return; }
+
+  const state = g();
+
+  // During earning phase: handle beg/junk/dock dialogs
+  if (B.phase === 'earn') {
+    // Begging - try different beg options
+    if (dlgClick('Xin anh') || dlgClick('Xin chị') || dlgClick('làm ơn') || dlgClick('Kể khổ') || dlgClick('Kẻ khó')) {
+      B.begs++;
+      if (B.begs % 5 === 0) lg(`🙏 Xin #${B.begs} — ${state.cash.toLocaleString()}₫`);
+      return;
+    }
+    // Selling junk
+    if (dlgClick('Bán hết')) {
+      lg(`💰 Bán ve chai! ${state.cash.toLocaleString()}₫`, 'good');
+      return;
+    }
+    // Dock work
+    if (dlgClick('Dạ làm') || dlgClick('bao hàng')) {
+      lg('💪 Nhận bốc hàng!', 'good');
+      B.docks++;
+      return;
+    }
+    // Dish washing
+    if (dlgClick('Rửa chén') || dlgClick('Dạ rửa')) {
+      lg('🍽️ Rửa chén!', 'good');
+      return;
+    }
+    // Delivery
+    if (dlgClick('Nhận giao') || dlgClick('Dạ nhận')) {
+      lg('📦 Nhận giao hàng!', 'good');
+      return;
+    }
+    // Free food at temple
+    if (dlgClick('Xin cơm') || dlgClick('Cơm chay') || dlgClick('nhận')) {
+      lg('🍚 Ăn cơm chay!', 'good');
+      return;
+    }
+  }
+
+  // Buying phase
+  if (B.phase === 'buy_ganh' || B.phase === 'buy_gear') {
+    if (dlgClick('Mua')) {
+      lg('🛒 Mua đồ...', 'good');
+      return;
+    }
+  }
+
+  // Selling phase
+  if (B.phase === 'sell') {
+    if (dlgClick('Mở bán') || dlgClick('Thực đơn') || dlgClick('Đặt')) {
+      lg('🏪 Mở bán!', 'good');
+      return;
+    }
+    if (dlgClick('Làm') || dlgClick('Nấu') || dlgClick('Phục vụ')) {
+      lg('👨‍🍳 Làm món...', 'good');
+      return;
+    }
+  }
+
+  // Sleep
+  if (B.phase === 'sleep') {
+    if (dlgClick('Ngủ') || dlgClick('ngủ')) {
+      lg('😴 Ngủ...', 'good');
+      return;
+    }
+  }
+
+  // Default: dismiss (click last button = usually "bye")
+  if (tick % 3 === 0) {
+    dlgDismiss();
+  }
+}
+
+// ═══ COOKING HANDLER ═══
+function handleCooking() {
+  // Cooking mini-games: try to interact with buttons
+  if (!iDoc) return;
+  const cook = iDoc.getElementById('cook');
+  if (!cook) return;
+
+  // Click any available cook button
+  const btns = cook.querySelectorAll('.btns .btn');
+  if (btns.length > 0 && tick % 10 === 0) {
+    // Click middle-ish button for timing games
+    const idx = Math.floor(btns.length / 2);
+    btns[idx]?.click();
+  }
+
+  // For slider games, try moving
+  const slider = cook.querySelector('.slider');
+  if (slider && !slider.classList.contains('hide')) {
+    const ctx = G();
+    if (ctx?.cook) {
+      // Try to interact with the cook system
+      // The cook system captures pointer input - we need to simulate it
+    }
+  }
+}
+
+// ═══ EARNING ═══
+function doEarn() {
+  const state = g(), p = P();
+  const h = hour();
+
+  // If carrying sack → deliver
+  if (p.carry === 'sack') {
+    B.target = {x:-59, z:-3.6, n:'Giao bao'};
+    B.action = 'Đang vác bao gạo...';
+    if (goTo(B.target.x, B.target.z, 3.5)) {
+      stop();
+      p.face(B.target.x+3, B.target.z);
+      doInteract();
+    }
+    return;
+  }
+
+  // Sell junk if have enough
+  if (hasJunk() && junkN() >= 2) {
+    B.target = LOC.scrap;
+    B.action = 'Đi bán ve chai...';
+    if (goTo(LOC.scrap.x, LOC.scrap.z, 3)) {
+      stop();
+      p.face(LOC.scrap.x - 3, LOC.scrap.z);
+      if (doInteract()) {
+        waitFrames = 10;
+      }
+    }
+    return;
+  }
+
+  // Dock work 4h30-10h (6000₫/sack, best early income)
+  if (h >= 4.5 && h < 10 && B.docks < 12) {
+    B.target = LOC.dock;
+    B.action = 'Đi bốc hàng thuê...';
+    if (goTo(LOC.dock.x, LOC.dock.z, 4)) {
+      stop();
+      p.face(LOC.dock.x + 5, LOC.dock.z);
+      if (doInteract()) {
+        waitFrames = 15;
+      }
+    }
+    return;
+  }
+
+  // Wash dishes 10h-14h30
+  if (h >= 10 && h < 14.5 && B.docks >= 8) {
+    B.target = LOC.eatery;
+    B.action = 'Đi rửa chén...';
+    if (goTo(LOC.eatery.x, LOC.eatery.z, 3)) {
+      stop();
+      p.face(LOC.eatery.x - 3, LOC.eatery.z);
+      if (doInteract()) {
+        waitFrames = 15;
+      }
+    }
+    return;
+  }
+
+  // Eat at temple 11h-13h if hungry
+  if (h >= 11 && h < 13 && state.st.hunger < 40) {
+    B.target = LOC.temple;
+    B.action = 'Đi ăn cơm chay...';
+    if (goTo(LOC.temple.x, LOC.temple.z, 3)) {
+      stop();
+      if (doInteract()) waitFrames = 10;
+    }
+    return;
+  }
+
+  // Pick up litter
+  const lit = findLitter();
+  if (lit) {
+    B.target = {x:lit.x, z:lit.z, n:'Nhặt ve chai'};
+    B.action = 'Nhặt ve chai...';
+    if (goTo(lit.x, lit.z, 1.8)) {
+      stop();
+      if (doInteract()) {
+        B.litters++;
+        lg(`🗑️ Nhặt #${B.litters}`);
+      }
+    }
+    return;
+  }
+
+  // Dig bins
+  const bin = findBin();
+  if (bin && dist(p.x, p.z, bin.x, bin.z) < 15) {
+    B.target = {x:bin.x, z:bin.z, n:'Thùng rác'};
+    B.action = 'Bới thùng rác...';
+    if (goTo(bin.x, bin.z, 1.8)) {
+      stop();
+      if (doInteract()) {
+        B.litters++;
+        lg(`🗑️ Bới rác #${B.litters}`);
+      }
+    }
+    return;
+  }
+
+  // Beg from pedestrians
+  const ped = findPed();
+  if (ped && B.begs < 50) {
+    B.target = {x:ped.x, z:ped.z, n:'Xin tiền'};
+    B.action = 'Xin tiền người qua đường...';
+    if (goTo(ped.x, ped.z, 2.2)) {
+      stop();
+      p.face(ped.x, ped.z);
+      if (doInteract()) {
+        waitFrames = 8;
+      }
+    }
+    return;
+  }
+
+  // Wander to find more NPCs/litter
+  B.action = 'Lang thang kiếm tiền...';
+  if (!B.target || dist(p.x, p.z, B.target.x, B.target.z) < 5 || tick % 150 === 0) {
+    const spots = [
+      {x:-45+Math.random()*20, z:-5+Math.random()*15, n:'Quanh chợ'},
+      {x:-5+Math.random()*15, z:-5+Math.random()*15, n:'Trung tâm'},
+      {x:35+Math.random()*20, z:-5+Math.random()*15, n:'Phố đông'},
+      {x:-55+Math.random()*15, z:20+Math.random()*15, n:'Xóm LĐ'},
+      {x:50+Math.random()*20, z:90+Math.random()*10, n:'Gầm cầu'},
+    ];
+    B.target = spots[Math.floor(Math.random()*spots.length)];
+  }
+  goTo(B.target.x, B.target.z, 5);
+}
+
+// ═══ BUY GÁNH ═══
+function doBuyGanh() {
+  const state = g(), p = P();
+  B.target = LOC.equip;
+  B.action = 'Đi mua quang gánh...';
+  if (goTo(LOC.equip.x, LOC.equip.z, 3)) {
+    stop();
+    p.face(LOC.equip.x - 5, LOC.equip.z);
+    // Use acts.buyGear directly (same as clicking buy in shop)
+    const acts = A();
+    if (acts?.buyGear && !state.gear?.ganh) {
+      acts.buyGear('ganh');
+      lg('🎒 MUA QUANG GÁNH! -120.000₫', 'good');
+      B.phase = 'buy_gear';
+    } else if (doInteract()) {
+      waitFrames = 10;
+    }
+  }
+}
+
+// ═══ BUY GEAR ═══
+function doBuyGear() {
+  const state = g(), p = P();
+  B.target = LOC.equip;
+  B.action = 'Mua đồ nghề...';
+  if (goTo(LOC.equip.x, LOC.equip.z, 3)) {
+    stop();
+    const acts = A();
+    if (acts?.buyGear) {
+      if (!state.gear?.daothot && state.cash >= 45000) {
+        acts.buyGear('daothot');
+        lg('🔪 Mua dao thớt! -45.000₫', 'good');
+      } else if (!state.gear?.bepthan && state.cash >= 60000) {
+        acts.buyGear('bepthan');
+        lg('🔥 Mua bếp than! -60.000₫', 'good');
+      }
+    }
+    B.phase = 'buy_ing';
+  }
+}
+
+// ═══ BUY INGREDIENTS ═══
+function doBuyIng() {
+  const state = g(), p = P();
+  B.target = LOC.mktMid;
+  B.action = 'Mua nguyên liệu ở chợ...';
+  if (goTo(LOC.mktMid.x, LOC.mktMid.z, 4)) {
+    stop();
+    lg('🛒 Đang mua nguyên liệu...');
+    // Interact with market stalls
+    if (doInteract()) {
+      waitFrames = 15;
+    }
+    // After a short time, move to selling
+    setTimeout(() => {
+      B.phase = 'sell';
+      B.target = LOC.sellCho;
+      B.cash0 = state.cash;
+      lg('🏪 Ra chỗ bán!', 'good');
+    }, 2000);
+  }
+}
+
+// ═══ SELLING ═══
+function doSell() {
+  const state = g(), p = P();
+  B.sellEarned = Math.max(0, state.cash - B.cash0);
+
+  if (B.sellEarned >= B.sellGoal) {
+    lg(`🎉🎉🎉 ĐẠT 100K TỪ BÁN HÀNG! 🎉🎉🎉`, 'good');
+    B.phase = 'done'; return;
+  }
+
+  const s = state.stall;
+
+  // Place stall
+  if (s.where === 'carried' && state.gear?.ganh) {
+    B.target = LOC.sellCho;
+    B.action = 'Tìm chỗ đặt gánh...';
+    if (goTo(LOC.sellCho.x, LOC.sellCho.z, 3.5)) {
+      stop();
+      B.action = 'Đặt gánh xuống...';
+      // Face outward and interact
+      p.yaw = LOC.sellCho.yaw || 0;
+      if (doInteract()) {
+        waitFrames = 10;
+        lg('🏪 Đặt gánh!', 'good');
+      }
+    }
+    return;
+  }
+
+  // Open stall for business
+  if (s.where === 'placed' && !s.open) {
+    B.target = {x:s.x, z:s.z, n:'Quầy'};
+    B.action = 'Mở quầy bán...';
+    if (goTo(s.x, s.z, 2.5)) {
+      stop();
+      if (doInteract()) {
+        waitFrames = 10;
+        lg('🔔 Mở bán!', 'good');
+      }
+    }
+    return;
+  }
+
+  // Serve customers
+  if (s.open || s.where === 'placed') {
+    const sd = dist(p.x, p.z, s.x, s.z);
+    if (sd > 3) { goTo(s.x, s.z, 2); return; }
+    stop();
+    B.action = `Đang bán... (${B.sellEarned.toLocaleString()}₫)`;
+
+    // Try to serve any nearby customer
+    const inter = I();
+    if (inter) {
+      inter.update(0.05);
+      if (inter.focus) {
+        inter.trigger();
+        waitFrames = 8;
+        lg('👨‍🍳 Phục vụ khách');
+      }
+    }
+  }
+}
+
+// ═══ SLEEP ═══
+function doSleep() {
+  const p = P();
+  B.target = LOC.camp;
+  B.action = 'Về ngủ...';
+  if (goTo(LOC.camp.x, LOC.camp.z, 3)) {
+    stop();
+    if (doInteract()) {
+      waitFrames = 15;
+    }
+    // After sleeping, resume
+    setTimeout(() => {
+      const state = g();
+      B.docks = 0; B.begs = 0;
+      if (state.cash < B.earnGoal && !state.gear?.ganh) B.phase = 'earn';
+      else if (!state.gear?.ganh) B.phase = 'buy_ganh';
+      else if (!state.gear?.daothot) B.phase = 'buy_gear';
+      else B.phase = 'sell';
+      lg(`☀️ Ngày ${state.day+1}! ${state.cash.toLocaleString()}₫`, 'good');
+    }, 3000);
+  }
+}
+
+// ═══ UI UPDATE ═══
+function updateUI() {
+  const state = g(), p = P();
+  const phases = {
+    wait: ['⏳ Chờ...', 'Game đang tải'],
+    start: ['🎮 Bắt đầu', 'Đang tạo nhân vật'],
+    earn: ['💰 Kiếm tiền', `Cần ${B.earnGoal.toLocaleString()}₫ — Có ${state?.cash?.toLocaleString()||0}₫`],
+    buy_ganh: ['🎒 Mua gánh', 'Đến tiệm Ba Tài — 120.000₫'],
+    buy_gear: ['🔪 Mua đồ nghề', 'Dao thớt, bếp than...'],
+    buy_ing: ['🛒 Mua nguyên liệu', 'Ra chợ mua đồ nấu'],
+    sell: ['🏪 Bán hàng', `${B.sellEarned.toLocaleString()}₫ / 100.000₫`],
+    sleep: ['😴 Ngủ', 'Về gầm cầu nghỉ ngơi'],
+    done: ['🎉 HOÀN THÀNH!', `Tổng: ${state?.cash?.toLocaleString()||0}₫`],
+  };
+  const [pn, pd] = phases[B.phase] || ['?','?'];
+  document.getElementById('pn').textContent = pn;
+  document.getElementById('pd').textContent = pd;
+
+  let prog = 0;
+  if (B.phase==='earn') prog = Math.min(100, (state?.cash||0)/B.earnGoal*100);
+  else if (B.phase==='sell') prog = Math.min(100, B.sellEarned/B.sellGoal*100);
+  else if (B.phase==='done') prog = 100;
+  else if (B.phase.startsWith('buy')) prog = 65;
+  document.getElementById('pb').style.width = prog+'%';
+
+  if (state) {
+    document.getElementById('sc').textContent = state.cash.toLocaleString()+'₫';
+    document.getElementById('sd').textContent = (state.day+1)+'';
+    document.getElementById('st').textContent = hourStr();
+  }
+  if (p) document.getElementById('sp').textContent = `(${p.x.toFixed(0)},${p.z.toFixed(0)})`;
+  document.getElementById('st2').textContent = B.target?.n || '—';
+  document.getElementById('sm').textContent = B.action || '—';
+  document.getElementById('sb').textContent = B.begs+'';
+  document.getElementById('sl').textContent = B.litters+'';
+  document.getElementById('sk').textContent = B.docks+'';
+  document.getElementById('ss').textContent = B.sellEarned.toLocaleString()+'₫';
+
+  const logEl = document.getElementById('log');
+  logEl.innerHTML = B.log.slice(-60).map(l => `<div class="e ${l.t}">${l.m}</div>`).join('');
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+// ═══ CONTROLS ═══
+window.botStart = () => {
+  B.paused = false;
+  if (B.phase === 'wait') B.phase = 'start';
+  lg('▶ Bot bắt đầu!', 'good');
+};
+window.botPause = () => {
+  B.paused = !B.paused;
+  if (B.paused) stop();
+  lg(B.paused ? '⏸ Dừng' : '▶ Tiếp');
+};
+window.botSpeed = (m) => {
+  const ctx = G();
+  if (ctx) { ctx.speed = 0.75 * m; lg(`⏩ ×${m}`, 'info'); }
+};
+
+// Main loops
+setInterval(update, 50);     // Game logic 20fps
+setInterval(updateUI, 300);  // UI 3fps
+</script>
+</body>
+</html>
