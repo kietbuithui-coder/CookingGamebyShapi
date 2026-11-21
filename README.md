@@ -29,6 +29,10 @@ Sổ tay (nút hình cuốn sổ) có công thức, sổ sách lời lỗ, nợ 
 | Xoay trái · xoay phải | — | Q · Z |
 | Túi · Sổ tay · Bản đồ · Cài đặt | Bốn nút góc trên phải | Tab · B · M · Esc |
 
+**Thanh chạy** (thanh vàng hiện ra khi bạn chạy) hồi nhanh hay chậm tuỳ **máu** và **pin năng lượng**: đang mất máu hoặc
+thiếu ngủ thì hồi chậm, chạy được quãng ngắn hơn. Người khoẻ: 11 giây đứng chờ là đầy thanh và chạy liền được 10 giây;
+máu 20: chờ 22 giây mới đầy, chạy liền được ~8 giây. Chạm vào thanh để xem con số thật của lúc đó.
+
 **Điện thoại đời 2005–2010:** ba mẫu bán ở tiệm Đồ Nghề — cục gạch (180.000₫), nắp gập (520.000₫), cảm ứng (1.450.000₫). Mở bằng nút trên màn hình hoặc phím `P`: sổ thu chi, danh bạ (gọi khách quen 1.000₫/lần), tin nhắn (nhắc nợ, nhắc tiền phòng, tin lừa, dự báo thời tiết), nghe radio, nghe nhạc, lướt web WAP. Pin tụt dần theo giờ, sạc qua đêm ở nhà có điện hoặc sạc nhờ ở tạp hoá 5.000₫.
 
 **Quán net Hải Anh:** quán 10 máy (một máy dán giấy HỎNG) ở khu dân cư, mở 6 giờ sáng tới 11 giờ đêm. Thuê máy 3.000₫/giờ, tính theo phút, xem phim tính thêm nửa giá: chơi game (+9 tinh thần/giờ) vui nhất nhưng mau đói khát, lướt web nhẹ người, xem phim lên tinh thần nhiều nhất. Ngồi quá 2 tiếng một ngày là **mỏi mắt**, chơi tiếp chỉ còn nửa tinh thần và tụt sức khoẻ. Có dãy ổ điện **sạc nhờ 2.000₫**, tủ nước ngọt 8.000₫/lon, quạt trần, bình nước nóng lạnh, và hai đứa nhỏ trong xóm ngồi máy cả buổi chiều.

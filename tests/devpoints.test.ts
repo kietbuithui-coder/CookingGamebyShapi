@@ -3,12 +3,12 @@ import { DEV_BUILD_TAG, DEV_PIN, DEV_PIN_LEN, devPinInput, getDevSections } from
 
 describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
   it('chỉ gồm mục của tính năng mới nhất + nhóm địa điểm tele nhanh', () => {
-    expect(DEV_BUILD_TAG).toContain('Ông Bảy');
-    expect(DEV_BUILD_TAG).toContain('ghim đường đi');
+    expect(DEV_BUILD_TAG).toContain('máu');
+    expect(DEV_BUILD_TAG).toContain('pin năng lượng');
     const sections = getDevSections();
     expect(sections.length).toBe(2);
-    expect(sections[0].title.toLowerCase()).toContain('ông bảy');
-    expect(sections[0].title).toContain('lượt 52');
+    expect(sections[0].title.toLowerCase()).toContain('thanh chạy');
+    expect(sections[0].title).toContain('lượt 53');
     expect(sections[1].title).toContain('Địa điểm');
     const ids = new Set<string>();
     for (const sec of sections) {
@@ -21,8 +21,8 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
         expect(item.sub.length).toBeGreaterThan(3);
       }
     }
-    // mục của lượt này: xem lời khuyên hiện tại, tele tới Ông Bảy, soát 96 mốc giờ
-    for (const id of ['hobo_now', 'hobo_tele', 'hobo_audit']) expect(ids.has(id)).toBe(true);
+    // mục của lượt này: đọc thanh chạy hiện tại, so ba mức, cho thương, trả lại khoẻ
+    for (const id of ['stam_now', 'stam_compare', 'stam_hurt', 'stam_heal']) expect(ids.has(id)).toBe(true);
     // tele nhanh vẫn còn nguyên
     const loc = sections[1].items.map((i) => i.id);
     for (const id of ['tp_equip', 'tp_matbang_tb', 'tp_ongtu', 'tp_scrap2', 'tp_canho', 'tp_hobo', 'tp_mart']) expect(loc).toContain(id);
@@ -67,8 +67,8 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
       'kiem_tra_tai', 'sua_loi_tai',
       // lượt 48 (ngủ đỡ đói + biển đúng giá)
       'ngu_do_doi', 'bien_gia',
-      // lượt 49 (xe chạy đúng đường + còi) — đã thay bằng mục của lượt 52
-      'kiem_xe', 'thu_ba_coi']) expect(ids).not.toContain(old);
+      // lượt 49 (xe chạy đúng đường + còi), lượt 52 (Ông Bảy) — đã thay bằng mục của lượt 53
+      'kiem_xe', 'thu_ba_coi', 'hobo_now', 'hobo_tele', 'hobo_audit']) expect(ids).not.toContain(old);
   });
 });
 

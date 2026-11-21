@@ -17,7 +17,7 @@ import { LANDMARK_BY_ID } from '../data/landmarks';
 import { money } from '../core/util';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Ông Bảy gợi ý theo đúng tình cảnh của ván (máu, cái bụng, túi tiền, giờ), mỗi câu kèm khoảng cách và nút ghim đường đi';
+export const DEV_BUILD_TAG = 'Thanh thể lực hồi nhanh/chậm theo máu và pin năng lượng — người khoẻ chạy 10 giây, máu 20 chạy ngắn hơn và đứng chờ lâu gấp đôi mới đầy thanh';
 
 /**
  * MÃ PIN CỦA MENU ẨN. Bấm 7 lần chữ "Cài đặt" chỉ mở bàn phím số; nhập đúng mã này mới thấy menu test.
@@ -99,58 +99,65 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Ông Bảy gợi ý theo tình cảnh thật, PIN 7777 (lượt 52)',
+      title: 'Mới nhất — thanh chạy hồi theo máu & pin (lượt 53)',
       items: [
         {
-          id: 'hobo_now',
-          label: 'Ông Bảy đang khuyên gì lúc này?',
-          sub: 'Tính lại từ trạng thái thật: máu, bụng, tiền, giờ, quầy, nợ, thời tiết',
+          id: 'stam_now',
+          label: 'Thanh chạy của bạn lúc này hồi nhanh hay chậm?',
+          sub: 'Đọc từ chính máu và pin hiện tại: bao nhiêu giây thì đầy, chạy liền được mấy giây',
           tone: 'green',
           closePanel: true,
           run: () => {
             const g = ctx.g;
-            const list = advice(g, { x: ctx.player.x, z: ctx.player.z, anchors: ctx.world.anchors });
-            const lines = list.slice(0, 6).map((a, i) => `${i + 1}. [${a.urgent}] ${a.id} → ${LANDMARK_BY_ID[a.place]?.name ?? a.place}\n${a.text}`);
+            const regen = R.staminaRegen(g, false), drain = R.staminaDrain(g), mul = R.staminaRegenMul(g);
             ctx.ui.dialog({
-              who: 'Ông Bảy — lời khuyên hiện tại', npc: undefined,
-              text: `Giờ ${nowText(g)} · máu ${Math.round(g.st.health)} · bụng ${Math.round(g.st.hunger)} · sức ${Math.round(g.st.energy)} · túi ${money(g.cash)} · ${list.length} câu đang đúng, câu gấp nhất ở trên:\n\n` + lines.join('\n\n'),
+              who: 'Thanh chạy lúc này',
+              text: `Máu ${Math.round(g.st.health)}/100 · pin ${Math.round(g.st.energy)}/100 — thanh thể lực hồi ${Math.round(mul * 100)}% tốc độ bình thường.\n\n`
+                + `Đứng yên: +${(regen * 100).toFixed(1)}%/giây → ${(1 / regen).toFixed(0)} giây thì đầy thanh.\n`
+                + `Vừa đi vừa hồi: +${(R.staminaRegen(g, true) * 100).toFixed(1)}%/giây.\n`
+                + `Chạy: −${(drain * 100).toFixed(1)}%/giây → thanh đầy chạy liền được ${(1 / drain).toFixed(1)} giây.\n\n`
+                + `Máu càng thấp và pin càng cạn thì hồi càng chậm, tụt càng nhanh. Ăn no, ngủ đủ, đi khám khi mất máu là chạy dai nhất.`,
               opts: [{ t: 'Đóng' }],
             });
           },
         },
         {
-          id: 'hobo_tele',
-          label: 'Tele tới gầm cầu, hỏi Ông Bảy ngay',
-          sub: 'Đứng trước mặt ông rồi tự mở hộp thoại — thử câu khuyên trong game thật',
+          id: 'stam_compare',
+          label: 'So ba mức: khoẻ / máu 45 / máu 20 (pin cạn theo)',
+          sub: 'Bảng số thật của luật mới: hồi mấy giây đầy thanh và chạy liền được bao lâu',
           tone: 'yellow',
           closePanel: true,
           run: () => {
-            const a = ctx.world.anchors.v_hobo;
-            if (a) tpTo(a.x, a.z + 2.2, Math.PI, 'Đã tới gầm cầu — chạm Ông Bảy để hỏi.');
-            const n = ctx.npcs.fixed.get('hobo');
-            if (n) { ctx.player.face(n.x, n.z); setTimeout(() => ctx.acts.talk(n), 350); }
+            const rows = [[95, 90], [45, 45], [20, 0]].map(([hp, en]) => {
+              const h0 = ctx.g.st.health, e0 = ctx.g.st.energy;
+              ctx.g.st.health = hp; ctx.g.st.energy = en;
+              const mul = R.staminaRegenMul(ctx.g), drain = R.staminaDrain(ctx.g);
+              ctx.g.st.health = h0; ctx.g.st.energy = e0;
+              return `máu ${hp}/pin ${en}: hồi ${Math.round(mul * 100)}% → ${(1 / (0.09 * mul)).toFixed(0)} giây đầy, chạy liền ${(1 / drain).toFixed(1)} giây`;
+            });
+            ctx.ui.dialog({ who: 'Thanh chạy — hồi theo máu & pin', text: rows.join('\n'), opts: [{ t: 'Đóng' }] });
           },
         },
         {
-          id: 'hobo_audit',
-          label: 'Soát 96 lần trong ngày: có câu nào chỉ chỗ đã đóng cửa không?',
-          sub: 'Đổi giờ 0h→23h (mỗi lần 15 phút) rồi tính lại — câu nào cũng phải trỏ đích có thật & đang mở',
-          tone: 'green',
-          closePanel: false,
+          id: 'stam_hurt',
+          label: 'Cho mình đang thương: máu 20, pin 10',
+          sub: 'Đặt chỉ số rồi giữ Shift (hoặc đẩy cần ảo) để thấy chạy ngắn hơn và lâu đầy thanh hơn',
+          tone: 'red',
+          closePanel: true,
           run: () => {
-            const g = ctx.g, old = g.min, bad: string[] = [];
-            let n = 0;
-            for (let k = 0; k < 96; k++) {
-              g.min = Math.floor(k / 4) * 60 + (k % 4) * 15;
-              for (const a of advice(g)) {
-                n++;
-                const lm = LANDMARK_BY_ID[a.place];
-                if (!lm) bad.push(`${k}: mã lạ ${a.place}`);
-                else if (!lm.always && !destOpen(g, a.place)) bad.push(`${nowText(g)} ${a.id} → ${lm.name} (đóng cửa)`);
-              }
-            }
-            g.min = old;
-            toast(bad.length ? `${bad.length}/${n} câu sai: ${bad.slice(0, 3).join(' · ')}` : `Soát ${n} câu trong 96 mốc giờ: không câu nào chỉ chỗ đã đóng cửa.`, bad.length ? 'bad' : 'good', 'bolt', true);
+            const g = ctx.g; g.st.health = 20; g.st.energy = 10;
+            toast(`Máu 20, pin 10 — thanh thể lực giờ chỉ hồi ${Math.round(R.staminaRegenMul(g) * 100)}% tốc độ. Giữ Shift mà chạy thử.`, 'bad', 'heart', true);
+          },
+        },
+        {
+          id: 'stam_heal',
+          label: 'Trả lại người khoẻ: máu 90, pin 90',
+          sub: 'Để thử lại cảm giác chạy đủ đà, hoặc dọn chỉ số sau khi test xong',
+          tone: 'green',
+          closePanel: true,
+          run: () => {
+            const g = ctx.g; g.st.health = 90; g.st.energy = 90; g.st.hunger = Math.max(g.st.hunger, 70); g.st.thirst = Math.max(g.st.thirst, 70);
+            toast('Đã trả máu 90, pin 90, bụng và nước đủ — thanh thể lực hồi lại bình thường.', 'good', 'heart');
           },
         },
       ],

@@ -19,11 +19,11 @@
 | Quầy hàng & nấu ở world | `src/game/stall.ts` (1.557), `src/cook/*` |
 | Hội thoại / menu NPC | `src/game/acts.ts` (1.390) |
 | HUD / bảng | `src/ui/ui.ts` (424), `src/ui/panels.ts` (517), `src/ui/style.css` (563) |
-| Test | `tests/*.test.ts` — **47 tệp, 587 bài**, `environment: 'node'` |
-| Thử giao diện thật | `tools/probe/` (73 kịch bản `.mjs` trong `steps/`, Chrome headless) |
+| Test | `tests/*.test.ts` — **48 tệp, 593 bài**, `environment: 'node'` |
+| Thử giao diện thật | `tools/probe/` (74 kịch bản `.mjs` trong `steps/`, Chrome headless) |
 | Bản phát hành | `docs/` — **sinh ra bởi `build:pages`, không sửa tay** |
 
-Trạng thái đo được hôm nay (2026-11-21, sau lượt 52): **typecheck ✅ · 587/587 test ✅ (47 tệp, ~12 s) · build ✅ (1.343 kB JS, gzip 423 kB) · build:pages ✅**.
+Trạng thái đo được hôm nay (2026-11-21, sau lượt 53): **typecheck ✅ · 593/593 test ✅ (48 tệp, ~12 s) · build ✅ (1.350 kB JS, gzip 425 kB) · build:pages ✅**.
 
 ---
 
@@ -87,7 +87,7 @@ xác định luật + dữ liệu (sim/data)
 
 ## 3. Hợp đồng kiến trúc (đừng phá)
 
-1. **`src/sim` không được biết DOM/three.** Nó chỉ báo việc ra ngoài qua `src/core/bus.ts` (`bus.emit('toast' | 'sfx' | 'cash' | 'save' | 'day' | 'ui' | 'quest' | 'bankrupt')`, tiện dụng: `toast()`, `sfx()`). Đây là lý do 587 bài kiểm thử chạy trong Node chỉ ~12 giây.
+1. **`src/sim` không được biết DOM/three.** Nó chỉ báo việc ra ngoài qua `src/core/bus.ts` (`bus.emit('toast' | 'sfx' | 'cash' | 'save' | 'day' | 'ui' | 'quest' | 'bankrupt')`, tiện dụng: `toast()`, `sfx()`). Đây là lý do 593 bài kiểm thử chạy trong Node chỉ ~12 giây.
 2. **Mọi ngẫu nhiên trong luật nhận `RNG` có hạt giống** làm tham số cuối (`advance(g, dm, act, R)`, `decideGroup(g, p, size, fem, R)`, `newDay(g, R)`). Test phải truyền RNG cố định, không dùng `Math.random()`.
 3. **UI không tự tính luật kinh tế.** Giá, giá vốn, lượng khách, hư hỏng, phí chỗ đều ở `sim/rules.ts`; UI chỉ hiển thị và gọi hàm.
 4. **`src/world/layout.ts` là nguồn chuẩn của toạ độ.** `LOTS`, `SPOTS`, `PLACES`, `NAV`, `DISTRICT`, `MAP`. Thêm địa điểm phải có lô đất + neo `v_<id>` + nút NAV liên thông (có test lo việc này, xem §5).
@@ -104,6 +104,8 @@ xác định luật + dữ liệu (sim/data)
 | Khoá localStorage | `ganhhang.save.v1`, `ganhhang.settings.v1` | `game/ctx.ts:59` |
 | `DEV_BUILD_TAG` | chuỗi phiên bản + danh sách mục trong menu ẩn (bấm 7 lần chữ “Cài đặt”, nhập PIN **`7777`**) | `game/devPoints.ts` |
 | `DEV_PIN` | `'7777'` — mã 4 số của menu ẩn (không phải bảo mật, chỉ để người chơi không mở nhầm; `devPinInput()` so mã) | `game/devPoints.ts` |
+| `staminaRegenMul` | hệ số hồi thanh thể lực = `clamp(hpMul · (0,6 + 0,4·pinMul), 0,28, 1)`; máu 20 ⇒ 0,5 | `sim/rules.ts` |
+| `staminaDrain` | 0,1/giây khi chạy, nhân tới 1,6 lần khi máu thấp/pin cạn | `sim/rules.ts` |
 
 ### Số liệu nội dung (kiểm bằng `tests/data.test.ts`)
 60 công thức · 75 nguyên liệu · 12 nơi bán · 37 món đồ nghề (7 bậc quầy + 5 dụng cụ + 3 bếp + 2 kho + 14 tiện nghi + 2 đồ mang + 1 đồ nhà + 3 điện thoại) · 8 kiểu chỗ ở · 8 bậc quầy (`TIERS[0..7]`, `FUTURE_TIERS = []`) · 6 chỗ bán (`SPOTS`) · 3 chỗ mở chi nhánh (`BRANCH_SITES`) · 16 nhóm người · 44 nhân vật cố định · 11 khách quen · 5 người phụ việc · 3 phụ bếp · 3 người trông coi chi nhánh (`KEEPER_POOL`) · 22 sự kiện · 8 thời tiết.
@@ -137,7 +139,7 @@ xác định luật + dữ liệu (sim/data)
 
 ### 4.3 Sau khi sửa
 ```bash
-npm test            # 587 bài hiện tại; đếm lại nếu bạn thêm bài
+npm test            # 593 bài hiện tại; đếm lại nếu bạn thêm bài
 npm run typecheck
 npm run build
 git diff --check    # lỗi khoảng trắng / xung đột sót
@@ -210,7 +212,7 @@ Những test "gác cổng" dễ bị quên:
 ### 6.4 Đo được gì, không đo được gì (trung thực)
 | Đo được | Không đo được ở sandbox |
 |---|---|
-| Luật chơi (587 test), typecheck, build, bundle size | FPS thật trên GPU (máy không có GPU; gói JS đo được 1.335 kB / gzip 420 kB + 120 kB phông chữ) |
+| Luật chơi (593 test), typecheck, build, bundle size | FPS thật trên GPU (máy không có GPU; gói JS đo được 1.335 kB / gzip 420 kB + 120 kB phông chữ) |
 | Luồng UI trong Chrome headless ở 844×390 và 390×844 | Cảm giác chạm trên điện thoại thật, tai nghe/loa thật |
 | Hình học: mặt trùng phẳng, biển bị che (`audit.mjs`) | Chơi trọn nhiều giờ liên tục, trộm đêm, chuỗi mục tiêu theo trình tự thật |
 
@@ -267,7 +269,7 @@ xem mục 9b — khi đó đã sửa lại 9 chỗ lệch mới phát sinh):
 
 | Tệp | Ghi cũ | Sự thật trong mã |
 |---|---|---|
-| `PLAYBOOK.md` §0 | “322/322 test” · rules.ts 1.088 · data 11 tệp/1.232 dòng · 53 probe | **560 bài/46 tệp** · rules.ts **1.800** · data **12 tệp/1.456** · **73** probe |
+| `PLAYBOOK.md` §0 | “322/322 test” · rules.ts 1.088 · data 11 tệp/1.232 dòng · 53 probe | **593 bài/48 tệp** · rules.ts **1.848** · data **12 tệp/1.456** · **74** probe |
 | `PLAYBOOK.md` §2 | “52 tệp ~14.772 dòng” + số dòng từng thư mục | **59 tệp / 17.806 dòng** + 563 dòng CSS; thiếu `core/`, `news.ts`, `roads.ts`, `shopbrowse.ts` |
 | `PLAYBOOK.md` §3/§7 | `SAVE_VERSION = 13`, mốc dừng ở v13 | **`SAVE_VERSION = 16`** (v14 chi nhánh · v15 chuyến đi chợ · v16 ca làm) |
 | `PLAYBOOK.md` §6.4 | “322 test” · “1,23 MB JS / ~384 kB gzip” | 560 test · **1.335 kB / gzip 420 kB** |

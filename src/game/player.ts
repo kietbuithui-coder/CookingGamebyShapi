@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { ctx, baseFov } from './ctx';
 import { clamp, damp, TAU } from '../core/util';
 import { groundY, MAP } from '../world/layout';
-import { moveMul, staminaMax, tier, bagWeight, carryCap, floodPct } from '../sim/rules';
+import { moveMul, staminaMax, staminaRegen, staminaDrain, tier, bagWeight, carryCap, floodPct } from '../sim/rules';
 import { floodZone } from '../data/world';
 import { MB, MAT } from '../gfx/mb';
 import { ganhModel, cartModel, basketModel } from '../gfx/props';
@@ -120,7 +120,8 @@ export class Player {
     const maxSt = this.staminaCap = staminaMax(g); this.stamina = Math.min(this.stamina, maxSt);
     const wantRun = inp.run && this.moving && mz > 0.3 && !this.tired && this.carry === '';
     this.running = wantRun;
-    if (wantRun) { this.stamina -= dt * 0.1; if (this.stamina <= 0.02) this.tired = true; } else { this.stamina = Math.min(maxSt, this.stamina + dt * (this.moving ? 0.05 : 0.09)); if (this.stamina > 0.3) this.tired = false; }
+    // Tốc độ tụt/hồi thanh chạy do máu + pin quyết định (sim/rules: staminaDrain / staminaRegen).
+    if (wantRun) { this.stamina -= dt * staminaDrain(g); if (this.stamina <= 0.02) this.tired = true; } else { this.stamina = Math.min(maxSt, this.stamina + dt * staminaRegen(g, this.moving)); if (this.stamina > 0.3) this.tired = false; }
     let sp = (wantRun ? 5.5 : 3.35) * moveMul(g, this.x, this.z);
     if (this.carry === 'ganh' || this.carry === 'xeday') sp *= tier(g).speed || 0.7; else if (this.carry === 'sack') sp *= 0.62; else if (this.carry === 'box') sp *= 0.85;
     const load = bagWeight(g) / carryCap(g); if (load > 0.85) sp *= clamp(1.25 - load * 0.4, 0.55, 1);

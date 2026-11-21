@@ -15,7 +15,7 @@ import { SHOPS } from '../data/shops';
 import { DISTRICT, districtAt } from '../world/layout';
 import { STAT_MAX, hourOf } from '../sim/state';
 import { jailLeft } from '../sim/police';
-import { activeEvents, totalDebt, level, tier, hasMet, fixedLabel, lowStockCount, shortageLine, stockShortages, needsPrepCount, isStomach, stomachLeft } from '../sim/rules';
+import { activeEvents, totalDebt, level, tier, hasMet, fixedLabel, lowStockCount, shortageLine, stockShortages, needsPrepCount, isStomach, stomachLeft, staminaRegenMul, staminaRegen, staminaDrain } from '../sim/rules';
 /** Chú thích khi rê chuột: liệt kê từng món + nguyên liệu còn thiếu, kèm chợ nào bán. */
 const lowchipTip = (g: Game) => {
   const l = stockShortages(g);
@@ -409,6 +409,10 @@ export class UI {
     const s = g.stall; E.stallchip.classList.toggle('hide', s.tier === 0); if (s.tier) E.stallchip.innerHTML = `${ic('shop')}${tier(g).name}: ${stallHint(g, ctx.stall.stowed)}` + (s.open ? ` · ${ctx.stall.customers.length} khách · hôm nay ${money(g.led.revenue + g.led.tips)}` : '');
     // Thanh sức bền chỉ hiện khi đang hụt so với trần hiện tại (đang chạy hoặc đang hồi), không hiện suốt chỉ vì đói/khát làm trần tụt xuống.
     const st = E.stam; st.classList.toggle('hide', p.stamina > p.staminaCap - 0.02 || ctx.mode !== 'play'); (st.firstElementChild as HTMLElement).style.width = p.stamina * 100 + '%'; st.style.setProperty('--cap', p.staminaCap * 100 + '%');
+    // Thanh thể lực hồi nhanh/chậm theo máu và pin — nói rõ ngay trên thanh để người chơi hiểu vì sao lâu đầy.
+    const regenMul = staminaRegenMul(g), staminaRunSecsTotal = 1 / staminaDrain(g);
+    st.dataset.tip = regenMul >= 0.97 ? 'Thể lực · hồi đầy đủ (máu và pin đều tốt)'
+      : `Thể lực · hồi ${Math.round(regenMul * 100)}% tốc độ vì ${g.st.health < 45 ? 'đang mất máu' : 'thiếu ngủ'} — chạy được ${staminaRunSecsTotal.toFixed(0)} giây liền, cạn rồi đứng chờ ${(1 / staminaRegen(g, false)).toFixed(0)} giây mới đầy`;
     const n = g.bag.reduce((a, x) => a + (x.fresh < 35 && INGS[x.id].shelf < 9000 ? 1 : 0), 0); E.bagdot.classList.toggle('hide', n === 0); E.bagdot.textContent = String(n);
     // nút cất gánh: đang gánh trên vai thì cất vào ba lô; đang dựng quầy thì dọn cả quầy vào ba lô
     const carried = s.tier > 0 && s.where === 'carried';

@@ -40,7 +40,7 @@ Vòng lặp chính (`src/main.ts`): đọc điều khiển → `advance()` cho t
 ## 4. Các hệ thống và con số
 
 ### 4.1 Sinh tồn
-Sáu chỉ số 0–100: no, khát, năng lượng, sức khoẻ, vệ sinh, tinh thần. Đói/khát kéo sức bền tối đa xuống (`staminaMax`), thiếu ngủ làm thao tác nấu khó hơn (`cookEase`), bẩn làm khách quay đi và bị phạt khi thanh tra. Chỗ ngủ quyết định chất lượng giấc ngủ và nguy cơ mất trộm:
+Sáu chỉ số 0–100: no, khát, năng lượng, sức khoẻ, vệ sinh, tinh thần. Đói/khát kéo sức bền tối đa xuống (`staminaMax`), thiếu ngủ làm thao tác nấu khó hơn (`cookEase`), bẩn làm khách quay đi và bị phạt khi thanh tra. **Máu và năng lượng còn quyết định tốc độ hồi thanh thể lực** (`staminaRegenMul`, §4.36): người đang thương hồi khoảng một nửa tốc độ và tụt nhanh hơn khi chạy. Chỗ ngủ quyết định chất lượng giấc ngủ và nguy cơ mất trộm:
 
 | Chỗ ngủ | Giá | Ngủ | An toàn | Kho |
 |---|---|---|---|---|
@@ -821,6 +821,35 @@ tròn báo số đã nhập; gõ đúng **`7777`** (`DEV_PIN` trong `src/game/de
 | *Soát 96 lần trong ngày* | Quét 96 mốc giờ (0h→23h45), gọi `advice()` ở mỗi mốc, báo to nếu có câu nào trỏ đích đã đóng cửa — đo được **316 câu, 0 câu sai** |
 
 Nhóm “Địa điểm — tele nhanh” thêm hai chỗ mới: **Gầm cầu — Ông Bảy** và **MiniMart 24h**.
+
+### 4.36 Thanh thể lực hồi theo máu và pin (lượt 53)
+
+Trước đây thanh thể lực (thanh vàng dưới đáy màn hình, hiện khi đang chạy) hồi **một tốc độ cố định cho mọi người**:
+đứng yên +0,09/giây, vừa đi +0,05/giây, chạy −0,1/giây. Nghĩa là người đang mất máu 20 vẫn chạy khoẻ y như người
+đầy đủ — chỉ số máu và pin chẳng liên quan gì tới việc chạy. Nay ba con số đó được nhân với hệ số sức khoẻ.
+
+| Luật | Công thức (trong `src/sim/rules.ts`) | Người khoẻ | Máu 20 | Máu 20 + cạn pin |
+|---|---|---|---|---|
+| Hệ số hồi theo máu | `staminaHpMul = clamp(0,5 + 0,5·(máu−20)/50, 0,3, 1)` | 1,0 | **0,5** | 0,5 |
+| Hệ số hồi theo pin | `staminaEnergyMul = clamp(0,45 + 0,55·pin/60, 0,45, 1)` | 1,0 | 1,0 | 0,45 |
+| Hệ số gộp | `staminaRegenMul = clamp(hpMul · (0,6 + 0,4·pinMul), 0,28, 1)` | 1,0 | 0,5 | **0,39** |
+| Hồi khi đứng yên | `0,09 · regenMul` mỗi giây | 0,09 (11 giây đầy thanh) | 0,045 (22 giây) | 0,035 (28 giây) |
+| Tụt khi chạy | `0,1 · clamp(1 + 0,6·(1−hpMul) + 0,4·(1−pinMul), 1, 1,6)` | 0,1 (chạy 10 giây) | 0,13 (7,7 giây) | **0,16 (6,2 giây)** |
+
+Bốn quyết định có chủ ý:
+
+1. **Máu là thứ chính, pin chỉ phụ** (`0,6 + 0,4·pinMul`): người chọn “máu + năng lượng” nhưng không muốn cạn pin một
+   mình đã làm thanh gần như đứng im. Cạn pin riêng lẻ chỉ chậm thêm nhiều nhất 22 %.
+2. **Sàn 0,28** (hệ số gộp) và **trần 1,6** (tụt): cùng lúc tệ nhất thì hồi vẫn còn ~1/3 tốc độ, chạy được ~6 giây —
+   người chơi bị phạt rõ nhưng không kẹt vĩnh viễn ở 0.
+3. **Trần thanh thể lực (`staminaMax`) không đổi** — vẫn chỉ do đói/khát quyết định, để luật mới không giẫm lên luật cũ.
+4. **Tốc độ chạy (m/s) không đổi**: `moveMul` vốn đã phạt máu thấp khi đi bộ; lượt này chỉ đụng tới thanh thể lực.
+
+Thanh thể lực có `data-tip` đọc thẳng từ luật: hồi bao nhiêu phần trăm tốc độ, vì “đang mất máu” hay “thiếu ngủ”, chạy
+liền được mấy giây, cạn rồi đứng chờ bao lâu mới đầy — người chơi không phải đoán. `tests/stamina53.test.ts` (6 bài) canh
+đúng các mốc trong bảng trên; probe `tools/probe/steps/stam53.mjs` đo bằng **đồng hồ mô phỏng** (`__game.time`) sau khi
+giữ Shift thật: máu 90 → **0,09/giây**, máu 20 → **0,045/giây**, máu 20 + pin 10 → **0,037/giây**, tụt khi chạy
+**0,1 → 0,13/giây**, console sạch.
 
 ## 5. Điều khiển cảm ứng
 

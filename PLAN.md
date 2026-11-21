@@ -1313,3 +1313,27 @@ nói lần nào) nên ghé liền ba lần là ba câu khác nhau.
 
 **Chưa kiểm được:** đọc trên điện thoại thật (môi trường không có GPU); câu chữ dài trên màn dọc 390×844 —
 probe lượt này chỉ chạy màn ngang. Chưa có câu cho sự kiện đang diễn ra (đã ghi vào `TODO.md`).
+
+### Lượt 53 — thanh chạy hồi theo máu và pin
+
+Người chơi hỏi: *"chỉnh lại tốc độ hồi của thanh dùng để chạy (nhanh chậm dựa theo sức và máu nhân vật)"*.
+Hỏi lại ba câu trước khi làm, người chơi chọn: **máu + năng lượng**, đổi **cả hồi lẫn tụt**, máu thấp thì hồi
+**khoảng một nửa**.
+
+- `src/sim/rules.ts`: `staminaHpMul` (máu 20 ⇒ 0,5, sàn 0,3), `staminaEnergyMul` (pin cạn ⇒ 0,45),
+  `staminaRegenMul` gộp lại = `clamp(hpMul · (0,6 + 0,4·pinMul), 0,28, 1)`, `staminaRegen(g, moving)`,
+  `staminaDrain` (0,1 → tối đa 0,16/giây), `staminaRunSecs`, `staminaRefillSecs`.
+- `src/game/player.ts`: hai hằng số cứng 0,1 / 0,05 / 0,09 thay bằng `staminaDrain(g)` / `staminaRegen(g, moving)`.
+- `src/ui/ui.ts`: thanh thể lực có `data-tip` nói rõ hồi bao nhiêu phần trăm tốc độ, vì mất máu hay thiếu ngủ,
+  chạy liền được mấy giây, cạn rồi chờ bao lâu.
+- Menu ẩn làm mới theo luật “mỗi lượt thay mục test cũ”: bốn mục `stam_now` / `stam_compare` / `stam_hurt` / `stam_heal`;
+  `DEV_BUILD_TAG` mô tả thanh chạy; `tests/devpoints.test.ts` cập nhật theo.
+- `tests/stamina53.test.ts` (6 bài) + probe `tools/probe/steps/stam53.mjs` đo bằng đồng hồ mô phỏng sau khi giữ Shift thật:
+  máu 90 → 0,09/giây, máu 20 → 0,045/giây, máu 20 + pin 10 → 0,037/giây, tụt khi chạy 0,1 → 0,13/giây.
+- Changelog **Lượt 53** (7 dòng) + `tests/changelog.test.ts` trỏ sang bản mới; DESIGN §4.36 (bảng công thức) và §4.1;
+  README mục “Thanh chạy”; PLAYBOOK cập nhật hằng số + số test/probe.
+- `npm test` **593/593 (48 tệp)** · typecheck ✅ · `build:pages` ✅ · probe `errors: none` (ảnh `stam53_menu.png`,
+  `stam53_compare.png`).
+
+**Chưa kiểm được:** cảm giác chạy trên điện thoại thật (môi trường không có GPU); probe chạy 844×390 nên chưa đo lại
+bố cục thanh thể lực trên màn dọc 390×844.

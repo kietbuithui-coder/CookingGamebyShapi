@@ -12,21 +12,23 @@ describe('nhật ký phát triển trong Cài đặt', () => {
     expect(nums).toEqual(sorted);              // bản mới nhất ở trên cùng
     expect(new Set(nums).size).toBe(nums.length);
   });
-  it('bản mới nhất là bản vừa làm xong (lượt 52)', () => {
-    expect(CHANGELOG[0].v).toBe('Lượt 52');
-    // Lượt 52 = Ông Bảy gợi ý theo trạng thái thật + bấm một nút là ghim đường đi.
-    expect(CHANGELOG[0].items.some((t) => /Ông Bảy/i.test(t))).toBe(true);
-    expect(CHANGELOG[0].items.some((t) => /ghim đường đi|cột sáng vàng/i.test(t))).toBe(true);
+  it('bản mới nhất là bản vừa làm xong (lượt 53)', () => {
+    expect(CHANGELOG[0].v).toBe('Lượt 53');
+    // Lượt 53 = thanh thể lực hồi nhanh/chậm theo máu + pin năng lượng.
+    expect(CHANGELOG[0].items.some((t) => /thanh (chạy|thể lực)/i.test(t))).toBe(true);
+    expect(CHANGELOG[0].items.some((t) => /máu|cạn pin/i.test(t))).toBe(true);
     expect(CHANGELOG[0].tag.length).toBeGreaterThan(5);
-    // Bản ngay dưới vẫn là lượt 51 (sửa giao diện theo báo cáo lượt 50).
-    expect(CHANGELOG[1].v).toBe('Lượt 51');
-    expect(CHANGELOG[1].items.some((t) => /mục tiêu/i.test(t))).toBe(true);
-    expect(CHANGELOG[1].items.some((t) => /cần ảo|cần đi/i.test(t))).toBe(true);
-    expect(CHANGELOG[1].items.some((t) => /không còn chen số/i.test(t))).toBe(true);
-    expect(CHANGELOG[1].items.some((t) => /chơi dọc/i.test(t))).toBe(true);
+    // Bản ngay dưới vẫn là lượt 52 (Ông Bảy gợi ý theo trạng thái thật).
+    expect(CHANGELOG[1].v).toBe('Lượt 52');
+    expect(CHANGELOG[1].items.some((t) => /Ông Bảy/i.test(t))).toBe(true);
+    // rồi tới lượt 51 (sửa giao diện theo báo cáo lượt 50).
+    expect(CHANGELOG[2].v).toBe('Lượt 51');
+    expect(CHANGELOG[2].items.some((t) => /mục tiêu/i.test(t))).toBe(true);
+    expect(CHANGELOG[2].items.some((t) => /cần ảo|cần đi/i.test(t))).toBe(true);
+    expect(CHANGELOG[2].items.some((t) => /chơi dọc/i.test(t))).toBe(true);
     // và lượt 49 (xe cộ) vẫn còn trong danh sách, không bị đẩy ra ngoài sớm
-    expect(CHANGELOG[2].v).toBe('Lượt 49');
-    expect(CHANGELOG[2].items.some((t) => /gầm cầu/i.test(t))).toBe(true);
+    expect(CHANGELOG[3].v).toBe('Lượt 49');
+    expect(CHANGELOG[3].items.some((t) => /gầm cầu/i.test(t))).toBe(true);
   });
   it('mỗi bản có tóm tắt và ít nhất 2 việc đã làm, câu chữ đủ dài để đọc hiểu', () => {
     for (const e of CHANGELOG) {
