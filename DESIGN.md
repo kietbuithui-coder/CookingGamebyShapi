@@ -833,7 +833,7 @@ dòng "Cửa hàng" trong danh sách; **console sạch**.
 
 Ba bài mới ở lượt 2: mỗi nhân vật phụ phải có tên, nhãn việc, câu mở đầu và ít nhất hai câu chuyện đủ dài; bảng `RUDE` chỉ được có tối đa 8 nhóm và phải có đủ lời cho cả năm kiểu (giấy, khạc nhổ, mắng, đuổi, khạc nhổ khi bị xin tiền); khách quen không được trùng id hay tên và phải có cả tên kiểu học sinh.
 
-Các tệp còn lại (mỗi tệp canh đúng một lượt việc, tên tệp theo hệ): `rau41`, `nhay42`, `muc44`, `android45`, `mua46`, `boot47`, `nghi48`, `xe49`, `changelog`, `devpoints`, `settings`, `quality`, `music`, `phoneanim`, `news`, `phone3`, `phone4`, `shopapp`, `vua2`, `dicho`, `baocao`, `nguoi`, `helper`, `hong`, `polish5`, `impact` — tổng cộng **560 bài / 46 tệp** (`npm test`, `environment: 'node'`, chạy ~15 giây).
+Các tệp còn lại (mỗi tệp canh đúng một lượt việc, tên tệp theo hệ): `rau41`, `nhay42`, `muc44`, `android45`, `mua46`, `boot47`, `nghi48`, `xe49`, `changelog`, `devpoints`, `settings`, `quality`, `music`, `phoneanim`, `news`, `phone3`, `phone4`, `shopapp`, `vua2`, `dicho`, `baocao`, `nguoi`, `helper`, `hong`, `polish5`, `impact`, `hobo` — tổng cộng **583 bài / 47 tệp** (`npm test`, `environment: 'node'`, chạy ~12 giây).
 
 Phần đồ hoạ và thao tác được chạy thử bằng các kịch bản trong `tools/probe/`: một trình chạy Puppeteer điều khiển Chrome không giao diện (WebGL phần mềm, giả lập cảm ứng), bấm chạm như người chơi, chụp màn hình để xem bằng mắt, và soát hình học cả thành phố (mặt trùng phẳng, biển hiệu bị che). Danh sách cụ thể những gì đã và chưa chạy thử nằm trong README.
 
@@ -862,6 +862,54 @@ Còn lại:
 - Kỹ thuật: tách gói JavaScript (một tệp 1.335 kB, nén còn 420 kB — đo trên bản build 2026-11-21) và nội thất cửa hàng chi tiết hơn. Chơi ngoại tuyến đã xong (lượt 40: service worker `public/sw.js` + nút trong Cài đặt).
 
 Lỗi nhỏ đã biết: ở màn dọc HUD chật (game khuyên xoay ngang). Dòng "Dụng cụ"/"Sơ chế" trong Sổ tay đã rà ngày 2026-11-21 (`src/ui/panels.ts:273`) — không còn dấu "·" thừa.
+
+### 4.34 Ông Bảy gợi ý đúng lúc (lượt 52)
+
+Trước đây `case 'hobo'` trong `acts.ts` bốc ngẫu nhiên trong **6 câu viết sẵn** — ông Bảy nói về Hùng Sẹo, về chùa, về
+thùng rác… bất kể người chơi đang ở đâu trong ván. Nay lời khuyên **đọc đúng trạng thái thật** và **chỉ trỏ chỗ đang
+dùng được**, bằng một hệ luật thuần mới `src/sim/advice.ts` (không DOM, không three → test chạy trong Node).
+
+**Đích đến là dữ liệu, toạ độ vẫn ở world.** `src/data/landmarks.ts` là danh sách `LANDMARK_LIST` (31 mục): mã, tên
+người chơi đọc, và **cách tra toạ độ** — hoặc một khoá neo (`anchor: 'v_eatery'`), hoặc một chỗ bán (`spot: 'cho'`).
+Toạ độ thật vẫn do `world/layout.ts` + lúc dựng cảnh quyết định, đúng luật "một nguồn toạ độ" của dự án; Bản đồ
+(`Acts.places()`) và lời khuyên cùng đọc danh sách này nên **không thể lệch nhau**.
+Ba cờ đi kèm: `always` (giường ngủ, bảng việc làm, bệnh viện, công an, gầm cầu, chỗ dựng quầy — dùng được bất kể giờ),
+`openWith` (Chợ Xóm Chiều gộp 7 sạp, **một sạp mở là chợ dùng được**) và `HOME_LANDMARK` (mã chỗ ở → đích ghim).
+
+**Bảng giờ tách ra `src/data/hours.ts`.** `PLACE_HOURS` + `placeHours()` trước nằm trong `game/npc.ts` (tệp kéo theo
+three/DOM) nên `sim` không đọc được. Nay là dữ liệu thuần; `game/npc.ts` **re-export đúng tên cũ** (`PLACE_HOURS`,
+`placeOpen`) nên mọi call site giữ nguyên, và `R.placeOpenAt(g, id)` (thêm vào `sim/rules.ts`) là bản dùng được ở cả
+hai nơi. Nhờ vậy câu "đang mở" trong lời khuyên và cửa sắt của tiệm ngoài phố **luôn khớp nhau**.
+
+**Bảy nhóm câu, xếp theo mức cấp thiết** (`advice(g, where)` trả về mảng đã sắp, mỗi câu có `id`, `text`, `place`,
+`urgent`):
+
+| Nhóm | Khi nào | Trỏ tới đâu |
+|---|---|---|
+| `health` (100) | máu < 30 | Bệnh viện Phước An, kèm giá khám 20.000₫ / hồi sức 5.000₫/giờ |
+| `eat` (90) | đói < 25 hoặc sức < 20 | Quán Bà Tư nếu đang mở → chùa 11–13h → **MiniMart 24h/Tạp hoá còn mở** → chùa (mở cả ngày) |
+| `job` (80) | tiền < 30.000₫ | Bến bốc hàng (4h30–10h) → rửa chén quán Bà Tư (đang mở) → Bảng việc làm |
+| `noStall` (70) | chưa có gánh | Đồ Nghề Ba Tài (7–20h) → gầm cầu nếu tiệm đóng |
+| `carry` / `closed` / `peak` (40–62) | có quầy | Cổng Chợ; giờ đông nhất tính từ `hourCurve` của đúng khu quầy đang đứng |
+| `stock` (55) | món đang bán thiếu đồ | **đúng sạp đang mở và có món đó**, nói rõ thiếu nguyên liệu nào |
+| `debt` (75) | nợ Hùng Sẹo còn ≤ 2 ngày (kể cả trễ) | Hùng Sẹo, kèm số tiền + số ngày; đêm thì nói rõ sáng 9h mới gặp được |
+| `rain` (35–50) | trời sắp mưa | chưa có áo mưa → chỗ bán áo mưa còn mở; có rồi → nhắc bán món nóng ở quầy |
+| `night` (42) | 22h–5h | đúng căn mình đang thuê (`HOME_LANDMARK`), chưa có nhà thì gầm cầu |
+| `dirty` (45) | vệ sinh < 22 | Nhà tắm công viên |
+| `idle` (10) | không có gì gấp | chợ / tiệm đồ nghề **đang mở**, khuya thì bảng việc làm |
+
+Câu nào cũng **kèm khoảng cách thật** tính từ `ctx.player` tới neo của đích ("cách đây 82 m").
+
+**Trong hộp thoại** (`case 'hobo'`): câu đầu là câu cấp thiết nhất, dưới là nút **"Chỉ con đường tới …"** ghim thẳng
+`acts.way` (cùng cơ chế cột sáng vàng + mũi tên của Bản đồ), cộng tối đa hai câu khác đang đúng để người chơi chọn.
+Không lặp: `rememberAdvice` giữ **3 mã câu gần nhất** (`g.flags.hoboSeen` chỉ để biết đã nói lần nào), nói hết câu
+mới thì quay lại câu gấp nhất — nên ghé liền ba lần không nghe lại y một câu.
+
+**Kiểm thử.** `tests/hobo.test.ts` (23 bài): trên **120 trạng thái ngẫu nhiên** (giờ, tiền, chỉ số, thời tiết, chỗ ở,
+nợ, quầy đóng/mở) mọi câu phải trỏ một đích **có thật** và **đang dùng được**; từng tình huống cụ thể (sắp ngất, đói
+12h / 23h30, hết tiền 6h / 11h / 2h, chưa có gánh ngày / đêm, quầy chưa mở, thiếu đá cho trà đá, nợ còn 1 ngày, sắp
+mưa, khuya về đúng căn trọ); không lặp câu; `shopFor` không bao giờ chọn sạp đã đóng và im lặng khi không chỗ nào
+đang bán. Probe `tools/probe/steps/hobo.mjs` chạy hộp thoại thật ở 4 trạng thái (844×390) và bấm nút ghim — console sạch.
 
 ### 4.33 Hai tổng đài trong danh bạ: 1080 (dự báo mai) và 1900 1234 (lừa đảo, một lần)
 

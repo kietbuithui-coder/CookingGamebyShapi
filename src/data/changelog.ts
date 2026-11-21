@@ -14,6 +14,22 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 52',
+    tag: 'Ông Bảy dưới gầm cầu gợi ý theo đúng tình cảnh của bạn, bấm một nút là ghim đường đi',
+    items: [
+      'Hỏi Ông Bảy không còn ra mấy câu thuộc lòng: ông nhìn máu, cái bụng, túi tiền, giờ trong ngày và cái quầy của bạn mà nói.',
+      'Sắp ngất thì ông chỉ vô Bệnh viện Phước An, kèm giá khám 20.000₫ và phòng hồi sức 5.000₫/giờ.',
+      'Đói thì chỉ Quán cơm Bà Tư; quán đóng cửa rồi thì chỉ MiniMart 24h hoặc Tạp hoá Cô Ba — chỗ nào còn mở mới chỉ.',
+      'Hết tiền thì ông giục đúng cái việc đang mở ở giờ đó: sáng ra bến bốc hàng, trưa ghé quán Bà Tư xin rửa chén, khuya thì ra Bảng việc làm.',
+      'Đang bán mà món chính hết nguyên liệu: ông nói thiếu món gì và sạp nào đang mở, bán món đó.',
+      'Quầy vắng khách: ông nói giờ nào đông nhất ở đúng khu bạn đang đặt quầy, ngồi giữ tới đó.',
+      'Nợ Hùng Sẹo còn hai ngày là ông cảnh báo, kèm số tiền và số ngày còn lại; đêm thì dặn sáng 9 giờ mới gặp được nó.',
+      'Trời sắp mưa mà chưa có áo mưa thì ông nhắc mua; khuya thì ông đuổi về đúng căn mình đang thuê mà ngủ.',
+      'Câu nào cũng ghi cách đây bao nhiêu mét, và có nút "Chỉ con đường tới…" là cắm cột sáng vàng chỉ đường như trên Bản đồ.',
+      'Ghé liền ba lần thì ông nói ba câu khác nhau, không lải nhải một câu.',
+    ],
+  },
+  {
     v: 'Lượt 51',
     tag: 'Sửa giao diện theo báo cáo lượt 50: màn thấp hết chồng, chạm đúng chỗ, chơi dọc nhớ lựa chọn',
     items: [
@@ -78,26 +94,6 @@ export const CHANGELOG: LogEntry[] = [
       'Đo thật: đang đi, bấm Nhảy vẫn đi tiếp (mz 0,86, quãng đường tăng đều); bấm Đấm cũng vậy.',
       'Nguyên nhân: nút nằm trong lớp #ui trong suốt với chạm nên ngón tay rơi xuống canvas, canvas cướp mất cần ảo.',
       'Trên máy tính không đổi gì: W + Space, W + F, kéo chuột nhìn quanh trong lúc đi vẫn như cũ.',
-    ],
-  },
-  {
-    v: 'Lượt 44',
-    tag: 'Nhảy qua bồn hoa, hồ nước, xe máy',
-    items: [
-      'Nhảy qua được 8 bồn hoa công viên, thành hồ nước và cả 69 chiếc xe máy đỗ ven đường.',
-      'Hồ nước chỉ nhảy qua được thôi — đứng vào là chìm xuống đáy, không lơ lửng trên mặt nước.',
-      'Hàng rào chợ nâng lên cho chắc: chợ vẫn phải đi cổng, không nhảy rào được.',
-      'Sửa lỗi chữ dính nhau khi bới thùng rác: nay gộp thành một dòng, ví dụ “+1 Chai nhựa · +2 Lon nhôm”.',
-    ],
-  },
-  {
-    v: 'Lượt 43',
-    tag: 'Đứng được trên nóc vật thấp',
-    items: [
-      'Nhảy lên đứng hẳn trên nóc ghế đá, bàn nhựa, thùng rác… rồi đi lại trên đó như đi trên mặt đất.',
-      'Bước ra khỏi mép là rơi xuống đất, không lơ lửng giữa không trung.',
-      'Đứng trên nóc chỉ nhảy thêm được 0,5 m — không nhảy vọt lên nóc cao hơn.',
-      'Thùng rác tròn chỉ đỡ khi đứng thật trên miệng thùng.',
     ],
   },
 ];

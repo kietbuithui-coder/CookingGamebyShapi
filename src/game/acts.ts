@@ -29,7 +29,9 @@ import * as N from '../sim/net';
 import * as RC from '../sim/race';
 import { bus, toast, sfx } from '../core/bus';
 import { rnd, RNG, clamp, money, dist2, round1k, round500, qty, hhmm } from '../core/util';
-import { NAV, groundY, districtAt, DISTRICT, SPOTS } from '../world/layout';
+import { NAV, groundY, districtAt, DISTRICT, SPOTS, spotById } from '../world/layout';
+import { LANDMARK_LIST } from '../data/landmarks';
+import { advice, pickAdvice, rememberAdvice } from '../sim/advice';
 import { MB, MAT } from '../gfx/mb';
 import { ingModel } from '../gfx/props';
 
@@ -75,6 +77,8 @@ export class Acts {
   job: { kind: 'dock'; carrying: boolean } | { kind: 'dishes' } | { kind: 'delivery'; x: number; z: number; name: string; pay: number; until: number } | null = null;
   way: Way | null = null; beacon: THREE.Mesh; ring: THREE.Mesh; /** người đứng chờ nhận hàng ở điểm giao */ private receiver: Npc | null = null; litterMesh: THREE.Mesh | null = null; private glint: THREE.Mesh | null = null; litter: { i: number; x: number; z: number; id: string }[] = []; private litterKey = '';
   private sleepUntil = 0; private sleepQ = 1; private sleepWhere = ''; private qT = 1; sheltered = false; working = 0;
+  /** Ba câu Ông Bảy vừa nói (mã câu) — chỉ để trong phiên chơi; số lượng lưu lại trong `g.flags.hoboSeen`. */
+  hoboSeen: string[] = [];
   /** Hồi chiêu của đấm và nhảy (giây) + cờ chống ngất liên tục. */
   punchCd = 0; jumpCd = 0; private fainting = false;
   /** Nhịp kiểm tra công an + thời gian game đã trôi để nguôi mức bị để ý. */
@@ -227,11 +231,28 @@ export class Acts {
             { t: 'Có ca bốc cá không anh? — 110 phút', sub: `Trả 52.000–68.000₫ · cần sức khoẻ tốt · 4h30–10h`, off: this.g.st.energy < 35 || hourOf(this.g) < 4.5 || hourOf(this.g) >= 10, fn: () => this.dockShift() }, bye]); break;
       }
       case 'hobo': {
+        // Lượt 52: không còn sáu câu cứng. Ông Bảy nói câu **đúng trạng thái thật của ván** (sim/advice.ts):
+        // đang đói / sắp ngất / túi còn bao nhiêu, việc nào đang mở ở giờ này, quầy chưa mở, món thiếu nguyên
+        // liệu gì và mua ở sạp nào, nợ Hùng Sẹo còn mấy ngày, trời sắp mưa, đã khuya. Câu nào cũng bấm một nút
+        // là ghim đường đi tới đúng chỗ. Ghé liền ba lần thì câu không lặp (nhớ 3 câu gần nhất trong g.flags).
         const first = !g.flags.hobo; g.flags.hobo = 1;
-        const tips = ['Thùng rác xanh mỗi ngày bới được một lần. Lon với chai đem ra vựa ve chai bán — Tư Rác ở Xóm Lao Động, Bà Chín ở Khu Dân Cư.', 'Trưa 11 giờ chùa Phước An phát cơm chay. Ăn chùa mà ngon!', 'Vòi nước công viên uống đỡ khát, rửa mặt mũi cho đỡ lem luốc. Dơ quá ai mà dám mua đồ ăn của mình.',
-          'Hùng Sẹo cho vay dễ lắm, mà lãi cắt cổ. Trễ hai ngày là nó siết đồ. Cẩn thận nghen con.', 'Ngủ gầm cầu coi chừng mất đồ. Có tiền thì thuê phòng trọ Bác Năm cho chắc.', 'Trời mưa bán đồ nóng, trời nắng bán đồ mát. Ông bà mình dạy vậy đó.'];
-        this.D(who(n), n, first ? 'Lính mới hả? Tui là Bảy, "trưởng khu" gầm cầu này hai chục năm rồi. Nè, cầm ổ bánh mì ăn đỡ đi. Muốn sống thì nghe tui chỉ.' : 'Sao, bữa nay làm ăn được không?', [
-          { t: 'Chú chỉ con cách kiếm sống đi.', fn: () => this.D(who(n), n, rnd.pick(tips), [{ t: 'Dạ, con nhớ rồi.' }]) }, bye]);
+        const seen = (g.flags.hoboSeen ?? 0) > 0 ? this.hoboSeen : [];
+        const w = advice(g, { x: ctx.player.x, z: ctx.player.z, anchors: ctx.world.anchors });
+        const main = pickAdvice(g, seen, { x: ctx.player.x, z: ctx.player.z, anchors: ctx.world.anchors });
+        this.hoboSeen = rememberAdvice(seen, main.id);
+        g.flags.hoboSeen = 1 + this.hoboSeen.length;
+        const opts: Opt[] = [
+          { t: `Chỉ con đường tới ${LANDMARK_LIST.find((l) => l.id === main.place)?.name ?? 'đó'}`, sub: 'Ghim đường đi — đi theo mũi tên và cột sáng vàng', fn: () => this.goPlace(main.place) },
+        ];
+        // Những câu khác đang đúng (khác câu vừa nói, tối đa 2 câu) để người chơi chọn việc khác nếu muốn.
+        for (const a of w.filter((x) => x.id !== main.id).slice(0, 2)) {
+          const lm = LANDMARK_LIST.find((l) => l.id === a.place);
+          opts.push({ t: `Hỏi chuyện khác — ${lm?.name ?? 'chỗ khác'}`, sub: a.text.slice(0, 96) + (a.text.length > 96 ? '…' : ''), fn: () => {
+            this.hoboSeen = rememberAdvice(this.hoboSeen, a.id); g.flags.hoboSeen = 1 + this.hoboSeen.length;
+            this.D(who(n), n, a.text, [{ t: `Ghim đường tới ${lm?.name ?? 'đó'}`, fn: () => this.goPlace(a.place) }, bye]);
+          } });
+        }
+        this.D(who(n), n, (first ? 'Lính mới hả? Tui là Bảy, "trưởng khu" gầm cầu này hai chục năm rồi. Nè, cầm ổ bánh mì ăn đỡ đi. ' : 'Sao, bữa nay tính làm gì? ') + main.text, [...opts, bye]);
         if (first) { addStack(g.bag, { id: 'banhmi', n: 1, fresh: 80, q: 0.8, cost: 0 }); toast('Ông Bảy cho bạn một ổ bánh mì.', 'good', 'heart'); } break;
       }
       default: this.D(who(n), n, '…', [bye]);
@@ -1337,11 +1358,25 @@ export class Acts {
         R.menuOf(g).some((r) => R.available(g, r)), g.tot.served >= 1, g.led.sold >= 10 || g.hist.some((d) => d.sold >= 10), STABLE_HOME.includes(g.housing), s.tier >= 2, g.rep >= 50 && g.debts.length === 0][q];
       if (ok && q < QUESTS.length - 1) { g.quest++; sfx('quest'); toast('Xong mục tiêu! Tiếp theo: ' + QUESTS[g.quest], 'good', 'star', true); bus.emit('ui', 'quest'); } }
   }
-  /** Điểm tới gần nhất của một địa danh (dùng cho bản đồ). */
+  /**
+   * Điểm tới của mọi đích đến (dùng cho Bản đồ và cho nút “Ghim đường đi” trong lời khuyên của Ông Bảy).
+   * Danh sách tên nằm ở `data/landmarks.ts`; ở đây chỉ đổi mã neo / mã chỗ bán thành toạ độ thật.
+   */
   places(): Way[] {
-    const A = ctx.world.anchors, P = (k: string, name: string): Way | null => (A[k] ? { x: A[k].x, z: A[k].z, name } : null);
-    return [P('v_equip', 'Đồ Nghề Ba Tài'), P('v_m_rau', 'Chợ Xóm Chiều'), P('v_mart', 'MiniMart 24h'), P('v_kiosk', 'Tạp hoá Cô Ba'), P('v_eatery', 'Quán cơm Bà Tư'), P('v_cafe', 'Cà phê Sân Vườn'), P('v_scrap', 'Vựa ve chai Tư Rác'), P('v_scrap2', 'Vựa ve chai Bà Chín'), P('v_pawn', 'Cầm đồ Chú Lâm'), P('v_bank', 'Ngân hàng Sao Vàng'),
-      P('v_tro', 'Nhà trọ Bác Năm'), P('v_motel', 'Nhà nghỉ Bình Dân'), P('v_hotel', 'Khách sạn Hoa Sen'), P('v_canho', 'Căn hộ An Bình'), P('v_nharieng', 'Nhà số 12'), P('v_cuahang', 'Tạp hoá Bình An'), P('v_hot_toc', 'Tiệm hớt tóc Bảy Kéo'), P('v_pharmacy', 'Nhà thuốc An Tâm'), P('v_hospital', 'Bệnh viện Phước An'), P('v_police', 'Công an phường'), P('giuong_benhvien', 'Phòng hồi sức bệnh viện'), P('v_wholesale', 'Vựa đầu mối Tám Lúa'), P('v_temple', 'Chùa Phước An'), P('wash_park', 'Nhà tắm công viên'), P('v_shark', 'Hùng Sẹo (vay nóng)'), P('bed_gamcau', 'Gầm cầu (lều của bạn)'), P('board', 'Bảng việc làm'), P('v_dock', 'Bến bốc hàng')].filter(Boolean) as Way[];
+    const A = ctx.world.anchors, S = (id: string) => spotById(id), out: Way[] = [];
+    for (const l of LANDMARK_LIST) {
+      const a = l.anchor ? A[l.anchor] : undefined, sp = l.spot ? S(l.spot) : undefined;
+      const p = a ? { x: a.x, z: a.z } : sp ? { x: sp.x, z: sp.z } : null;
+      if (p) out.push({ x: p.x, z: p.z, name: l.name });
+    }
+    return out;
+  }
+  /** Địa danh theo mã (để lời khuyên của Ông Bảy ghim đúng chỗ). */
+  placeOf(id: string): Way | null { return this.places()[LANDMARK_LIST.findIndex((l) => l.id === id)] ?? null; }
+  /** Ghim đường đi tới đích đến trong lời khuyên — cùng một cơ chế với Bản đồ (cột sáng vàng + mũi tên). */
+  goPlace(id: string): boolean {
+    const w = this.placeOf(id); if (!w) return false;
+    this.way = w; sfx('ok'); toast(`Đã ghim: ${w.name}. Đi theo mũi tên và cột sáng vàng.`, 'info', 'pin'); return true;
   }
 }
 export { districtAt, weightOf };

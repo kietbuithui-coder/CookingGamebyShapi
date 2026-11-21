@@ -10,6 +10,7 @@ import { ARCH, ArchDef, HELPER_POOL, HelperDef, SOUS_POOL, SousDef, KEEPER_POOL,
 import { EVENTS, EVENT_LIST, EventDef, WEATHER, WeatherDef, WeatherId, floodZone, hourCurve } from '../data/world';
 import { EXPR } from '../data/expr';
 import { District, DISTRICT, SPOTS, districtAt, spotById } from '../world/layout';
+import { PLACE_HOURS } from '../data/hours';
 import { Game, Stack, Helper, Booking, Branch, Ready, Errand, STAT_MAX, absMin, addStack, countOf, hourOf, newLedger, purge, spoil, takeFrom, weightOf, junkWeight, emptyStall, Debt, coldWeightOf } from './state';
 import * as PH from './phone';
 
@@ -114,6 +115,16 @@ export function shopPrice(g: Game, shop: ShopDef, ingId: string): number {
   return Math.max(500, p >= 5000 ? round500(p) : Math.round(p / 100) * 100);
 }
 export const shopHas = (g: Game, shop: ShopDef, ingId: string) => !(shop.id.startsWith('m_') && g.wd.outOf.includes(ingId));
+/**
+ * Việc ở một địa danh có đang mở ở giờ hiện tại không: sạp bán nguyên liệu theo giờ của sạp,
+ * nơi khác theo `PLACE_HOURS`, nơi không ghi giờ thì coi như mở cả ngày.
+ * Dùng chung cho lời khuyên của Ông Bảy và cho Bản đồ (để câu “đang mở” không bao giờ sai).
+ */
+export function placeOpenAt(g: Game, id: string): boolean {
+  const h = hourOf(g), shop = SHOPS[id];
+  if (shop) return shopOpen(g, shop);
+  const p = PLACE_HOURS[id]; return !p || (h >= p[0] && h < p[1]);
+}
 /** Độ tươi của hàng: chợ sáng tươi nhất, càng về chiều càng kém. */
 export function shopFresh(g: Game, shop: ShopDef, ingId: string, R: RNG = rnd): number {
   const d = INGS[ingId]; if (d.shelf > 9000) return 100;

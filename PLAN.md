@@ -1255,3 +1255,48 @@ Commit `a152a6f`. Chủ yếu là **CSS + vòng đời giao diện**, không đ�
 **Chưa kiểm được:** probe lượt này chạy trên Chrome không giao diện (không GPU) nên FPS thật, cảm giác chạm trên
 điện thoại thật, và pointer-lock trên Safari/iOS vẫn chưa ai thử. Không có test tự động mới cho lượt này —
 `tools/probe/steps/` là lưới an toàn duy nhất.
+
+---
+
+## Lượt 52 — Ông Bảy gợi ý đúng lúc ✅ đã xong
+
+**Người chơi:** *"tạo 1 pull rq cho repo… đọc các thứ cần thiết trong repo"* → làm tiếp mục 3 của `TODO.md`:
+`case 'hobo'` bốc ngẫu nhiên trong 6 câu viết sẵn, không biết người chơi đang ở đâu trong ván.
+
+### Luật mới: `src/sim/advice.ts` (thuần, test được trong Node)
+
+`advice(g, where)` trả về mảng câu **đã sắp theo mức cấp thiết**, mỗi câu `{ id, text, place, urgent }`:
+máu < 30 → bệnh viện · đói/sức < 20–25 → quán cơm nếu đang mở, không thì chùa 11–13h, không nữa thì
+MiniMart/Tạp hoá còn mở · tiền < 30.000₫ → bến bốc hàng (4h30–10h) → rửa chén Bà Tư → bảng việc làm ·
+chưa có gánh → Đồ Nghề Ba Tài (7–20h) / gầm cầu · có quầy → nhắc đặt xuống, mở bán, giờ đông nhất
+(`hourCurve` của đúng khu), **món thiếu nguyên liệu + sạp đang mở bán món đó** · nợ Hùng Sẹo ≤ 2 ngày →
+số tiền + số ngày (đêm: nói rõ 9h sáng mới gặp) · sắp mưa → áo mưa · 22h–5h → về đúng căn đang thuê
+(`HOME_LANDMARK`). Không câu nào gấp → câu chung, cũng chỉ vào chỗ **đang mở**.
+
+### Dữ liệu & phụ thuộc
+
+- `src/data/landmarks.ts` — **31 đích đến**: mã, tên, `anchor` hoặc `spot`, cờ `always` (dùng được bất kể giờ),
+  `openWith` (Chợ Xóm Chiều gộp 7 sạp: một sạp mở là chợ dùng được), `HOME_LANDMARK`. Bản đồ và lời khuyên
+  cùng đọc danh sách này nên không lệch nhau.
+- `src/data/hours.ts` — `PLACE_HOURS` rời khỏi `game/npc.ts` (tệp có three/DOM) để `sim` đọc được;
+  `game/npc.ts` **re-export đúng tên cũ**, thêm `R.placeOpenAt(g, id)` dùng chung.
+- `Acts.places()` đọc `LANDMARK_LIST`; thêm `placeOf(id)` / `goPlace(id)` để nút ghim đường đi dùng chung
+  cơ chế cột sáng vàng với Bản đồ.
+
+### Trong hộp thoại (`acts.ts`, `case 'hobo'`)
+
+Câu đầu = câu cấp thiết nhất (kèm khoảng cách thật tới neo), nút **“Chỉ con đường tới …”** ghim `acts.way`,
+thêm tối đa 2 câu khác đang đúng. `rememberAdvice` giữ 3 mã câu gần nhất (`g.flags.hoboSeen` chỉ để biết đã
+nói lần nào) nên ghé liền ba lần là ba câu khác nhau.
+
+### Kiểm chứng
+
+- `tests/hobo.test.ts` — **23 bài**: 120 trạng thái ngẫu nhiên (giờ, tiền, chỉ số, thời tiết, chỗ ở, nợ,
+  quầy đóng/mở) → mọi câu trỏ đích **có thật** và **đang dùng được**; 9 tình huống cụ thể; không lặp câu;
+  `shopFor` không chọn sạp đã đóng và trả `null` khi không chỗ nào đang bán; dữ liệu đích đến không trùng.
+- Probe `tools/probe/steps/hobo.mjs` (844×390, Chrome không giao diện) — 4 trạng thái, ảnh trong
+  `tools/probe/out/hobo_*.png`; bấm nút ghim thì `acts.way` = “MiniMart 24h (17, 22)”, console sạch.
+- `npm test` 583/583 (47 tệp) · `npm run typecheck` ✅ · `npm run build` ✅.
+
+**Chưa kiểm được:** đọc trên điện thoại thật (môi trường không có GPU); câu chữ dài trên màn dọc 390×844 —
+probe lượt này chỉ chạy màn ngang. Chưa có câu cho sự kiện đang diễn ra (đã ghi vào `TODO.md`).

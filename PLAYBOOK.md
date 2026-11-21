@@ -15,15 +15,15 @@
 | Kiểm đầy đủ trước khi phát hành | `npm run build:pages` (typecheck + test + đóng gói vào `docs/`) |
 | Luật chơi ở đâu | `src/sim/rules.ts` (1.800 dòng), `src/sim/state.ts` (335) |
 | Dữ liệu ở đâu | `src/data/*.ts` (12 tệp, 1.456 dòng) |
-| Bản đồ / toạ độ | `src/world/layout.ts` (281) |
+| Bản đồ / toạ độ | `src/world/layout.ts` (281) · tên đích đến + giờ mở cửa: `src/data/landmarks.ts`, `src/data/hours.ts` |
 | Quầy hàng & nấu ở world | `src/game/stall.ts` (1.557), `src/cook/*` |
-| Hội thoại / menu NPC | `src/game/acts.ts` (1.347) |
+| Hội thoại / menu NPC | `src/game/acts.ts` (1.390) |
 | HUD / bảng | `src/ui/ui.ts` (424), `src/ui/panels.ts` (517), `src/ui/style.css` (563) |
-| Test | `tests/*.test.ts` — **46 tệp, 560 bài**, `environment: 'node'` |
-| Thử giao diện thật | `tools/probe/` (71 kịch bản `.mjs` trong `steps/`, Chrome headless) |
+| Test | `tests/*.test.ts` — **47 tệp, 583 bài**, `environment: 'node'` |
+| Thử giao diện thật | `tools/probe/` (72 kịch bản `.mjs` trong `steps/`, Chrome headless) |
 | Bản phát hành | `docs/` — **sinh ra bởi `build:pages`, không sửa tay** |
 
-Trạng thái đo được hôm nay (2026-11-21, `a152a6f`): **typecheck ✅ · 560/560 test ✅ (46 tệp, ~15 s) · build ✅ (1.335 kB JS, gzip 420 kB) · build:pages ✅**.
+Trạng thái đo được hôm nay (2026-11-21, sau lượt 52): **typecheck ✅ · 583/583 test ✅ (47 tệp, ~12 s) · build ✅ (1.343 kB JS, gzip 423 kB) · build:pages ✅**.
 
 ---
 
@@ -81,17 +81,18 @@ xác định luật + dữ liệu (sim/data)
 ### Mấy tệp "nặng" cần cẩn thận
 - `src/game/anim.ts` (1.567 dòng) gánh cả hoạt ảnh NPC lẫn bàn cờ. Sửa ở đây phải chạy thêm `tests/chess.test.ts`.
 - `src/game/stall.ts` (1.403) là nơi khách, phụ việc, phụ bếp, bàn ghế cùng sống. Side effect theo frame rất dễ sinh ở đây (xem §6.3).
-- `src/game/acts.ts` (1.124) chứa toàn bộ menu hội thoại; nút nào cũng phải có đường thoát ("Thôi…", "Để con tính lại").
+- `src/game/acts.ts` (1.390) chứa toàn bộ menu hội thoại; nút nào cũng phải có đường thoát ("Thôi…", "Để con tính lại").
 
 ---
 
 ## 3. Hợp đồng kiến trúc (đừng phá)
 
-1. **`src/sim` không được biết DOM/three.** Nó chỉ báo việc ra ngoài qua `src/core/bus.ts` (`bus.emit('toast' | 'sfx' | 'cash' | 'save' | 'day' | 'ui' | 'quest' | 'bankrupt')`, tiện dụng: `toast()`, `sfx()`). Đây là lý do 560 bài kiểm thử chạy trong Node chỉ ~15 giây.
+1. **`src/sim` không được biết DOM/three.** Nó chỉ báo việc ra ngoài qua `src/core/bus.ts` (`bus.emit('toast' | 'sfx' | 'cash' | 'save' | 'day' | 'ui' | 'quest' | 'bankrupt')`, tiện dụng: `toast()`, `sfx()`). Đây là lý do 583 bài kiểm thử chạy trong Node chỉ ~12 giây.
 2. **Mọi ngẫu nhiên trong luật nhận `RNG` có hạt giống** làm tham số cuối (`advance(g, dm, act, R)`, `decideGroup(g, p, size, fem, R)`, `newDay(g, R)`). Test phải truyền RNG cố định, không dùng `Math.random()`.
 3. **UI không tự tính luật kinh tế.** Giá, giá vốn, lượng khách, hư hỏng, phí chỗ đều ở `sim/rules.ts`; UI chỉ hiển thị và gọi hàm.
 4. **`src/world/layout.ts` là nguồn chuẩn của toạ độ.** `LOTS`, `SPOTS`, `PLACES`, `NAV`, `DISTRICT`, `MAP`. Thêm địa điểm phải có lô đất + neo `v_<id>` + nút NAV liên thông (có test lo việc này, xem §5).
 5. **Save là hợp đồng với người chơi.** Xem §7 — không đổi cấu trúc mà không tăng `SAVE_VERSION` và viết nhánh `migrate()`.
+6. **Câu chỉ đường phải khớp dữ liệu.** Lời khuyên của NPC (`sim/advice.ts`) chỉ được trỏ tới đích trong `data/landmarks.ts` và — nếu đích đó mở theo giờ — chỉ khi `R.placeOpenAt(g, id)` đúng. Giờ mở cửa nằm ở `data/hours.ts` (thuần): `sim` **không** import `game/npc.ts`. `tests/hobo.test.ts` canh việc này.
 
 ### Hằng số gốc phải nhớ
 | Hằng | Giá trị | Ở đâu |
@@ -135,7 +136,7 @@ xác định luật + dữ liệu (sim/data)
 
 ### 4.3 Sau khi sửa
 ```bash
-npm test            # 560 bài hiện tại; đếm lại nếu bạn thêm bài
+npm test            # 583 bài hiện tại; đếm lại nếu bạn thêm bài
 npm run typecheck
 npm run build
 git diff --check    # lỗi khoảng trắng / xung đột sót
@@ -208,7 +209,7 @@ Những test "gác cổng" dễ bị quên:
 ### 6.4 Đo được gì, không đo được gì (trung thực)
 | Đo được | Không đo được ở sandbox |
 |---|---|
-| Luật chơi (560 test), typecheck, build, bundle size | FPS thật trên GPU (máy không có GPU; gói JS đo được 1.335 kB / gzip 420 kB + 120 kB phông chữ) |
+| Luật chơi (583 test), typecheck, build, bundle size | FPS thật trên GPU (máy không có GPU; gói JS đo được 1.335 kB / gzip 420 kB + 120 kB phông chữ) |
 | Luồng UI trong Chrome headless ở 844×390 và 390×844 | Cảm giác chạm trên điện thoại thật, tai nghe/loa thật |
 | Hình học: mặt trùng phẳng, biển bị che (`audit.mjs`) | Chơi trọn nhiều giờ liên tục, trộm đêm, chuỗi mục tiêu theo trình tự thật |
 
@@ -265,7 +266,7 @@ xem mục 9b — khi đó đã sửa lại 9 chỗ lệch mới phát sinh):
 
 | Tệp | Ghi cũ | Sự thật trong mã |
 |---|---|---|
-| `PLAYBOOK.md` §0 | “322/322 test” · rules.ts 1.088 · data 11 tệp/1.232 dòng · 53 probe | **560 bài/46 tệp** · rules.ts **1.800** · data **12 tệp/1.456** · **71** probe |
+| `PLAYBOOK.md` §0 | “322/322 test” · rules.ts 1.088 · data 11 tệp/1.232 dòng · 53 probe | **560 bài/46 tệp** · rules.ts **1.800** · data **12 tệp/1.456** · **72** probe |
 | `PLAYBOOK.md` §2 | “52 tệp ~14.772 dòng” + số dòng từng thư mục | **59 tệp / 17.806 dòng** + 563 dòng CSS; thiếu `core/`, `news.ts`, `roads.ts`, `shopbrowse.ts` |
 | `PLAYBOOK.md` §3/§7 | `SAVE_VERSION = 13`, mốc dừng ở v13 | **`SAVE_VERSION = 16`** (v14 chi nhánh · v15 chuyến đi chợ · v16 ca làm) |
 | `PLAYBOOK.md` §6.4 | “322 test” · “1,23 MB JS / ~384 kB gzip” | 560 test · **1.335 kB / gzip 420 kB** |
