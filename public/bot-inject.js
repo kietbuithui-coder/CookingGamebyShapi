@@ -587,8 +587,8 @@ function update() {
     if (hunger < 50 && B.tick % 40 === 0) {
       lg(`🍽️ EAT check: hunger=${hunger.toFixed(0)} hr=${hr.toFixed(1)} nearBin=${nearBin?'Y':'N'} nearBinD=${nearBinD.toFixed(1)} binAttempts=${B.binAttempts||0} esc=${esc}`);
     }
-    // Option 1: Temple food 11-13h (free!) - start walking at 10h30
-    if (hunger < 50 && hr >= 10.5 && hr < 13) {
+    // Option 1: Temple food 10h30-13h (free!) - go early to arrive by 11h
+    if (hunger < 60 && hr >= 10.5 && hr < 13) {
       const templeD = D(p.x, p.z, LOC.temple.x, LOC.temple.z);
       // If before 11h, just walk there and wait
       if (hr < 11) {
@@ -959,7 +959,7 @@ function doEarn() {
   const esc = B.stuckEscapes || 0;
   
   // Dock work: 4h30-10h, earn 6000₫ per sack
-  if (hr >= 4.5 && hr < 10 && !p.carry && hunger >= 50 && thirst >= 55 && !(B.giveUpUntil && B.tick < B.giveUpUntil)) {
+  if (hr >= 4.5 && hr < 10 && !p.carry && hunger >= 40 && thirst >= 45 && !(B.giveUpUntil && B.tick < B.giveUpUntil)) {
     const dockDest = LOC.dock || {x:-79, z:-4};
     const dockDist = D(p.x, p.z, dockDest.x, dockDest.z);
     // If not at dock yet, go there (unless very far and have better options nearby)
@@ -978,7 +978,7 @@ function doEarn() {
   }
   
   // Dish washing: 10h-14h30 or 17h30-21h, earn money
-  if (((hr >= 10 && hr < 14.5) || (hr >= 17.5 && hr < 21)) && !p.carry && hunger >= 50 && thirst >= 55 && !(B.giveUpUntil && B.tick < B.giveUpUntil)) {
+  if (((hr >= 10 && hr < 14.5) || (hr >= 17.5 && hr < 21)) && !p.carry && hunger >= 40 && thirst >= 45 && !(B.giveUpUntil && B.tick < B.giveUpUntil)) {
     const eateryDest = LOC.eatery || {x:-8, z:-17};
     const eateryDist = D(p.x, p.z, eateryDest.x, eateryDest.z);
     // If not at eatery yet, go there (unless very far and have better options nearby)
