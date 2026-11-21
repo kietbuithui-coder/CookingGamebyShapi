@@ -441,7 +441,7 @@ function antiStuck() {
       B.stuckEscapes = (B.stuckEscapes || 0) + 1;
       lg(`⚠️ Kẹt #${B.stuckEscapes} → né ${dir > 0 ? 'phải' : 'trái'} 90°`,'warn');
       // Emergency: if stuck too many times, teleport to camp to reset
-      if (B.stuckEscapes > 25) {
+      if (B.stuckEscapes > 15) {
         lg(`🆘 Kẹt quá nhiều (${B.stuckEscapes}) → teleport về camp`, 'error');
         p.x = LOC.camp.x; p.z = LOC.camp.z;
         B.stuckEscapes = 0;
@@ -450,9 +450,9 @@ function antiStuck() {
         B.target = null;
         B.action = '';
         B.giveUpUntil = B.tick + 600; // don't set distant targets for 10 minutes
-        // Blacklist current target position if it's litter
-        if (B.blacklistLit) B.blacklistLit.push({x: B.lx, z: B.lz, tick: B.tick});
-        else B.blacklistLit = [{x: B.lx, z: B.lz, tick: B.tick}];
+        // Blacklist current position (litter or waypoint area)
+        if (!B.blacklistLit) B.blacklistLit = [];
+        B.blacklistLit.push({x: B.lx, z: B.lz, tick: B.tick});
         stuckUntil = 0;
       }
     }
