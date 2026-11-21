@@ -799,6 +799,29 @@ chỉ ra đúng món, và chi nhánh hiện đúng số phần sau khi chuyển 
 app hiện mục **Bán lỗ so với giá vốn** ("đang bán 2.000₫ · vốn 25.426₫ — lỗ 23.426₫/phần"), và máy cục gạch cũng có
 dòng "Cửa hàng" trong danh sách; **console sạch**.
 
+### 4.35 Menu ẩn: bấm 7 lần + mã PIN 7777 (lượt 52)
+
+Trước đây bấm 7 lần chữ “Cài đặt” là menu test mở luôn — người chơi lỡ tay bấm nhiều lần là thấy một bảng toàn nút
+“Chạy” không thuộc về game. Nay có thêm **một bước nhập mã**: bấm lần thứ 7 hiện **bàn phím số 0–9** với bốn chấm
+tròn báo số đã nhập; gõ đúng **`7777`** (`DEV_PIN` trong `src/game/devPoints.ts`) mới vào menu test.
+
+- `devPinInput(entered, digit)` là hàm thuần: nhập tới đâu đã lệch tới đó thì báo sai ngay (không bắt gõ đủ 4 số),
+  sai là **xoá sạch** và không đoán gần đúng; số thứ 5 không được nhận. `tests/devpoints.test.ts` canh cả bốn điều.
+- Mở đúng một lần là **nhớ trong phiên chơi** (`DEV_UNLOCKED` trong `ui/panels.ts`): đóng Cài đặt rồi mở lại vẫn vào
+  thẳng menu cho tiện làm việc; nút **“Ẩn & khoá lại”** xoá cờ đó để lần sau phải bấm 7 lần + nhập mã như mới.
+- Mã **không phải bảo mật** (nằm trong gói JS) — mục đích chỉ là để người chơi không vô tình mở bảng test; đã ghi rõ
+  trong README để người chơi tò mò cũng hiểu đó là bảng của người làm game.
+
+**Nội dung menu được làm mới theo lượt 52** (đúng luật “mỗi lượt thay mục test cũ, chỉ giữ nhóm tele”):
+
+| Nút | Làm gì |
+|---|---|
+| *Ông Bảy đang khuyên gì lúc này?* | Tính lại toàn bộ lời khuyên từ trạng thái thật (máu, bụng, túi, giờ, quầy, nợ, thời tiết) và in ra hộp thoại kèm mức cấp thiết |
+| *Tele tới gầm cầu, hỏi Ông Bảy ngay* | Dịch chuyển tới `v_hobo` rồi tự mở hộp thoại để thử câu khuyên trong game thật |
+| *Soát 96 lần trong ngày* | Quét 96 mốc giờ (0h→23h45), gọi `advice()` ở mỗi mốc, báo to nếu có câu nào trỏ đích đã đóng cửa — đo được **316 câu, 0 câu sai** |
+
+Nhóm “Địa điểm — tele nhanh” thêm hai chỗ mới: **Gầm cầu — Ông Bảy** và **MiniMart 24h**.
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
@@ -833,7 +856,7 @@ dòng "Cửa hàng" trong danh sách; **console sạch**.
 
 Ba bài mới ở lượt 2: mỗi nhân vật phụ phải có tên, nhãn việc, câu mở đầu và ít nhất hai câu chuyện đủ dài; bảng `RUDE` chỉ được có tối đa 8 nhóm và phải có đủ lời cho cả năm kiểu (giấy, khạc nhổ, mắng, đuổi, khạc nhổ khi bị xin tiền); khách quen không được trùng id hay tên và phải có cả tên kiểu học sinh.
 
-Các tệp còn lại (mỗi tệp canh đúng một lượt việc, tên tệp theo hệ): `rau41`, `nhay42`, `muc44`, `android45`, `mua46`, `boot47`, `nghi48`, `xe49`, `changelog`, `devpoints`, `settings`, `quality`, `music`, `phoneanim`, `news`, `phone3`, `phone4`, `shopapp`, `vua2`, `dicho`, `baocao`, `nguoi`, `helper`, `hong`, `polish5`, `impact`, `hobo` — tổng cộng **583 bài / 47 tệp** (`npm test`, `environment: 'node'`, chạy ~12 giây).
+Các tệp còn lại (mỗi tệp canh đúng một lượt việc, tên tệp theo hệ): `rau41`, `nhay42`, `muc44`, `android45`, `mua46`, `boot47`, `nghi48`, `xe49`, `changelog`, `devpoints`, `settings`, `quality`, `music`, `phoneanim`, `news`, `phone3`, `phone4`, `shopapp`, `vua2`, `dicho`, `baocao`, `nguoi`, `helper`, `hong`, `polish5`, `impact`, `hobo` — tổng cộng **587 bài / 47 tệp** (`npm test`, `environment: 'node'`, chạy ~12 giây).
 
 Phần đồ hoạ và thao tác được chạy thử bằng các kịch bản trong `tools/probe/`: một trình chạy Puppeteer điều khiển Chrome không giao diện (WebGL phần mềm, giả lập cảm ứng), bấm chạm như người chơi, chụp màn hình để xem bằng mắt, và soát hình học cả thành phố (mặt trùng phẳng, biển hiệu bị che). Danh sách cụ thể những gì đã và chưa chạy thử nằm trong README.
 

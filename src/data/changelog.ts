@@ -27,6 +27,7 @@ export const CHANGELOG: LogEntry[] = [
       'Trời sắp mưa mà chưa có áo mưa thì ông nhắc mua; khuya thì ông đuổi về đúng căn mình đang thuê mà ngủ.',
       'Câu nào cũng ghi cách đây bao nhiêu mét, và có nút "Chỉ con đường tới…" là cắm cột sáng vàng chỉ đường như trên Bản đồ.',
       'Ghé liền ba lần thì ông nói ba câu khác nhau, không lải nhải một câu.',
+      'Bảng test của người làm game (bấm 7 lần chữ "Cài đặt") nay hỏi mã 4 số trước khi mở, người chơi lỡ tay không mở nhầm nữa.',
     ],
   },
   {

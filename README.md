@@ -89,7 +89,7 @@ Danh sách đầy đủ những gì còn lại (1 bậc kinh doanh, băng nhóm,
 
 ## Đã kiểm thử gì
 
-**Tự động:** 583 bài kiểm thử / 47 tệp (`npm test`) cho toàn bộ luật chơi — giá cả, giá vốn, khách mua hay bỏ đi, đánh giá, hư hỏng nguyên liệu, nợ, thời tiết, sự kiện, nâng cấp bản lưu, tính nhất quán dữ liệu, và một bài mô phỏng 45 ngày liên tục.
+**Tự động:** 587 bài kiểm thử / 47 tệp (`npm test`) cho toàn bộ luật chơi — giá cả, giá vốn, khách mua hay bỏ đi, đánh giá, hư hỏng nguyên liệu, nợ, thời tiết, sự kiện, nâng cấp bản lưu, tính nhất quán dữ liệu, và một bài mô phỏng 45 ngày liên tục.
 
 **Chạy thật trong Chrome không giao diện** (màn 844×390 ngang và 390×844 dọc, giả lập cảm ứng), không có lỗi console: vào game, chơi mới/chơi tiếp, lưu và nạp lại; đi bằng cần ảo và bàn phím, vuốt nhìn, va chạm tường; xin tiền, nhặt ve chai, bới thùng rác, bán ve chai, vác hàng, rửa chén, giao hàng, cơm chay; mua đồ nghề; bốc hàng – mặc cả – trả tiền; gánh/đẩy quầy, đặt quầy; cả 5 mini-game nấu ăn bằng thao tác chạm; mở bán, khách gọi món, làm món, giao món, nhận tiền và tiền boa; cả 6 nhân vật sự kiện (thanh tra, bảo kê, khách quậy, khách quen xin chịu, nhà phê bình, khách VIP); hội thoại với cả 44 nhân vật và 11 khách quen, chuyện của 6 nhân vật phụ, người xấc xược (ném giấy, khạc nhổ, đuổi theo), 16 biểu cảm trên cả 8 kiểu mặt, 8 kiểu tóc, người phụ việc xin việc – thuê – trò chuyện – cho nghỉ, góc nhìn thứ ba (phím V, thấy quần áo và kiểu tóc mình mua), tiệm cắt tóc Chú Bảy Kéo (8 kiểu tóc, 4 màu nhuộm, ngồi ghế nghỉ) và tiệm thời trang Cô Ngọc (áo, quần, giày, kính) trong chợ Xóm Chiều, xe cộ và chim trời; ngân hàng, vay nóng, ba mức chỗ ở mới (căn hộ, nhà riêng, tạp hoá kiêm nhà ở: cửa khoá, đòi uy tín, ngủ, đóng tiền tuần); ngất vì kiệt sức và tỉnh dậy ở Bệnh viện Phước An (khám bệnh, quầy thuốc, phòng hồi sức, nhận lại đồ thất lạc), đấm người đi đường (la lên, có người đuổi đánh, uy tín tụt) và nhảy tại chỗ; mua điện thoại ở tiệm Đồ Nghề, mở máy xem sổ thu chi – danh bạ – tin nhắn, gọi khách quen, nghe radio, sạc pin, màn hình máy chạy hoạt ảnh radio / WAP / tin nhắn / cuộc gọi ngay trên khung máy, ba bài nhạc riêng đổi được nhạc nền, radio và WAP đọc tin + giá chợ thật của ván; thuê máy ở quán net (chơi game – lướt web – xem phim, sạc nhờ, nước ngọt, mỏi mắt sau 2 tiếng); xem ô tô đời cũ chạy trên đường, đua xe đạp chủ nhật với nhóm con gái (bấm ĐẠP đúng nhịp, thắng 40.000₫) và đu xích đu ở sân chơi; ngắm phố lúc tan tầm, người che dù khi mưa, hàng xóm đứng xem đua; bị công an gọi lại vì gây sự — nộp phạt, cãi, bỏ chạy hay theo về phường, vào buồng tạm giữ đập đá cho bớt giờ rồi được thả trước cửa đồn; ngủ và tổng kết ngày; phá sản và làm lại; ban ngày lẫn ban đêm với mưa nhỏ, mưa to, giông, ngập; nhãn người lạ / người quen; màn hình sắp xếp nút (kéo, đổi cỡ, lưu, tải lại, màn dọc).
 
@@ -131,6 +131,12 @@ Thêm `?debug` vào địa chỉ để có các biến `__game`, `__R`, `__S`, `
 **Phát hành:** bản chạy được nằm trong thư mục `docs/` của nhánh `main`. Sau khi sửa mã, chạy `npm run build:pages` rồi commit cả thư mục `docs/`.
 
 GitHub Pages của kho này đang trỏ vào **thư mục gốc** của `main`, nên `index.html` ở gốc (trang nguồn) có một đoạn mã nhỏ tự chuyển sang `docs/` khi bị mở thẳng; địa chỉ thực của game vì vậy là `…/CookingGamebyShapi/docs/`. Nếu đổi Pages sang thư mục `/docs` (Settings → Pages → Branch `main`, folder `/docs`) thì game nằm ngay ở địa chỉ gốc — cả hai cách đều chạy. Tệp `.nojekyll` ở gốc để Pages phát đúng nguyên trạng tệp, không qua Jekyll.
+
+## Menu ẩn (dành cho người làm game)
+
+Bấm **7 lần** vào chữ *Cài đặt* ở đầu bảng Cài đặt, rồi nhập mã **`7777`**. Menu Test & Dịch chuyển hiện ra: tele nhanh tới
+từng địa điểm và các nút thử của bản mới nhất. Mở một lần là nhớ trong phiên chơi; nút *"Ẩn & khoá lại"* đưa về như cũ.
+Mã nằm trong gói JavaScript nên **không phải bảo mật** — chỉ để người chơi không vô tình mở bảng test.
 
 ## Cấu trúc mã nguồn
 

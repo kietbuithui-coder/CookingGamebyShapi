@@ -1,4 +1,4 @@
-// MENU TEST & DỊCH CHUYỂN ẨN (mở bằng cách bấm 7 lần vào chữ "Cài đặt").
+// MENU TEST & DỊCH CHUYỂN ẨN (mở bằng cách bấm 7 lần vào chữ "Cài đặt", rồi nhập mã PIN của dev).
 // Lưu ý bảo trì: mỗi lượt thêm tính năng mới thì THAY mục test cũ bằng mục của tính năng mới,
 // chỉ giữ lại nhóm "Địa điểm — tele nhanh". Đừng để menu phình thành bãi rác test cũ.
 import { ctx, QUALITY, saveSettings } from './ctx';
@@ -12,9 +12,35 @@ import { addStack } from '../sim/state';
 import * as PUI from '../ui/phoneUI';
 import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
+import { advice, destOpen, nowText } from '../sim/advice';
+import { LANDMARK_BY_ID } from '../data/landmarks';
+import { money } from '../core/util';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Xe cộ chỉ chạy trên đường thật (hết mọc từ gầm cầu), thêm 3 màu sơn và còi riêng từng loại xe hơi';
+export const DEV_BUILD_TAG = 'Ông Bảy gợi ý theo đúng tình cảnh của ván (máu, cái bụng, túi tiền, giờ), mỗi câu kèm khoảng cách và nút ghim đường đi';
+
+/**
+ * MÃ PIN CỦA MENU ẨN. Bấm 7 lần chữ "Cài đặt" chỉ mở bàn phím số; nhập đúng mã này mới thấy menu test.
+ * Đây KHÔNG phải bảo mật (mã nằm trong gói JavaScript, ai mở DevTools cũng thấy) — chỉ để người chơi
+ * không vô tình mở trúng bảng test rồi tưởng là tính năng của game. Mở xong thì nhớ trong phiên chơi,
+ * mở lại Cài đặt là vào thẳng menu cho tiện làm việc.
+ */
+export const DEV_PIN = '7777';
+/** Độ dài mã PIN (4 số) — dùng chung cho bàn phím số và test. */
+export const DEV_PIN_LEN = 4;
+/**
+ * Kết quả một lần bấm phím số: `'ok'` mở menu, `'wrong'` là sai (xoá hết số đã nhập), `'more'` là còn nhập tiếp.
+ * Số SAI không bao giờ gần đúng: so cả chuỗi, nhập 4 số là phán một lần.
+ */
+export function devPinInput(entered: string, digit: string): { next: string; result: 'ok' | 'wrong' | 'more' } {
+  const next = (entered + digit).slice(0, DEV_PIN_LEN);
+  if (next.length < DEV_PIN_LEN) {
+    // Nhập tới đâu đã sai tới đó thì báo luôn, không bắt gõ đủ 4 số mới biết sai.
+    if (!DEV_PIN.startsWith(next)) return { next: '', result: 'wrong' };
+    return { next, result: 'more' };
+  }
+  return next === DEV_PIN ? { next, result: 'ok' } : { next: '', result: 'wrong' };
+}
 
 export interface DevAction {
   id: string;
@@ -73,44 +99,58 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — Xe chạy đúng đường, 3 màu mới, còi xe hơi (lượt 49)',
+      title: 'Mới nhất — Ông Bảy gợi ý theo tình cảnh thật, PIN 7777 (lượt 52)',
       items: [
         {
-          id: 'kiem_xe',
-          label: 'Theo dõi xe: có chiếc nào ra ngoài đường không?',
-          sub: 'Chạy 600 khung hình rồi đếm',
+          id: 'hobo_now',
+          label: 'Ông Bảy đang khuyên gì lúc này?',
+          sub: 'Tính lại từ trạng thái thật: máu, bụng, tiền, giờ, quầy, nợ, thời tiết',
           tone: 'green',
-          closePanel: false,
+          closePanel: true,
           run: () => {
-            const T = ctx.traffic, CORR = [-88.5, -29.5, 29.5, 88.5];
-            let kiem = 0, ngoai = 0, trongBai = 0;
-            for (let i = 0; i < 600; i++) {
-              T.update(0.05);
-              if (i % 20) continue;
-              for (const rd of T.list) {
-                if (rd.pending) continue;
-                kiem++;
-                const px = rd.axis === 0 ? rd.pos : rd.road + rd.lane;
-                const pz = rd.axis === 0 ? rd.road : rd.pos;
-                if (pz > 92.5 || pz > 92) trongBai++;
-                const on = Math.abs(px) <= 92.6 && Math.abs(pz) <= 92.6 && CORR.some((c) => Math.abs(px - c) < 3.7 || Math.abs(pz - c) < 3.7);
-                if (!on) ngoai++;
-              }
-            }
-            toast(`Kiểm ${kiem} lượt: ngoài mặt đường ${ngoai} · lọt vào bãi gầm cầu ${trongBai}.`, ngoai + trongBai ? 'bad' : 'good', 'gear', true);
+            const g = ctx.g;
+            const list = advice(g, { x: ctx.player.x, z: ctx.player.z, anchors: ctx.world.anchors });
+            const lines = list.slice(0, 6).map((a, i) => `${i + 1}. [${a.urgent}] ${a.id} → ${LANDMARK_BY_ID[a.place]?.name ?? a.place}\n${a.text}`);
+            ctx.ui.dialog({
+              who: 'Ông Bảy — lời khuyên hiện tại', npc: undefined,
+              text: `Giờ ${nowText(g)} · máu ${Math.round(g.st.health)} · bụng ${Math.round(g.st.hunger)} · sức ${Math.round(g.st.energy)} · túi ${money(g.cash)} · ${list.length} câu đang đúng, câu gấp nhất ở trên:\n\n` + lines.join('\n\n'),
+              opts: [{ t: 'Đóng' }],
+            });
           },
         },
         {
-          id: 'thu_ba_coi',
-          label: 'Nghe thử ba tiếng còi xe hơi',
-          sub: 'Xe nhỏ bíp bíp · sedan bìm bìm · tải bừm',
+          id: 'hobo_tele',
+          label: 'Tele tới gầm cầu, hỏi Ông Bảy ngay',
+          sub: 'Đứng trước mặt ông rồi tự mở hộp thoại — thử câu khuyên trong game thật',
           tone: 'yellow',
+          closePanel: true,
+          run: () => {
+            const a = ctx.world.anchors.v_hobo;
+            if (a) tpTo(a.x, a.z + 2.2, Math.PI, 'Đã tới gầm cầu — chạm Ông Bảy để hỏi.');
+            const n = ctx.npcs.fixed.get('hobo');
+            if (n) { ctx.player.face(n.x, n.z); setTimeout(() => ctx.acts.talk(n), 350); }
+          },
+        },
+        {
+          id: 'hobo_audit',
+          label: 'Soát 96 lần trong ngày: có câu nào chỉ chỗ đã đóng cửa không?',
+          sub: 'Đổi giờ 0h→23h (mỗi lần 15 phút) rồi tính lại — câu nào cũng phải trỏ đích có thật & đang mở',
+          tone: 'green',
           closePanel: false,
           run: () => {
-            ctx.sound.unlock(); ctx.sound.play('horn_beep');
-            setTimeout(() => ctx.sound.play('horn_honk'), 700);
-            setTimeout(() => ctx.sound.play('horn_truck'), 1500);
-            toast('Còi xe nhỏ → sedan → xe tải. Mỗi loại một tiếng khác nhau.', 'info', 'gear', true);
+            const g = ctx.g, old = g.min, bad: string[] = [];
+            let n = 0;
+            for (let k = 0; k < 96; k++) {
+              g.min = Math.floor(k / 4) * 60 + (k % 4) * 15;
+              for (const a of advice(g)) {
+                n++;
+                const lm = LANDMARK_BY_ID[a.place];
+                if (!lm) bad.push(`${k}: mã lạ ${a.place}`);
+                else if (!lm.always && !destOpen(g, a.place)) bad.push(`${nowText(g)} ${a.id} → ${lm.name} (đóng cửa)`);
+              }
+            }
+            g.min = old;
+            toast(bad.length ? `${bad.length}/${n} câu sai: ${bad.slice(0, 3).join(' · ')}` : `Soát ${n} câu trong 96 mốc giờ: không câu nào chỉ chỗ đã đóng cửa.`, bad.length ? 'bad' : 'good', 'bolt', true);
           },
         },
       ],
@@ -142,6 +182,14 @@ export function getDevSections(): DevSection[] {
         { id: 'tp_ongtu', label: 'Bàn cờ Ông Tư', sub: 'Ghế đánh cờ cạnh hồ công viên', run: () => {
           const a = ctx.world.anchors.v_danh_co;
           if (a) tpTo(a.x, a.z - 0.9, 0, 'Đã tới bàn cờ của Ông Tư.');
+        } },
+        { id: 'tp_hobo', label: 'Gầm cầu — Ông Bảy', sub: 'Chỗ hỏi lời khuyên; ban đêm có thùng lửa sưởi', run: () => {
+          const a = ctx.world.anchors.v_hobo;
+          if (a) tpTo(a.x, a.z + 2.2, Math.PI, 'Đã tới gầm cầu — chỗ Ông Bảy ngồi.');
+        } },
+        { id: 'tp_mart', label: 'MiniMart 24h', sub: 'Chỗ mua đồ ăn/nguyên liệu lúc khuya mà quán khác đóng', run: () => {
+          const a = ctx.world.anchors.v_mart;
+          if (a) tpTo(a.x, a.z + 1.5, Math.PI, 'Đã tới MiniMart 24h.');
         } },
         { id: 'tp_lavabo', label: 'Bồn rửa tay trong nhà hàng', sub: 'Lắp bồn rửa (nếu chưa có) rồi đứng cạnh để thử rửa tay', run: () => {
           const g = ctx.g;

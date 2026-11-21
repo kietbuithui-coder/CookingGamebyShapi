@@ -1,14 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { DEV_BUILD_TAG, getDevSections } from '../src/game/devPoints';
+import { DEV_BUILD_TAG, DEV_PIN, DEV_PIN_LEN, devPinInput, getDevSections } from '../src/game/devPoints';
 
 describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
   it('chỉ gồm mục của tính năng mới nhất + nhóm địa điểm tele nhanh', () => {
-    expect(DEV_BUILD_TAG).toContain('gầm cầu');
-    expect(DEV_BUILD_TAG).toContain('3 màu');
+    expect(DEV_BUILD_TAG).toContain('Ông Bảy');
+    expect(DEV_BUILD_TAG).toContain('ghim đường đi');
     const sections = getDevSections();
     expect(sections.length).toBe(2);
-    expect(sections[0].title.toLowerCase()).toContain('còi xe hơi');
-    expect(sections[0].title).toContain('lượt 49');
+    expect(sections[0].title.toLowerCase()).toContain('ông bảy');
+    expect(sections[0].title).toContain('lượt 52');
     expect(sections[1].title).toContain('Địa điểm');
     const ids = new Set<string>();
     for (const sec of sections) {
@@ -21,11 +21,11 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
         expect(item.sub.length).toBeGreaterThan(3);
       }
     }
-    // mục của lượt này: nhảy thử qua ghế đá + đếm vật thấp nhảy qua được
-    for (const id of ['kiem_xe', 'thu_ba_coi']) expect(ids.has(id)).toBe(true);
+    // mục của lượt này: xem lời khuyên hiện tại, tele tới Ông Bảy, soát 96 mốc giờ
+    for (const id of ['hobo_now', 'hobo_tele', 'hobo_audit']) expect(ids.has(id)).toBe(true);
     // tele nhanh vẫn còn nguyên
     const loc = sections[1].items.map((i) => i.id);
-    for (const id of ['tp_equip', 'tp_matbang_tb', 'tp_ongtu', 'tp_scrap2', 'tp_canho']) expect(loc).toContain(id);
+    for (const id of ['tp_equip', 'tp_matbang_tb', 'tp_ongtu', 'tp_scrap2', 'tp_canho', 'tp_hobo', 'tp_mart']) expect(loc).toContain(id);
     for (const id of loc) expect(id.startsWith('tp_')).toBe(true);
   });
 
@@ -66,6 +66,37 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
       // lượt 47 (hotfix màn hình đen)
       'kiem_tra_tai', 'sua_loi_tai',
       // lượt 48 (ngủ đỡ đói + biển đúng giá)
-      'ngu_do_doi', 'bien_gia']) expect(ids).not.toContain(old);
+      'ngu_do_doi', 'bien_gia',
+      // lượt 49 (xe chạy đúng đường + còi) — đã thay bằng mục của lượt 52
+      'kiem_xe', 'thu_ba_coi']) expect(ids).not.toContain(old);
+  });
+});
+
+describe('mã PIN của menu ẩn (7777)', () => {
+  it('mã là 7777, đúng 4 số', () => {
+    expect(DEV_PIN).toBe('7777');
+    expect(DEV_PIN_LEN).toBe(4);
+    expect(DEV_PIN).toHaveLength(DEV_PIN_LEN);
+  });
+
+  it('nhập đủ 4 số đúng thì mở menu', () => {
+    let st = { next: '', result: 'more' as string };
+    for (const d of DEV_PIN) st = devPinInput(st.next, d);
+    expect(st.result).toBe('ok');
+    expect(st.next).toBe('7777');
+  });
+
+  it('sai một số là xoá sạch, không đoán gần đúng', () => {
+    expect(devPinInput('', '9')).toEqual({ next: '', result: 'wrong' });      // sai ngay số đầu
+    expect(devPinInput('777', '8')).toEqual({ next: '', result: 'wrong' });    // đúng 3 số rồi sai
+    expect(devPinInput('7777', '7').next).toBe('7777');                       // không nhận số thứ 5
+  });
+
+  it('nhập thiếu thì chưa mở, và không bao giờ mở khi mã khác 7777', () => {
+    for (const bad of ['777', '77', '7', '7778', '1111', '0000', '1234']) {
+      let r: { next: string; result: string } = { next: '', result: 'more' };
+      for (const d of bad) r = devPinInput(r.next, d);
+      expect(r.result, bad).not.toBe('ok');
+    }
   });
 });

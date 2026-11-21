@@ -1298,5 +1298,18 @@ nói lần nào) nên ghé liền ba lần là ba câu khác nhau.
   `tools/probe/out/hobo_*.png`; bấm nút ghim thì `acts.way` = “MiniMart 24h (17, 22)”, console sạch.
 - `npm test` 583/583 (47 tệp) · `npm run typecheck` ✅ · `npm run build` ✅.
 
+### Menu ẩn: cập nhật nội dung + đặt mã PIN
+
+- **Nội dung làm mới theo lượt 52**: *Ông Bảy đang khuyên gì lúc này?* (in cả danh sách câu đang đúng, kèm mức cấp
+  thiết), *Tele tới gầm cầu, hỏi Ông Bảy ngay*, *Soát 96 mốc giờ* (quét 0h→23h45, đo được **316 câu / 0 câu sai**).
+  Nhóm tele thêm **Gầm cầu — Ông Bảy** và **MiniMart 24h**.
+- **Mã PIN `7777`** (`DEV_PIN`, hàm thuần `devPinInput()`): bấm 7 lần chữ “Cài đặt” → bàn phím số 4 chấm → gõ đúng
+  mới vào. Mở đúng một lần thì nhớ trong phiên chơi; “Ẩn & khoá lại” thì lần sau phải nhập lại. Không phải bảo mật —
+  chỉ để người chơi không vô tình mở bảng test (đã ghi rõ trong README).
+- Test `tests/devpoints.test.ts` (6 bài, thêm 4 bài cho PIN): mã đúng 7777, nhập đủ thì mở, sai một số là xoá sạch,
+  không nhận số thứ 5, `777/7778/1111/0000/1234` đều không mở. Probe `tools/probe/steps/devpin.mjs` (40 bước):
+  bấm sai 1234 → ở lại bàn phím; bấm 7777 → menu mở với 3 mục lượt 52 + 15 mục tele; chạy nút soát → “316 câu, 0 sai”;
+  đóng/mở lại vẫn vào; “Ẩn & khoá lại” → phải nhập lại; console sạch.
+
 **Chưa kiểm được:** đọc trên điện thoại thật (môi trường không có GPU); câu chữ dài trên màn dọc 390×844 —
 probe lượt này chỉ chạy màn ngang. Chưa có câu cho sự kiện đang diễn ra (đã ghi vào `TODO.md`).
