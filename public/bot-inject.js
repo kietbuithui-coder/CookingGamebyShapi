@@ -350,7 +350,7 @@ function menuBtn(dataM) {
 function findPed() {
   const npcs = NPCS(), p = P();
   if (!npcs || !p) return null;
-  let best=null, bd=25;
+  let best=null, bd=5; // Only beg from pedestrians very close (< 5m), don't chase
   for (const n of npcs.list) {
     if (n.hidden || n.kind !== 'ped' || n.asked) continue;
     if (n.state !== 'walk' && n.state !== 'idle') continue;
@@ -367,12 +367,27 @@ function findLitter() {
   if (B.blacklistLit) {
     B.blacklistLit = B.blacklistLit.filter(bl => B.tick - bl.tick < 1200);
   }
-  let best=null, bd=30;
+  let best=null, bd=8; // Only pick up litter very close (< 8m), don't detour
   for (const l of a.litter) {
     // Skip blacklisted positions (within 5m of stuck location)
     if (B.blacklistLit?.some(bl => D(bl.x, bl.z, l.x, l.z) < 5)) continue;
     const d = D(p.x, p.z, l.x, l.z);
-    if (d < bd) { bd=d; best=l; }
+    // Only pick up if it's on the way to target (within 5m of path) or very close
+    if (d < bd) {
+      // Check if litter is on the way to current target
+      if (B.target) {
+        const distToTarget = D(p.x, p.z, B.target.x, B.target.z);
+        const distLitToTarget = D(l.x, l.z, B.target.x, B.target.z);
+        // Only pick up if litter is closer to target than we are (on the way)
+        // OR if litter is very close (< 5m)
+        if (distLitToTarget < distToTarget || d < 5) {
+          bd=d; best=l;
+        }
+      } else if (d < 5) {
+        // No target, only pick up if very close
+        bd=d; best=l;
+      }
+    }
   }
   return best;
 }
@@ -440,9 +455,22 @@ function antiStuck() {
       B.stuck = 0;
       B.stuckEscapes = (B.stuckEscapes || 0) + 1;
       lg(`⚠️ Kẹt #${B.stuckEscapes} → né ${dir > 0 ? 'phải' : 'trái'} 90°`,'warn');
-      // Emergency: if stuck too many times, teleport to camp to reset
-      if (B.stuckEscapes > 15) {
-        lg(`🆘 Kẹt quá nhiều (${B.stuckEscapes}) → teleport về camp`, 'error');
+      
+      // Try to find exit route when stuck > 10 times
+      if (B.stuckEscapes > 10 && B.stuckEscapes <= 50) {
+        // Find nearest waypoint to escape
+        const nearWP = nearestWP(p.x, p.z);
+        if (nearWP >= 0 && WP[nearWP]) {
+          lg(`🚪 Tìm lối ra → waypoint ${nearWP} (${WP[nearWP].x.toFixed(0)},${WP[nearWP].z.toFixed(0)})`, 'warn');
+          B.target = {x: WP[nearWP].x, z: WP[nearWP].z, n: 'Lối ra'};
+          B.action = `🚪 Đi tới lối ra...`;
+          B.giveUpUntil = B.tick + 300; // focus on escaping for 5 minutes
+        }
+      }
+      
+      // Emergency: only teleport when 100% stuck (esc > 50)
+      if (B.stuckEscapes > 50) {
+        lg(`🆘 Kẹt 100% (${B.stuckEscapes}) → teleport về camp`, 'error');
         p.x = LOC.camp.x; p.z = LOC.camp.z;
         B.stuckEscapes = 0;
         B.lockedBin = null;
