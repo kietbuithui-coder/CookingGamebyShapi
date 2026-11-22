@@ -19,11 +19,11 @@
 | Quầy hàng & nấu ở world | `src/game/stall.ts` (1.557), `src/cook/*` |
 | Hội thoại / menu NPC | `src/game/acts.ts` (1.390) |
 | HUD / bảng | `src/ui/ui.ts` (424), `src/ui/panels.ts` (517), `src/ui/style.css` (563) |
-| Test | `tests/*.test.ts` — **55 tệp, 654 bài**, `environment: 'node'` |
+| Test | `tests/*.test.ts` — **56 tệp, 661 bài**, `environment: 'node'` |
 | Thử giao diện thật | `tools/probe/` (86 kịch bản `.mjs` trong `steps/`, Chrome headless) |
 | Bản phát hành | `docs/` — **sinh ra bởi `build:pages`, không sửa tay** |
 
-Trạng thái đo được hôm nay (2026-11-21, sau lượt 61): **typecheck ✅ · 654/654 test ✅ (55 tệp, ~22 s) · build ✅ · build:pages ✅**.
+Trạng thái đo được hôm nay (2026-11-21, sau lượt 62): **typecheck ✅ · 661/661 test ✅ (56 tệp, ~22 s) · build ✅ · build:pages ✅**.
 
 ---
 
@@ -247,9 +247,10 @@ Những test "gác cổng" dễ bị quên:
   đặt chỗ → dụng cụ (bếp, nồi) → nhiên liệu (than) → nguyên liệu. Lượt 61: mục cũ chỉ cho nguyên liệu nên trên ván mới
   (18.000₫, `tier 0`) `placeAt` từ chối và người chơi thấy “nồi vẫn trống”, tưởng lỗi cảm ứng của lượt 60 chưa sửa.
   Cách kiểm: bấm đúng nút *Chạy* trong probe rồi đọc `#toasts .toast` — thông báo lỗi nói rõ khâu nào chặn.
-- **Menu ẩn phải làm mới theo từng lượt** (`game/devPoints.ts`): mỗi lượt thay mục test của lượt trước bằng mục của lượt này,
-  chỉ giữ nhóm tele nhanh; `DEV_BUILD_TAG` cũng phải đổi. `tests/devpoints.test.ts` canh cả hai chiều (mục mới phải có, mục cũ
-  phải biến mất) — lượt 59 đã quên bước này khi commit lần đầu và người chơi phải nhắc.
+- **Menu ẩn (`game/devPoints.ts`) từ lượt 63 chỉ còn NHÓM DỊCH CHUYỂN NHANH.** Người chơi yêu cầu xoá hết mục test:
+  “trừ dịch chuyển, xoá các kiểm thử còn lại”. Đừng thêm mục test mới vào đây nữa — muốn thử một tính năng thì viết probe
+  trong `tools/probe/steps/`. `tests/devpoints.test.ts` canh: đúng **một** nhóm tên “Địa điểm”, mọi mã mục bắt đầu `tp_`.
+  Cần thêm chỗ dịch chuyển thì thêm mục `tp_…` (nhớ khai đủ `label`/`sub`), đừng mở lại nhóm test.
 - **Trong probe, `ui.panel(tên)` bấm lại đúng bảng đang mở là ĐÓNG bảng** (toggle cho phím tắt). Muốn quay lại menu ẩn sau khi
   một mục đóng bảng, phải `closeDialog()` + `closePanel()` rồi mới `panel('settings')`, không thì `[data-a="devRun"]` không có.
 - **NPC không đụng vật cản của người chơi.** Quầy bậc 1–4 phải tự khai hộp thân quầy (`stall.counterBox`) rồi đẩy NPC ra, và chèn waypoint vòng đầu quầy — nếu không khách sẽ đi từ sau lưng người bán xuyên thẳng qua quầy như trước lượt 55.
@@ -263,7 +264,7 @@ Những test "gác cổng" dễ bị quên:
 ### 6.4 Đo được gì, không đo được gì (trung thực)
 | Đo được | Không đo được ở sandbox |
 |---|---|
-| Luật chơi (654 test), typecheck, build, bundle size | FPS thật trên GPU (máy không có GPU; gói JS đo được 1.373 kB / gzip 433 kB + 120 kB phông chữ) |
+| Luật chơi (661 test), typecheck, build, bundle size | FPS thật trên GPU (máy không có GPU; gói JS đo được 1.373 kB / gzip 433 kB + 120 kB phông chữ) |
 | Luồng UI trong Chrome headless ở 844×390 và 390×844 | Cảm giác chạm trên điện thoại thật, tai nghe/loa thật |
 | Hình học: mặt trùng phẳng, biển bị che (`audit.mjs`) | Chơi trọn nhiều giờ liên tục, trộm đêm, chuỗi mục tiêu theo trình tự thật |
 
@@ -299,12 +300,12 @@ Trước đây tài liệu lệch mã khá nhiều; các con số dưới là **
 xem mục 9b — khi đó đã sửa lại 9 chỗ lệch mới phát sinh):
 
 1. `README.md` – **7/7 bậc** kinh doanh chơi được (bậc 6 `nhahang`, bậc 7 `chuoi`) + giao người làm đi chợ.
-2. `README.md` – số bài kiểm thử luôn theo mã: nay **654 bài / 55 tệp** (thêm `tests/quality.test.ts` canh 4 mức đồ hoạ, `tests/rau41.test.ts` canh rau củ/đau bụng) (thêm `tests/quality.test.ts` canh 4 mức đồ hoạ) (kèm 17 bài `tests/nhahang.test.ts`, 25 bài `tests/chuoi.test.ts`, 17 bài `tests/dicho.test.ts`, 17 bài `tests/baocao.test.ts`, 11 bài `tests/vua2.test.ts`, 5 bài `tests/phone3.test.ts`, 8 bài `tests/shopapp.test.ts`, 8 bài `tests/phone4.test.ts`, 15 bài `tests/look.test.ts`).
+2. `README.md` – số bài kiểm thử luôn theo mã: nay **661 bài / 56 tệp** (thêm `tests/quality.test.ts` canh 4 mức đồ hoạ, `tests/rau41.test.ts` canh rau củ/đau bụng) (thêm `tests/quality.test.ts` canh 4 mức đồ hoạ) (kèm 17 bài `tests/nhahang.test.ts`, 25 bài `tests/chuoi.test.ts`, 17 bài `tests/dicho.test.ts`, 17 bài `tests/baocao.test.ts`, 11 bài `tests/vua2.test.ts`, 5 bài `tests/phone3.test.ts`, 8 bài `tests/shopapp.test.ts`, 8 bài `tests/phone4.test.ts`, 15 bài `tests/look.test.ts`).
 3. `README.md` – **43** nhân vật cố định (trước ghi 34 và 38 ở hai chỗ).
 4. `README.md` – số món đồ nghề / chỗ bán luôn theo mã: nay **37** món, **6** chỗ bán (4 chỗ thường + 2 mặt bằng) và **3** chỗ mở chi nhánh.
 5. `TODO.md` – đầu tệp cập nhật theo mã: 7/7 bậc · 75 nguyên liệu · 12 nơi bán · 37 đồ nghề · 44 nhân vật · 422/32; thêm mục
    "bậc 6 chưa có probe giao diện"; tách khỏi mâu thuẫn "bậc 6 đã xong" ở bảng bên dưới.
-6. `DESIGN.md` – 654 bài; `SAVE_VERSION = 16` kèm nhánh v12–v16; 144 lô đất / 268 nút đường đi; 6 chỗ bán;
+6. `DESIGN.md` – 661 bài; `SAVE_VERSION = 16` kèm nhánh v12–v16; 144 lô đất / 268 nút đường đi; 6 chỗ bán;
    `FUTURE_TIERS` rỗng.
 7. `DESIGN.md` – thêm **mục 4.26** cho bậc 6 (nhà hàng bình dân, đặt bàn trước, phụ bếp, khách đoàn) + dòng mô tả
    `tests/nhahang.test.ts` trong mục 7.
@@ -327,8 +328,8 @@ xem mục 9b — khi đó đã sửa lại 9 chỗ lệch mới phát sinh):
 | `PLAYBOOK.md` §10 | mẫu báo cáo “322/322” | **560/560** |
 | `README.md` | ~280 kB JS nén + 110 kB font · thiếu phím Z | **~420 kB nén + 120 kB font** · thêm hàng “Xoay trái · xoay phải — Q · Z” |
 | `DESIGN.md` §2/§8 | 7 giây · “930 kB, nén 280 kB” · “chưa có service worker” | **~15 giây** · **1.335 kB / 420 kB** · offline **đã xong từ lượt 40** |
-| `DESIGN.md` §7 | 23 tệp test được mô tả (mục 7 viết từ lượt 13) | 55 tệp: thêm danh sách các tệp còn lại + tổng **654 bài** |
-| `TODO.md` | “499 bài / 39 tệp” · “chưa có service worker” · “bản lưu v15” · dấu “·” thừa trong Sổ tay | **654/55** · offline đã xong · **v16** · đã rà `panels.ts:273`, không còn thừa |
+| `DESIGN.md` §7 | 23 tệp test được mô tả (mục 7 viết từ lượt 13) | 55 tệp: thêm danh sách các tệp còn lại + tổng **661 bài** |
+| `TODO.md` | “499 bài / 39 tệp” · “chưa có service worker” · “bản lưu v15” · dấu “·” thừa trong Sổ tay | **661/56** · offline đã xong · **v16** · đã rà `panels.ts:273`, không còn thừa |
 
 Hai mục “lỗi nhỏ đã biết” (dấu “·” trong Sổ tay, service worker) nay đã kiểm bằng mã nên **xoá khỏi danh sách lỗi**.
 `PLAN.md` thêm **Lượt 50** (báo cáo soát giao diện, không phải bản phát hành) và **Lượt 51** (bản sửa thật).
@@ -348,7 +349,7 @@ trước khi push là đủ bắt các số cũ quay lại.
 ```
 (1) Đã làm: <một câu nói theo góc người chơi thấy>
 (2) Tệp chính: src/... , tests/... , tài liệu đã cập nhật
-(3) Kiểm tra: npm test → 654/654 · npm run typecheck → sạch · npm run build → OK
+(3) Kiểm tra: npm test → 661/661 · npm run typecheck → sạch · npm run build → OK
     [nếu có] node play.mjs steps/<x>.mjs → errors: none, ảnh tools/probe/out/<x>.png
 (4) Chưa kiểm được: <FPS máy thật / âm thanh / màn dọc trên máy thật / …>
 ```

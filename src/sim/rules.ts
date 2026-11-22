@@ -1,6 +1,6 @@
 // LUẬT CHƠI — kinh tế, giá vốn, nhu cầu khách, đánh giá, chỉ số sinh tồn, thời tiết, sự kiện, nợ nần.
 // Toàn bộ là logic thuần, không đụng tới đồ hoạ hay DOM (xem tests/ để thấy cách kiểm thử).
-import { clamp, RNG, rnd, round1k, round500, hashStr, money, lerp } from '../core/util';
+import { clamp, RNG, rnd, round1k, round500, hashStr, money, lerp, qty } from '../core/util';
 import { bus, toast } from '../core/bus';
 import { INGS } from '../data/ingredients';
 import { SHOPS, SHOP_LIST, ShopDef } from '../data/shops';
@@ -11,7 +11,7 @@ import { EVENTS, EVENT_LIST, EventDef, WEATHER, WeatherDef, WeatherId, floodZone
 import { EXPR } from '../data/expr';
 import { District, DISTRICT, SPOTS, districtAt, spotById } from '../world/layout';
 import { PLACE_HOURS } from '../data/hours';
-import { Game, Stack, Helper, Booking, Branch, Ready, Errand, STAT_MAX, absMin, addStack, countOf, hourOf, newLedger, purge, spoil, takeFrom, weightOf, junkWeight, emptyStall, Debt, coldWeightOf } from './state';
+import { Game, Stack, Helper, Booking, Branch, Ready, Errand, STAT_MAX, absMin, addStack, countOf, hourOf, newLedger, purge, spoil, takeFrom, weightOf, junkWeight, emptyStall, Debt, coldWeightOf, ICE_MELT_MUL } from './state';
 import * as PH from './phone';
 
 export { STAT_MAX };
@@ -72,7 +72,8 @@ export function hoursLeft(g: Game, st: Stack): number {
   const d = INGS[st.id];
   if (!d || d.shelf > 9000) return Infinity;
   const chilled = stallChilled(g), w = wx(g);
-  const perHour = (100 / d.shelf) * (chilled ? 0.22 * (has(g, 'tu_dong') ? 0.35 : 1) : d.cold ? 2.6 * w.spoil : w.spoil);
+  // Đá tan chậm gấp 3 lần (lượt 62) — cùng hệ số với `spoil()` để lời nhắc khớp thực tế.
+  const perHour = (100 / d.shelf) * (chilled ? 0.22 * (has(g, 'tu_dong') ? 0.35 : 1) : d.cold ? 2.6 * w.spoil : w.spoil) / (st.id === 'da' ? ICE_MELT_MUL : 1);
   if (perHour <= 0) return Infinity;
   return Math.max(0, (st.fresh - 10) / perHour); // dưới 10% tươi là hỏng hẳn
 }
@@ -1394,7 +1395,8 @@ export function shopRows(g: Game): ShopRow[] {
   const s = g.stall, out: ShopRow[] = [];
   const ready = s.ready.filter((r) => r.n > 1e-6);
   // Đồ trong kho quầy vẫn hỏng tiếp — app phải nhắc, để người chơi không tưởng "bỏ vào quầy là mất".
-  const spoiling = s.store.filter((st) => INGS[st.id] && INGS[st.id].shelf < 9000 && st.fresh < 35);
+  // Đá viên không “hỏng” mà tan — báo “sắp hỏng” cho đá là sai, người chơi tưởng mua phải hàng ôi.
+  const spoiling = s.store.filter((st) => st.id !== 'da' && INGS[st.id] && INGS[st.id].shelf < 9000 && st.fresh < 35);
   const spoilNames = [...new Set(spoiling.map((st) => INGS[st.id].name))];
   const cold = coldUnprotected(g);
   const coldHours = cold.kinds ? Math.min(...s.store.filter((st) => INGS[st.id]?.cold).map((st) => hoursLeft(g, st))) : 0;
@@ -1759,8 +1761,11 @@ function newDay(g: Game, R: RNG) {
   for (const p of s.preps.slice()) { const r = RECIPES[p.rid]; if (absMin(g) - p.at > Math.max(r.hold, 300)) { waste += p.n * p.cost; s.preps.splice(s.preps.indexOf(p), 1); } }
   // Dọn đồ hỏng qua đêm: phải NÓI rõ món nào hỏng, nếu không người chơi tưởng đồ bỏ vào quầy bị mất trộm.
   const spoiled: string[] = [];
-  for (const l of [g.bag, s.store, g.home]) { const p = purge(l); waste += p.lost; spoiled.push(...p.names); }
+  // Đá tan (không phải hỏng): đếm riêng để câu thông báo không gọi đá là “đồ hỏng”.
+  const tanHet = [g.bag, s.store, g.home].flat().filter((st) => st.id === 'da' && st.fresh < 10).reduce((a, st) => a + st.n, 0);
+  for (const l of [g.bag, s.store, g.home]) { const p = purge(l); waste += p.lost; spoiled.push(...p.names.filter((n) => n !== INGS.da.name)); }
   g.led.loss += waste;
+  if (tanHet > 0) toast(`Đá trong thùng tan hết (${qty(tanHet)} ${INGS.da.unit}) — thay đá mới kẻo thịt cá hỏng theo.`, 'info', 'box');
   if (spoiled.length) {
     const uniq = [...new Set(spoiled)];
     toast(`Đồ hỏng phải bỏ: ${uniq.slice(0, 3).join(', ')}${uniq.length > 3 ? ` và ${uniq.length - 3} món nữa` : ''}. Đồ nguội để vài hôm vẫn được, thịt cá chưa nấu thì không.`, 'warn', 'box');

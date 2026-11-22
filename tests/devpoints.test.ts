@@ -4,29 +4,23 @@ import { readFileSync } from 'node:fs';
 import { DEV_BUILD_TAG, DEV_PIN, DEV_PIN_LEN, devPinInput, getDevSections } from '../src/game/devPoints';
 
 describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
-  it('chỉ gồm mục của tính năng mới nhất + nhóm địa điểm tele nhanh', () => {
-    expect(DEV_BUILD_TAG).toContain('trà');
+  it('chỉ còn nhóm “Địa điểm — tele nhanh”: mọi mục test đã được xoá (lượt 63)', () => {
     const sections = getDevSections();
-    expect(sections.length).toBe(2);
-    expect(sections[0].title).toContain('lượt 60');
-    expect(sections[1].title).toContain('Địa điểm');
-    const ids = new Set<string>();
-    for (const sec of sections) {
-      expect(sec.items.length).toBeGreaterThan(0);
-      for (const item of sec.items) {
-        expect(ids.has(item.id)).toBe(false);
-        ids.add(item.id);
-        expect(typeof item.run).toBe('function');
-        expect(item.label.length).toBeGreaterThan(3);
-        expect(item.sub.length).toBeGreaterThan(3);
-      }
+    expect(sections.length).toBe(1);
+    expect(sections[0].title).toContain('Địa điểm');
+    // Không còn mục test nào: mọi mã đều phải là `tp_…`.
+    const ids = sections[0].items.map((i) => i.id);
+    expect(ids.length).toBeGreaterThan(5);
+    for (const id of ids) expect(id.startsWith('tp_')).toBe(true);
+    for (const id of ['tp_equip', 'tp_matbang_tb', 'tp_ongtu', 'tp_scrap2', 'tp_canho', 'tp_hobo', 'tp_mart']) expect(ids).toContain(id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const item of sections[0].items) {
+      expect(typeof item.run).toBe('function');
+      expect(item.label.length).toBeGreaterThan(3);
+      expect(item.sub.length).toBeGreaterThan(3);
     }
-    // mục của lượt này: mở bảng việc làm, về bến cảng 5h sáng, làm hết ca bốc cá / ca chạy bàn, vác tới bao cuối, đọc sổ
-    for (const id of ['t61_tra', 't61_noi_da', 't61_noi_chanh', 't59_viec_bang', 't59_viec_sang', 't59_viec_ca_bo', 't59_viec_ca_quan', 't59_viec_bao', 't59_viec_so']) expect(ids.has(id)).toBe(true);
-    // tele nhanh vẫn còn nguyên
-    const loc = sections[1].items.map((i) => i.id);
-    for (const id of ['tp_equip', 'tp_matbang_tb', 'tp_ongtu', 'tp_scrap2', 'tp_canho', 'tp_hobo', 'tp_mart']) expect(loc).toContain(id);
-    for (const id of loc) expect(id.startsWith('tp_')).toBe(true);
+    // Dòng mô tả bản dựng vẫn còn (để biết đang chơi bản nào).
+    expect(DEV_BUILD_TAG.length).toBeGreaterThan(10);
   });
 
   it('không còn sót mục test của các lượt cũ', () => {
@@ -112,26 +106,17 @@ describe('mã PIN của menu ẩn (7777)', () => {
   });
 
   /**
-   * Lỗi người chơi gặp ở lượt 61: bấm “Chạy” trên ván MỚI thì nồi không mở, vì ván mới chỉ có 18.000₫
-   * ⇒ chưa mua được gánh (cấp 1) ⇒ `placeAt` từ chối với câu “Chỗ này cần gánh hàng rong trở lên”,
-   * và cũng chưa có bếp/nồi/than. Mục dựng sẵn phải tự lo đủ ba thứ: tiền, cấp quầy, dụng cụ.
+   * Lượt 63: người chơi yêu cầu xoá hết mục test, chỉ giữ nhóm dịch chuyển nhanh.
+   * Giữ lại bài canh NGUỒN của hàm dựng bếp trà (`chuanBiNoi`) để nếu sau này dùng lại thì vẫn đúng thứ tự
+   * “tiền → gánh → đặt chỗ → dụng cụ → nhiên liệu”, nhưng không đòi mục test phải còn trong menu.
    */
-  it('mục dựng sẵn bếp trà tự lo tiền + cấp quầy + dụng cụ (ván mới chỉ có 18.000₫)', () => {
+  it('hàm dựng bếp trà (nếu còn dùng) vẫn mua gánh TRƯỚC khi đặt chỗ và cho đủ than', () => {
     const src = readFileSync('src/game/devPoints.ts', 'utf8');
+    if (!src.includes('function chuanBiNoi')) return;   // đã xoá hẳn cùng các mục test
     const fn = src.slice(src.indexOf('function chuanBiNoi'), src.indexOf('export function getDevSections'));
-    expect(fn).toContain('g.cash < 400000');            // nâng tiền trước khi mua
+    expect(fn).toContain('g.cash < 400000');
+    expect(fn.indexOf('buyGear')).toBeLessThan(fn.indexOf('placeAt'));
     for (const id of ['ganh', 'bepthan', 'noi', 'daothot']) expect(fn).toContain(`'${id}'`);
-    expect(fn.indexOf('buyGear')).toBeLessThan(fn.indexOf('placeAt')); // mua gánh TRƯỚC khi đặt chỗ
-    expect(fn).toContain("ctx.stall.placeAt");
-    expect(fn).toContain('than');                        // đốt được lửa
-    // Cả hai món trà đều đi qua hàm này, và có mục gọi thẳng cho từng món.
-    const sections = getDevSections();
-    const items = sections[0].items.map((i) => i.id);
-    expect(items).toContain('t61_tra');
-    expect(items).toContain('t61_noi_da');
-    expect(items).toContain('t61_noi_chanh');
-    const body = src.slice(src.indexOf("id: 't61_tra'"), src.indexOf("id: 't59_viec_so'"));
-    expect(body).toContain("chuanBiNoi('tra_da')");
-    expect(body).toContain("chuanBiNoi('tra_chanh')");
+    expect(fn).toContain('than');
   });
 });

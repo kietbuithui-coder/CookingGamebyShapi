@@ -319,12 +319,31 @@ export function moveStack(from: Stack[], to: Stack[], idx: number, n: number, ro
   return k;
 }
 /** Làm hỏng dần nguyên liệu theo thời gian. hours: số giờ trôi qua · mul: hệ số thời tiết · chilled: kho có giữ lạnh · coldMul: hệ số giữ lạnh thêm (tủ đông công nghiệp). */
+/**
+ * Đá viên tan chậm gấp 3 lần (lượt 62, người chơi xin “×3 độ lâu tan của đá”).
+ * Đá để được 9 giờ ở nhiệt độ thường, mà còn bị nhân thêm 2,6 vì là đồ cần lạnh ⇒ thực tế chưa tới 3,5 giờ.
+ * Hệ số này chỉ áp cho đá; mọi nguyên liệu khác giữ nguyên.
+ * Vì đá chỉ mất dần chứ không “hỏng”, chỗ hiển thị dùng `freshLabel()` để ghi **độ lạnh** thay vì “tươi/hỏng”.
+ */
+export const ICE_MELT_MUL = 3;
 export function spoil(list: Stack[], hours: number, mul: number, chilled: boolean, coldMul = 1) {
   for (const s of list) {
     const d = INGS[s.id]; if (!d || d.shelf > 9000) continue;
-    const rate = (100 / d.shelf) * (chilled ? 0.22 * coldMul : d.cold ? 2.6 * mul : mul);
+    const rate = (100 / d.shelf) * (chilled ? 0.22 * coldMul : d.cold ? 2.6 * mul : mul) / (s.id === 'da' ? ICE_MELT_MUL : 1);
     s.fresh = Math.max(0, s.fresh - rate * hours);
   }
+}
+/**
+ * Nhãn trạng thái một lô hàng để hiện cho người chơi: `{ text, level }`.
+ * Đá viên KHÔNG hỏng — nó tan, nên ghi **độ lạnh** (“lạnh 82 %”, “đá tan 40 %”, “tan hết”) thay vì “tươi/hỏng”;
+ * người chơi đã thấy “hỏng” ở túi đá và tưởng mua phải hàng ôi.
+ */
+export function freshLabel(s: Stack): { text: string; level: 'good' | 'warn' | 'bad' } {
+  const f = Math.round(s.fresh);
+  const level: 'good' | 'warn' | 'bad' = f < 35 ? 'bad' : f < 60 ? 'warn' : 'good';
+  // Đá: trên nửa thùng là còn lạnh, dưới nửa là đã tan gần hết, dưới 10 % là tan sạch.
+  if (s.id === 'da') return { text: f < 10 ? 'tan hết' : f < 50 ? `đá tan ${f}%` : `lạnh ${f}%`, level };
+  return { text: f < 10 ? 'hỏng' : `tươi ${f}%`, level };
 }
 /** Bỏ đồ hỏng, trả về tổng giá trị bị mất. */
 export function purge(list: Stack[]): { lost: number; names: string[] } {

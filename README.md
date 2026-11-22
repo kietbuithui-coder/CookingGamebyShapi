@@ -127,7 +127,7 @@ Cần Node.js 20 trở lên.
 ```bash
 npm install
 npm run dev          # máy chủ phát triển, mở địa chỉ được in ra
-npm test             # 654 bài kiểm thử luật chơi
+npm test             # 661 bài kiểm thử luật chơi
 npm run build        # kiểm tra kiểu + đóng gói ra dist/
 npm run build:pages  # kiểm tra kiểu + kiểm thử + đóng gói ra docs/ (GitHub Pages)
 ```
