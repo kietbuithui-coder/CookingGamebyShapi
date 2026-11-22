@@ -1548,3 +1548,23 @@ nút ca bốc cá trong hội thoại anh Sáu Lực ở trạng thái `off` kè
 Probe `tools/probe/steps/dev59.mjs` (mở menu ẩn bằng 7 lần bấm + mã 7777, `errors: none`): 6 mục `t59_*` hiện đủ trong bảng;
 bấm “làm hết ca bốc cá” ⇒ `2/2` rồi bấm ca lần nữa `bịChặn: true`; “làm hết ca chạy bàn” ⇒ `3/3`; “vác tới bao cuối” ⇒
 `20/20` và thử vác lố vẫn `20/20`; “đọc sổ việc làm” in `Bây giờ: 9h41 · ngày 1 · Bao 20/20 · Ca bốc cá 1/2 · Ca chạy bàn 3/3`.
+
+## Lượt 60 — sửa lỗi không cho được nguyên liệu vào nồi (trà đá bấm mãi không qua) ✅ đã xong
+
+Người chơi báo kèm ảnh: mở nồi nấu trà đá, nồi trống, chén “Trà khô” nằm trên bàn, chạm mãi không vào.
+
+**Nguyên nhân đo được:** `Cook.local()` cắt tia chạm ở một mặt phẳng `mini.planeH`; `BoilGame` đặt nó ở **mặt nước** (0,355 m) trong khi
+chén ở **mặt bàn** (~0,03 m) ⇒ điểm rơi lệch **0,208 m**, gấp đôi bán kính ăn 0,11 m. Ảnh hưởng **mọi món có bước nấu/ninh/luộc/pha**.
+
+**Sửa:**
+- `cook/cook.ts`: `Mini.planes` (khai thêm độ cao) + `Mini.pickPoint` (lớp tự chọn điểm); `local()` cắt tia ở mọi độ cao rồi
+  `pickPoint(list) ?? list[0].p` — lớp không khai thì hành vi y như cũ.
+- `cook/games.ts`: `BoilGame` khai `planes = [0.03]` + `pickPoint` (đang cho nguyên liệu → mặt bàn; đang nấu → mặt nước/giữa bọt).
+  Ghi chú rõ độ cao ở các lớp khác (thái 0,06 · chảo 0,2 · vỉ 0,25 · trình bày 0,04 · trộn 0,05 · rửa 0,03).
+- Test `tests/nau59.test.ts` (6 bài) + `tests/devpoints.test.ts` (thêm mục `t59_noi`) + changelog “Lượt 60”.
+- Menu ẩn: thêm mục **`t59_noi`** mở thẳng bước “Cho nguyên liệu” của nồi trà đá.
+
+**Đo:** `tsc` sạch · **653/653 test (55 tệp)** · probe `steps/nau59.mjs` (`errors: none`): chiếu chén ra màn hình rồi hỏi `local()`
+⇒ lệch **0,004 m** (trước 0,208 m); **chạm màn hình thật** ⇒ `fly -1 → 0,52` (chén bay vào nồi), hết chén thì hiện nút “Quạt lửa /
+Lọc ra”, bấm Lọc ra ⇒ ra món điểm 1,00. Probe `steps/nau59b.mjs` rà 7 bàn: thái ăn (lệch 0,019), chiên đảo được (`tossN 0 → 1`),
+nướng lật được, trình bày lệch 0,008, trộn `k 0 → 1`, rửa chén `hp 1 → 0,19`.

@@ -3,7 +3,7 @@ import { DEV_BUILD_TAG, DEV_PIN, DEV_PIN_LEN, devPinInput, getDevSections } from
 
 describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
   it('chỉ gồm mục của tính năng mới nhất + nhóm địa điểm tele nhanh', () => {
-    expect(DEV_BUILD_TAG).toContain('ca bốc cá');
+    expect(DEV_BUILD_TAG).toContain('nồi');
     const sections = getDevSections();
     expect(sections.length).toBe(2);
     expect(sections[0].title).toContain('lượt 59');
@@ -20,7 +20,7 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
       }
     }
     // mục của lượt này: mở bảng việc làm, về bến cảng 5h sáng, làm hết ca bốc cá / ca chạy bàn, vác tới bao cuối, đọc sổ
-    for (const id of ['t59_viec_bang', 't59_viec_sang', 't59_viec_ca_bo', 't59_viec_ca_quan', 't59_viec_bao', 't59_viec_so']) expect(ids.has(id)).toBe(true);
+    for (const id of ['t59_noi', 't59_viec_bang', 't59_viec_sang', 't59_viec_ca_bo', 't59_viec_ca_quan', 't59_viec_bao', 't59_viec_so']) expect(ids.has(id)).toBe(true);
     // tele nhanh vẫn còn nguyên
     const loc = sections[1].items.map((i) => i.id);
     for (const id of ['tp_equip', 'tp_matbang_tb', 'tp_ongtu', 'tp_scrap2', 'tp_canho', 'tp_hobo', 'tp_mart']) expect(loc).toContain(id);

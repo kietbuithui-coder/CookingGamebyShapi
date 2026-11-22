@@ -73,7 +73,7 @@ export class CutGame implements Mini {
 
 // ───────────────────────── 2. XÀO / CHIÊN / ỐP LA ─────────────────────────
 export class FryGame implements Mini {
-  planeH = 0.2; frame: [number, number, number] = [0.74, 0.62, 0]; private heat!: Heat; private pan = new THREE.Group(); private pieces: { m: THREE.Mesh; base: THREE.Color; vy: number; y: number }[] = [];
+  planeH = 0.2; /** mặt chảo — chạm/vuốt đảo diễn ra ngay trên mặt chảo nên một độ cao là đủ */ frame: [number, number, number] = [0.74, 0.62, 0]; private heat!: Heat; private pan = new THREE.Group(); private pieces: { m: THREE.Mesh; base: THREE.Color; vy: number; y: number }[] = [];
   private cookV = 0; private burn = 0; private tossN = 0; private missed = 0; private prompt = 0; private lo: number; private hi: number; private result: number | null = null; private sx = 0; private sy = 0; private smokeT = 0; private single: boolean; private flipped = 0;
   constructor(private cook: Cook, private step: FryStep, private portions: number) { const w = 0.13 * clamp(cook.ease, 0.7, 1.35); this.lo = step.heat - w; this.hi = step.heat + w; this.single = step.mode === 'ốp la'; }
   start() {
@@ -140,7 +140,7 @@ export class FryGame implements Mini {
 
 // ───────────────────────── 3. NƯỚNG ─────────────────────────
 export class GrillGame implements Mini {
-  planeH = 0.25; frame: [number, number, number] = [0.74, 0.62, 0.02]; private heat!: Heat; private items: { g: THREE.Group; mat: THREE.MeshPhongMaterial; dot: THREE.Mesh; d: [number, number]; down: 0 | 1; x: number; flip: number }[] = [];
+  planeH = 0.25; /** mặt vỉ; món nằm thấp hơn 3,5 cm nên tia chạm lệch < 2 cm, dưới ngưỡng ăn 7 cm */ frame: [number, number, number] = [0.74, 0.62, 0.02]; private heat!: Heat; private items: { g: THREE.Group; mat: THREE.MeshPhongMaterial; dot: THREE.Mesh; d: [number, number]; down: 0 | 1; x: number; flip: number }[] = [];
   private result: number | null = null; private smokeT = 0; private lo = 0.48; private hi = 0.8; private said = false;
   constructor(private cook: Cook, private step: GrillStep, private r: RecipeDef, private portions: number) { const w = clamp(cook.ease, 0.7, 1.35); this.lo = 0.64 - 0.16 * w; this.hi = 0.64 + 0.16 * w; }
   start() {
@@ -194,13 +194,15 @@ export class GrillGame implements Mini {
 // ───────────────────────── 4. NẤU / NINH / LUỘC / PHA ─────────────────────────
 export class BoilGame implements Mini {
   planeH = 0.3; frame: [number, number, number] = [1.06, 0.74, -0.03]; private heat!: Heat; private bowls: { g: THREE.Group; x: number; z: number; id: string; fly: number }[] = []; private liquid!: THREE.Mesh; private bub: THREE.Mesh[] = []; private foam: THREE.Mesh[] = [];
+  /** Độ cao nhận tay: mặt bàn (chén nguyên liệu) và mặt nước (vớt bọt). */
+  planes: number[] = [0.03];
   private phase: 'add' | 'cook' = 'add'; private prog = 0; private zoneT = 0; private total = 0; private pen = 0; private overT = 0; private skimDone = 0; private foamT = 0; private result: number | null = null; private lo = 0.45; private hi = 0.7; private brew: boolean; private surf = 0;
   private c0 = new THREE.Color(0xcfe6f2); private c1: THREE.Color;
   constructor(private cook: Cook, private step: BoilStep) {
     this.brew = step.mode === 'pha'; const w = clamp(cook.ease, 0.7, 1.35), mid = step.mode === 'luộc' ? 0.74 : step.mode === 'cơm' ? 0.58 : 0.55; this.lo = mid - 0.14 * w; this.hi = mid + 0.14 * w; this.c1 = new THREE.Color(step.col);
   }
   start() {
-    const st = this.cook.stage; this.heat = new Heat(this.cook, st); const top = this.heat.top; this.surf = top + 0.155; this.planeH = this.surf;
+    const st = this.cook.stage; this.heat = new Heat(this.cook, st); const top = this.heat.top; this.surf = top + 0.155; this.planeH = this.surf; this.planes = [0.03];
     const mb = new MB(); potModel(mb, 0, top, 0, 1); st.add(this.cook.meshOf(mb, MAT.lit));
     this.liquid = mk(GEO.disc, 0xcfe6f2, 0.335, 0.004, 0.335, 0, this.surf, 0, st); this.liquid.material = pm(0xcfe6f2, { opacity: 0.92 });
     for (let i = 0; i < 7; i++) { const b = mk(GEO.sph, 0xffffff, 0.02, 0.012, 0.02, 0, this.surf + 0.004, 0, st); b.material = pm(0xffffff, { opacity: 0.6 }); b.visible = false; this.bub.push(b); }
@@ -218,6 +220,19 @@ export class BoilGame implements Mini {
     if (id === 'done' && this.brew) { const s = this.prog; this.result = (s < 0.78 ? Math.pow(clamp(s / 0.78), 1.6) : s <= 1.0 ? 1 : clamp(1 - (s - 1) * 2.6)) - this.pen; ctx.ui.floatAt(s < 0.7 ? 'Còn nhạt!' : s > 1.08 ? 'Đắng chát!' : 'Vừa đậm!', this.cook.world(0, 0.5, 0), s < 0.7 || s > 1.08 ? 'bad' : 'good'); }
   }
   slide(v: number) { this.heat.flame = v; }
+  /**
+   * Chạm vào chén nguyên liệu thì phải cắt tia ở MẶT BÀN (chén nằm trên bàn), chạm để vớt bọt thì ở MẶT NƯỚC.
+   * Trước đây `Cook.local()` chỉ cắt ở mặt nước nên điểm rơi lệch 0,2 m và không chén nào ăn được (lượt 59).
+   */
+  pickPoint(list: { h: number; p: THREE.Vector3 }[]) {
+    const base = list[0].p;
+    if (this.phase === 'add') return list.reduce((a, b) => (b.h < a.h ? b : a)).p;   // mặt bàn (thấp nhất)
+    // Lúc nấu: chỉ quan tâm bọt nổi trên mặt nước; tay chạm chỗ khác thì trả về mặt nước như cũ.
+    const bọt = this.foam.filter((f) => f.visible).map((f) => [f.position.x, f.position.z] as const);
+    if (!bọt.length) return base;
+    for (const c of list) if (bọt.some(([x, z]) => Math.hypot(x - c.p.x, z - c.p.z) < 0.09)) return c.p;
+    return base;
+  }
   down(p: THREE.Vector3) {
     if (this.phase === 'add') { for (const b of this.bowls) if (b.fly < 0 && Math.hypot(b.x - p.x, b.z - p.z) < 0.11) { b.fly = 0; sfx('plop'); this.labels(); break; } }
     else this.move(p);
@@ -262,7 +277,7 @@ const VES: Record<Vessel, { R: number; y0: number; H: number }> = {
   glass: { R: 0.036, y0: 0.008, H: 0.11 }, paper: { R: 0.08, y0: 0.012, H: 0.004 }, bun: { R: 0.062, y0: 0.03, H: 0.004 }, roll: { R: 0.085, y0: 0.007, H: 0.003 },
 };
 export class AssembleGame implements Mini {
-  planeH = 0.04; frame: [number, number, number] = [1.0, 0.6, -0.03]; private bowls: { g: THREE.Group; x: number; z: number; li: number; shake: number }[] = []; private cur = 0; private mistakes = 0; private pours: number[] = []; private pouring = false; private fill = 0; private t = 0; private doneT = -1;
+  planeH = 0.04; /** mặt bàn — chén nguyên liệu nằm ngay đây (mặt đĩa ~0,014 m) nên một độ cao là đủ */ frame: [number, number, number] = [1.0, 0.6, -0.03]; private bowls: { g: THREE.Group; x: number; z: number; li: number; shake: number }[] = []; private cur = 0; private mistakes = 0; private pours: number[] = []; private pouring = false; private fill = 0; private t = 0; private doneT = -1;
   private ves = new THREE.Group(); private y = 0; private liq: THREE.Mesh | null = null; private stream!: THREE.Mesh; private V: { R: number; y0: number; H: number }; private R = new RNG(11); private topper: THREE.Object3D | null = null; private pourBowl = -1;
   constructor(private cook: Cook, private step: AssembleStep, private r: RecipeDef) { this.V = VES[r.vessel]; this.y = this.V.y0; }
   start() {

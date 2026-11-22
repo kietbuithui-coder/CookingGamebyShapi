@@ -1102,8 +1102,46 @@ giờ mở cửa) và ghi rõ khi đã hết hạn mức thay vì lặng lẽ b�
 **Menu ẩn:** 6 mục `t59_*` thay cho mục của lượt 58 — mở bảng việc làm, về bến cảng 5h sáng, làm hết 2 ca bốc cá, làm hết 3 ca
 chạy bàn, vác tới bao cuối rồi thử vác lố, đọc sổ việc làm. `DEV_BUILD_TAG` đổi theo lượt 59.
 
+### 4.43 Tia chạm nhiều độ cao — sửa lỗi “không cho được nguyên liệu vào nồi” (lượt 60)
+
+Người chơi báo: mở nồi nấu trà đá, chạm mãi chén **Trà khô** mà nồi vẫn trống, không qua được bước *“Cho nguyên liệu”*.
+
+**Nguyên nhân (đo được, không phải đoán).** `Cook.local()` đổi điểm chạm màn hình thành toạ độ bàn bếp bằng cách cắt tia ở **một**
+mặt phẳng `mini.planeH`. `BoilGame` đặt `planeH = surf` = **mặt nước** (top + 0,155 = 0,355 m) — đúng cho việc vớt bọt — nhưng chén
+nguyên liệu nằm trên **mặt bàn** (~0,03 m). Camera nhìn chếch xuống nên cắt tia ở độ cao sai làm điểm rơi bị kéo về phía người nấu:
+chiếu chén (−0,38; −0,07) ra màn hình rồi hỏi `local()` thì nó trả về (−0,281; 0,113) — **lệch 0,208 m**, gấp đôi bán kính ăn
+0,11 m của chén ⇒ không chén nào ăn được. Lỗi nằm ở tầng chung nên **ảnh hưởng mọi món có bước nấu/ninh/luộc/pha**, không riêng trà đá.
+
+**Cách sửa.** Thêm vào `Mini` hai thành phần tuỳ chọn:
+
+| Thành phần | Việc |
+|---|---|
+| `planes?: number[]` | các độ cao khác mà tay chạm tới trong cùng ván (mét, trên bàn bếp) |
+| `pickPoint?(list)` | lớp game tự chọn điểm trong các ứng viên `{ h, p }` cắt ở từng độ cao |
+
+`Cook.local()` cắt tia ở `planeH` + `planes`, rồi trả `pickPoint(list) ?? list[0].p` — lớp nào không khai thì **hành vi y như cũ**.
+`BoilGame` khai `planes = [0.03]` (mặt bàn) và `pickPoint`: giai đoạn *cho nguyên liệu* lấy ứng viên **thấp nhất** (mặt bàn);
+giai đoạn nấu chỉ nhận điểm nằm gần bọt đang nổi, còn lại trả về mặt nước như trước.
+
+**Rà cả 7 bàn thao tác** (probe `steps/nau59b.mjs`, đo độ lệch giữa chỗ chạm và chỗ game hiểu):
+
+| Bàn | Độ lệch đo được | Ngưỡng ăn | Kết luận |
+|---|---|---|---|
+| Thái/băm (CutGame) | 0,019 m | vạch rộng ~0,045 m | đạt — nhát cắt ăn |
+| Chiên/xào (FryGame) | thao tác theo cử chỉ (sx/sy), không dùng toạ độ | — | đạt — vuốt lên là đảo |
+| Nướng (GrillGame) | 0,007 m | 0,07 m | đạt — chạm là lật |
+| Nấu/ninh (BoilGame) | **0,208 m → 0,004 m** | 0,11 m | **đã sửa** |
+| Trình bày (AssembleGame) | 0,008 m | 0,095 m | đạt |
+| Trộn topping (TronGame) | chạm theo đĩa (toạ độ tuyệt đối) | 0,105 m | đạt |
+| Rửa chén (WashGame) | 0,001 m | 0,055 m | đạt |
+
+**Canh tái phát:** `tests/nau59.test.ts` (6 bài) khẳng định `Cook.local` cắt ở nhiều độ cao, `BoilGame` khai mặt bàn, nhánh `add`
+lấy ứng viên thấp nhất, mặt phẳng chính vẫn là mặt nước, các lớp cắt/trình bày/rửa/trộn có mặt phẳng sát đồ vật (≤ 6 cm), và mọi
+công thức có `boil` đều đi qua lớp đã sửa.
+
 ## 7. Kiểm thử
 
+- `tests/nau59.test.ts` — lượt 60: tia chạm của bàn nấu ăn cắt ở nhiều độ cao (sửa lỗi không cho được nguyên liệu vào nồi).
 - `tests/jobs59.test.ts` — lượt 59: trần việc làm thêm mỗi ngày (bốc cá 2 ca, chạy bàn 3 ca, vác 20 bao), đếm số còn lại không âm, reset qua ngày, và quét mã nguồn canh số chép tay + bảng việc làm đủ 7 dòng.
 - `tests/tron58.test.ts` — lượt 58: bánh tráng trộn có mini game riêng — 5 topping rải ngẫu nhiên mỗi ván, thứ tự do máy gọi, chấm điểm theo số lần chạm nhầm/chậm.
 - `tests/camduong57.test.ts` — lượt 57: rào cấm đường chặn cả xe cộ (quay đầu ở vạch, không sinh xe trong đoạn cấm).

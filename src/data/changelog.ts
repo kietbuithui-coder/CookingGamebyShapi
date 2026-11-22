@@ -14,6 +14,17 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 60',
+    tag: 'Sửa lỗi không cho được nguyên liệu vào nồi: trà đá và mọi món nấu, ninh, luộc, pha giờ chạm là ăn',
+    items: [
+      'Trước bản này, món nào có bước nấu/ninh/luộc/pha (trà đá, nước sâm, kho thịt, nồi cá…) đều bị kẹt ở bước “Cho nguyên liệu”: chạm đúng chén “Trà khô” mà nồi vẫn trống, bấm mãi không qua được.',
+      'Nguyên nhân: bàn nấu nhận tay theo một mặt phẳng duy nhất đặt ở MẶT NƯỚC nồi, trong khi chén nguyên liệu nằm trên MẶT BÀN. Điểm chạm vì thế bị kéo lệch khoảng 20 cm — xa hơn bán kính chạm của chén, nên không chén nào ăn được.',
+      'Nay bàn nấu nhận tay ở cả hai độ cao: chạm chén thì lấy đúng mặt bàn, chạm để vớt bọt thì lấy mặt nước. Đo lại: chạm đúng chén thì lệch chỉ còn 4 mm (trước là 208 mm).',
+      'Rà cả 7 bàn thao tác còn lại: thái/băm, chiên/xào, nướng, trình bày ra đĩa – ly, trộn topping, rửa chén — đều chạm đúng (lệch 1–19 mm, đều dưới ngưỡng ăn).',
+      'Bảng test của người làm game có thêm mục mở thẳng bước nấu trà đá để thử lại nhanh.',
+    ],
+  },
+  {
     v: 'Lượt 59',
     tag: 'Mỗi ngày chỉ nhận được vài ca bốc cá, vài ca chạy bàn; vác bao tăng lên 20 bao/ngày, và bảng việc làm liệt kê đủ mọi việc kèm số còn lại thật',
     items: [
@@ -103,20 +114,4 @@ export const CHANGELOG: LogEntry[] = [
       'Bảng test của người làm game có thêm mục đọc thanh chạy hiện tại, so ba mức khoẻ / máu 45 / máu 20, và hai nút đặt sẵn chỉ số để thử.',
     ],
   },
-  {
-    v: 'Lượt 52',
-    tag: 'Ông Bảy dưới gầm cầu gợi ý theo đúng tình cảnh của bạn, bấm một nút là ghim đường đi',
-    items: [
-      'Hỏi Ông Bảy không còn ra mấy câu thuộc lòng: ông nhìn máu, cái bụng, túi tiền, giờ trong ngày và cái quầy của bạn mà nói.',
-      'Sắp ngất thì ông chỉ vô Bệnh viện Phước An, kèm giá khám 20.000₫ và phòng hồi sức 5.000₫/giờ.',
-      'Đói thì chỉ Quán cơm Bà Tư; quán đóng cửa rồi thì chỉ MiniMart 24h hoặc Tạp hoá Cô Ba — chỗ nào còn mở mới chỉ.',
-      'Hết tiền thì ông giục đúng cái việc đang mở ở giờ đó: sáng ra bến bốc hàng, trưa ghé quán Bà Tư xin rửa chén, khuya thì ra Bảng việc làm.',
-      'Đang bán mà món chính hết nguyên liệu: ông nói thiếu món gì và sạp nào đang mở, bán món đó.',
-      'Quầy vắng khách: ông nói giờ nào đông nhất ở đúng khu bạn đang đặt quầy, ngồi giữ tới đó.',
-      'Nợ Hùng Sẹo còn hai ngày là ông cảnh báo, kèm số tiền và số ngày còn lại; đêm thì dặn sáng 9 giờ mới gặp được nó.',
-      'Trời sắp mưa mà chưa có áo mưa thì ông nhắc mua; khuya thì ông đuổi về đúng căn mình đang thuê mà ngủ.',
-      'Câu nào cũng ghi cách đây bao nhiêu mét, và có nút "Chỉ con đường tới…" là cắm cột sáng vàng chỉ đường như trên Bản đồ.',
-      'Ghé liền ba lần thì ông nói ba câu khác nhau, không lải nhải một câu.',
-      'Bảng test của người làm game (bấm 7 lần chữ "Cài đặt") nay hỏi mã 4 số trước khi mở, người chơi lỡ tay không mở nhầm nữa.',
-    ],
-  },];
+];

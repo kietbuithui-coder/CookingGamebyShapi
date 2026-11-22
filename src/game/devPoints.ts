@@ -19,7 +19,7 @@ import { INGS } from '../data/ingredients';
 import { money } from '../core/util';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Mỗi ngày chỉ nhận 2 ca bốc cá và 3 ca chạy bàn; vác bao tăng lên 20 bao/ngày, và bảng việc làm liệt kê đủ mọi việc kèm số còn lại thật';
+export const DEV_BUILD_TAG = 'Trần việc làm mỗi ngày + bảng việc làm đọc số thật; sửa lỗi chạm chén không vào được nồi ở mọi món nấu/ninh/luộc/pha'
 
 /**
  * MÃ PIN CỦA MENU ẨN. Bấm 7 lần chữ "Cài đặt" chỉ mở bàn phím số; nhập đúng mã này mới thấy menu test.
@@ -214,6 +214,20 @@ export function getDevSections(): DevSection[] {
             ctx.acts.job = { kind: 'dock', carrying: true };
             ctx.acts.dockDrop();
             toast(`Sổ ngày: ${full}/${R.DOCK_SACKS_DAY} bao sau bao cuối; thử vác lố → vẫn ${g.wd.sacks}/${R.DOCK_SACKS_DAY} (không lên ${R.DOCK_SACKS_DAY + 1}).`, g.wd.sacks <= R.DOCK_SACKS_DAY ? 'good' : 'bad', 'box', true);
+          },
+        },
+        {
+          id: 't59_noi',
+          label: 'Mở thẳng bước “Cho nguyên liệu” của nồi (trà đá)',
+          sub: 'Chạm chén “Trà khô” phải bay vào nồi — đây là lỗi người chơi báo ở lượt 59b',
+          tone: 'green',
+          closePanel: true,
+          run: () => {
+            const g = ctx.g;
+            g.stall.preps = g.stall.preps.filter((p) => p.rid !== 'tra_da');
+            addStack(g.stall.store, { id: 'tra', n: 4, fresh: 100, q: 1, cost: R.unitCost(g, 'tra') });
+            if (!ctx.cook.prep(RECIPES.tra_da)) toast('Không mở được bước nấu — xem dòng lỗi trên màn hình.', 'warn');
+            else toast('Chạm chén “Trà khô” trên bàn để cho vào nồi.', 'info', 'dish', true);
           },
         },
         {

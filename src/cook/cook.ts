@@ -16,6 +16,18 @@ import { CutGame, FryGame, GrillGame, BoilGame, AssembleGame, TronGame, WashGame
 export interface Mini {
   /** local y của mặt phẳng nhận thao tác tay */
   planeH: number;
+  /**
+   * Các độ cao KHÁC mà tay có thể chạm tới trong cùng ván, tính bằng mét trên bàn bếp.
+   * `Cook.local()` cắt tia ở từng độ cao trong `planeH` + danh sách này, chọn điểm gần tay nhất trên màn hình.
+   *
+   * Vì sao cần: tia chạm chỉ cắt ở MỘT mặt phẳng, nên nếu mặt phẳng đó cao hơn nơi đồ vật nằm thì điểm rơi bị kéo
+   * lệch về phía người nấu. Lượt 59 đo được ở nồi nấu: `planeH` = mặt nước (0,355 m) mà chén nguyên liệu nằm trên
+   * mặt bàn (~0,03 m) ⇒ chạm đúng chén “Trà khô” lại ra toạ độ lệch 0,208 m, gấp đôi bán kính ăn 0,11 m, nên
+   * **không món nào nấu/ninh/luộc/pha cho được nguyên liệu vào nồi**. Nay mỗi lớp khai thêm độ cao của đồ vật.
+   */
+  planes?: number[];
+  /** Chọn điểm chạm trong các ứng viên cắt ở từng độ cao (`{ h, p }`, `planeH` luôn đứng đầu). */
+  pickPoint?(list: { h: number; p: THREE.Vector3 }[]): THREE.Vector3;
   /** Khung hình cần thấy: [rộng, cao (đã chiếu lên màn hình), tâm z] tính bằng mét trên bàn bếp. */
   frame?: [number, number, number];
   start(): void; update(dt: number): number | null;   // trả về điểm 0–1 khi xong
@@ -162,10 +174,22 @@ export class Cook implements PtrHandler {
     for (const c of this.stage.children.slice()) { this.stage.remove(c); c.traverse((o) => { const m = o as THREE.Mesh; if (m.geometry && !Object.values(GEO).includes(m.geometry as any) && !m.userData.shared) m.geometry.dispose(); }); }
     for (const p of this.puffs) { p.life = 0; p.s.visible = false; }
   }
+  /**
+   * Đổi một điểm chạm trên màn hình thành toạ độ trên bàn bếp.
+   * Cắt tia ở MỌI độ cao mà lớp game khai (`planeH` + `planes`), rồi để lớp đó tự chọn
+   * (`pickPoint`) — mặc định lấy mặt phẳng chính như cũ.
+   */
   private local(sx: number, sy: number): THREE.Vector3 | null {
+    if (!this.mini) return null;
     this.ndc.set((sx / window.innerWidth) * 2 - 1, -(sy / window.innerHeight) * 2 + 1); this.ray.setFromCamera(this.ndc, ctx.camera);
-    const o = this.ray.ray.origin, d = this.ray.ray.direction, py = this.st.y + (this.mini?.planeH ?? 0), t = (py - o.y) / d.y; if (!(t > 0)) return null;
-    return this.group.worldToLocal(this.v.copy(o).addScaledVector(d, t)).clone();
+    const o = this.ray.ray.origin, d = this.ray.ray.direction;
+    const list: { h: number; p: THREE.Vector3 }[] = [];
+    for (const h of [this.mini.planeH, ...(this.mini.planes ?? [])]) {
+      const py = this.st.y + h, t = (py - o.y) / d.y; if (!(t > 0)) continue;
+      list.push({ h, p: this.group.worldToLocal(this.v.copy(o).addScaledVector(d, t)).clone() });
+    }
+    if (!list.length) return null;
+    return this.mini.pickPoint?.(list) ?? list[0].p;
   }
   down(x: number, y: number) { if (!this.mini || this.gradeT > 0) return; const p = this.local(x, y); if (p) this.mini.down?.(p, x, y); }
   move(x: number, y: number) { if (!this.mini || this.gradeT > 0) return; const p = this.local(x, y); if (p) this.mini.move?.(p, x, y); }
