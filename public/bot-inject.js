@@ -985,24 +985,53 @@ function doEarn() {
   if (hasJunk() && junkN() >= 10 && !(B.giveUpUntil && B.tick < B.giveUpUntil)) {
     const scrap1 = LOC.scrap || {x:-60, z:79};
     const scrap2 = LOC.scrap2 || {x:79, z:-7};
+    
+    // Check if dealers are blacklisted
+    if (!B.blacklistDealer) B.blacklistDealer = [];
+    const isBlacklisted = (dealer) => B.blacklistDealer.some(bl => D(bl.x, bl.z, dealer.x, dealer.z) < 10 && B.tick - bl.tick < 1800);
+    
     const d1 = D(p.x, p.z, scrap1.x, scrap1.z);
     const d2 = D(p.x, p.z, scrap2.x, scrap2.z);
-    const dealer = d1 < d2 ? scrap1 : scrap2;
-    const sd = Math.min(d1, d2);
-    B.target = dealer; B.action = `🗑️ Đi bán ve chai (${sd.toFixed(0)}m, junk=${junkN()})...`;
-    goTo(dealer.x, dealer.z, 3);
-    if (sd < 4) {
-      stop();
-      const tryAngle = (B.tick % 4) * Math.PI * 0.5;
-      const faceX = dealer.x + Math.sin(tryAngle) * 2;
-      const faceZ = dealer.z + Math.cos(tryAngle) * 2;
-      p.face(faceX, faceZ);
-      if (interact()) {
-        lg('🗑️ Nói chuyện vựa ve chai!','good');
-        B.dlgWait = 10;
-      }
+    
+    // Choose dealer: prefer closer one that's not blacklisted
+    let dealer, sd;
+    if (isBlacklisted(scrap1) && !isBlacklisted(scrap2)) {
+      dealer = scrap2; sd = d2;
+    } else if (isBlacklisted(scrap2) && !isBlacklisted(scrap1)) {
+      dealer = scrap1; sd = d1;
+    } else if (!isBlacklisted(scrap1) && !isBlacklisted(scrap2)) {
+      dealer = d1 < d2 ? scrap1 : scrap2;
+      sd = Math.min(d1, d2);
+    } else {
+      // Both blacklisted, skip selling
+      dealer = null;
     }
-    return;
+    
+    if (dealer) {
+      B.target = dealer; B.action = `🗑️ Đi bán ve chai (${sd.toFixed(0)}m, junk=${junkN()})...`;
+      goTo(dealer.x, dealer.z, 3);
+      
+      // If stuck too many times while going to dealer, blacklist it
+      if (B.stuckEscapes > 20 && B.target === dealer) {
+        lg(`⚠️ Không thể tới dealer → blacklist`, 'warn');
+        B.blacklistDealer.push({x: dealer.x, z: dealer.z, tick: B.tick});
+        B.stuckEscapes = 0;
+        B.target = null;
+      }
+      
+      if (sd < 4) {
+        stop();
+        const tryAngle = (B.tick % 4) * Math.PI * 0.5;
+        const faceX = dealer.x + Math.sin(tryAngle) * 2;
+        const faceZ = dealer.z + Math.cos(tryAngle) * 2;
+        p.face(faceX, faceZ);
+        if (interact()) {
+          lg('🗑️ Nói chuyện vựa ve chai!','good');
+          B.dlgWait = 10;
+        }
+      }
+      return;
+    }
   }
 
   // ─── WORK PRIORITY: Go to dock/eatery when it's work hours (only if not hungry/thirsty) ───
