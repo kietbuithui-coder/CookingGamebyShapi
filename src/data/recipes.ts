@@ -17,9 +17,15 @@ export interface GrillStep { t: 'grill'; ing: string; secs: number; look?: 'skew
 export interface BoilStep { t: 'boil'; adds: string[]; secs: number; skim: number; mode: 'ninh' | 'luộc' | 'pha' | 'cơm'; label?: string; col: number; }
 export interface Layer { ing: string; look: Look; col?: number; name?: string; }
 export interface AssembleStep { t: 'assemble'; layers: Layer[]; }
-export type Step = CutStep | FryStep | GrillStep | BoilStep | AssembleStep;
-export const STEP_NAME: Record<Step['t'], string> = { cut: 'Cắt thái', fry: 'Xào chiên', grill: 'Nướng', boil: 'Nấu', assemble: 'Trình bày' };
-export const STEP_TOOLS: Record<Step['t'], string[]> = { cut: ['daothot'], fry: ['chao', 'bep'], grill: ['vi', 'bep'], boil: ['noi', 'bep'], assemble: [] };
+/**
+ * Bước TRỘN (lượt 58): bày topping bằng tay — 5 topping rải ở vị trí NGẪU NHIÊN mỗi ván, màn hình gọi tên
+ * từng thứ, người chơi chạm đúng cái đang được gọi. Khác `assemble` ở chỗ không có thứ tự cố định trên phiếu:
+ * thứ tự do máy gọi, còn vị trí thì đổi mỗi lần nấu nên phải nhìn chứ không học thuộc được.
+ */
+export interface TronStep { t: 'tron'; layers: Layer[]; }
+export type Step = CutStep | FryStep | GrillStep | BoilStep | AssembleStep | TronStep;
+export const STEP_NAME: Record<Step['t'], string> = { cut: 'Cắt thái', fry: 'Xào chiên', grill: 'Nướng', boil: 'Nấu', assemble: 'Trình bày', tron: 'Trộn topping' };
+export const STEP_TOOLS: Record<Step['t'], string[]> = { cut: ['daothot'], fry: ['chao', 'bep'], grill: ['vi', 'bep'], boil: ['noi', 'bep'], assemble: [], tron: [] };
 
 export interface RecipeDef {
   id: string; name: string; short: string; cat: RecipeCat; vessel: Vessel;
@@ -45,6 +51,7 @@ const grill = (ing: string, secs = 9, look: GrillStep['look'] = 'whole', label?:
 const boil = (adds: string[], secs: number, mode: BoilStep['mode'], col: number, skim = 0, label?: string): BoilStep => ({ t: 'boil', adds, secs, skim, mode, col, label });
 const L = (ing: string, look: Look, col?: number, name?: string): Layer => ({ ing, look, col, name });
 const asm = (...layers: Layer[]): AssembleStep => ({ t: 'assemble', layers });
+const tron = (...layers: Layer[]): TronStep => ({ t: 'tron', layers });
 const BROTH = 0xd9a85a, BROTH_RED = 0xd9603a, TEA = 0xb86a2a, COFFEE = 0x4a2a16, RICE = 0xfaf7f0;
 
 export const RECIPE_LIST: RecipeDef[] = [
@@ -52,7 +59,7 @@ export const RECIPE_LIST: RecipeDef[] = [
   { id: 'banh_trang_tron', name: 'Bánh tráng trộn', short: 'B.tráng trộn', cat: 'anvat', vessel: 'box', ref: 15000, elastic: 1.5, batch: 8, serve: 1, hold: 600, pack: 800,
     ings: { banhtrang: 0.15, dauphong: 0.1, rauthom: 0.1, tuongot: 0.03, chanh: 0.25 }, fin: ['dauphong', 'tuongot', 'chanh'],
     prep: [cut('banhtrang', 'sợi', 7), cut('rauthom', 'khúc', 5)],
-    finish: [asm(L('banhtrang', 'nest', 0xf0dfb0), L('tuongot', 'drizzle'), L('dauphong', 'sprinkle'), L('rauthom', 'greens'), L('chanh', 'drizzle', 0xd9ec8a))],
+    finish: [tron(L('banhtrang', 'nest', 0xf0dfb0), L('tuongot', 'drizzle'), L('dauphong', 'sprinkle'), L('rauthom', 'greens'), L('chanh', 'drizzle', 0xd9ec8a))],
     hot: 0, meal: [0.2, 0.6, 1, 1], fill: 22, desc: 'Món ăn vặt học trò, chỉ cần dao thớt.' },
   { id: 'bap_nuong', name: 'Bắp nướng mỡ hành', short: 'Bắp nướng', cat: 'nuong', vessel: 'paper', ref: 15000, elastic: 1.3, batch: 8, serve: 3, hold: 500, pack: 300,
     ings: { bap: 1, hanhla: 0.12, dauan: 0.01, muoi: 0.01 }, fin: ['bap', 'dauan', 'muoi'],
@@ -325,6 +332,6 @@ export function toolsFor(r: RecipeDef): string[] {
 }
 /** Số lần dùng bếp (tốn nhiên liệu) cho mỗi phần ăn. */
 export function fuelPerPortion(r: RecipeDef): number {
-  const heat = (st: Step) => (st.t === 'cut' || st.t === 'assemble' ? 0 : 1);
+  const heat = (st: Step) => (st.t === 'cut' || st.t === 'assemble' || st.t === 'tron' ? 0 : 1);
   return r.prep.reduce((a, s) => a + heat(s), 0) / Math.max(1, r.batch) + r.finish.reduce((a, s) => a + heat(s), 0) / Math.max(1, r.serve);
 }

@@ -1003,6 +1003,44 @@ vì một khung hình dài 0,1 s ở 9 m/s là 0,9 m — so sai sẽ lọt rào 
 Ảnh `tools/probe/out/f57_rao_cam_duong.png`: ba tấm rào đỏ–trắng chắn ngang đường trước chợ; `tests/camduong57.test.ts`
 (8 bài) canh toạ độ rào ↔ luật, chiều quay đầu, mô phỏng 4.000 bước không lọt rào, và không sinh xe trong đoạn cấm.
 
+### 4.41 Mini game bánh tráng trộn — 5 topping nằm ngẫu nhiên mỗi ván (lượt 58)
+
+Người chơi: *“làm mini game của bánh tráng trộn 5 tp random vị trí”*. Trước lượt này bánh tráng trộn
+(`RECIPES.banh_trang_tron`) dùng chung `AssembleGame` với 59 món còn lại: 5 chén nguyên liệu xếp vòng cung ở
+**vị trí cố định** (chỉ đổi thứ tự giữa các chén theo `hashStr(id)`) và người chơi bày lớp theo phiếu in sẵn —
+học thuộc một lần là bấm được mãi, còn “vị trí” thì không bao giờ đổi.
+
+Bước hoàn thiện của món này đổi sang **bước `tron`** (`TronStep` trong `data/recipes.ts`), các món khác giữ nguyên
+`assemble`. Luật chơi:
+
+| Thành phần | Việc |
+|---|---|
+| `cook/tron.ts` | phần **thuần** (không Three.js, không DOM) nên test được: `tronSpots`, `tronCalls`, `tronTapAt`, `tronScore`, `tronLimit`, `TRON_*` |
+| `TronGame` (`cook/games.ts`) | 5 đĩa giấy trên bàn (hình nguyên liệu thật: xấp bánh tráng, chai tương ớt, gói đậu phộng, bó rau thơm, quả chanh), hộp giấy có thành ở phía trước, vòng vàng nhấp nháy đánh dấu đĩa **đang được gọi** |
+| Luật chơi | mỗi ván **2 vòng × 5 lượt**; mỗi lượt có đồng hồ riêng (`tronLimit(k) = max(1,1; 3,1 − 0,16k)`); chạm nhầm / chạm ra ngoài / để hết giờ đều tính một lần `miss` |
+| Điểm | `tronScore = clamp((1 − 1,5·miss/tổng) · phạt-chậm · 0,97, 0,05 … 1)` — chạm đúng hết và nhanh thì ≈ 0,97, chậm quá hoặc sai nhiều thì tụt |
+
+**Vị trí rải (`tronSpots`)** — đây là phần người chơi yêu cầu phải ngẫu nhiên:
+
+- 5 chỗ nằm trên vòng elip `x ∈ ±0,36 m`, `z = −0,06 ± 0,20 m` (bàn nấu rộng ~0,84 × 0,70 m, hộp bánh ở `z = 0,32`),
+  mỗi chỗ rơi vào **một khoang riêng** của vòng tròn (chia đều 5 khoang, lệch ngẫu nhiên ≤ ±0,18 khoang).
+- Vòng lặp đẩy xa 40 lượt bảo đảm **hai chỗ bất kỳ cách nhau > `TRON_GAP` = 0,15 m > 2 · bán kính ăn tay
+  `TRON_HIT` = 0,105 m**; nếu không, ngón tay chạm chỗ này lại ra chỗ kia.
+- Mỗi ván **lấy hạt giống mới** (`new RNG(Math.random() * 2³¹)`), nên nấu lại là 5 đĩa đổi chỗ: đo trên 40 hạt giống
+  ⇒ **40 cách xếp khác nhau**, và cùng hạt giống thì tái lập được (để probe chụp lại đúng một ván).
+- Thứ tự gọi (`tronCalls`) cũng trộn đều mỗi vòng, và **không gọi trùng tên hai lần liền** (kể cả ở chỗ nối hai vòng —
+  nghe như máy bị kẹt).
+
+**Thẻ góc màn hình**: `UI.cookCard(items, title)` nhận tiêu đề; màn trộn hiện *“Máy đang gọi (vòng 1/2)”* thay vì
+*“Thứ tự cho vào”* (bày theo phiếu không còn đúng nghĩa), hết ván đổi thành *“Đã trộn đủ 5 thứ”*.
+
+**Ăn khớp phần còn lại:** `tron` là bước **không dùng lửa** (`fuelPerPortion` = 0 và cả 3 chỗ lọc `!== 'assemble'`
+trong `cook.ts` thêm `!== 'tron'`), không cần dụng cụ (`STEP_TOOLS.tron = []`, món vẫn chỉ cần dao thớt), và biểu tượng
+món trong thực đơn (`dishIcon`) đọc màu topping từ bước `tron` như đọc bước `assemble`.
+
+**Kiểm:** `tests/tron58.test.ts` (10 bài) · probe `tools/probe/steps/tron58.mjs` (2 ảnh `tron58_ban.png`,
+`tron58_thanh_pham.png`) · menu test 3 mục `t58_*` · console sạch.
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
@@ -1018,6 +1056,7 @@ vì một khung hình dài 0,1 s ở 9 m/s là 0,9 m — so sai sẽ lọt rào 
 
 ## 7. Kiểm thử
 
+- `tests/tron58.test.ts` — lượt 58: bánh tráng trộn có mini game riêng — 5 topping rải ngẫu nhiên mỗi ván, thứ tự do máy gọi, chấm điểm theo số lần chạm nhầm/chậm.
 - `tests/camduong57.test.ts` — lượt 57: rào cấm đường chặn cả xe cộ (quay đầu ở vạch, không sinh xe trong đoạn cấm).
 - `tests/mat56.test.ts` — lượt 56: Bà Chín Ve Chai có nước da rám nắng riêng, không ai khác bị đổi da theo.
 - `tests/nghi55.test.ts` — lượt 55: tên sạp Dì Sáu + hai món sữa, hộp thân quầy đủ mọi bậc, khách vòng đầu quầy, `bedSpot`/`wake` chống kẹt giường, chi tiết buồng tắm.
@@ -1066,7 +1105,7 @@ Còn lại:
 - Đo trên điện thoại thật: người chơi báo máy của họ chạy trên 50 khung hình/giây, nhưng chưa rõ đó là máy nào. Nếu máy yếu chạy chậm: gộp các khối cơ thể NPC thành một lưới, dùng instancing cho đồ vật lặp lại, bỏ sương mù theo điểm ảnh ở mức thấp, thêm LOD cho khu ở xa.
 - Nghe thử và cân chỉnh âm thanh.
 - Cân bằng nhịp độ qua chơi thử: tốc độ kiếm vốn ngày đầu, lượng khách lúc uy tín thấp, độ khó các mini-game.
-- Kỹ thuật: tách gói JavaScript (một tệp 1.335 kB, nén còn 420 kB — đo trên bản build 2026-11-21) và nội thất cửa hàng chi tiết hơn. Chơi ngoại tuyến đã xong (lượt 40: service worker `public/sw.js` + nút trong Cài đặt).
+- Kỹ thuật: tách gói JavaScript (một tệp 1.369 kB, nén còn 432 kB — đo trên bản build 2026-11-22) và nội thất cửa hàng chi tiết hơn. Chơi ngoại tuyến đã xong (lượt 40: service worker `public/sw.js` + nút trong Cài đặt).
 
 Lỗi nhỏ đã biết: ở màn dọc HUD chật (game khuyên xoay ngang). Dòng "Dụng cụ"/"Sơ chế" trong Sổ tay đã rà ngày 2026-11-21 (`src/ui/panels.ts:273`) — không còn dấu "·" thừa.
 

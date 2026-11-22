@@ -11,7 +11,7 @@ import { clamp } from '../core/util';
 import { softDot } from '../gfx/tex';
 import type { PtrHandler } from '../game/input';
 import type { Station } from '../game/stall';
-import { CutGame, FryGame, GrillGame, BoilGame, AssembleGame, WashGame } from './games';
+import { CutGame, FryGame, GrillGame, BoilGame, AssembleGame, TronGame, WashGame } from './games';
 
 export interface Mini {
   /** local y của mặt phẳng nhận thao tác tay */
@@ -94,6 +94,8 @@ export class Cook implements PtrHandler {
     this.begin(r, 'finish', r.finish, n, done ?? null); return true;
   }
   /** Việc rửa chén ở quán cơm (dùng chung cơ chế bàn thao tác). */
+  /** Mini game đang chạy (chỉ đọc, để bảng test đọc vị trí topping của ván đang mở). */
+  get current(): Mini | null { return this.mini; }
   wash(st: Station, plates: number, done: (score: number) => void) {
     this.r = RECIPES.tra_da; this.phase = 'job'; this.steps = []; this.idx = 0; this.scores = []; this.jobDone = done; this.enter(st);
     ctx.ui.cookShow('Rửa chén thuê — Quán cơm Bà Tư', ['Rửa chén'], 0); this.setMini(new WashGame(this, plates));
@@ -108,7 +110,7 @@ export class Cook implements PtrHandler {
   /** Đốt nhiên liệu cho các bước dùng lửa — chỉ gọi sau khi đã chắc đủ nguyên liệu. */
   private fuel(steps: Step[]): boolean {
     const g = ctx.g;
-    const heats = steps.filter((x) => x.t !== 'cut' && x.t !== 'assemble').length;
+    const heats = steps.filter((x) => x.t !== 'cut' && x.t !== 'assemble' && x.t !== 'tron').length;
     if (heats) {
       if (wx(g).id === 'bao') { toast('Bão thế này không nhóm bếp nổi!', 'bad', 'storm'); return false; }
       if (!useFuel(g, heats)) { toast(stove(g) === 'bepgas' ? 'Hết gas! Mua bình gas mini ở tạp hoá Cô Ba.' : 'Hết than! Mua than ở tạp hoá Cô Ba hoặc vựa đầu mối.', 'warn', 'fire'); return false; }
@@ -151,6 +153,8 @@ export class Cook implements PtrHandler {
       case 'grill': this.setMini(new GrillGame(this, s, r, this.portions)); break;
       case 'boil': this.setMini(new BoilGame(this, s)); break;
       case 'assemble': this.setMini(new AssembleGame(this, s, r)); break;
+      // Bánh tráng trộn: bày topping kiểu "máy gọi tên — chạm đúng cái đang gọi", vị trí rải ngẫu nhiên mỗi ván.
+      case 'tron': this.setMini(new TronGame(this, s, r)); break;
     }
     void g;
   }
@@ -187,7 +191,7 @@ export class Cook implements PtrHandler {
     if (this.idx < this.steps.length) { this.next(); return; }
     // tổng kết: trừ nguyên liệu, tính chất lượng, cất thành phẩm
     const g = ctx.g, r = this.r, n = this.portions, score = this.scores.reduce((a, b) => a + b, 0) / Math.max(1, this.scores.length), now = absMin(g);
-    const fuel = this.steps.filter((x) => x.t !== 'cut' && x.t !== 'assemble').length * fuelUnitCost(g);
+    const fuel = this.steps.filter((x) => x.t !== 'cut' && x.t !== 'assemble' && x.t !== 'tron').length * fuelUnitCost(g);
     if (this.phase === 'prep') {
       const c = consumePrep(g, r, n), q = clamp(score * (0.35 + 0.65 * c.q), 0.02, 1);
       g.stall.preps.push({ rid: r.id, n, q, at: now, cost: (c.cost + fuel) / n });
@@ -199,7 +203,7 @@ export class Cook implements PtrHandler {
       if (n > 1) toast(`Ra lò ${n} phần ${r.name}. Phần dư để sẵn trên khay.`, 'info', 'dish');
     }
     for (const st of this.steps) for (const t of st.t === 'cut' ? ['daothot'] : st.t === 'fry' ? ['chao'] : st.t === 'grill' ? ['vi'] : st.t === 'boil' ? ['noi'] : []) this.wear(t);
-    if (this.steps.some((x) => x.t !== 'cut' && x.t !== 'assemble')) this.wear(stove(g)!);
+    if (this.steps.some((x) => x.t !== 'cut' && x.t !== 'assemble' && x.t !== 'tron')) this.wear(stove(g)!);
     g.stall.dirt = clamp(g.stall.dirt + 1.5 + (1 - score) * 2, 0, 100); g.st.hygiene = clamp(g.st.hygiene - 0.6, 0, STAT_MAX); addXp(g, score);
     void recipeCost;
     const d = this.done; this.exit(); d?.(); bus.emit('ui', 'cook');

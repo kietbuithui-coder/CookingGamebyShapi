@@ -1473,3 +1473,38 @@ trước lượt 57) → **570** mẫu lọt vào, xe ở `x = −27,8` chạy q
 
 **Bài học:** hai hệ (người đi bộ và xe) từng có hai bản đồ chặn đường riêng. Từ nay mọi thứ “chặn đường” khai ở
 `roads.ts` và cả hai bên cùng đọc một biến.
+
+---
+
+## Lượt 58 — mini game bánh tráng trộn: 5 topping nằm ngẫu nhiên mỗi ván ✅ đã xong
+
+Người chơi: *"làm mini game của bánh tráng trộn 5 tp random vị trí"*, chốt qua câu hỏi: kiểu chơi **“chạm đúng topping
+đang được gọi”** (phản xạ), và **thay** bước trình bày của riêng món này (không thêm bước mới).
+
+**Trước lượt này:** bánh tráng trộn dùng chung `AssembleGame` — 5 chén xếp vòng cung ở vị trí cố định, bày theo phiếu;
+vị trí không bao giờ đổi nên học thuộc một lần là xong.
+
+**Sửa:**
+- `cook/tron.ts` (mới, thuần, không Three.js/DOM): `tronSpots` chia vòng elip thành 5 khoang rồi rải ngẫu nhiên
+  (đẩy xa nhau tới khi mọi cặp cách > 0,15 m > 2 · bán kính ăn tay), `tronCalls` (2 vòng × 5, không gọi trùng hai lần
+  liền), `tronTapAt`, `tronLimit`, `tronScore`.
+- `cook/games.ts`: `TronGame implements Mini` — đĩa giấy + hình nguyên liệu thật, vòng vàng đánh dấu đĩa đang gọi, đĩa
+  chạm đúng bay vào hộp, hết một vòng thì đảo thau, xong ván thì bày 5 lớp vào hộp có thành (thành phẩm nhìn vẫn ra
+  bánh tráng trộn). **Mỗi ván lấy hạt giống mới** nên vị trí đổi.
+- `data/recipes.ts`: thêm `TronStep` (`t: 'tron'`), `STEP_NAME.tron = 'Trộn topping'`, `STEP_TOOLS.tron = []`,
+  `fuelPerPortion` coi `tron` là bước không dùng lửa; bánh tráng trộn đổi `finish` sang `tron(...)` với đúng 5 lớp cũ.
+- `cook/cook.ts`: `case 'tron'` → `TronGame`; ba chỗ lọc bước dùng lửa thêm `tron`; thêm getter `current` để bảng test
+  đọc được ván đang mở.
+- `ui/ui.ts`: `cookCard(items, title)` — màn trộn hiện “Máy đang gọi (vòng 1/2)”; `dishIcon` đọc màu topping từ `tron`.
+- `main.ts`: cửa hậu `?debug` thêm `__rec` (bảng công thức) để probe mở đúng món.
+- Test `tests/tron58.test.ts` (10 bài) + cập nhật `tests/devpoints.test.ts`, `tests/changelog.test.ts`.
+- Menu test thay bằng 3 mục `t58_*` (chuẩn bị quầy + sơ chế sẵn · vào thẳng mini game · đọc toạ độ 5 đĩa của ván đang mở).
+- Changelog thêm “Lượt 58”, bỏ bản cũ nhất (lượt 49) để giữ 8 bản.
+
+**Đo:** 60 hạt giống ⇒ vị trí luôn gọn trên bàn và mọi cặp cách > 0,105 m; 40 hạt giống ⇒ **40 cách xếp khác nhau**.
+Probe `tools/probe/steps/tron58.mjs`: 2 ván liền nhau cho 5 toạ độ khác hẳn; chạm sai → `miss 0 → 1`, `k` không tăng;
+để hết giờ → `miss 1 → 2`, tự sang lượt sau; bấm đúng hết 10 lượt → ra món, chất lượng **0,94** (ván 2, không sai) và
+**0,65** (ván 1, sai + trễ 2 lượt) — đúng ý “chạm nhầm thì mất điểm”.
+
+**Bài học:** phần “ngẫu nhiên” phải tách khỏi lớp vẽ thì mới đo được bằng máy — vị trí rải nằm trong `tron.ts` nên
+test khẳng định được “40 ván ⇒ 40 cách xếp”, còn nếu rải tay trong `TronGame` thì chỉ nhìn ảnh mà đoán.

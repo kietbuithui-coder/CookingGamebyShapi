@@ -14,6 +14,18 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 58',
+    tag: 'Bánh tráng trộn có mini game riêng: 5 topping nằm ở vị trí ngẫu nhiên mỗi ván, màn hình gọi tên thứ nào thì chạm đúng đĩa đó',
+    items: [
+      'Làm bánh tráng trộn không còn bày lớp theo thứ tự in sẵn trên phiếu: 5 topping (bánh tráng sợi, tương ớt, đậu phộng, rau thơm, chanh) được rải ra 5 cái đĩa quanh thau, và mỗi lần nấu chúng lại nằm ở chỗ khác — không học thuộc vị trí được.',
+      'Máy gọi tên từng thứ một (“Chạm đĩa Tương ớt!”), người chơi phải chạm đúng đĩa đang được gọi trước khi hết giờ; đĩa đang gọi có vòng sáng vàng nhấp nháy nên không phải đoán.',
+      'Mỗi ván gọi đủ 5 thứ hai vòng, vòng sau gấp hơn vòng trước; chạm nhầm hay chạm ra ngoài đĩa bị trừ điểm, để hết giờ cũng mất điểm, còn chạm đúng liên tục thì điểm cao.',
+      'Chạm đúng là đĩa bay vào hộp giấy; hết một vòng thì thau được đảo một lượt cho đều, và xong cả ván thì thành phẩm bày trong hộp nhìn vẫn ra bánh tráng trộn như trước.',
+      'Chỉ riêng món này đổi cách làm: các món khác vẫn trình bày theo phiếu như cũ, còn bước trộn không tốn than hay gas và không cần thêm dụng cụ ngoài dao thớt.',
+      'Bảng test của người làm game có mục chuẩn bị sẵn quầy bánh tráng trộn, mục vào thẳng mini game trộn, và mục đọc toạ độ 5 đĩa của ván đang mở để so hai ván liền nhau xem vị trí có đổi thật không.',
+    ],
+  },
+  {
     v: 'Lượt 57',
     tag: 'Rào “Cấm đường” chặn được cả xe cộ: xe tới vạch rào là quay đầu, không còn xuyên qua hai hàng rào',
     items: [
@@ -107,17 +119,6 @@ export const CHANGELOG: LogEntry[] = [
       'Bấm “Bỏ dở” giữa lúc nấu: lần đầu chỉ hỏi lại “Chắc chưa?”, lần hai mới bỏ mẻ — hết mất cả mẻ vì lỡ tay.',
       'Cài đặt có nút xoá bản lưu (bấm hai lần mới xoá) và mục “Cách điều khiển” ghi rõ phím cho máy tính lẫn điện thoại.',
       'Màn dọc: đã chọn “Cứ chơi dọc” thì lần sau mở game không bị lớp phủ che mất nút Chơi mới / Chơi tiếp nữa.',
-    ],
-  },
-  {
-    v: 'Lượt 49',
-    tag: 'Xe cộ chạy đúng đường, thêm 3 màu xe, còi xe hơi riêng',
-    items: [
-      'Xe không còn “mọc” từ chỗ không có đường nữa: hết cảnh xe hiện ra giữa bãi đất gầm cầu, trên bờ kênh hay ngoài rìa thành phố.',
-      'Xe chỉ xuất hiện sau lưng bạn hoặc ở rất xa phía trước, không còn đột ngột hiện ra ngay trước mặt.',
-      'Chạy hết mặt đường thì xe quay đầu ở giao lộ cuối, không phóng ra bãi đất.',
-      'Ba màu sơn mới cho xe hơi: đỏ đô, xanh rêu, vàng taxi — và xe đổi màu mỗi lần vào lại đường nên gặp đủ màu.',
-      'Còi xe hơi riêng từng loại: xe nhỏ “bíp bíp”, sedan “bìm bìm”, xe tải “bừm” trầm — nghe là biết xe gì đang tới.',
     ],
   },
 ];

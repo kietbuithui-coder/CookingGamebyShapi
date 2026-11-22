@@ -64,7 +64,7 @@ const iconCache = new Map<string, string>();
 export function dishIcon(r: RecipeDef): string {
   let u = iconCache.get(r.id); if (u) return u;
   const c = document.createElement('canvas'); c.width = c.height = 96; const g = c.getContext('2d')!, hex = (n: number) => '#' + n.toString(16).padStart(6, '0');
-  const layers = r.finish.find((s) => s.t === 'assemble') as any, cols: number[] = layers ? layers.layers.map((l: any) => l.col ?? INGS[l.ing]?.c ?? 0xd9a05a) : Object.keys(r.ings).slice(0, 3).map((k) => INGS[k].c);
+  const layers = r.finish.find((s) => s.t === 'assemble' || s.t === 'tron') as any, cols: number[] = layers ? layers.layers.map((l: any) => l.col ?? INGS[l.ing]?.c ?? 0xd9a05a) : Object.keys(r.ings).slice(0, 3).map((k) => INGS[k].c);
   const main = hex(cols[0] ?? 0xd9a05a), top = hex(cols[1] ?? cols[0] ?? 0x3fae5a), acc = hex(cols[2] ?? 0x3fae5a);
   g.lineWidth = 4; g.strokeStyle = '#3b2a1e'; g.lineJoin = 'round';
   const v = r.vessel;
@@ -347,7 +347,8 @@ export class UI {
   cookButtons(list: { id: string; t: string; hot?: boolean }[]) { this.E.cook.querySelector('.btns')!.innerHTML = list.map((b) => `<button class="btn${b.hot ? ' hot' : ''}" data-id="${b.id}">${esc(b.t)}</button>`).join(''); }
   cookSlider(v: number | null) { const s = this.E.cook.querySelector('.slider') as HTMLElement; s.classList.toggle('hide', v === null); if (v !== null) { this.sliderV = v; (s.firstElementChild as HTMLElement).style.bottom = v * 100 + '%'; } }
   cookLabels(list: { t: string; p: THREE.Vector3; cur?: boolean; done?: boolean }[]) { for (const a of this.labels) a.life = 0; this.labels = list.map((l) => this.att('lab', 'lab' + (l.cur ? ' cur' : '') + (l.done ? ' done' : ''), esc(l.t), undefined, { x: l.p.x, y: l.p.y, z: l.p.z }, 0, 1e9)); }
-  cookCard(items: { t: string; state: number }[] | null) { const c = this.E.cook.querySelector('.card') as HTMLElement; c.classList.toggle('hide', !items); if (items) c.innerHTML = '<b>Thứ tự cho vào</b>' + items.map((i, k) => `<div class="${i.state === 2 ? 'done' : i.state === 1 ? 'cur' : ''}">${k + 1}. ${esc(i.t)}</div>`).join(''); }
+  /** Thẻ bên góc bàn nấu. `title` để màn nào không bày theo thứ tự (vd. trộn topping) đổi được tiêu đề. */
+  cookCard(items: { t: string; state: number }[] | null, title = 'Thứ tự cho vào') { const c = this.E.cook.querySelector('.card') as HTMLElement; c.classList.toggle('hide', !items); if (items) c.innerHTML = `<b>${esc(title)}</b>` + items.map((i, k) => `<div class="${i.state === 2 ? 'done' : i.state === 1 ? 'cur' : ''}">${k + 1}. ${esc(i.t)}</div>`).join(''); }
   cookCustom(html: string | null): HTMLElement { const c = this.E.cook.querySelector('.custom') as HTMLElement; c.classList.toggle('hide', html === null); c.innerHTML = html ?? ''; return c; }
   cookGrade(score: number, text: string) { const g = this.E.grade; g.classList.remove('hide'); const k = Math.max(1, Math.round(score * 5)); g.innerHTML = `${esc(text)}<small>${starsHtml(k)}</small>`; this.gradeT = 1.1; g.style.animation = 'none'; void g.offsetWidth; g.style.animation = ''; }
   cookHide() { this.cookCustom(null); this.E.cook.classList.add('hide'); this.E.grade.classList.add('hide'); for (const a of this.labels) a.life = 0; this.labels = []; this.setHud(true); }

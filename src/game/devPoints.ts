@@ -3,7 +3,7 @@
 // chỉ giữ lại nhóm "Địa điểm — tele nhanh". Đừng để menu phình thành bãi rác test cũ.
 import { ctx, QUALITY, saveSettings } from './ctx';
 import * as R from '../sim/rules';
-import { RECIPES } from '../data/recipes';
+import { RECIPES, RECIPE_LIST } from '../data/recipes';
 import { SPOTS, CORR } from '../world/layout';
 import { HOUSING } from '../data/gear';
 import { toast } from '../core/bus';
@@ -19,7 +19,7 @@ import { INGS } from '../data/ingredients';
 import { money } from '../core/util';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Rào “Cấm đường” giờ chặn cả xe cộ: xe quay đầu ở vạch rào, không còn chạy xuyên qua hai hàng rào trước chợ';
+export const DEV_BUILD_TAG = 'Bánh tráng trộn có mini game riêng: 5 topping rải ở vị trí ngẫu nhiên mỗi ván, máy gọi tên thứ nào thì chạm đúng đĩa đó';
 
 /**
  * MÃ PIN CỦA MENU ẨN. Bấm 7 lần chữ "Cài đặt" chỉ mở bàn phím số; nhập đúng mã này mới thấy menu test.
@@ -133,52 +133,62 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — rào Cấm đường chặn được cả xe cộ (lượt 57)',
+      title: 'Mới nhất — bánh tráng trộn: 5 topping nằm ngẫu nhiên mỗi ván (lượt 58)',
       items: [
         {
-          id: 't57_cam_duong_bat',
-          label: 'Bật “Cấm đường” rồi đứng ngay trước rào xem xe',
-          sub: 'Bật sự kiện thật, tele ra đầu đoạn bị rào (tuyến dọc z tâm x = −29,5, hai vạch z = ±25) — xe phải quay đầu ở vạch, không xuyên rào',
+          id: 't58_tron_setup',
+          label: 'Chuẩn bị: quầy + nguyên liệu + sơ chế sẵn bánh tráng trộn',
+          sub: 'Dựng quầy ở cổng công viên, cho đủ 5 nguyên liệu và 8 phần đã sơ chế — bấm xong là nấu được ngay',
           tone: 'green',
           closePanel: true,
           run: () => {
-            const g = ctx.g;
-            R.startEvent(g, 'cam_duong');
-            const x = -29.5, z = 31;
-            tpTo(x, z, Math.PI, 'Đứng sau rào phía bắc — nhìn xuống đường xem xe có quay đầu không.');
+            const g = ctx.g, S = ctx.stall;
+            g.cash = Math.max(g.cash, 3000000);
+            for (const id of ['ganh', 'daothot']) if (!R.has(g, id)) R.buyGear(g, id);
+            for (const [id, n] of [['banhtrang', 12], ['dauphong', 8], ['rauthom', 8], ['tuongot', 8], ['chanh', 8]] as [string, number][])
+              addStack(g.stall.store, { id, n, fresh: 100, q: 1, cost: R.unitCost(g, id) });
+            const sp = SPOTS.find((x) => x.id === 'cv') ?? SPOTS[0];
+            if (g.stall.where !== 'placed' || g.stall.spot !== sp.id) S.placeAt(sp);
+            g.stall.cond = 100; g.stall.dirt = 0; g.min = 10 * 60;
+            // Quầy bậc 1 chỉ bày được 3 món: bật món bánh tráng trộn lên và tắt bớt món khác cho vừa chỗ.
+            for (const rd of RECIPE_LIST) if (g.rec[rd.id]) g.rec[rd.id].on = false;
+            g.rec.banh_trang_tron.known = true; g.rec.banh_trang_tron.on = true;
+            g.stall.preps = g.stall.preps.filter((p) => p.rid !== 'banh_trang_tron');
+            g.stall.preps.push({ rid: 'banh_trang_tron', n: g.stall.preps.reduce((a, p) => a + (p.rid === 'banh_trang_tron' ? p.n : 0), 0) + 8, q: 0.92, at: g.day * 1440 + g.min, cost: 2600 });
+            S.refresh();
+            toast('Đã chuẩn bị xong quầy bánh tráng trộn + 8 phần sơ chế — mở Thực đơn để làm món.', 'good', 'dish', true);
           },
         },
         {
-          id: 't57_cam_duong_do',
-          label: 'Đo lại: mấy xe đang nằm trong đoạn cấm?',
-          sub: 'Quét toàn bộ xe cộ, đếm số xe lọt vào đoạn giữa hai hàng rào — phải là 0',
-          tone: 'yellow',
+          id: 't58_tron_choi',
+          label: 'Vào thẳng mini game trộn topping (bỏ qua bước sơ chế)',
+          sub: 'Mở bàn nấu bánh tráng trộn: 5 topping rải ngẫu nhiên, máy gọi tên từng thứ — chạm đúng cái đang gọi',
+          tone: 'green',
           closePanel: true,
           run: () => {
-            const list = ctx.traffic.list;
-            const inBlock = list.filter((r) => r.axis === 1 && Math.abs(r.road + 29.5) < 0.5 && r.pos > -25 && r.pos < 25);
-            const rows = list.slice(0, 8).map((r) => {
-              const x = r.axis === 0 ? r.pos : r.road + r.lane, z = r.axis === 0 ? r.road + r.lane : r.pos;
-              return `· ${r.car ? 'ô tô' : r.moto ? 'xe máy' : 'xe đạp'} — (${x.toFixed(1)}; ${z.toFixed(1)})`;
-            });
-            ctx.ui.dialog({
-              who: 'Rào cấm đường',
-              text: `Đoạn bị rào: tuyến dọc z có tâm x = −29,5, từ z = −25 tới z = 25 (rào dựng ở đầu phố chợ).\n\n`
-                + `Xe đang nằm trong đoạn cấm: ${inBlock.length}.\n\n`
-                + (rows.length ? `Xe trên đường lúc này:\n${rows.join('\n')}` : 'Lúc này chưa có xe nào trên đường — đứng đợi một chút rồi bấm lại.'),
-              opts: [{ t: 'Đóng' }],
-            });
+            const g = ctx.g, S = ctx.stall;
+            if (g.stall.where !== 'placed') { toast('Đặt quầy xuống chỗ bán trước đã.', 'warn'); return; }
+            if (!g.stall.preps.some((p) => p.rid === 'banh_trang_tron'))
+              g.stall.preps.push({ rid: 'banh_trang_tron', n: 2, q: 0.92, at: g.day * 1440 + g.min, cost: 2600 });
+            for (const [id, n] of [['dauphong', 2], ['tuongot', 2], ['chanh', 2]] as [string, number][])
+              if (![g.stall.store, g.bag].some((l) => l.some((st) => st.id === id && st.n > 0)))
+                addStack(g.stall.store, { id, n, fresh: 100, q: 1, cost: R.unitCost(g, id) });
+            S.refresh();
+            ctx.cook.finish(RECIPES.banh_trang_tron);
           },
         },
         {
-          id: 't57_cam_duong_tat',
-          label: 'Tắt cấm đường (rào biến mất, xe chạy lại bình thường)',
-          sub: 'Kết thúc sự kiện đúng như khi hết giờ — rào ẩn đi và xe không bị bắt quay đầu nữa',
+          id: 't58_tron_do',
+          label: 'Đọc vị trí 5 topping của ván đang mở',
+          sub: 'In ra toạ độ từng đĩa + thứ tự máy gọi, để so hai ván liền nhau xem vị trí có đổi thật không',
           tone: 'yellow',
-          closePanel: true,
+          closePanel: false,
           run: () => {
-            R.endEvent(ctx.g, 'cam_duong');
-            toast('Đã dỡ rào — xe chạy lại bình thường, người đi bộ cũng không phải đi vòng.', 'info', 'flag');
+            const m = ctx.cook.current as unknown as { spots?: { x: number; z: number; li: number }[]; calls?: number[]; k?: number; miss?: number } | null;
+            if (!m || !m.spots) { toast('Chưa mở mini game trộn — bấm mục “Vào thẳng mini game” trước.', 'info'); return; }
+            const st = RECIPES.banh_trang_tron.finish[0] as { layers: { ing: string }[] };
+            const rows = m.spots.map((s) => `· ${INGS[st.layers[s.li].ing].name} — (${s.x.toFixed(3)}; ${s.z.toFixed(3)})`);
+            ctx.ui.dialog({ who: 'Ván trộn topping', text: `Toạ độ 5 đĩa trên bàn (mét):\n${rows.join('\n')}\n\nThứ tự gọi: ${(m.calls ?? []).map((c) => c + 1).join(' → ')}\nĐang ở lượt ${(m.k ?? 0) + 1}, chạm nhầm ${m.miss ?? 0} lần.`, opts: [{ t: 'Đóng' }] });
           },
         },
       ],
