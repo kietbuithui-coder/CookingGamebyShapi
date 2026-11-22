@@ -534,10 +534,10 @@ function update() {
     const esc = B.stuckEscapes || 0;
 
     // Reset bin attempts if not thirsty/hungry (new cycle)
-    if (thirst >= 55 && hunger >= 50) B.binAttempts = 0;
+    if (thirst >= 40 && hunger >= 40) B.binAttempts = 0;
 
-    // ─── DRINK: tap (always go, use waypoint path) → trash bins (if stuck) ───
-    if (thirst < 55) {
+    // ─── DRINK: tap (only when very thirsty) → trash bins (if stuck) ───
+    if (thirst < 40) {
       const tapD = D(p.x, p.z, LOC.tap.x, LOC.tap.z);
       // Try trash bins first if tap is far AND bins are close AND haven't tried too many times
       if (tapD > 50 && nearBin && nearBinD < 15 && (B.binAttempts || 0) < 3) {
