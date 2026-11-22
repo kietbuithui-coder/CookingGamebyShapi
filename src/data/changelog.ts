@@ -14,6 +14,17 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 62',
+    tag: 'Đá viên tan chậm gấp 3 lần, và chỗ hiển thị ghi “độ lạnh” thay vì “tươi/hỏng”',
+    items: [
+      'Đá viên lâu tan gấp 3 lần: để ngoài trời trước đây chỉ 3,4 giờ là tan sạch, nay dùng được khoảng 11 giờ; để trong thùng đá thì giữ được hơn 5 ngày (trước chưa tới 2 ngày).',
+      'Túi đá, kho quầy và ba lô không còn ghi “tươi …%” hay “hỏng” cho đá — vì đá tan chứ không ôi, ghi “hỏng” làm người chơi tưởng mua phải hàng ôi.',
+      'Nhãn mới: trên nửa thùng là “lạnh 82 %”, dưới nửa là “đá tan 40 %”, gần hết là “tan hết”.',
+      'Đêm qua mà đá tan hết, sáng ra có câu báo riêng “Đá trong thùng tan hết” thay vì gộp vào danh sách “đồ hỏng phải bỏ”.',
+      'App Quản lý cửa hàng và tin trên điện thoại cũng đọc đúng: đá không còn nằm trong mục “đồ sắp hỏng”, chỉ còn cảnh báo thay đá kẻo thịt cá hỏng theo.',
+    ],
+  },
+  {
     v: 'Lượt 61',
     tag: 'Menu test ẩn dựng sẵn bếp, nồi, than và đủ nguyên liệu cho cả trà đá lẫn trà chanh — chạm một lần là vào nồi',
     items: [
@@ -96,19 +107,5 @@ export const CHANGELOG: LogEntry[] = [
       'Phòng nghỉ và phòng trọ được kê thêm đồ cho ra dáng chỗ ở: tủ đầu giường có đèn ngủ và cuốn sách, quạt treo tường, ti vi nhỏ, rèm cửa, thảm chân giường, móc áo; bên trọ có thêm dây phơi đồ, quạt cây, ấm nước, lịch treo tường và chiếu trải giữa phòng.',
       'Bảng test của người làm game đổi sang việc của bản này: đọc bảng hàng sạp Dì Sáu, tele tới ba chỗ mới sửa, và dựng sẵn gánh trà đá ở Cổng Chợ để xem khách có vòng qua đầu quầy không.',
     ],
-  },
-  {
-    v: 'Lượt 54',
-    tag: 'Tiệm bánh Anh Bảo bán thêm năm loại bánh, và nước tăng lực Shapi hồi thẳng thanh chạy',
-    items: [
-      'Lò bánh mì Anh Bảo đổi thành Tiệm bánh Anh Bảo — giờ bán cả bánh ngọt, không chỉ bánh mì.',
-      'Quầy có thêm bánh mì que pa-tê, bánh tiêu, bánh bao nhân thịt, bánh su kem và bánh bông lan; cả sáu loại bày trên cùng một quầy giữa chợ.',
-      'Bánh càng đắt thì ăn càng no và càng vui: bánh mì que 5.000₫ no 8 vui 3, bánh bông lan 25.000₫ no 40 vui 13 — không có chuyện trả nhiều tiền mà bụng y như nhau.',
-      'Bánh mua về ăn liền trong Túi, không phải nấu; bánh su kem phải giữ lạnh, còn bánh bông lan để được gần hai ngày.',
-      'Nước tăng lực nhãn Shapi mới ra lò: 9.000₫/lon, bán ở MiniMart 24h (kệ đá cuối tiệm) và Tạp hoá Cô Ba (ô cuối quầy).',
-      'Uống một lon Shapi là thanh chạy hồi ngay 30 %, cạn pin mà còn lon trong túi thì chạy tiếp được — nhưng đừng uống khi thanh đã gần đầy, phí.',
-      'Kệ MiniMart và quầy tạp hoá được nới thêm ô để mỗi mặt hàng chỉ nằm đúng một chỗ, không còn cảnh lấy hàng ở ô trống.',
-      'Ba loại bánh mới được vẽ hình riêng: bánh mì que là ổ dài và mảnh hơn bánh mì, một đầu quấn giấy; bánh tiêu là đĩa dẹt phồng rắc mè; bánh su kem có vỏ nâu và núm kem trắng trên đầu — trước đây cả ba trông giống hệt nhau.',
-    ],
-  },
+  }
 ];

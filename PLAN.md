@@ -1588,3 +1588,21 @@ Yêu cầu: “bật sẵn cho nguyên liệu trà đá với trà chanh đượ
 bấm `t61_noi_chanh` ⇒ `tra_chanh`/`BoilGame`/`phase add`. Probe `steps/dev60.mjs` chạm thật + bấm chuột thật: chén bay vào nồi, `phase add → cook`,
 hiện *Quạt lửa* / *Lọc ra*. `errors: none`.
 
+## Lượt 62 — đá viên tan chậm 3 lần + hiển thị độ lạnh thay vì “hỏng” ✅ đã xong
+
+Người chơi: “×3 độ lâu tan của đá và để là độ lạnh thay vì hỏng”.
+
+**Sửa:**
+- `sim/state.ts`: `ICE_MELT_MUL = 3` — hệ số chia tốc độ mất tươi **riêng cho đá** trong `spoil()`; hàm mới
+  `freshLabel(st)` trả nhãn dùng chung (`lạnh 82%` / `đá tan 40%` / `tan hết`).
+- `sim/rules.ts`: `hoursLeft()` dùng cùng hệ số (lời nhắc khớp thực tế); `shopRows()` loại đá khỏi danh sách “sắp hỏng”;
+  câu báo qua đêm tách “đá tan hết” khỏi “đồ hỏng phải bỏ”.
+- `ui/panels.ts`, `sim/news.ts`: dùng `freshLabel` ở Túi đồ, Kho quầy, giá chợ, tin điện thoại.
+- Menu ẩn: `t60_da_lanh` (cho 3 lô đá 100 %/40 %/8 % để thấy đủ 3 kiểu nhãn), `t60_da_dem` (tua 8 tiếng).
+- Test mới `tests/da62.test.ts` (7 bài: hệ số 3, 1/3 tốc độ, còn đá sau 24 h trong thùng, `hoursLeft` khớp `spoil`,
+  nhãn đá không có chữ “tươi/hỏng”, nguyên liệu khác giữ nguyên nhãn, đá không nằm trong “sắp hỏng”).
+- Changelog “Lượt 62” (giữ 8 bản), `DEV_BUILD_TAG` mới, `DESIGN.md §4.45`.
+
+**Đo:** `tsc` sạch · **661/661 test (56 tệp)** · probe `steps/da62.mjs`: túi đá hiện “lạnh 100 % / đá tan 40 % / tan hết”;
+tua 8 tiếng ngoài trời: 79 % → 25 %, còn 10 viên (trước lượt này tan sạch sau 3,4 giờ). `errors: none`.
+

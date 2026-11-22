@@ -8,7 +8,7 @@ import { SPOTS, CORR } from '../world/layout';
 import { HOUSING } from '../data/gear';
 import { toast } from '../core/bus';
 import { downloadForOffline } from '../core/offline';
-import { addStack } from '../sim/state';
+import { addStack, spoil } from '../sim/state';
 import * as PUI from '../ui/phoneUI';
 import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
@@ -19,7 +19,7 @@ import { INGS } from '../data/ingredients';
 import { money } from '../core/util';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Menu ẩn dựng sẵn bếp + nồi + than cho trà đá và trà chanh (chạm chén là vào nồi)'
+export const DEV_BUILD_TAG = 'Đá viên tan chậm 3 lần và hiển thị theo độ lạnh thay vì “hỏng”; menu ẩn dựng sẵn bếp trà'
 
 /**
  * MÃ PIN CỦA MENU ẨN. Bấm 7 lần chữ "Cài đặt" chỉ mở bàn phím số; nhập đúng mã này mới thấy menu test.
@@ -154,7 +154,7 @@ function chuanBiNoi(rid: string): boolean {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — dựng sẵn bếp trà (lượt 60) + trần việc làm mỗi ngày (lượt 59)',
+      title: 'Mới nhất — đá tan chậm 3 lần + hiện độ lạnh (lượt 60) + bếp trà (lượt 60)',
       items: [
         {
           id: 't59_viec_bang',
@@ -235,6 +235,40 @@ export function getDevSections(): DevSection[] {
             ctx.acts.job = { kind: 'dock', carrying: true };
             ctx.acts.dockDrop();
             toast(`Sổ ngày: ${full}/${R.DOCK_SACKS_DAY} bao sau bao cuối; thử vác lố → vẫn ${g.wd.sacks}/${R.DOCK_SACKS_DAY} (không lên ${R.DOCK_SACKS_DAY + 1}).`, g.wd.sacks <= R.DOCK_SACKS_DAY ? 'good' : 'bad', 'box', true);
+          },
+        },
+        {
+          id: 't60_da_lanh',
+          label: 'Cho một bịch đá vào túi rồi xem nhãn “độ lạnh”',
+          sub: 'Đá không còn ghi “tươi/hỏng”: trên 50 % là “lạnh”, dưới 50 % là “đá tan …%”, dưới 10 % là “tan hết”',
+          tone: 'green',
+          closePanel: true,
+          run: () => {
+            const g = ctx.g;
+            if (!g.bag) g.bag = [];
+            addStack(g.bag, { id: 'da', n: 3, fresh: 100, q: 1, cost: R.unitCost(g, 'da') });
+            // Hai lô “già” để thấy ngay cả hai kiểu nhãn mà không phải chờ vài tiếng.
+            addStack(g.bag, { id: 'da', n: 2, fresh: 40, q: 1, cost: R.unitCost(g, 'da') });
+            addStack(g.bag, { id: 'da', n: 1, fresh: 8, q: 1, cost: R.unitCost(g, 'da') });
+            toast('Mở Túi đồ: đá ghi “lạnh 100 %”, “đá tan 40 %”, “tan hết” — không còn chữ “hỏng”. Đá tan chậm 3 lần.', 'good', 'dish', true);
+          },
+        },
+        {
+          id: 't60_da_dem',
+          label: 'Tua 8 tiếng để xem đá tan chậm 3 lần',
+          sub: 'Trước đây 4 tiếng ngoài trời là tan sạch; nay 8 tiếng vẫn còn hơn 1/3 thùng — so nhãn trước và sau',
+          tone: 'yellow',
+          closePanel: false,
+          run: () => {
+            const g = ctx.g;
+            if (!g.bag) g.bag = [];
+            addStack(g.bag, { id: 'da', n: 4, fresh: 100, q: 1, cost: R.unitCost(g, 'da') });
+            const trước = g.bag.filter((st) => st.id === 'da').reduce((a, st) => a + st.fresh * st.n, 0) / Math.max(1, g.bag.filter((st) => st.id === 'da').reduce((a, st) => a + st.n, 0));
+            for (let h = 0; h < 8; h++) spoil(g.bag, 1, 1, false);
+            const sau = g.bag.filter((st) => st.id === 'da');
+            const còn = sau.reduce((a, st) => a + st.n, 0);
+            const tb = sau.length ? sau.reduce((a, st) => a + st.fresh * st.n, 0) / Math.max(1, còn) : 0;
+            toast(`Đá sau 8 giờ ngoài trời: ${Math.round(trước)} % → ${Math.round(tb)} % (còn ${còn} viên). Trước lượt này là 0 % (tan sạch trong 3,4 giờ).`, còn > 0 ? 'good' : 'bad', 'box', true);
           },
         },
         {

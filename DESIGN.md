@@ -1166,6 +1166,37 @@ nút *Quạt lửa* / *Lọc ra* hiện ra. Ảnh `tools/probe/out/fix/dev61_da.
 **Bài học:** mục test nào mở thẳng một *bước* của bàn thao tác thì phải dựng đủ **tiền → cấp quầy → chỗ → dụng cụ → nhiên liệu → nguyên liệu**,
 theo đúng thứ tự mà `prep()` kiểm tra; thiếu một khâu là người chơi chỉ thấy một câu cảnh báo và tưởng lỗi cảm ứng vẫn còn.
 
+### 4.45 Đá tan chậm 3 lần và hiển thị “độ lạnh” (lượt 62)
+
+Người chơi: *“×3 độ lâu tan của đá và để là độ lạnh thay vì hỏng”* — hai việc tách nhau.
+
+**(1) Thời gian.** `Đá viên` là đồ uống hạn dùng 9 h (nạp thành 10,8 h) và được đánh dấu `cold` ⇒ bị nhân thêm 2,6 lần khi
+không có gì giữ lạnh: **3,4 giờ là tan sạch**, quá ngắn so với một bịch đá 5.000₫. Nay `ICE_MELT_MUL = 3` trong
+`sim/state.ts`, áp riêng cho `id === 'da'` bên trong `spoil()` và trong `hoursLeft()` (lời nhắc phải khớp tốc độ thật):
+
+| Nơi để | Trước | Sau |
+|---|---|---|
+| Ngoài trời / ba lô | tan sạch sau **3,4 giờ** | còn dùng được **~11 giờ** |
+| Thùng đá ở quầy (hệ số 0,22) | tan sạch sau **~1,8 ngày** | **~5,5 ngày** |
+
+Đo bằng probe `tools/probe/steps/da62.mjs` (menu ẩn → “Tua 8 tiếng”): 79 % → 25 %, còn 10 viên.
+
+**(2) Câu chữ.** Đá **tan**, không **ôi**; ghi “hỏng” làm người chơi tưởng mua phải hàng ôi. Thêm `freshLabel(st)` trong
+`sim/state.ts` trả `{ text, level }` dùng chung cho mọi chỗ hiển thị:
+
+| Độ tươi | Nhãn | Mức |
+|---|---|---|
+| ≥ 50 % | `lạnh 82%` | good / warn |
+| 10–49 % | `đá tan 40%` | bad |
+| < 10 % | `tan hết` | bad |
+
+Áp dụng ở: bảng Túi đồ + Kho quầy (`ui/panels.ts`), giá chợ, tin số 10 trên điện thoại (`sim/news.ts`), và câu báo qua đêm
+(`sim/rules.ts` — tách “đá trong thùng tan hết” khỏi danh sách “đồ hỏng phải bỏ”). `shopRows()` loại `da` khỏi
+`spoilKinds/spoilNames` để app Quản lý cửa hàng không báo “đồ sắp hỏng” cho đá.
+
+**Bài học:** “hỏng” và “tan” là hai chuyện khác nhau — chỉ dùng chung `fresh` 0–100 làm số liệu, còn câu chữ phải theo
+bản chất từng nguyên liệu; và mọi câu “còn mấy giờ” phải tính bằng đúng công thức của `spoil()`, nếu không lời nhắc sẽ sai.
+
 ## 7. Kiểm thử
 
 - `tests/nau59.test.ts` — lượt 60: tia chạm của bàn nấu ăn cắt ở nhiều độ cao (sửa lỗi không cho được nguyên liệu vào nồi).

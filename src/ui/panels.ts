@@ -10,7 +10,7 @@ import { GEAR, GEAR_LIST, HOUSING, LENDERS, JUNK, TIERS } from '../data/gear';
 import { SHOPS } from '../data/shops';
 import { REGULARS, FIXED } from '../data/people';
 import { WEATHER } from '../data/world';
-import { Game, Stack, LedgerDay, STAT_MAX, weightOf, moveStack, junkWeight, hourOf, purge, isSpoiled } from '../sim/state';
+import { Game, Stack, LedgerDay, STAT_MAX, weightOf, moveStack, junkWeight, hourOf, purge, isSpoiled, freshLabel } from '../sim/state';
 import * as R from '../sim/rules';
 /** Nhãn ca làm — dùng chung cho bảng Quầy. */
 const SHIFT_LABEL: Record<string, string> = { sang: 'Ca sáng 5–14h', chieu: 'Ca chiều 14–22h', full: 'Cả ngày 5–22h' };
@@ -27,7 +27,8 @@ import { BX, CORR, SPOTS, LOTS, lotPoint, DISTRICT, MAP } from '../world/layout'
 let tab = '';
 /** Cài đặt: nút "Xoá bản lưu" đã hỏi lại chưa (bấm hai lần mới xoá). */
 let resetArmed = false;
-const fresh = (s: Stack) => { const d = INGS[s.id]; if (d.shelf > 9000) return ''; const f = Math.round(s.fresh); return `<span class="tag ${f < 35 ? 'bad' : f < 60 ? 'warn' : 'good'}">${f < 10 ? 'hỏng' : 'tươi ' + f + '%'}</span>`; };
+// Nhãn trạng thái lô hàng: đá ghi “lạnh …%” / “đá tan …%” chứ không ghi “tươi/hỏng” (đá tan, không ôi).
+const fresh = (s: Stack) => { const d = INGS[s.id]; if (d.shelf > 9000) return ''; const l = freshLabel(s); return `<span class="tag ${l.level}">${l.text}</span>`; };
 export const profitOf = (l: LedgerDay) => l.revenue + l.tips + l.side - l.cogs - l.fees - l.rent - l.gear - l.loss - l.interest - l.food - l.other;
 const stallNear = (g: Game) => R.nearStall(g, ctx.player.x, ctx.player.z);
 
@@ -221,7 +222,7 @@ export function openPanel(ui: UI, name: string) {
         const cold = R.coldUnprotected(g);
         const coldLeft = cold.kinds ? Math.min(...s.store.filter((st) => INGS[st.id]?.cold && INGS[st.id].shelf < 9000).map((st) => R.hoursLeft(g, st))) : 0;
         const coldHint = cold.kinds
-          ? `<p class="neg">${cold.names.join(', ')} cần lạnh mà quầy không có tủ đá — để đây khoảng ${Math.max(1, Math.round(coldLeft))} giờ nữa là hỏng. Cất ở nhà (tủ lạnh) hoặc mua thùng đá ở tiệm Ba Tài.</p>` : '';
+          ? `<p class="neg">${cold.names.join(', ')} cần lạnh mà quầy không có tủ đá — để đây khoảng ${Math.max(1, Math.round(coldLeft))} giờ nữa là ${R.has(g, 'thungda') ? 'hết đá, đồ hỏng' : 'hỏng'}. Cất ở nhà (tủ lạnh) hoặc mua thùng đá ở tiệm Ba Tài.</p>` : '';
         body = `<div class="grid2"><div><h4>Trong quầy (${weightOf(s.store).toFixed(1).replace('.', ',')}/${R.stallCap(g)} kg)${chillTag}</h4>${stackList(s.store, (_s, i) => `<button class="btn small" data-a="toBag" data-i="${i}">› Túi</button>`, 'Quầy chưa có nguyên liệu.')}${coldHint}${spoilHint}</div><div><h4>Trong túi (${R.bagWeight(g).toFixed(1).replace('.', ',')}/${R.carryCap(g)} kg)</h4>${stackList(g.bag, (_s, i) => `<button class="btn small" data-a="toStall" data-i="${i}">› Quầy</button>`, 'Túi trống.')}</div></div>` +
           (s.preps.length ? `<h4>Đã sơ chế</h4>${s.preps.map((p) => `<span class="tag ${R.holdFactor(g, RECIPES[p.rid], p.at) < 1 ? 'warn' : 'good'}">${RECIPES[p.rid].short}: ${p.n} phần · ${Math.round(p.q * 100)}đ${R.holdFactor(g, RECIPES[p.rid], p.at) < 1 ? ' · để lâu, kém ngon' : ''}</span>`).join('')}` : '') +
           (R.has(g, 'tu_dong') ? '<p class="muted">Tủ đông công nghiệp đang giữ lạnh tự động (+80 kg sức chứa, không cần mua đá viên).</p>' : R.has(g, 'thungda') && !chilled ? '<p class="muted">Có thùng đá nhưng chưa có đá viên — mua đá ở tạp hoá Cô Ba để giữ lạnh thịt cá.</p>' : !R.has(g, 'thungda') ? '<p class="muted">Chưa có thùng đá: thịt cá để ngoài trời nóng rất mau hỏng.</p>' : '');
@@ -337,7 +338,7 @@ export function openPanel(ui: UI, name: string) {
       };
       const rows = workers.map((w, i) => `<button class="btn small${w.sl === sel ? ' yellow' : ''}" data-a="erPick" data-i="${i}">${w.who!.name} <span class="muted">· ${w.who!.role}</span>${w.run ? ' — đang đi chợ' : ''}</button>`).join(' ');
       const lines = quote.lines.length
-        ? `<div class="list">${quote.lines.map((l) => `<div class="item"><div class="grow"><b>${INGS[l.id].name} <span class="muted">× ${qty(l.n)} ${INGS[l.id].unit}</span></b><small>${names.get(l.shop) ?? ''} · tươi ${Math.round(l.fresh)}% · ${money(l.price)}/${INGS[l.id].unit}</small></div><b>${money(l.price * l.n)}</b></div>`).join('')}</div>`
+        ? `<div class="list">${quote.lines.map((l) => `<div class="item"><div class="grow"><b>${INGS[l.id].name} <span class="muted">× ${qty(l.n)} ${INGS[l.id].unit}</span></b><small>${names.get(l.shop) ?? ''} · ${freshLabel({ id: l.id, fresh: l.fresh } as Stack).text} · ${money(l.price)}/${INGS[l.id].unit}</small></div><b>${money(l.price * l.n)}</b></div>`).join('')}</div>`
         : '<p class="muted">Không còn gì phải mua: kho quầy đã đủ nguyên liệu cho các món này.</p>';
       const body = `<p class="muted">Người làm tự đi các sạp ở cổng chợ lúc cửa hàng đang mở, trả tiền mặt của bạn, rồi mang hàng về chất lên kho quầy. Đi và về mất khoảng nửa giờ tuỳ quãng đường. Bạn trả tiền trước, họ không tự thương lượng giá.</p>
         <h4>Giao cho ai</h4><div style="display:flex;gap:.4em;flex-wrap:wrap">${rows}</div>

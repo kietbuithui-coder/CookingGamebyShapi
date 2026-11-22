@@ -4,7 +4,7 @@
 // Nhờ vậy nghe đài / lướt web là một cách *thu thập thông tin thật* trong game, không phải câu trang trí.
 //
 // Chỉ đọc dữ liệu, không sửa gì: mọi thứ dựng lại từ `Game` mỗi lần mở máy.
-import { Game, hourOf } from './state';
+import { Game, hourOf, freshLabel } from './state';
 import { WEATHER } from '../data/world';
 import { INGS } from '../data/ingredients';
 import { SHOPS, SHOP_LIST } from '../data/shops';
@@ -135,11 +135,14 @@ export function news(g: Game): News[] {
     out.push({ title: `${r.name} quen quán`, body: `Khách quen đã ghé ${rel.n} lần, hay tới ${when}. ${r.note}`, tone: 'info' });
     break;
   }
-  // 10. hàng trong quầy của mình có còn tươi không (món dễ hỏng nhất)
+  // 10. hàng trong quầy của mình còn tươi không (món dễ hỏng nhất)
+  //     Đá viên thì không “hỏng” mà tan dần, nên tin ghi **độ lạnh** thay vì “tươi %”.
   const spoilable = [...g.stall.store, ...g.home].filter((st) => INGS[st.id] && INGS[st.id].shelf < 9000).sort((a, b) => a.fresh - b.fresh)[0];
   if (spoilable) {
-    const f = Math.round(spoilable.fresh);
-    out.push({ title: `Hàng ${INGS[spoilable.id].name.toLowerCase()} ${f < 35 ? 'sắp hỏng' : 'còn tươi'}`, body: `Trong quầy còn ${spoilable.n} ${INGS[spoilable.id].unit}, tươi ${f}%${f < 35 ? ' — bán gấp kẻo bỏ' : ''}.`, tone: f < 35 ? 'bad' : 'good' });
+    const f = Math.round(spoilable.fresh), đá = spoilable.id === 'da';
+    const state = đá ? (f < 35 ? 'sắp tan hết' : 'còn lạnh') : f < 35 ? 'sắp hỏng' : 'còn tươi';
+    const thế = freshLabel(spoilable).text;
+    out.push({ title: `Hàng ${INGS[spoilable.id].name.toLowerCase()} ${state}`, body: `Trong quầy còn ${spoilable.n} ${INGS[spoilable.id].unit}, ${thế}${f < 35 ? (đá ? ' — thay đá mới kẻo thịt cá hỏng theo.' : ' — bán gấp kẻo bỏ') : ''}.`, tone: f < 35 ? 'bad' : 'good' });
   }
   // 11. giờ mở cửa của sạp gần nhất (để canh đi chợ)
   const near = SHOP_LIST.find((s) => s.id === 'mart')!;
