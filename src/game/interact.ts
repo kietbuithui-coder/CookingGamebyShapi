@@ -125,8 +125,11 @@ export class Interact {
       case 'litter': return mk(`Nhặt ${JUNK[c.ref.id].name.toLowerCase()}`, () => A.pickLitter(c.ref), `Bán được ${money(JUNK[c.ref.id].price)}`);
       case 'anchor': {
         const k = c.ref as string, j = A.job;
-        if (k === 'dock') return j?.kind === 'dock' ? (j.carrying ? null : mk('Vác một bao hàng', () => A.dockTake(), `Đã vác ${g.wd.sacks}/12 bao`)) : null;
-        if (k === 'dockDrop') return mk('Đặt bao hàng xuống', () => A.dockDrop(), '+6.000₫');
+        if (k === 'dock') {
+          const left = R.sacksLeft(g);
+          return j?.kind === 'dock' ? (j.carrying || left <= 0 ? null : mk('Vác một bao hàng', () => A.dockTake(), `Đã vác ${g.wd.sacks}/${R.DOCK_SACKS_DAY} bao · còn ${left}`)) : null;
+        }
+        if (k === 'dockDrop') return mk('Đặt bao hàng xuống', () => A.dockDrop(), `+${money(R.DOCK_SACK_PAY)}`);
         if (k === 'board') return mk('Xem bảng việc làm', () => A.board());
         if (k === 'may_net') return mk('Ngồi vào máy 04', () => A.netMenu(), `3.000₫/giờ · ${Math.round(g.st.energy)}/${STAT_MAX} sức`);
         if (k === 'xich_du') return mk('Ngồi xích đu', () => A.funMenu('xich_du'), 'Đu cho nhẹ người · tinh thần lên');

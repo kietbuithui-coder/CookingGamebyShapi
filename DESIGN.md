@@ -1062,8 +1062,46 @@ món trong thực đơn (`dishIcon`) đọc màu topping từ bước `tron` nh�
 
 `localStorage`, khoá `ganhhang.save.v1` (trạng thái) và `ganhhang.settings.v1` (cài đặt). Tự lưu sau việc quan trọng, mỗi 45 giây và khi rời trang. `SAVE_VERSION = 16`; `migrate()` nạp được bản lưu cũ thiếu trường và loại bỏ nguyên liệu không còn tồn tại. Bản lưu trước v4 chưa có sổ `met` nên được coi như đã quen hết người đứng quầy. Bản lưu trước v5 (chưa có bệnh viện) được nâng sức khoẻ lên 45 nếu đang ở 0 — nếu không, mở lên là ngất liền — và thêm sổ đồ thất lạc rỗng. Bản lưu trước v6 được cấp `wanted = 0` và `jailUntil = 0` (chưa ai biết mặt). Bản lưu trước v7 chưa có điện thoại (`phone = null`). Bản lưu trước v8 chưa có sổ phút ngồi quán net (`netDay = -1`, `netMin = 0`). Bản lưu trước v9 chưa có sổ ngày đua xe đạp (`raceDay = -1`, `raceWin = 0`). Bản lưu trước v10 chưa có người phụ việc (`help = null`); dữ liệu `help` hỏng cũng bị bỏ, và bản lưu cũ đã từng bán được hàng thì được ghi mốc `firstSale = 0`. Bản lưu trước v11 chưa có ngoại hình người chơi (`Game.look`): `migrate()` cấp `defaultLook()` theo giới tính của ván, còn `look` hỏng thì `cleanLook()` kẹp lại từng trường. Bản lưu trước v12 chưa có nhà hàng bình dân (`sous = null`, `bookings = []`, `bookSeq = 1`); bản lưu trước v13 chưa có slot nhân sự thứ hai (`help2 = null`, `sous2 = null`). Bản lưu trước v14 chưa có chi nhánh (`branch = null`) — mở bậc 7 rồi mới mở được chi nhánh, và `cleanBranch()` kẹp lại dữ liệu chi nhánh đọc lên. Bản lưu trước v15 chưa có chuyến đi chợ (`errands = []`); `cleanErrands()` bỏ chuyến sai hình dạng và kẹp số phần/thời gian. Bản lưu trước v16 chưa có ca làm của người phụ quầy (`helpShift`): người thứ nhất nhận ca cả ngày, người thứ hai ca sáng — y như hành vi trước đó; giá trị ca lạ bị bỏ và thay bằng mặc định. `Game.look` có thêm `beard` (0–3, nữ luôn 0) và dáng người là hai trường `fat`/`h` đã có sẵn. Cài đặt có thêm `ui` (cỡ giao diện và cách xếp nút) và `cam3` (góc nhìn thứ ba); `cleanLayout()` làm sạch dữ liệu đọc lên.
 
+### 4.42 Trần việc làm thêm mỗi ngày + bảng việc làm đọc số thật (lượt 59)
+
+Người chơi: *“giới hạn số lần có thể làm ca bốc cá và ca chạy bàn cafe xuống, tăng số bao có thể bốc vác lên và bổ sung
+chuẩn bảng việc làm”*. Trước lượt này hai nghề trả cao nhất trong nhóm việc làm thêm **không có trần**: `dockShift()`
+(110 phút, 52.000–68.000₫) và `cafeShift()` (60 phút, sàn 38.000₫ + boa) cứ bấm là ra tiền, trong khi vác bao bị chặn
+cứng ở 12 bao (72.000₫/ngày) và rửa chén chỉ 2 lượt. Ai biết chỗ thì đứng bấm ca cả buổi, còn vác bao thành việc vô nghĩa.
+
+| Việc | Trước | Sau (lượt 59) | Ghi chú |
+|---|---|---|---|
+| Vác bao (bến chợ) | 12 bao/ngày · 6.000₫/bao | **20 bao/ngày** · 6.000₫/bao (tối đa 120.000₫) | `DOCK_SACKS_DAY`, `DOCK_SACK_PAY` |
+| Ca bốc cá | không giới hạn · 52.000–68.000₫/ca | **2 ca/ngày** (4h30–10h) | `DOCK_SHIFTS_DAY` |
+| Ca chạy bàn / phụ quán | không giới hạn · ≥ 38.000₫ + boa | **3 ca/ngày**, chung cho cả hai quán (6h–22h / 6h30–22h) | `CAFE_SHIFTS_DAY` |
+| Rửa chén | 2 lượt/ngày (8 đĩa) | giữ nguyên | `wd.plates` |
+| Giao hàng | 4 đơn/ngày | giữ nguyên | `wd.deliveries` |
+
+**Cân bằng:** trước đây một buổi bốc cá (2 ca sàn = 104.000₫) đã hơn cả ngày vác 12 bao (72.000₫), nên không ai vác bao.
+Nay 20 bao = 120.000₫ ≥ 104.000₫ (mức sàn của 2 ca), nhưng vác bao tốn sức rải ra nhiều chuyến và chỉ mở 4h30–10h —
+hai nghề cùng buổi sáng thì người chơi phải chọn. Test `tests/jobs59.test.ts` canh đúng bất đẳng thức này.
+
+**Bộ đếm:** hai trường mới `wd.cargoShifts`, `wd.cafeShifts` (đếm trong ngày, reset cùng `wd.sacks`… ở `rules.ts`).
+Không tăng `SAVE_VERSION`: `load` merge `{ ...base.wd, ...raw.wd }` nên bản lưu cũ thiếu trường vẫn chạy, và mọi hàm đếm
+đều dùng `?? 0`. Ba hàm thuần trong `sim/rules.ts` — `sacksLeft`, `dockShiftsLeft`, `cafeShiftsLeft` — trả số còn lại
+(không bao giờ âm, kể cả khi dữ liệu cũ có số lớn hơn trần).
+
+**Áp ở mọi cửa vào.** `cafeShift` được gọi từ **ba** chỗ (menu Sáu Lực, quán Bóng Đá `funMenu('tv_bongda')`, quán Sân Vườn
+`gardenCafeOpts`) và `dockShift` từ một chỗ; `dockTake`/`dockDrop` từ nhãn tương tác ở xe tải và sạp gạo. Trần đặt trong
+chính các hàm nhận ca, còn hộp thoại chỉ **hiện** số (“còn 2/3 ca hôm nay”) và tắt nút khi hết — nếu chỉ chặn ở hộp thoại
+thì vẫn còn đường spam. Ca bị chặn đều có câu giải thích riêng (hết ca hôm nay, mai quay lại).
+
+**Vác lố bao:** người chơi có thể nhận bao khi còn hạn mức rồi mới đặt xuống. `dockDrop` nay kiểm `sacksLeft` trước khi
+cộng tiền; hết trần thì **trả bao lại**, không trả công (probe đo đúng: `wd.sacks` đứng ở 20, không lên 21).
+
+**Bảng việc làm (`Acts.jobListText`).** Bản cũ chỉ bốn câu chữ cứng, số bao/ca chép tay nên lệch luật. Nay 7 dòng — vác bao,
+ca bốc cá, chạy bàn, rửa chén, giao hàng, ve chai, việc khác — mỗi dòng ghi **số thật của hôm nay** (còn mấy bao/ca/lượt/đơn,
+giờ mở cửa) và ghi rõ khi đã hết hạn mức thay vì lặng lẽ bỏ dòng. Nhãn tương tác `Đã vác x/12 bao` cũng đổi theo hằng số.
+`tests/jobs59.test.ts` quét mã nguồn để chặn số chép tay tái phát (`wd.sacks >= 12`, `6.000₫`).
+
 ## 7. Kiểm thử
 
+- `tests/jobs59.test.ts` — lượt 59: trần việc làm thêm mỗi ngày (bốc cá 2 ca, chạy bàn 3 ca, vác 20 bao), đếm số còn lại không âm, reset qua ngày, và quét mã nguồn canh số chép tay + bảng việc làm đủ 7 dòng.
 - `tests/tron58.test.ts` — lượt 58: bánh tráng trộn có mini game riêng — 5 topping rải ngẫu nhiên mỗi ván, thứ tự do máy gọi, chấm điểm theo số lần chạm nhầm/chậm.
 - `tests/camduong57.test.ts` — lượt 57: rào cấm đường chặn cả xe cộ (quay đầu ở vạch, không sinh xe trong đoạn cấm).
 - `tests/mat56.test.ts` — lượt 56: Bà Chín Ve Chai có nước da rám nắng riêng, không ai khác bị đổi da theo.

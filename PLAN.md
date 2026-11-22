@@ -1514,3 +1514,30 @@ lần chạm đúng, mà ván gọi 2 vòng nên sang vòng 2 máy gọi vào ch
 bay vào hộp (`bits`), đĩa vơi dần rồi đầy lại khi hết vòng, nhãn vẽ theo đĩa còn topping; đĩa bánh tráng đổi sang nắm sợi
 (nhìn rõ, không còn giống đĩa trống). Test thêm 1 bài (`tests/tron58.test.ts` → 11 bài) + probe `tron58.mjs` chặn đúng
 lỗi này: chạm đúng 1 lần ⇒ `đĩaHiện: 5`, hết vòng 1 ⇒ `cònTopping: [1,1,1,1,1]`.
+
+## Lượt 59 — trần việc làm thêm mỗi ngày + bảng việc làm đọc số thật ✅ đã xong
+
+Người chơi: *“giới hạn số lần có thể làm ca bốc cá và ca chạy bàn cafe xuống, tăng số bao có thể bốc vác lên và bổ sung
+chuẩn bảng việc làm”*. Ba nghề trong nhóm việc làm thêm đang lệch nhau: hai nghề trả cao (bốc cá 110 phút · 52.000–68.000₫,
+chạy bàn 60 phút · ≥ 38.000₫ + boa) **không có trần** nên đứng bấm cả buổi là ra tiền, còn vác bao thì chặn cứng ở 12 bao
+(72.000₫/ngày) — nghề nào cũng có mà vác bao thành vô nghĩa.
+
+**Sửa:**
+- `sim/rules.ts`: thêm hằng số dùng chung `DOCK_SACKS_DAY = 20` (trước 12), `DOCK_SACK_PAY = 6000`,
+  `DOCK_SHIFTS_DAY = 2`, `CAFE_SHIFTS_DAY = 3`, `DOCK_WAGE_MIN/MAX`; ba hàm đếm `sacksLeft`, `dockShiftsLeft`,
+  `cafeShiftsLeft` (không bao giờ âm, `?? 0` cho bản lưu cũ).
+- `sim/state.ts`: `wd.cargoShifts`, `wd.cafeShifts` + reset theo ngày ở `rules.ts`; **không** tăng `SAVE_VERSION`
+  (merge `{ ...base.wd, ...raw.wd }` đã lo bản lưu cũ).
+- `game/acts.ts`: trần áp trong chính hàm nhận ca — `cafeShift` (3 cửa vào: menu Sáu Lực, quán Bóng Đá, quán Sân Vườn),
+  `dockShift`, `dockTake`, `dockDrop`; ca bị chặn có câu giải thích riêng. `dockDrop` còn kiểm trần để không vác lố bao
+  thứ 21 (trả bao lại, không trả công). Toast sau mỗi ca ghi còn mấy ca.
+- `game/acts.ts` `jobListText()` (mới): bảng việc làm 7 dòng, mỗi dòng ghi số thật của hôm nay và giờ mở cửa; việc hết
+  hạn mức thì ghi thẳng lý do thay vì bỏ dòng.
+- `game/interact.ts`: nhãn `Đã vác x/12 bao` → đọc `R.sacksLeft(g)` / `R.DOCK_SACKS_DAY`, tiền `+6.000₫` → `money(R.DOCK_SACK_PAY)`.
+- Test `tests/jobs59.test.ts` (10 bài) + `tests/time.test.ts` cập nhật theo hằng số; changelog “Lượt 59” (bỏ bản cũ nhất).
+
+**Đo:** `npx tsc --noEmit` sạch · `npx vitest run` **647/647 (54 tệp)** · `npm run build:pages` OK.
+Probe `tools/probe/steps/jobs59.mjs` (`errors: none`): ca bốc cá 1 → 2, ca 3 **bị chặn** (tiền đứng 140.000₫, toast nói
+“đã bốc đủ 2 ca”); chạy bàn 1 → 3, ca 4 **bị chặn**; vác đủ trần rồi `dockDrop` **không** cộng bao (20, không phải 21);
+nút ca bốc cá trong hội thoại anh Sáu Lực ở trạng thái `off` kèm lý do; bảng việc làm 5h sáng đọc `20/20 bao`, `2/2 ca`,
+`3/3 ca`, `4/4 đơn`; sang ngày mới cả ba trần mở lại (`20`, `2`, `3`).

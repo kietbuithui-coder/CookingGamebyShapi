@@ -14,6 +14,20 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 59',
+    tag: 'Mỗi ngày chỉ nhận được vài ca bốc cá, vài ca chạy bàn; vác bao tăng lên 20 bao/ngày, và bảng việc làm liệt kê đủ mọi việc kèm số còn lại thật',
+    items: [
+      'Ca bốc cá bến cảng giờ chỉ nhận 2 ca một ngày (mỗi ca 110 phút, 4h30–10h). Làm hết ca thứ hai là anh Sáu Lực từ chối, kèm câu nhắc “mai ra sớm nha” — không còn chuyện đứng bấm cả buổi sáng ra tiền.',
+      'Ca chạy bàn / phụ quán cà phê chỉ nhận 3 ca một ngày, tính chung cho cả quán Bóng Đá lẫn quán Sân Vườn. Hết 3 ca thì cả hai quán cùng từ chối và nói rõ là hết ca hôm nay.',
+      'Lượt ca còn lại hiện ngay trên dòng chọn việc (“còn 2/3 ca hôm nay”), và sau mỗi ca có thông báo còn mấy ca — không phải đoán.',
+      'Vác bao ở bến chợ tăng từ 12 lên 20 bao một ngày (6.000₫/bao, tối đa 120.000₫). Đã vác đủ thì dòng chọn việc biến mất, và lỡ đang vác dở bao trên vai cũng phải trả lại chứ không được tính tiền.',
+      'Bảng việc làm viết lại: mỗi việc một dòng, đủ 7 việc (vác bao, bốc cá, chạy bàn, rửa chén, giao hàng, ve chai, việc khác), ghi đúng số của ngày hôm nay — còn mấy bao, mấy ca, mấy lượt rửa chén, mấy đơn giao — và ghi rõ giờ mở cửa của từng chỗ.',
+      'Việc nào hết thì bảng không im lặng bỏ đi mà ghi thẳng “đã vác đủ 20 bao hôm nay”, để người chơi biết là do hết hạn mức chứ không phải mình tìm sai chỗ.',
+      'Qua ngày mới mọi hạn mức tự mở lại; bản lưu cũ vẫn đọc được bình thường, không phải chơi lại từ đầu.',
+      'Bảng test của người làm game có mục đo trần: bốc cá tới ca 3, chạy bàn tới ca 4, vác tới bao thứ 21 — cả ba đều bị chặn và sổ ngày không nhích.',
+    ],
+  },
+  {
     v: 'Lượt 58',
     tag: 'Bánh tráng trộn có mini game riêng: 5 topping nằm ở vị trí ngẫu nhiên mỗi ván, màn hình gọi tên thứ nào thì chạm đúng đĩa đó',
     items: [
@@ -105,20 +119,4 @@ export const CHANGELOG: LogEntry[] = [
       'Ghé liền ba lần thì ông nói ba câu khác nhau, không lải nhải một câu.',
       'Bảng test của người làm game (bấm 7 lần chữ "Cài đặt") nay hỏi mã 4 số trước khi mở, người chơi lỡ tay không mở nhầm nữa.',
     ],
-  },
-  {
-    v: 'Lượt 51',
-    tag: 'Sửa giao diện theo báo cáo lượt 50: màn thấp hết chồng, chạm đúng chỗ, chơi dọc nhớ lựa chọn',
-    items: [
-      'Trên màn hình thấp (điện thoại nằm ngang, cửa sổ nhỏ) ô mục tiêu không còn đè lên thanh chỉ số: hết chỗ thì nó tự tụt xuống dưới, các chip hướng đi và sự kiện xuống theo.',
-      'Chạm để tương tác phải đứng đủ gần: đang xoay camera quanh quầy hay đi ngang qua người lạ thì không còn mở nhầm bảng Quầy hay hộp thoại.',
-      'Cần ảo nhận ngón tay từ cao hơn (bỏ 28 % màn hình trên xuống còn 12 %) nên máy ngang thấp đặt ngón cái đâu cũng đi được; đẩy mạnh hơn một chút là chạy, không phải đẩy hết cỡ.',
-      'Nút Chạy có chữ ĐI/CHẠY và nhắc đúng một lần cách dùng; FPS mặc định tắt trên điện thoại cho gọn HUD.',
-      'Máy tính: phím Z xoay phải (trước chỉ có Q), bật được khoá con trỏ chuột để rê chuột là xoay, và tuỳ chọn ẩn bốn nút cảm ứng.',
-      'Bấm lại đúng phím tắt (M, B, Tab, P) thì bảng đang mở tự đóng; chạm vào biểu tượng chỉ số thì lời giải thích giữ lại trên màn hình, chạm lại mới tắt; thanh chỉ số không còn chen số vào giữa hàng.',
-      'Bấm “Bỏ dở” giữa lúc nấu: lần đầu chỉ hỏi lại “Chắc chưa?”, lần hai mới bỏ mẻ — hết mất cả mẻ vì lỡ tay.',
-      'Cài đặt có nút xoá bản lưu (bấm hai lần mới xoá) và mục “Cách điều khiển” ghi rõ phím cho máy tính lẫn điện thoại.',
-      'Màn dọc: đã chọn “Cứ chơi dọc” thì lần sau mở game không bị lớp phủ che mất nút Chơi mới / Chơi tiếp nữa.',
-    ],
-  },
-];
+  },];

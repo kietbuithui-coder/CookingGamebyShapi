@@ -17,13 +17,15 @@ describe('thời gian trôi', () => {
     expect(g.min).toBeCloseTo(5);
   });
   it('sang ngày: sổ hôm qua vào lịch sử, sổ mới trắng, việc vặt được làm lại', () => {
-    const g = fresh(); R.earn(g, 20000, 'side'); g.wd.sacks = 12; g.wd.begTired = 9; g.wd.picked = [1, 2, 3];
+    const g = fresh(); R.earn(g, 20000, 'side'); g.wd.sacks = R.DOCK_SACKS_DAY; g.wd.cargoShifts = R.DOCK_SHIFTS_DAY; g.wd.cafeShifts = R.CAFE_SHIFTS_DAY; g.wd.begTired = 9; g.wd.picked = [1, 2, 3];
     R.advance(g, 1440 - g.min + 1, IDLE, new RNG(2));
     expect(g.hist).toHaveLength(1);
     expect(g.hist[0].side).toBe(20000);
     expect(g.led.day).toBe(1);
     expect(g.led.side).toBe(0);
     expect(g.wd.sacks).toBe(0);
+    expect(g.wd.cargoShifts).toBe(0);
+    expect(g.wd.cafeShifts).toBe(0);
     expect(g.wd.begTired).toBe(0);
     expect(g.wd.picked).toEqual([]);
   });
