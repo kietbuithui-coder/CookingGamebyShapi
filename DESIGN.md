@@ -968,6 +968,41 @@ kiểu tóc và dáng người **giữ nguyên**: chỉ đổi nước da, khôn
 `lookFromFixed` ưu tiên `f.skin`) · probe `tools/probe/steps/scrap56.mjs` (2 ảnh soi cận `f56_ba_chin_mat`,
 `f56_ba_chin_cheo`, in ra `skin: #b8804f`) · menu test 3 mục `t56_*` · console sạch.
 
+### 4.40 Rào “Cấm đường” chặn cả xe cộ (lượt 57)
+
+Người chơi: *“hàng rào xe đang chạy qua được ở 2 đầu cấm đường, không cho xe qua khu vực đó”*. Lỗi có thật và rất
+rõ: rào chỉ chặn **người đi bộ**. `stall.onEvent('cam_duong')` thêm hai cạnh vào `NAV_BLOCK` (đồ thị đi bộ) và bật
+`city.roadblock.visible`, còn `game/traffic.ts` thì **không biết sự kiện nào tồn tại** — xe chỉ đọc `roadSpan()` /
+`pickSpawn()` trong `game/roads.ts`.
+
+Toạ độ khớp đúng chỗ người chơi thấy: rào dựng ở `world/city.ts` gồm 6 tấm (`x = −32 / −29,5 / −27`, rộng 2,2 m ⇒
+phủ `x −33,1 … −25,9`) ở **z = ±25**, tức hai đầu đoạn của tuyến dọc `x = −29,5`. Hai làn xe của tuyến này là
+`x = −31,2` và `−27,8` — cả hai nằm gọn trong bề rộng rào, nên mọi xe chạy dọc tuyến đều xuyên qua cả hai hàng rào.
+
+**Sửa — một nguồn sự thật duy nhất trong `game/roads.ts`:**
+
+| Thành phần | Việc |
+|---|---|
+| `ROADBLOCK` | `{ axis: 1, road: −29,5, v0: −25, v1: 25, pad: 6,5 }` — đúng toạ độ rào vẽ ở `city.ts` (test canh để hai bên không lệch) |
+| `setRoadblock(on)` / `roadblockActive()` | bật/tắt; `stall.onEvent` gọi **cùng lúc** với `NAV_BLOCK`, và lúc khôi phục ván gọi `setRoadblock(false)` |
+| `barrierStop(axis, road, pos, sign)` | vạch mà xe **đang chạy tới** phải dừng; `null` nếu không vướng (xe ở phía bên kia rào, hoặc đã lỡ nằm trong đoạn cấm thì đi thẳng ra) |
+| `spawnInBlock(axis, road, pos)` | điểm sinh có rơi vào đoạn cấm (kể cả hai làn + bề dày rào) hay không |
+
+`traffic.update()` so **vị trí sắp tới** (`pos + sign·speed·dt`) với vạch rào: vượt thì đặt xe ở `stop − sign·0,1`,
+đảo `sign`, đảo `lane` (sang làn ngược) và hãm `brakeT = 1,2 s`. So với vị trí sắp tới chứ không phải vị trí hiện tại
+vì một khung hình dài 0,1 s ở 9 m/s là 0,9 m — so sai sẽ lọt rào ở đúng những khung hình đó. `pickSpawn()` xếp tuyến
+đang rào xuống cuối danh sách và **không nhận** điểm sinh nằm trong `pad` của rào.
+
+**Đo được** (`tools/probe/steps/camduong57.mjs`, mức đồ hoạ Cao = 5 xe):
+
+| Trạng thái | Mẫu đo gần tuyến bị rào | Số mẫu xe nằm trong đoạn cấm |
+|---|---|---|
+| Bật cấm đường (sau khi sửa) | ~1.000/đợt, 4 đợt | **0** |
+| Tắt luật rào cho xe (đối chứng, như trước lượt 57) | 1.482 | **570** — xe `x = −27,8` chạy xuyên qua `z = −25 … −22` |
+
+Ảnh `tools/probe/out/f57_rao_cam_duong.png`: ba tấm rào đỏ–trắng chắn ngang đường trước chợ; `tests/camduong57.test.ts`
+(8 bài) canh toạ độ rào ↔ luật, chiều quay đầu, mô phỏng 4.000 bước không lọt rào, và không sinh xe trong đoạn cấm.
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
@@ -983,6 +1018,7 @@ kiểu tóc và dáng người **giữ nguyên**: chỉ đổi nước da, khôn
 
 ## 7. Kiểm thử
 
+- `tests/camduong57.test.ts` — lượt 57: rào cấm đường chặn cả xe cộ (quay đầu ở vạch, không sinh xe trong đoạn cấm).
 - `tests/mat56.test.ts` — lượt 56: Bà Chín Ve Chai có nước da rám nắng riêng, không ai khác bị đổi da theo.
 - `tests/nghi55.test.ts` — lượt 55: tên sạp Dì Sáu + hai món sữa, hộp thân quầy đủ mọi bậc, khách vòng đầu quầy, `bedSpot`/`wake` chống kẹt giường, chi tiết buồng tắm.
 - `tests/state.test.ts` — ván mới, kho, hư hỏng, nâng cấp bản lưu.

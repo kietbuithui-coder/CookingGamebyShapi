@@ -1445,3 +1445,31 @@ tối/dữ**; người chơi chọn **da ngăm/đen hơn cho ra dáng người p
   **Bẫy khi chụp:** nhãn tương tác `#focus` và bong bóng hội thoại của NPC hay mọc đúng giữa mặt — phải
   `ui.$('focus').style.display='none'`, `interact.focus=null`, `ui.unsay(n)` cho từng NPC trước khi chụp.
 - Menu test thay bằng 3 mục `t56_*` (soi mặt · đọc bảng màu cũ/mới · tele sang vựa ông Tư Rác để so).
+
+---
+
+## Lượt 57 — rào “Cấm đường” chặn được cả xe cộ ✅ đã xong
+
+Người chơi: *"sửa hàng rào xe đang chạy qua được ở 2 đầu cấm đường (không cho xe qua khu vực đó)"*.
+
+**Nguyên nhân:** hệ xe (`game/traffic.ts` + `game/roads.ts`) hoàn toàn không biết sự kiện `cam_duong`. Chỉ
+`stall.onEvent` làm hai việc: thêm cạnh vào `NAV_BLOCK` (đồ thị đi bộ) và bật `city.roadblock.visible`. Rào dựng ở
+`world/city.ts` phủ `x −33,1 … −25,9` tại `z = ±25`, đúng hai làn xe `x = −31,2 / −27,8` của tuyến dọc `x = −29,5`
+⇒ mọi xe dọc tuyến xuyên qua cả hai hàng rào, đúng như người chơi báo.
+
+**Sửa:**
+- `game/roads.ts`: thêm `ROADBLOCK` (khai đúng toạ độ rào), `setRoadblock`/`roadblockActive`, `barrierStop`,
+  `spawnInBlock`; `pickSpawn()` xếp tuyến đang rào xuống cuối và từ chối điểm sinh nằm trong `pad` của rào.
+- `game/traffic.ts`: trong `update()`, so **vị trí sắp tới** với vạch rào — vượt thì dừng ở vạch, đảo `sign`, đảo
+  `lane` (sang làn ngược), hãm 1,2 s.
+- `game/stall.ts`: `onEvent('cam_duong')` gọi `setRoadblock(on)` song song `NAV_BLOCK`; nhánh khôi phục ván gọi
+  `setRoadblock(false)` trước khi áp lại sự kiện.
+- Test `tests/camduong57.test.ts` (8 bài) + cập nhật `tests/devpoints.test.ts`, `tests/changelog.test.ts`.
+- Menu test thay bằng 3 mục `t57_*` (bật rào + tele ra trước rào · đọc số xe trong đoạn cấm · dỡ rào).
+- Probe `tools/probe/steps/camduong57.mjs` (đo + ảnh `f57_rao_cam_duong.png`) và `fix55f.mjs` (bấm đúng 3 mục menu).
+
+**Đo:** bật cấm đường → 4 đợt × ~1.000 mẫu, **0** mẫu xe nằm trong đoạn cấm; tắt luật rào cho xe (đối chứng như
+trước lượt 57) → **570** mẫu lọt vào, xe ở `x = −27,8` chạy qua `z = −25 … −22`.
+
+**Bài học:** hai hệ (người đi bộ và xe) từng có hai bản đồ chặn đường riêng. Từ nay mọi thứ “chặn đường” khai ở
+`roads.ts` và cả hai bên cùng đọc một biến.

@@ -3,10 +3,10 @@ import { DEV_BUILD_TAG, DEV_PIN, DEV_PIN_LEN, devPinInput, getDevSections } from
 
 describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
   it('chỉ gồm mục của tính năng mới nhất + nhóm địa điểm tele nhanh', () => {
-    expect(DEV_BUILD_TAG).toContain('Bà Chín');
+    expect(DEV_BUILD_TAG).toContain('Cấm đường');
     const sections = getDevSections();
     expect(sections.length).toBe(2);
-    expect(sections[0].title).toContain('lượt 56');
+    expect(sections[0].title).toContain('lượt 57');
     expect(sections[1].title).toContain('Địa điểm');
     const ids = new Set<string>();
     for (const sec of sections) {
@@ -19,8 +19,8 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
         expect(item.sub.length).toBeGreaterThan(3);
       }
     }
-    // mục của lượt này: soi mặt Bà Chín, so bảng màu da, so với ông Tư Rác
-    for (const id of ['t56_mat_soi', 't56_mat_so_sanh', 't56_vua_tu_rac']) expect(ids.has(id)).toBe(true);
+    // mục của lượt này: bật cấm đường + tele tới rào, đo xe trong đoạn cấm, tắt cấm đường
+    for (const id of ['t57_cam_duong_bat', 't57_cam_duong_do', 't57_cam_duong_tat']) expect(ids.has(id)).toBe(true);
     // tele nhanh vẫn còn nguyên
     const loc = sections[1].items.map((i) => i.id);
     for (const id of ['tp_equip', 'tp_matbang_tb', 'tp_ongtu', 'tp_scrap2', 'tp_canho', 'tp_hobo', 'tp_mart']) expect(loc).toContain(id);
@@ -70,9 +70,11 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
       // lượt 53 (thanh chạy theo máu/pin), lượt 54 (bánh + Shapi) — đã thay bằng mục của lượt 56
       'stam_now', 'stam_compare', 'stam_hurt', 'stam_heal',
       'banh_list', 'banh_tele', 'shapi_drink', 'shapi_tele',
-      // lượt 55 (sạp Dì Sáu, xuyên quầy, kẹt giường, buồng tắm)
+      // lượt 55 (sạp Dì Sáu, xuyên quầy, kẹt giường, buồng tắm) — đã thay từ lượt 56
       't55_sap_tensach', 't55_sap_tele', 't55_ngu_nhanghi', 't55_ngu_tro',
-      't55_sen_nhanghi', 't55_sen_tro', 't55_ganh_cho']) expect(ids).not.toContain(old);
+      't55_sen_nhanghi', 't55_sen_tro', 't55_ganh_cho',
+      // lượt 56 (mặt Bà Chín) — đã thay bằng mục của lượt 57
+      't56_mat_soi', 't56_mat_so_sanh', 't56_vua_tu_rac']) expect(ids).not.toContain(old);
   });
 });
 

@@ -53,6 +53,55 @@ export function onRoad(x: number, z: number, pad = 0): boolean {
   return false;
 }
 
+// ───────── Cấm đường: cùng một nguồn sự thật cho cả rào vẽ ra và xe chạy ─────────
+/**
+ * Đoạn đường bị rào khi sự kiện “Cấm đường” bật. Rào thật dựng ở `world/city.ts` (6 tấm, tâm x = −29,5,
+ * z = ±25, mỗi tấm rộng 2,2 m ⇒ phủ x −33,1…−25,9) — trước lượt 57 luật này chỉ có trong `city.ts`, nên
+ * `traffic.ts` không biết gì: xe chạy dọc tuyến x = −29,5 cứ thế xuyên qua cả hai hàng rào.
+ * Nay khai ở đây để phần vẽ và phần chạy dùng chung, không lệch nhau nữa.
+ */
+export const ROADBLOCK = {
+  /** Trục xe chạy: 1 = dọc trục z (tuyến cố định x). Rào chắn ngang đường nên chỉ chặn xe dọc trục z. */
+  axis: 1 as 0 | 1,
+  /** Tuyến bị chặn (tâm đường). */
+  road: -29.5,
+  /** Hai vạch rào hai đầu đoạn cấm, đo theo trục z. */
+  v0: -25,
+  v1: 25,
+  /** Nửa bề dày vùng cấm: rào rộng 2,2 m + 2 làn (mỗi làn cách tâm 1,7 m) + thân xe. */
+  pad: 6.5,
+};
+
+/** Bật/tắt cấm đường cho xe cộ. Gọi từ `stall.onEvent` cùng lúc với `NAV_BLOCK`. */
+let roadblockOn = false;
+export const setRoadblock = (on: boolean) => { roadblockOn = on; };
+export const roadblockActive = () => roadblockOn;
+
+/** Tuyến này có bị rào cắt ngang không (dùng để không chọn chỗ sinh xe trong đoạn cấm). */
+export function roadBlocked(axis: 0 | 1, road: number): boolean {
+  return roadblockOn && axis === ROADBLOCK.axis && Math.abs(road - ROADBLOCK.road) < 0.5;
+}
+
+/**
+ * Xe đang chạy dọc trục z trên tuyến bị cấm: còn được đi tới đâu trước khi phải quay đầu.
+ * Trả về `null` nếu không vướng rào. Xe ở BẮC rào thì quay đầu ở vạch phía bắc, ở NAM thì ở vạch phía nam —
+ * nhờ vậy xe không bao giờ chạy vào đoạn giữa hai hàng rào.
+ */
+export function barrierStop(axis: 0 | 1, road: number, pos: number, sign: 1 | -1): number | null {
+  if (!roadBlocked(axis, road)) return null;
+  // Chỉ trả về vạch mà xe ĐANG chạy tới. Xe đã ở phía bên kia thì đi tiếp bình thường.
+  if (pos >= ROADBLOCK.v1) return sign < 0 ? ROADBLOCK.v1 : null;
+  if (pos <= ROADBLOCK.v0) return sign > 0 ? ROADBLOCK.v0 : null;
+  // Xe lỡ nằm trong đoạn cấm (vừa bật sự kiện, bản lưu cũ): cứ đi thẳng ra, không quay đầu trong đó —
+  // quay đầu ở đây sẽ kẹt vòng lặp ngay giữa hai hàng rào.
+  return null;
+}
+
+/** Điểm sinh xe có rơi vào khoảng cấm (kể cả bề dày rào + làn xe) không. */
+export const spawnInBlock = (axis: 0 | 1, road: number, pos: number) =>
+  roadblockOn && axis === ROADBLOCK.axis && Math.abs(road - ROADBLOCK.road) < ROADBLOCK.pad &&
+  pos > ROADBLOCK.v0 - ROADBLOCK.pad && pos < ROADBLOCK.v1 + ROADBLOCK.pad;
+
 /** Một tia sinh xe: tuyến + làn, tách khỏi phần vẽ để kiểm thử. */
 /** `pos: null` = chưa có chỗ sinh hợp lệ, hoãn lần sau. */
 export interface SpawnPick { axis: 0 | 1; sign: 1 | -1; road: number; lane: number; pos: number | null; }
@@ -70,25 +119,29 @@ export function pickSpawn(axis: 0 | 1, sign: 1 | -1, along: number, across: numb
   // Hai tuyến vành ngoài (±88,5) khi chạy dọc trục z chỉ còn một đoạn cụt dài 3,5 m trước giao lộ,
   // nên gần như không có chỗ sinh xe. Gặp vậy thì rẽ sang tuyến giữa — thà khác tuyến còn hơn hiện ra trước mặt.
   const roads = axis === 1 && !isRingRoad(near) ? CORR.filter(isRingRoad) : [near, ...CORR.filter((c) => c !== near)];
+  // Đường đang rào thì xếp xuống cuối danh sách: chỉ dùng tới khi các tuyến khác hết chỗ sinh
+  // (và ngay cả khi đó, `spawnInBlock` vẫn chặn điểm sinh lọt vào đoạn cấm).
   const lane = rand.chance(0.5) ? -1.7 : 1.7;
   let road = roads[0];
+  const isBlocked = (c: number) => roadBlocked(axis, c);
+  const roads2 = roadblockOn ? [...roads].sort((a, b) => Number(isBlocked(a)) - Number(isBlocked(b))) : roads;
   // Sinh sau lưng người chơi. Ưu tiên 35–85 m; nếu chỗ đó đã ra ngoài mặt đường thật (người chơi đứng
   // sát đường cụt / mép thành phố) thì lùi dần cự ly. Không được kẹp vị trí vào trong, vì kẹp sẽ làm
   // xe hiện ra ngay trước mặt người chơi.
   const first = rand.range(35, 85);
-  for (const candidate of roads) {
+  for (const candidate of roads2) {
     road = candidate;
     const span = roadSpan(axis, sign, road);
     const lo = Math.min(span.back, span.front) + 2, hi = Math.max(span.back, span.front) - 2;
     for (const d of [first, 30, 26, 22, 18, 14, 11, 9]) {
       const want = along - sign * d;
-      if (want >= lo && want <= hi) return { axis, sign, road, lane, pos: want };
+      if (want >= lo && want <= hi && !spawnInBlock(axis, road, want)) return { axis, sign, road, lane, pos: want };
     }
     // Hết chỗ phía sau: chỉ nhận điểm sinh ở rất xa phía trước (ngoài tầm nhìn ~150 m) để không "hiện ra" trước mặt.
     for (const d of [140, 160, 180]) {
       const want = along + sign * d;
-      if (want >= lo && want <= hi) return { axis, sign, road, lane, pos: want };
+      if (want >= lo && want <= hi && !spawnInBlock(axis, road, want)) return { axis, sign, road, lane, pos: want };
     }
   }
-  return { axis, sign, road: roads[0], lane, pos: null };
+  return { axis, sign, road: roads2[0], lane, pos: null };
 }

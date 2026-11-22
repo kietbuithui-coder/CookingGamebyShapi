@@ -14,6 +14,18 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 57',
+    tag: 'Rào “Cấm đường” chặn được cả xe cộ: xe tới vạch rào là quay đầu, không còn xuyên qua hai hàng rào',
+    items: [
+      'Xe cộ không còn chạy xuyên qua rào khi phố bị cấm đường: tới vạch rào là dừng lại, quay đầu sang làn bên kia và chạy ngược lại — đúng như ngoài đời gặp rào chắn.',
+      'Rào dựng ở hai đầu đoạn phố trước chợ (z = −25 và z = 25) nên từ nay đoạn giữa hai hàng rào không còn chiếc xe nào đi qua, kể cả ô tô chạy nhanh.',
+      'Đo lại bằng máy: bật cấm đường rồi đo hơn một nghìn lần vị trí xe, không lần nào có xe nằm giữa hai hàng rào; tắt luật mới thì đo được 570 lần xe lọt vào — đúng là lỗi cũ.',
+      'Xe cũng không còn “mọc ra” trong đoạn đường đang rào: chỗ sinh xe dời ra ngoài hai đầu rào, nên không có chiếc nào hiện ra ngay sau lưng rào.',
+      'Người đi bộ vẫn đi vòng như trước, giờ đi chung một nguồn sự thật với xe nên hai bên không lệch nhau nữa.',
+      'Bảng test của người làm game có ba mục: bật cấm đường rồi tele ra trước rào, đọc số xe đang nằm trong đoạn cấm, và dỡ rào cho phố chạy lại bình thường.',
+    ],
+  },
+  {
     v: 'Lượt 56',
     tag: 'Bà Chín Ve Chai có nước da rám nắng đúng dáng người cả ngày ngoài nắng',
     items: [
@@ -106,16 +118,6 @@ export const CHANGELOG: LogEntry[] = [
       'Chạy hết mặt đường thì xe quay đầu ở giao lộ cuối, không phóng ra bãi đất.',
       'Ba màu sơn mới cho xe hơi: đỏ đô, xanh rêu, vàng taxi — và xe đổi màu mỗi lần vào lại đường nên gặp đủ màu.',
       'Còi xe hơi riêng từng loại: xe nhỏ “bíp bíp”, sedan “bìm bìm”, xe tải “bừm” trầm — nghe là biết xe gì đang tới.',
-    ],
-  },
-  {
-    v: 'Lượt 48',
-    tag: 'Ngủ ở trọ/khách sạn đỡ đói, ghế đá nghỉ tốt hơn, biển chỗ bán đúng giá',
-    items: [
-      'Ngủ ở khách sạn, phòng trọ, nhà nghỉ, căn hộ: đói và khát tụt ít hơn hẳn (khách sạn giảm ~50 %, phòng trọ ~35 %). Ngủ gầm cầu, ghế đá thì vẫn tụt như cũ.',
-      'Giường xịn giờ hồi năng lượng nhanh hơn thật: 8 tiếng ở khách sạn được +89 năng lượng, ghế đá +43 (trước đây cả hai đều chạm trần 43).',
-      'Nghỉ trên ghế đá hiệu quả hơn một chút: tinh thần +9 (trước +7), năng lượng +6 (trước +4), vẫn miễn phí.',
-      'Biển “CHỖ BÁN HÀNG” hết sai giá: đọc thẳng giá thật trong game (Cổng Chợ 18.000₫, Cổng Công Viên 12.000₫, Phố Văn Phòng 60.000₫, Mặt bằng Phố Văn Phòng 160.000₫, Mặt bằng Khu Căn Hộ 120.000₫).',
     ],
   },
 ];

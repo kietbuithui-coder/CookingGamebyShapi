@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { ctx, QUALITY } from './ctx';
 import { CORR } from '../world/layout';
-import { roadSpan, pickSpawn, inWasherGround } from './roads';
+import { roadSpan, pickSpawn, inWasherGround, barrierStop } from './roads';
 import { RNG, dist2 } from '../core/util';
 import { MB, MAT } from '../gfx/mb';
 import { Rig, lookFromArch } from '../gfx/people';
@@ -166,7 +166,14 @@ export class Traffic {
       if (r.pending) { if ((r.retryT = (r.retryT ?? 0) - dt) <= 0) { r.retryT = 0.5; this.enter(r); } continue; }
       if ((r.brakeT ?? 0) > 0) r.brakeT = Math.max(0, r.brakeT! - dt);
       const curSp = r.speed * ((r.brakeT ?? 0) > 0 ? 0.25 : 1);
-      r.pos += r.sign * curSp * dt;
+      // Rào “cấm đường”: bước đi kế tiếp mà vượt vạch rào thì dừng ở vạch, quay đầu và sang làn ngược.
+      // So với vị trí SẮP tới (chứ không phải vị trí hiện tại) để khung hình dài 0,1 s cũng không lọt qua rào.
+      const stop = barrierStop(r.axis, r.road, r.pos, r.sign);
+      const next = r.pos + r.sign * curSp * dt;
+      if (stop !== null && (next - stop) * r.sign > 0) {
+        r.pos = stop - r.sign * 0.1; r.sign = -r.sign as 1 | -1; r.lane = -r.lane; r.brakeT = 1.2;
+        r.grp.rotation.y = r.axis === 0 ? (r.sign > 0 ? Math.PI / 2 : -Math.PI / 2) : (r.sign > 0 ? 0 : Math.PI);
+      } else r.pos = next;
       const along = r.axis === 0 ? p.x : p.z;
       const span = roadSpan(r.axis, r.sign, r.road);
       const ahead = r.sign > 0 ? r.pos > Math.min(span.front, along + 105) : r.pos < Math.max(span.front, along - 105);
