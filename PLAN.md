@@ -1618,3 +1618,18 @@ mục `t59_* / t60_* / t61_*`, xoá hàm `chuanBiNoi()` (chỉ phục vụ mục
 **Đo:** `tsc` sạch · **661/661 test (56 tệp)** · probe `steps/dev63.mjs`: 1 nhóm “Địa điểm — tele nhanh”, 12 mục,
 `mụcTest: []`, bấm `tp_cv` ⇒ người chơi ở `(41, −32,7)`. `errors: none`.
 
+## Lượt 64 — sửa bàn phím mã PIN của menu ẩn ✅ đã xong
+
+Người chơi: “menu ẩn pass đang có vấn đề (chỉ nhập đc số 7, chưa có nút xoá, quá dễ đoán)”.
+
+**Nguyên nhân đo được:** `devPinInput()` so **tiền tố** sau mỗi phím; mã cũ `7777` ⇒ chữ số đầu khác 7 là bị xoá ngay,
+trông như chỉ nhận số 7. Không có nút xoá, mã lặp 4 lần.
+
+**Sửa:** `devKey()` mới (`'ok' | 'wrong' | 'more' | 'del'`) — chỉ so khi đủ **6 số**, có `del`/`clear`, sai thì xoá sạch và
+không lộ sai ở đâu. Mã mới `438291` (6 số không lặp), bấm **8 lần** mới hiện bàn phím, sai **5 lần** khoá **30 giây**.
+UI: nút **Xoá** + **C** (nhãn chữ, không dùng ký tự hình bàn phím xoá vì phông thiếu), nút “Xem mã” (chỉ hiện mã khi `?debug`).
+Test: 8 bài mới trong `tests/devpoints.test.ts` (11 bài cho phần PIN) + bài canh nguồn chống `startsWith` quay lại.
+
+**Đo:** `tsc` sạch · **666/666 test (56 tệp)** · probe `steps/devpin64.mjs` (bấm chuột thật): gõ `4,3,8` → **Xoá** → `8,2,9,1`
+⇒ `đãMở: true`; sai 30 lần ⇒ “Sai quá 5 lần — chờ 30 giây rồi gõ lại.”; `errors: none`.
+

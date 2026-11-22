@@ -1,6 +1,6 @@
 // CÁC BẢNG LỚN: túi đồ, quầy hàng (thực đơn – giá – sơ chế – kho), chỗ cất đồ, sổ tay (công thức, sổ sách, nợ), bản đồ, cài đặt.
 import { ctx, QUALITY, saveSettings, canFullscreen, toggleFullscreen, UI_SCALE } from '../game/ctx';
-import { DEV_BUILD_TAG, DEV_PIN_LEN, devPinInput, getDevSections } from '../game/devPoints';
+import { DEV_BUILD_TAG, DEV_PIN, DEV_PIN_LEN, DEV_PIN_LOCK_MS, DEV_PIN_TRIES, DEV_TAPS, devKey, getDevSections } from '../game/devPoints';
 import { CHANGELOG } from '../data/changelog';
 import type { UI } from './ui';
 import { ic, el, esc, dishIcon } from './ui';
@@ -69,9 +69,11 @@ export function resetDevUnlock() { DEV_UNLOCKED = false; }
 
 export function openPanel(ui: UI, name: string) {
   const M = ui.$('modal'), g = ctx.g;
-  // Menu ẩn: bấm 7 lần chữ "Cài đặt" mở bàn phím số, nhập đúng DEV_PIN (7777) mới vào menu test.
+  // Menu ẩn: bấm 8 lần chữ "Cài đặt" mở bàn phím số, nhập đúng DEV_PIN (mã 6 số) mới vào menu.
   let devTaps = 0, devOpen = false, devPin = '', devPinErr = '';
-  // Đã mở menu ẩn một lần trong phiên chơi này thì lần sau vào Cài đặt là thấy menu luôn (đỡ gõ lại 7777).
+  // Lượt 64 — chống dò mã: đếm số lần gõ sai liên tiếp, sai đủ nhiều thì khoá bàn phím 30 giây.
+  let devWrong = 0, devLockT = 0;   // devLockT: mốc thời gian (performance.now) còn bị khoá
+  // Đã mở menu ẩn một lần trong phiên chơi này thì lần sau vào Cài đặt là thấy menu luôn (đỡ gõ lại mã).
   if (DEV_UNLOCKED) devOpen = true;
   const draw = (title: string, tabs: [string, string][], body: string, foot = '') => {
     M.innerHTML = `<div class="panel"><header><h2>${title}</h2><div class="tabs">${tabs.map(([id, t]) => `<button class="tab${id === tab ? ' on' : ''}" data-tab="${id}">${t}</button>`).join('')}</div><button class="x" data-a="close">${ic('x')}</button></header><div class="body">${body}</div>${foot ? `<div class="foot">${foot}</div>` : ''}</div>`;
@@ -91,25 +93,37 @@ export function openPanel(ui: UI, name: string) {
     const t = e.target as HTMLElement; if (t === M) { ui.closePanel(); return; }
     if (name === 'settings' && !devOpen && t.closest('#dev-unlock')) {
       devTaps++;
-      if (devTaps >= 7) { devTaps = 0; devPin = ''; devPinErr = 'v'; sfx('ui'); render(); }   // mở bàn phím số
+      if (devTaps >= DEV_TAPS) { devTaps = 0; devPin = ''; devPinErr = 'v'; sfx('ui'); render(); }   // mở bàn phím số
       return;
     }
     // Bàn phím số của menu ẩn: bấm số thì ghép vào mã, đủ 4 số là so; sai thì xoá sạch và báo.
     if (name === 'settings' && !devOpen && devPinErr) {
       const dg = t.closest('[data-pin]') as HTMLElement | null;
       if (dg) {
-        const r = devPinInput(devPin, dg.dataset.pin!);
+        // Đang bị khoá vì gõ sai quá nhiều: không nhận phím, chỉ báo còn mấy giây.
+        const cònKhoá = Math.ceil((devLockT - performance.now()) / 1000);
+        if (cònKhoá > 0) { devPinErr = `Sai quá ${DEV_PIN_TRIES} lần — chờ ${cònKhoá} giây rồi gõ lại.`; sfx('nope'); render(); return; }
+        const r = devKey(devPin, dg.dataset.pin!);
         devPin = r.next;
         if (r.result === 'ok') {
-          devOpen = true; devPinErr = ''; DEV_UNLOCKED = true; sfx('coin');
-          toast('Đúng mã — đã mở bảng Test & Dịch chuyển ẩn!', 'good', 'bolt'); render();
+          devWrong = 0; devOpen = true; devPinErr = ''; DEV_UNLOCKED = true; sfx('coin');
+          toast('Đúng mã — đã mở menu ẩn!', 'good', 'bolt'); render();
         } else if (r.result === 'wrong') {
-          devPin = ''; devPinErr = 'Sai mã — thử lại'; sfx('nope'); render();
+          devWrong++; devPin = '';
+          if (devWrong >= DEV_PIN_TRIES) { devLockT = performance.now() + DEV_PIN_LOCK_MS; devWrong = 0; devPinErr = `Sai quá ${DEV_PIN_TRIES} lần — chờ 30 giây rồi gõ lại.`; }
+          else devPinErr = `Sai mã — thử lại (còn ${DEV_PIN_TRIES - devWrong} lần).`;
+          sfx('nope'); render();
         } else { devPinErr = 'v'; sfx('ui'); render(); }
         return;
       }
-      const back = t.closest('[data-a="devPinBack"]');
-      if (back) { devPinErr = ''; devPin = ''; devTaps = 0; sfx('ui'); render(); return; }
+      if (t.closest('[data-a="devPinBack"]')) { devPinErr = ''; devPin = ''; devTaps = 0; sfx('ui'); render(); return; }
+      if (t.closest('[data-a="devPinHelp"]')) {
+        // Chỉ bản thử mở bằng `?debug` mới hiện mã (để tự động hoá và cho người làm game); bản phát cho
+        // người chơi thì nút này chỉ nhắc mã nằm trong tài liệu, không in ra màn hình.
+        const dbg = /[?&]debug/.test(location.search);
+        devPinErr = dbg ? `Mã của bản thử: ${DEV_PIN} (bản phát cho người chơi không hiện dòng này).` : 'Mã do người làm game đặt và không in ra trong game. Không dò được bằng cách bấm lần lượt từng số — sai đủ nhiều là bàn phím khoá.';
+        sfx('ui'); render(); return;
+      }
     }
     const tb = t.closest('[data-tab]') as HTMLElement | null; if (tb) { tab = tb.dataset.tab!; sfx('ui'); render(); return; }
     const a = t.closest('[data-a]') as HTMLElement | null; if (a && !a.classList.contains('off')) { const f = acts[a.dataset.a!]; if (f) { f(+(a.dataset.i ?? 0), a); if (ui.modalName === name) render(); } }
@@ -451,22 +465,23 @@ export function openPanel(ui: UI, name: string) {
       draw(`${ic('book')} Nhật ký phát triển`, [], `<p class="muted">Những bản gần đây và việc đã làm trong từng bản. Bản mới nhất ở trên cùng.</p>` + CHANGELOG.map(tag).join(''));
     } else if (name === 'settings') {
       if (devPinErr) {
-        // Bàn phím số 4 phím (chỉ để người chơi không vô tình mở menu test — không phải bảo mật thật).
+        // Bàn phím số của menu ẩn: đủ 10 số + nút XOÁ một số + nút C xoá sạch. Gõ số nào cũng được — chỉ khi
+        // đủ 6 số mới so, đúng thì mở, sai thì xoá sạch (lượt 64: bàn phím cũ so từng số nên gõ số khác 7 là mất ngay).
         const dots = Array.from({ length: DEV_PIN_LEN }, (_, i) => `<span style="display:inline-block;width:1.15em;height:1.15em;border-radius:50%;margin:0 .18em;background:${i < devPin.length ? 'var(--ink,#3b2a1e)' : 'transparent'};border:2px solid var(--ink,#3b2a1e)"></span>`).join('');
-        const key = (k: string) => `<button class="btn small" data-pin="${k}" style="min-width:2.9em;justify-content:center;font-size:1.1em">${k}</button>`;
-        const pad = ['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(key).join('') +
-          `<span style="display:inline-block;width:2.9em"></span>` + key('0') + `<span style="display:inline-block;width:2.9em"></span>`;
-        draw(`${ic('bolt')} Mã PIN`, [], `<p class="muted">Bảng test dành cho người làm game. Nhập mã 4 số để mở.</p>
-          <div style="text-align:center;margin:.6em 0 1em">${dots}</div>
-          <div style="display:grid;grid-template-columns:repeat(3,auto);gap:.45em;justify-content:center">${pad}</div>
-          <p class="muted" style="text-align:center;margin-top:.8em">${devPinErr === 'v' ? '&nbsp;' : devPinErr}</p>`,
-          `<button class="btn" data-a="devPinBack">Quay lại Cài đặt</button>`);
+        // Nhãn nút dùng CHỮ (“Xoá”, “C”), không dùng ký tự hình bàn phím xoá — phông của game không có ký tự đó.
+        const key = (k: string, label = k, tone = '', tip = '') => `<button class="btn small${tone}" data-pin="${k}" data-tip="${tip || (label === 'Xoá' ? 'Xoá một số' : label === 'C' ? 'Xoá hết' : 'Số ' + label)}" style="width:4.1em;min-height:2.3em;justify-content:center;font-size:1em">${label}</button>`;
+        const pad = ['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((k) => key(k)).join('') + key('del', 'Xoá', ' yellow') + key('0') + key('clear', 'C', ' red');
+        draw(`${ic('bolt')} Mã PIN`, [], `<p class="muted" style="margin:.10em 0 .3em">Bảng dành cho người làm game. Nhập mã ${DEV_PIN_LEN} số — “Xoá” bỏ một số, “C” xoá hết.</p>
+          <div style="text-align:center;margin:.25em 0 .5em">${dots}</div>
+          <div style="display:grid;grid-template-columns:repeat(3,auto);gap:.3em;justify-content:center">${pad}</div>
+          <p class="muted" style="text-align:center;margin:.45em 0 0">${devPinErr === 'v' ? '&nbsp;' : devPinErr}</p>`,
+          `<button class="btn" data-a="devPinHelp">Xem mã</button><button class="btn" data-a="devPinBack">Quay lại Cài đặt</button>`);
         return;
       }
       if (devOpen) {
         const sections = getDevSections();
         acts.devBack = () => { devOpen = false; };
-        acts.devLock = () => { devOpen = false; devTaps = 0; devPin = ''; devPinErr = ''; DEV_UNLOCKED = false; toast('Đã ẩn lại menu Test & Dịch chuyển — lần sau phải bấm 7 lần và nhập lại mã.', 'info'); };
+        acts.devLock = () => { devOpen = false; devTaps = 0; devPin = ''; devPinErr = ''; devWrong = 0; devLockT = 0; DEV_UNLOCKED = false; toast(`Đã ẩn lại menu — lần sau phải bấm ${DEV_TAPS} lần và nhập lại mã.`, 'info'); };
         acts.devRun = (_i, el) => {
           const id = el.dataset.k;
           for (const sec of sections) {

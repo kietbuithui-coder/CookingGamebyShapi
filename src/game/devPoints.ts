@@ -19,27 +19,46 @@ const PUIphone = () => PUI;
 export const DEV_BUILD_TAG = 'Đá viên tan chậm 3 lần và hiển thị theo độ lạnh thay vì “hỏng”; menu ẩn đã dọn, chỉ còn dịch chuyển nhanh'
 
 /**
- * MÃ PIN CỦA MENU ẨN. Bấm 7 lần chữ "Cài đặt" chỉ mở bàn phím số; nhập đúng mã này mới thấy menu test.
+ * MÃ PIN CỦA MENU ẨN. Bấm 7 lần chữ "Cài đặt" chỉ mở bàn phím số; nhập đúng mã này mới thấy menu.
  * Đây KHÔNG phải bảo mật (mã nằm trong gói JavaScript, ai mở DevTools cũng thấy) — chỉ để người chơi
- * không vô tình mở trúng bảng test rồi tưởng là tính năng của game. Mở xong thì nhớ trong phiên chơi,
- * mở lại Cài đặt là vào thẳng menu cho tiện làm việc.
+ * không vô tình mở trúng bảng dành cho người làm game rồi tưởng là tính năng của game.
+ *
+ * Lượt 64 — người chơi báo “chỉ nhập được số 7, chưa có nút xoá, mã quá dễ đoán”:
+ * - Mã cũ `7777`: gõ tới đâu so tới đó nên chữ số ĐẦU TIÊN khác 7 là bị xoá ngay ⇒ tưởng bàn phím hỏng.
+ * - Nay mã 6 số không lặp (`438 291`), và chỉ so khi đã gõ đủ 6 số, nên gõ số nào cũng được.
+ * - Số SAI thì KHÔNG nói sai ở số nào (không dò ra mã bằng cách thử từng số), xoá sạch và bắt gõ lại.
  */
-export const DEV_PIN = '7777';
-/** Độ dài mã PIN (4 số) — dùng chung cho bàn phím số và test. */
-export const DEV_PIN_LEN = 4;
+export const DEV_PIN = '438291';
+/** Độ dài mã PIN — dùng chung cho bàn phím số và test. */
+export const DEV_PIN_LEN = DEV_PIN.length;
+
 /**
- * Kết quả một lần bấm phím số: `'ok'` mở menu, `'wrong'` là sai (xoá hết số đã nhập), `'more'` là còn nhập tiếp.
- * Số SAI không bao giờ gần đúng: so cả chuỗi, nhập 4 số là phán một lần.
+ * Xử lý một lần bấm trên bàn phím số của menu ẩn.
+ * - `'ok'`   — đúng mã, mở menu.
+ * - `'wrong'`— đủ số mà sai: xoá sạch, báo sai (không nói sai ở đâu).
+ * - `'more'` — còn nhập tiếp.
+ * - `'del'`  — vừa xoá một số.
+ *
+ * Nút XOÁ gửi `digit = ''` (hoặc `'del'`), nút C xoá sạch gửi `'clear'`.
+ * Trước đây hàm này so tiền tố từng số nên chữ số đầu khác `7` là bị đá ra ngay — người chơi tưởng
+ * “chỉ nhập được số 7”. Nay hệ số đúng/sai chỉ lộ ra khi đã gõ đủ cả mã.
  */
-export function devPinInput(entered: string, digit: string): { next: string; result: 'ok' | 'wrong' | 'more' } {
+export function devKey(entered: string, digit: string): { next: string; result: 'ok' | 'wrong' | 'more' | 'del' } {
+  if (digit === 'del' || digit === '') return { next: entered.slice(0, -1), result: 'del' };
+  if (digit === 'clear') return { next: '', result: 'del' };
+  if (!/^[0-9]$/.test(digit)) return { next: entered, result: 'more' };
   const next = (entered + digit).slice(0, DEV_PIN_LEN);
-  if (next.length < DEV_PIN_LEN) {
-    // Nhập tới đâu đã sai tới đó thì báo luôn, không bắt gõ đủ 4 số mới biết sai.
-    if (!DEV_PIN.startsWith(next)) return { next: '', result: 'wrong' };
-    return { next, result: 'more' };
-  }
+  if (next.length < DEV_PIN_LEN) return { next, result: 'more' };
   return next === DEV_PIN ? { next, result: 'ok' } : { next: '', result: 'wrong' };
 }
+/** Tên cũ của `devKey` (giữ để mã cũ và test cũ không gãy). */
+export const devPinInput = devKey;
+
+/** Số lần bấm vào chữ “Cài đặt” để hiện bàn phím số (đủ khó để không bấm nhầm). */
+export const DEV_TAPS = 8;
+/** Số lần gõ sai liên tiếp thì khoá bàn phím 30 giây (chống dò mã bằng cách bấm liên tục). */
+export const DEV_PIN_TRIES = 5;
+export const DEV_PIN_LOCK_MS = 30000;
 
 export interface DevAction {
   id: string;
