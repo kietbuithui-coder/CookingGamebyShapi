@@ -1197,6 +1197,17 @@ không có gì giữ lạnh: **3,4 giờ là tan sạch**, quá ngắn so với 
 **Bài học:** “hỏng” và “tan” là hai chuyện khác nhau — chỉ dùng chung `fresh` 0–100 làm số liệu, còn câu chữ phải theo
 bản chất từng nguyên liệu; và mọi câu “còn mấy giờ” phải tính bằng đúng công thức của `spoil()`, nếu không lời nhắc sẽ sai.
 
+### 4.46 Menu ẩn chỉ còn dịch chuyển nhanh (lượt 63)
+
+Người chơi: *“trừ dịch chuyển, xoá các kiểm thử còn lại”*. `getDevSections()` nay trả **một** section
+`Địa điểm — tele nhanh` với 12 mục `tp_…`; toàn bộ mục `t5x/t6x` của các lượt trước và hàm `chuanBiNoi()` (chỉ phục vụ mục test
+bếp trà) đã xoá, kèm các import không còn dùng. `DEV_BUILD_TAG` giữ để biết đang chạy bản nào.
+
+Canh tái phát trong `tests/devpoints.test.ts`: đúng 1 nhóm, tên có “Địa điểm”, **mọi** mã mục bắt đầu `tp_`, danh sách còn đủ
+`tp_equip / tp_matbang_tb / tp_ongtu / tp_scrap2 / tp_canho / tp_hobo / tp_mart`, mã không trùng, mỗi mục có `run` + `label` + `sub`.
+Probe `tools/probe/steps/dev63.mjs`: menu hiện `["Địa điểm — tele nhanh"]`, 12 mục, `mụcTest: []`, bấm `tp_cv` thì người chơi
+đứng ở `(41, −32,7)` — tele vẫn chạy.
+
 ## 7. Kiểm thử
 
 - `tests/nau59.test.ts` — lượt 60: tia chạm của bàn nấu ăn cắt ở nhiều độ cao (sửa lỗi không cho được nguyên liệu vào nồi).

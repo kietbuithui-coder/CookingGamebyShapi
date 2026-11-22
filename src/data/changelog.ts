@@ -14,6 +14,15 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 63',
+    tag: 'Dọn menu test ẩn: xoá hết mục thử, chỉ còn nhóm “Địa điểm — dịch chuyển nhanh”',
+    items: [
+      'Vào Cài đặt, bấm 7 lần chữ “Cài đặt” rồi nhập 7777 thì nay chỉ còn một nhóm: các chỗ dịch chuyển nhanh (tiệm đồ nghề, chợ, công viên, căn hộ, gầm cầu, MiniMart…).',
+      'Toàn bộ mục thử của các lượt trước đã được xoá — menu không còn là bãi rác test, mở lên là thấy đúng thứ dùng được.',
+      'Bài kiểm thử canh đúng điều đó: nhóm duy nhất phải tên “Địa điểm”, mọi mã mục phải bắt đầu bằng “tp_”, và danh sách phải còn đủ các chỗ quen thuộc.',
+    ],
+  },
+  {
     v: 'Lượt 62',
     tag: 'Đá viên tan chậm gấp 3 lần, và chỗ hiển thị ghi “độ lạnh” thay vì “tươi/hỏng”',
     items: [
@@ -92,20 +101,6 @@ export const CHANGELOG: LogEntry[] = [
       'Từ nay nhân vật nào có nghề nói lên nước da thì được khai màu da riêng; ông Tư Rác và những người đứng quầy khác vẫn giữ nguyên màu như cũ.',
       'Khuôn mặt bà vẫn là khuôn mặt bà cụ tóc bạc, vẫn đội nón lá như trước — chỉ đổi nước da, không đổi ai ra ai.',
       'Bảng test của người làm game có mục soi mặt Bà Chín, mục đọc màu da cũ và màu mới, và mục tele sang vựa ông Tư Rác để so hai chủ vựa cạnh nhau.',
-    ],
-  },
-  {
-    v: 'Lượt 55',
-    tag: 'Sạp Dì Sáu đổi tên, khách không còn đi xuyên quầy, và ngủ ở nhà nghỉ / nhà trọ không còn bị văng sang gian khác',
-    items: [
-      'Sạp “Trứng – Giò chả Dì Sáu” trong chợ đổi tên thành “Trứng – Sữa – Giò Dì Sáu”, và quầy bán thêm sữa tươi hộp 32.000₫ cùng sữa đặc lon 24.000₫ cho đúng cái tên.',
-      'Khách tới mua ở gánh hàng rong và xe đẩy không còn đi từ sau lưng người bán rồi xuyên thẳng qua thân quầy: họ vòng qua đầu quầy rồi mới bước ra trước mặt, đúng như khách ngoài đời.',
-      'Lỗi xuyên quầy sửa cho mọi cỡ quầy chứ không riêng nhà hàng: gánh, xe đẩy, sạp và quán ăn nhỏ đều có thân quầy chắn hẳn hoi, cả trên máy tính lẫn điện thoại.',
-      'Ngủ ở nhà nghỉ Bình Dân hay phòng trọ Bác Năm không còn bị văng sang khung gian bên cạnh rồi kẹt cứng: người chơi giờ nằm ở chỗ trống ngay cạnh giường, và tỉnh dậy mà chân còn trong khung giường thì tự bước ra trước khi trả lại quyền đi lại.',
-      'Buồng tắm của nhà nghỉ và nhà trọ được dựng lại tử tế: tường ốp gạch men có đường ron, khay tắm có gờ và lỗ thoát nước, cột sen inox có tay gạt nóng lạnh màu đỏ, đầu vòi hoa sen tròn có sáu lỗ phun.',
-      'Trong buồng tắm còn có kệ ba chai dầu gội, khăn treo, gương soi có đèn, và một tấm chắn kính để nước không bắn ra ngoài.',
-      'Phòng nghỉ và phòng trọ được kê thêm đồ cho ra dáng chỗ ở: tủ đầu giường có đèn ngủ và cuốn sách, quạt treo tường, ti vi nhỏ, rèm cửa, thảm chân giường, móc áo; bên trọ có thêm dây phơi đồ, quạt cây, ấm nước, lịch treo tường và chiếu trải giữa phòng.',
-      'Bảng test của người làm game đổi sang việc của bản này: đọc bảng hàng sạp Dì Sáu, tele tới ba chỗ mới sửa, và dựng sẵn gánh trà đá ở Cổng Chợ để xem khách có vòng qua đầu quầy không.',
     ],
   }
 ];

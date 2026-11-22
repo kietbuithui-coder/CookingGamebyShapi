@@ -247,9 +247,10 @@ Những test "gác cổng" dễ bị quên:
   đặt chỗ → dụng cụ (bếp, nồi) → nhiên liệu (than) → nguyên liệu. Lượt 61: mục cũ chỉ cho nguyên liệu nên trên ván mới
   (18.000₫, `tier 0`) `placeAt` từ chối và người chơi thấy “nồi vẫn trống”, tưởng lỗi cảm ứng của lượt 60 chưa sửa.
   Cách kiểm: bấm đúng nút *Chạy* trong probe rồi đọc `#toasts .toast` — thông báo lỗi nói rõ khâu nào chặn.
-- **Menu ẩn phải làm mới theo từng lượt** (`game/devPoints.ts`): mỗi lượt thay mục test của lượt trước bằng mục của lượt này,
-  chỉ giữ nhóm tele nhanh; `DEV_BUILD_TAG` cũng phải đổi. `tests/devpoints.test.ts` canh cả hai chiều (mục mới phải có, mục cũ
-  phải biến mất) — lượt 59 đã quên bước này khi commit lần đầu và người chơi phải nhắc.
+- **Menu ẩn (`game/devPoints.ts`) từ lượt 63 chỉ còn NHÓM DỊCH CHUYỂN NHANH.** Người chơi yêu cầu xoá hết mục test:
+  “trừ dịch chuyển, xoá các kiểm thử còn lại”. Đừng thêm mục test mới vào đây nữa — muốn thử một tính năng thì viết probe
+  trong `tools/probe/steps/`. `tests/devpoints.test.ts` canh: đúng **một** nhóm tên “Địa điểm”, mọi mã mục bắt đầu `tp_`.
+  Cần thêm chỗ dịch chuyển thì thêm mục `tp_…` (nhớ khai đủ `label`/`sub`), đừng mở lại nhóm test.
 - **Trong probe, `ui.panel(tên)` bấm lại đúng bảng đang mở là ĐÓNG bảng** (toggle cho phím tắt). Muốn quay lại menu ẩn sau khi
   một mục đóng bảng, phải `closeDialog()` + `closePanel()` rồi mới `panel('settings')`, không thì `[data-a="devRun"]` không có.
 - **NPC không đụng vật cản của người chơi.** Quầy bậc 1–4 phải tự khai hộp thân quầy (`stall.counterBox`) rồi đẩy NPC ra, và chèn waypoint vòng đầu quầy — nếu không khách sẽ đi từ sau lưng người bán xuyên thẳng qua quầy như trước lượt 55.

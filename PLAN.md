@@ -1606,3 +1606,15 @@ Người chơi: “×3 độ lâu tan của đá và để là độ lạnh thay
 **Đo:** `tsc` sạch · **661/661 test (56 tệp)** · probe `steps/da62.mjs`: túi đá hiện “lạnh 100 % / đá tan 40 % / tan hết”;
 tua 8 tiếng ngoài trời: 79 % → 25 %, còn 10 viên (trước lượt này tan sạch sau 3,4 giờ). `errors: none`.
 
+## Lượt 63 — dọn menu ẩn: xoá hết mục test, chỉ giữ dịch chuyển nhanh ✅ đã xong
+
+Người chơi: “trừ dịch chuyển, xoá các kiểm thử còn lại và merge”.
+
+**Sửa:** `game/devPoints.ts` — `getDevSections()` chỉ còn một section `Địa điểm — tele nhanh` (12 mục `tp_…`); xoá toàn bộ
+mục `t59_* / t60_* / t61_*`, xoá hàm `chuanBiNoi()` (chỉ phục vụ mục test bếp trà) và các import thừa (`RECIPES`,
+`RECIPE_LIST`, `addStack`, `spoil`, `INGS`); `DEV_BUILD_TAG` mới. "Changelog “Lượt 63”, `DESIGN.md §4.46`,
+`PLAYBOOK.md` (đổi luật: menu ẩn **không** thêm mục test nữa — muốn thử thì viết probe).
+
+**Đo:** `tsc` sạch · **661/661 test (56 tệp)** · probe `steps/dev63.mjs`: 1 nhóm “Địa điểm — tele nhanh”, 12 mục,
+`mụcTest: []`, bấm `tp_cv` ⇒ người chơi ở `(41, −32,7)`. `errors: none`.
+

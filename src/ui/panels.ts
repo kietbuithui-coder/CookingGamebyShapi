@@ -478,9 +478,9 @@ export function openPanel(ui: UI, name: string) {
             }
           }
         };
-        const body = `<p class="muted"><b>Phiên bản mới nhất:</b> ${DEV_BUILD_TAG}. Danh sách này được làm mới mỗi lần cập nhật tính năng.</p>` +
+        const body = `<p class="muted"><b>Phiên bản mới nhất:</b> ${DEV_BUILD_TAG}. Mục thử tính năng đã được dọn hết — chỉ còn chỗ dịch chuyển nhanh.</p>` +
           sections.map((sec) => `<h4>${sec.title}</h4><div class="list">${sec.items.map((it) => `<div class="item"><div class="grow"><b>${it.label}</b><small>${it.sub}</small></div><button class="btn small${it.tone ? ' ' + it.tone : ''}" data-a="devRun" data-k="${it.id}">Chạy</button></div>`).join('')}</div>`).join('');
-        draw(`${ic('bolt')} Menu Test & Dịch chuyển (Ẩn)`, [], body, `<button class="btn" data-a="devBack">Quay lại Cài đặt</button><button class="btn" data-a="devLock">Ẩn & khoá lại (7 lần + mã PIN)</button>`);
+        draw(`${ic('bolt')} Menu ẩn — Dịch chuyển nhanh`, [], body, `<button class="btn" data-a="devBack">Quay lại Cài đặt</button><button class="btn" data-a="devLock">Ẩn & khoá lại (7 lần + mã PIN)</button>`);
         return;
       }
       const st = ctx.set;
