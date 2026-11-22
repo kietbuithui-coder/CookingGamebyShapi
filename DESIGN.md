@@ -1099,6 +1099,9 @@ ca bốc cá, chạy bàn, rửa chén, giao hàng, ve chai, việc khác — m�
 giờ mở cửa) và ghi rõ khi đã hết hạn mức thay vì lặng lẽ bỏ dòng. Nhãn tương tác `Đã vác x/12 bao` cũng đổi theo hằng số.
 `tests/jobs59.test.ts` quét mã nguồn để chặn số chép tay tái phát (`wd.sacks >= 12`, `6.000₫`).
 
+**Menu ẩn:** 6 mục `t59_*` thay cho mục của lượt 58 — mở bảng việc làm, về bến cảng 5h sáng, làm hết 2 ca bốc cá, làm hết 3 ca
+chạy bàn, vác tới bao cuối rồi thử vác lố, đọc sổ việc làm. `DEV_BUILD_TAG` đổi theo lượt 59.
+
 ## 7. Kiểm thử
 
 - `tests/jobs59.test.ts` — lượt 59: trần việc làm thêm mỗi ngày (bốc cá 2 ca, chạy bàn 3 ca, vác 20 bao), đếm số còn lại không âm, reset qua ngày, và quét mã nguồn canh số chép tay + bảng việc làm đủ 7 dòng.

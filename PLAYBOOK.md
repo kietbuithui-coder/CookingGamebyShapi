@@ -234,6 +234,11 @@ Những test "gác cổng" dễ bị quên:
 - **Con số trên giao diện phải đọc từ hằng số của luật.** Nhãn cũ `Đã vác x/12 bao` chép tay nên khi đổi trần thành 20 là sai ngay
   mà test vẫn xanh. Từ lượt 59: `DOCK_SACKS_DAY`, `DOCK_SHIFTS_DAY`, `CAFE_SHIFTS_DAY`, `DOCK_SACK_PAY` nằm ở `sim/rules.ts`,
   UI chỉ đọc `R.sacksLeft(g)` / `R.dockShiftsLeft(g)` / `R.cafeShiftsLeft(g)`; `tests/jobs59.test.ts` quét mã để chặn số chép tay tái phát.
+- **Menu ẩn phải làm mới theo từng lượt** (`game/devPoints.ts`): mỗi lượt thay mục test của lượt trước bằng mục của lượt này,
+  chỉ giữ nhóm tele nhanh; `DEV_BUILD_TAG` cũng phải đổi. `tests/devpoints.test.ts` canh cả hai chiều (mục mới phải có, mục cũ
+  phải biến mất) — lượt 59 đã quên bước này khi commit lần đầu và người chơi phải nhắc.
+- **Trong probe, `ui.panel(tên)` bấm lại đúng bảng đang mở là ĐÓNG bảng** (toggle cho phím tắt). Muốn quay lại menu ẩn sau khi
+  một mục đóng bảng, phải `closeDialog()` + `closePanel()` rồi mới `panel('settings')`, không thì `[data-a="devRun"]` không có.
 - **NPC không đụng vật cản của người chơi.** Quầy bậc 1–4 phải tự khai hộp thân quầy (`stall.counterBox`) rồi đẩy NPC ra, và chèn waypoint vòng đầu quầy — nếu không khách sẽ đi từ sau lưng người bán xuyên thẳng qua quầy như trước lượt 55.
 
 ### 6.3 Chống side effect lặp

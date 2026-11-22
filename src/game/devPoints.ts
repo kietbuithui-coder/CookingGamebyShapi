@@ -19,7 +19,7 @@ import { INGS } from '../data/ingredients';
 import { money } from '../core/util';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Bánh tráng trộn có mini game riêng: 5 topping rải ở vị trí ngẫu nhiên mỗi ván, máy gọi tên thứ nào thì chạm đúng đĩa đó';
+export const DEV_BUILD_TAG = 'Mỗi ngày chỉ nhận 2 ca bốc cá và 3 ca chạy bàn; vác bao tăng lên 20 bao/ngày, và bảng việc làm liệt kê đủ mọi việc kèm số còn lại thật';
 
 /**
  * MÃ PIN CỦA MENU ẨN. Bấm 7 lần chữ "Cài đặt" chỉ mở bàn phím số; nhập đúng mã này mới thấy menu test.
@@ -133,62 +133,106 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — bánh tráng trộn: 5 topping nằm ngẫu nhiên mỗi ván (lượt 58)',
+      title: 'Mới nhất — trần việc làm thêm mỗi ngày + bảng việc làm (lượt 59)',
       items: [
         {
-          id: 't58_tron_setup',
-          label: 'Chuẩn bị: quầy + nguyên liệu + sơ chế sẵn bánh tráng trộn',
-          sub: 'Dựng quầy ở cổng công viên, cho đủ 5 nguyên liệu và 8 phần đã sơ chế — bấm xong là nấu được ngay',
-          tone: 'green',
-          closePanel: true,
-          run: () => {
-            const g = ctx.g, S = ctx.stall;
-            g.cash = Math.max(g.cash, 3000000);
-            for (const id of ['ganh', 'daothot']) if (!R.has(g, id)) R.buyGear(g, id);
-            for (const [id, n] of [['banhtrang', 12], ['dauphong', 8], ['rauthom', 8], ['tuongot', 8], ['chanh', 8]] as [string, number][])
-              addStack(g.stall.store, { id, n, fresh: 100, q: 1, cost: R.unitCost(g, id) });
-            const sp = SPOTS.find((x) => x.id === 'cv') ?? SPOTS[0];
-            if (g.stall.where !== 'placed' || g.stall.spot !== sp.id) S.placeAt(sp);
-            g.stall.cond = 100; g.stall.dirt = 0; g.min = 10 * 60;
-            // Quầy bậc 1 chỉ bày được 3 món: bật món bánh tráng trộn lên và tắt bớt món khác cho vừa chỗ.
-            for (const rd of RECIPE_LIST) if (g.rec[rd.id]) g.rec[rd.id].on = false;
-            g.rec.banh_trang_tron.known = true; g.rec.banh_trang_tron.on = true;
-            g.stall.preps = g.stall.preps.filter((p) => p.rid !== 'banh_trang_tron');
-            g.stall.preps.push({ rid: 'banh_trang_tron', n: g.stall.preps.reduce((a, p) => a + (p.rid === 'banh_trang_tron' ? p.n : 0), 0) + 8, q: 0.92, at: g.day * 1440 + g.min, cost: 2600 });
-            S.refresh();
-            toast('Đã chuẩn bị xong quầy bánh tráng trộn + 8 phần sơ chế — mở Thực đơn để làm món.', 'good', 'dish', true);
-          },
-        },
-        {
-          id: 't58_tron_choi',
-          label: 'Vào thẳng mini game trộn topping (bỏ qua bước sơ chế)',
-          sub: 'Mở bàn nấu bánh tráng trộn: 5 topping rải ngẫu nhiên, máy gọi tên từng thứ — chạm đúng cái đang gọi',
-          tone: 'green',
-          closePanel: true,
-          run: () => {
-            const g = ctx.g, S = ctx.stall;
-            if (g.stall.where !== 'placed') { toast('Đặt quầy xuống chỗ bán trước đã.', 'warn'); return; }
-            if (!g.stall.preps.some((p) => p.rid === 'banh_trang_tron'))
-              g.stall.preps.push({ rid: 'banh_trang_tron', n: 2, q: 0.92, at: g.day * 1440 + g.min, cost: 2600 });
-            for (const [id, n] of [['dauphong', 2], ['tuongot', 2], ['chanh', 2]] as [string, number][])
-              if (![g.stall.store, g.bag].some((l) => l.some((st) => st.id === id && st.n > 0)))
-                addStack(g.stall.store, { id, n, fresh: 100, q: 1, cost: R.unitCost(g, id) });
-            S.refresh();
-            ctx.cook.finish(RECIPES.banh_trang_tron);
-          },
-        },
-        {
-          id: 't58_tron_do',
-          label: 'Đọc vị trí 5 topping của ván đang mở',
-          sub: 'In ra toạ độ từng đĩa + thứ tự máy gọi, để so hai ván liền nhau xem vị trí có đổi thật không',
+          id: 't59_viec_bang',
+          label: 'Mở bảng việc làm',
+          sub: 'Xem đủ 7 việc kèm số còn lại thật của hôm nay — mở lúc 5h sáng để thấy mọi hạn mức còn nguyên',
           tone: 'yellow',
           closePanel: false,
           run: () => {
-            const m = ctx.cook.current as unknown as { spots?: { x: number; z: number; li: number }[]; calls?: number[]; k?: number; miss?: number } | null;
-            if (!m || !m.spots) { toast('Chưa mở mini game trộn — bấm mục “Vào thẳng mini game” trước.', 'info'); return; }
-            const st = RECIPES.banh_trang_tron.finish[0] as { layers: { ing: string }[] };
-            const rows = m.spots.map((s) => `· ${INGS[st.layers[s.li].ing].name} — (${s.x.toFixed(3)}; ${s.z.toFixed(3)})`);
-            ctx.ui.dialog({ who: 'Ván trộn topping', text: `Toạ độ 5 đĩa trên bàn (mét):\n${rows.join('\n')}\n\nThứ tự gọi: ${(m.calls ?? []).map((c) => c + 1).join(' → ')}\nĐang ở lượt ${(m.k ?? 0) + 1}, chạm nhầm ${m.miss ?? 0} lần.`, opts: [{ t: 'Đóng' }] });
+            const g = ctx.g;
+            if (g.min < 270 || g.min >= 22 * 60) g.min = 5 * 60;
+            ctx.acts.board();
+          },
+        },
+        {
+          id: 't59_viec_sang',
+          label: 'Chuẩn bị: 5h sáng, đủ sức, sạch sẽ, không thiếu tiền',
+          sub: 'Về bến cảng (4h50), cho đầy sức khoẻ và 200.000₫ để thử ngay ca bốc cá lẫn vác bao',
+          tone: 'green',
+          closePanel: true,
+          run: () => {
+            const g = ctx.g;
+            g.min = 4 * 60 + 50;
+            g.st.energy = 100; g.st.hunger = 100; g.st.thirst = 100; g.st.hygiene = 100; g.st.mood = 80;
+            g.cash = Math.max(g.cash, 200000);
+            const a = ctx.world.anchors.v_dock;
+            if (a) tpTo(a.x + 1.6, a.z + 1.6, Math.PI, 'Đã về bến cảng lúc 4h50 — bấm E vào anh Sáu Lực để thử ca bốc cá / vác bao.');
+          },
+        },
+        {
+          id: 't59_viec_ca_bo',
+          label: 'Làm hết ca bốc cá của hôm nay (2 ca)',
+          sub: 'Gọi thẳng 2 ca rồi ca thứ 3 — phải bị chặn kèm lời nhắc “mai ra sớm nha”',
+          tone: 'yellow',
+          closePanel: false,
+          run: () => {
+            const g = ctx.g, R2 = R;
+            if (g.min < 270 || g.min >= 600) g.min = 5 * 60;
+            g.st.energy = 100;
+            let done = 0;
+            while (R2.dockShiftsLeft(g) > 0 && done < 5) { ctx.acts.dockShift(); done++; }
+            const tr = Math.floor(g.min % 1440);
+            if (R2.dockShiftsLeft(g) > 0) { toast('Chưa đủ ca — kiểm giờ (4h30–10h) và sức khoẻ ≥ 35.', 'warn'); return; }
+            toast(`Đã làm ${done} ca bốc cá (tới ${Math.floor(tr / 60)}h${String(tr % 60).padStart(2, '0')}). Bấm lại nút ca để thấy câu chặn.`, 'good', 'cash', true);
+          },
+        },
+        {
+          id: 't59_viec_ca_quan',
+          label: 'Làm hết ca chạy bàn của hôm nay (3 ca)',
+          sub: 'Gọi thẳng 3 ca ở quán Bóng Đá rồi ca thứ 4 — phải bị chặn, kể cả sang quán Sân Vườn',
+          tone: 'yellow',
+          closePanel: false,
+          run: () => {
+            const g = ctx.g;
+            if (g.min < 6 * 60 || g.min >= 21 * 60) g.min = 7 * 60;
+            g.st.energy = 100;
+            let done = 0;
+            while (R.cafeShiftsLeft(g) > 0 && done < 6) { (ctx.acts as unknown as { cafeShift: (garden?: boolean) => void }).cafeShift(false); done++; }
+            if (R.cafeShiftsLeft(g) > 0) { toast('Chưa đủ ca — kiểm giờ (6h–22h) và sức khoẻ ≥ 28.', 'warn'); return; }
+            toast(`Đã chạy ${done} ca (còn ${R.cafeShiftsLeft(g)} ca). Thử xin thêm ở quán Sân Vườn — cũng bị chặn.`, 'good', 'cash', true);
+          },
+        },
+        {
+          id: 't59_viec_bao',
+          label: 'Vác tới bao cuối rồi thử vác lố',
+          sub: 'Đặt sổ về 19/20 bao, vác 1 bao cho đủ trần, rồi thử vác thêm — phải bị chặn ở đúng 20, không lên 21',
+          tone: 'yellow',
+          closePanel: false,
+          run: () => {
+            const g = ctx.g;
+            if (g.min < 270 || g.min >= 600) g.min = 6 * 60;
+            g.st.energy = 100;
+            const j = ctx.acts.job;
+            if (j?.kind === 'dock' && j.carrying) ctx.acts.dockDrop();
+            g.wd.sacks = Math.max(0, R.DOCK_SACKS_DAY - 1);
+            ctx.acts.job = { kind: 'dock', carrying: true };
+            ctx.acts.dockDrop();
+            const full = g.wd.sacks;
+            ctx.acts.job = { kind: 'dock', carrying: true };
+            ctx.acts.dockDrop();
+            toast(`Sổ ngày: ${full}/${R.DOCK_SACKS_DAY} bao sau bao cuối; thử vác lố → vẫn ${g.wd.sacks}/${R.DOCK_SACKS_DAY} (không lên ${R.DOCK_SACKS_DAY + 1}).`, g.wd.sacks <= R.DOCK_SACKS_DAY ? 'good' : 'bad', 'box', true);
+          },
+        },
+        {
+          id: 't59_viec_so',
+          label: 'Đọc sổ việc làm hôm nay',
+          sub: 'In ra số bao / ca bốc cá / ca chạy bàn còn lại + giờ trong ván, để so với bảng việc làm',
+          tone: 'yellow',
+          closePanel: false,
+          run: () => {
+            const g = ctx.g, tr = Math.floor(g.min % 1440), hh = Math.floor(tr / 60), mm = Math.floor(tr % 60);
+            ctx.ui.dialog({
+              who: 'Sổ việc làm',
+              text: `Bây giờ: ${hh}h${String(mm).padStart(2, '0')} · ngày ${g.day + 1}\n`
+                + `Bao đã vác: ${g.wd.sacks}/${R.DOCK_SACKS_DAY} (còn ${R.sacksLeft(g)})\n`
+                + `Ca bốc cá: ${g.wd.cargoShifts}/${R.DOCK_SHIFTS_DAY} (còn ${R.dockShiftsLeft(g)})\n`
+                + `Ca chạy bàn: ${g.wd.cafeShifts}/${R.CAFE_SHIFTS_DAY} (còn ${R.cafeShiftsLeft(g)})\n`
+                + `Rửa chén: ${g.wd.plates}/2 · Giao hàng: ${g.wd.deliveries}/4`,
+              opts: [{ t: 'Đóng' }],
+            });
           },
         },
       ],

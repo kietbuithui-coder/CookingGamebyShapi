@@ -1534,10 +1534,17 @@ chạy bàn 60 phút · ≥ 38.000₫ + boa) **không có trần** nên đứng 
 - `game/acts.ts` `jobListText()` (mới): bảng việc làm 7 dòng, mỗi dòng ghi số thật của hôm nay và giờ mở cửa; việc hết
   hạn mức thì ghi thẳng lý do thay vì bỏ dòng.
 - `game/interact.ts`: nhãn `Đã vác x/12 bao` → đọc `R.sacksLeft(g)` / `R.DOCK_SACKS_DAY`, tiền `+6.000₫` → `money(R.DOCK_SACK_PAY)`.
-- Test `tests/jobs59.test.ts` (10 bài) + `tests/time.test.ts` cập nhật theo hằng số; changelog “Lượt 59” (bỏ bản cũ nhất).
+- Menu ẩn (`game/devPoints.ts`): thay mục test của lượt 58 bằng **6 mục `t59_*`** — mở bảng việc làm · về bến cảng 5h sáng
+  (đủ sức, sạch, 200.000₫) · làm hết 2 ca bốc cá rồi thử ca 3 · làm hết 3 ca chạy bàn rồi thử ca 4 · vác tới bao cuối rồi
+  thử vác lố · đọc sổ việc làm hôm nay. `DEV_BUILD_TAG` đổi sang câu của lượt 59.
+- Test `tests/jobs59.test.ts` (10 bài) + `tests/time.test.ts` cập nhật theo hằng số + `tests/devpoints.test.ts` (mục `t59_*`,
+  `t58_*` vào danh sách phải biến mất); changelog “Lượt 59” (bỏ bản cũ nhất).
 
 **Đo:** `npx tsc --noEmit` sạch · `npx vitest run` **647/647 (54 tệp)** · `npm run build:pages` OK.
 Probe `tools/probe/steps/jobs59.mjs` (`errors: none`): ca bốc cá 1 → 2, ca 3 **bị chặn** (tiền đứng 140.000₫, toast nói
 “đã bốc đủ 2 ca”); chạy bàn 1 → 3, ca 4 **bị chặn**; vác đủ trần rồi `dockDrop` **không** cộng bao (20, không phải 21);
 nút ca bốc cá trong hội thoại anh Sáu Lực ở trạng thái `off` kèm lý do; bảng việc làm 5h sáng đọc `20/20 bao`, `2/2 ca`,
 `3/3 ca`, `4/4 đơn`; sang ngày mới cả ba trần mở lại (`20`, `2`, `3`).
+Probe `tools/probe/steps/dev59.mjs` (mở menu ẩn bằng 7 lần bấm + mã 7777, `errors: none`): 6 mục `t59_*` hiện đủ trong bảng;
+bấm “làm hết ca bốc cá” ⇒ `2/2` rồi bấm ca lần nữa `bịChặn: true`; “làm hết ca chạy bàn” ⇒ `3/3`; “vác tới bao cuối” ⇒
+`20/20` và thử vác lố vẫn `20/20`; “đọc sổ việc làm” in `Bây giờ: 9h41 · ngày 1 · Bao 20/20 · Ca bốc cá 1/2 · Ca chạy bàn 3/3`.
