@@ -127,7 +127,7 @@ Cần Node.js 20 trở lên.
 ```bash
 npm install
 npm run dev          # máy chủ phát triển, mở địa chỉ được in ra
-npm test             # 661 bài kiểm thử luật chơi
+npm test             # 666 bài kiểm thử luật chơi
 npm run build        # kiểm tra kiểu + đóng gói ra dist/
 npm run build:pages  # kiểm tra kiểu + kiểm thử + đóng gói ra docs/ (GitHub Pages)
 ```
@@ -140,7 +140,7 @@ GitHub Pages của kho này đang trỏ vào **thư mục gốc** của `main`, 
 
 ## Menu ẩn (dành cho người làm game)
 
-Bấm **7 lần** vào chữ *Cài đặt* ở đầu bảng Cài đặt, rồi nhập mã **`7777`**. Menu Test & Dịch chuyển hiện ra: tele nhanh tới
+Bấm **8 lần** vào chữ *Cài đặt* ở đầu bảng Cài đặt, rồi nhập mã **`438291`** (bàn phím có nút *Xoá* và *C*; sai 5 lần thì khoá 30 giây). Menu Test & Dịch chuyển hiện ra: tele nhanh tới
 từng địa điểm và các nút thử của bản mới nhất. Mở một lần là nhớ trong phiên chơi; nút *"Ẩn & khoá lại"* đưa về như cũ.
 Mã nằm trong gói JavaScript nên **không phải bảo mật** — chỉ để người chơi không vô tình mở bảng test.
 

@@ -799,7 +799,7 @@ chỉ ra đúng món, và chi nhánh hiện đúng số phần sau khi chuyển 
 app hiện mục **Bán lỗ so với giá vốn** ("đang bán 2.000₫ · vốn 25.426₫ — lỗ 23.426₫/phần"), và máy cục gạch cũng có
 dòng "Cửa hàng" trong danh sách; **console sạch**.
 
-### 4.35 Menu ẩn: bấm 7 lần + mã PIN 7777 (lượt 52)
+### 4.35 Menu ẩn: bấm nhiều lần + mã PIN (lượt 52; mã đổi ở lượt 64 — xem §4.47)
 
 Trước đây bấm 7 lần chữ “Cài đặt” là menu test mở luôn — người chơi lỡ tay bấm nhiều lần là thấy một bảng toàn nút
 “Chạy” không thuộc về game. Nay có thêm **một bước nhập mã**: bấm lần thứ 7 hiện **bàn phím số 0–9** với bốn chấm
@@ -1207,6 +1207,38 @@ Canh tái phát trong `tests/devpoints.test.ts`: đúng 1 nhóm, tên có “Đ�
 `tp_equip / tp_matbang_tb / tp_ongtu / tp_scrap2 / tp_canho / tp_hobo / tp_mart`, mã không trùng, mỗi mục có `run` + `label` + `sub`.
 Probe `tools/probe/steps/dev63.mjs`: menu hiện `["Địa điểm — tele nhanh"]`, 12 mục, `mụcTest: []`, bấm `tp_cv` thì người chơi
 đứng ở `(41, −32,7)` — tele vẫn chạy.
+
+### 4.47 Bàn phím mã PIN của menu ẩn — sửa lỗi “chỉ nhập được số 7” (lượt 64)
+
+Người chơi: *“menu ẩn pass đang có vấn đề (chỉ nhập đc số 7, chưa có nút xoá, quá dễ đoán)”*.
+
+**Nguyên nhân (tái hiện bằng probe `steps/devpin.mjs`):** `devPinInput()` cũ so **tiền tố** ngay khi gõ:
+
+```ts
+if (!DEV_PIN.startsWith(next)) return { next: '', result: 'wrong' };   // ← gõ 4 khi mã là 7777 ⇒ xoá sạch tức thì
+```
+
+Mã cũ `7777` nên chỉ có chữ số `7` “sống sót” qua lần gõ đầu ⇒ cảm giác bàn phím chỉ nhận số 7. Bàn phím cũng
+**không có nút xoá** (gõ nhầm là phải quay ra vào lại) và mã lặp 4 lần quá dễ đoán.
+
+**Sửa:**
+| Việc | Trước | Sau |
+|---|---|---|
+| So mã | so tiền tố từng số | chỉ so khi đã gõ **đủ 6 số** (`devKey`) |
+| Bàn phím | 10 số, không xoá | 10 số + **Xoá** (bỏ 1 số) + **C** (xoá hết) |
+| Mã | `7777` | `438291` — 6 số, không lặp |
+| Số lần bấm để hiện | 7 | **8** |
+| Chống dò | không có | sai **5 lần** ⇒ khoá bàn phím **30 giây** (`DEV_PIN_TRIES`, `DEV_PIN_LOCK_MS`) |
+| Lộ thông tin | báo sai ngay ở số đầu | đủ 6 số mới báo “sai mã”, **không nói sai ở số nào** |
+
+Nhãn nút dùng **chữ** (“Xoá”, “C”) chứ không dùng ký tự hình bàn phím xoá — phông của game không có ký tự đó nên
+trên máy yếu sẽ ra ô trống (đã thấy trong ảnh probe). Nút “Xem mã”: bản chạy `?debug` hiện mã để tự động hoá, bản phát
+cho người chơi chỉ nhắc mã nằm trong tài liệu.
+
+**Đo** (probe `tools/probe/steps/devpin64.mjs`, bấm **chuột thật** vào toạ độ nút): bàn phím `["1"…"9","del","0","clear"]`;
+gõ `4,3,8` rồi **Xoá** rồi `8,2,9,1` ⇒ menu mở (`đãMở: true`); gõ sai 30 lần ⇒ *“Sai quá 5 lần — chờ 30 giây rồi gõ lại.”*
+Test `tests/devpoints.test.ts`: gõ được **mọi** chữ số, `del`/`clear`, đủ 6 số sai thì xoá sạch và không lộ vị trí sai,
+và bài canh **nguồn** (không còn `startsWith` trong `devKey`) để lỗi này không quay lại.
 
 ## 7. Kiểm thử
 

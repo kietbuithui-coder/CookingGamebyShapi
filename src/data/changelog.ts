@@ -14,6 +14,17 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 64',
+    tag: 'Sửa bàn phím mã PIN của menu ẩn: gõ được mọi số, có nút Xoá, mã 6 số khó đoán, sai nhiều thì khoá',
+    items: [
+      'Trước bản này bàn phím chỉ “nhận” số 7: game so từng số ngay khi gõ nên chữ số đầu tiên khác 7 là bị xoá lập tức, trông như bàn phím hỏng.',
+      'Nay gõ số nào cũng được, gõ đủ 6 số mới kiểm tra một lần — sai thì xoá sạch và báo “sai mã, thử lại”, không nói sai ở số nào.',
+      'Bàn phím có thêm nút “Xoá” (bỏ một số vừa gõ nhầm) và nút “C” (xoá hết), hai nút rộng rãi, bấm được trên màn hình thấp.',
+      'Mã đổi từ 7777 sang mã 6 số không lặp, khó đoán hơn nhiều; bấm 8 lần vào chữ “Cài đặt” mới hiện bàn phím.',
+      'Gõ sai 5 lần liên tiếp thì bàn phím khoá 30 giây — hết dò mã bằng cách bấm lần lượt.',
+    ],
+  },
+  {
     v: 'Lượt 63',
     tag: 'Dọn menu test ẩn: xoá hết mục thử, chỉ còn nhóm “Địa điểm — dịch chuyển nhanh”',
     items: [
@@ -90,17 +101,6 @@ export const CHANGELOG: LogEntry[] = [
       'Xe cũng không còn “mọc ra” trong đoạn đường đang rào: chỗ sinh xe dời ra ngoài hai đầu rào, nên không có chiếc nào hiện ra ngay sau lưng rào.',
       'Người đi bộ vẫn đi vòng như trước, giờ đi chung một nguồn sự thật với xe nên hai bên không lệch nhau nữa.',
       'Bảng test của người làm game có ba mục: bật cấm đường rồi tele ra trước rào, đọc số xe đang nằm trong đoạn cấm, và dỡ rào cho phố chạy lại bình thường.',
-    ],
-  },
-  {
-    v: 'Lượt 56',
-    tag: 'Bà Chín Ve Chai có nước da rám nắng đúng dáng người cả ngày ngoài nắng',
-    items: [
-      'Mặt Bà Chín Ve Chai ở vựa ve chai Khu Dân Cư đổi sang màu da rám nắng, tối hơn hẳn màu da sáng nhất mà game vẫn cấp cho người đứng quầy.',
-      'Trước đây màu da của nhân vật cố định chỉ được chọn theo công thức từ khuôn mặt và cái nón, nên Bà Chín rơi đúng vào màu sáng nhất bảng — nhìn không ra người phơi nắng cả ngày.',
-      'Từ nay nhân vật nào có nghề nói lên nước da thì được khai màu da riêng; ông Tư Rác và những người đứng quầy khác vẫn giữ nguyên màu như cũ.',
-      'Khuôn mặt bà vẫn là khuôn mặt bà cụ tóc bạc, vẫn đội nón lá như trước — chỉ đổi nước da, không đổi ai ra ai.',
-      'Bảng test của người làm game có mục soi mặt Bà Chín, mục đọc màu da cũ và màu mới, và mục tele sang vựa ông Tư Rác để so hai chủ vựa cạnh nhau.',
     ],
   }
 ];

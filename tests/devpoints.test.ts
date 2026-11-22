@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 // @ts-expect-error — chỉ dùng trong test, không cần kiểu của node
 import { readFileSync } from 'node:fs';
-import { DEV_BUILD_TAG, DEV_PIN, DEV_PIN_LEN, devPinInput, getDevSections } from '../src/game/devPoints';
+import { DEV_BUILD_TAG, DEV_PIN, DEV_PIN_LEN, DEV_PIN_LOCK_MS, DEV_PIN_TRIES, DEV_TAPS, devKey, devPinInput, getDevSections } from '../src/game/devPoints';
 
 describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
   it('chỉ còn nhóm “Địa điểm — tele nhanh”: mọi mục test đã được xoá (lượt 63)', () => {
@@ -77,32 +77,76 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
   });
 });
 
-describe('mã PIN của menu ẩn (7777)', () => {
-  it('mã là 7777, đúng 4 số', () => {
-    expect(DEV_PIN).toBe('7777');
-    expect(DEV_PIN_LEN).toBe(4);
+describe('bàn phím PIN của menu ẩn (lượt 64)', () => {
+  it('mã khó đoán: 6 số, không lặp, không phải dãy số hiển nhiên', () => {
+    expect(DEV_PIN_LEN).toBe(6);
     expect(DEV_PIN).toHaveLength(DEV_PIN_LEN);
+    expect(new Set(DEV_PIN).size).toBe(DEV_PIN_LEN);          // không có số nào lặp lại
+    expect(DEV_PIN).not.toBe('7777');
+    for (const dãy of ['123456', '654321', '111111', '000000', '438290']) expect(DEV_PIN).not.toBe(dãy);
   });
 
-  it('nhập đủ 4 số đúng thì mở menu', () => {
+  it('nhập đủ 6 số đúng thì mở menu', () => {
     let st = { next: '', result: 'more' as string };
-    for (const d of DEV_PIN) st = devPinInput(st.next, d);
+    for (const d of DEV_PIN) st = devKey(st.next, d);
     expect(st.result).toBe('ok');
-    expect(st.next).toBe('7777');
+    expect(st.next).toBe(DEV_PIN);
   });
 
-  it('sai một số là xoá sạch, không đoán gần đúng', () => {
-    expect(devPinInput('', '9')).toEqual({ next: '', result: 'wrong' });      // sai ngay số đầu
-    expect(devPinInput('777', '8')).toEqual({ next: '', result: 'wrong' });    // đúng 3 số rồi sai
-    expect(devPinInput('7777', '7').next).toBe('7777');                       // không nhận số thứ 5
-  });
-
-  it('nhập thiếu thì chưa mở, và không bao giờ mở khi mã khác 7777', () => {
-    for (const bad of ['777', '77', '7', '7778', '1111', '0000', '1234']) {
-      let r: { next: string; result: string } = { next: '', result: 'more' };
-      for (const d of bad) r = devPinInput(r.next, d);
-      expect(r.result, bad).not.toBe('ok');
+  /**
+   * LỖI NGƯỜI CHƠI BÁO: “chỉ nhập được số 7”. Bàn phím cũ so tiền tố từng số, nên gõ 4 (chữ số đầu khác 7)
+   * là bị xoá ngay lập tức ⇒ tưởng bàn phím chỉ nhận số 7. Nay gõ số nào cũng được, đủ 6 số mới phán.
+   */
+  it('gõ được MỌI chữ số, không đá ra giữa chừng', () => {
+    for (const d of '0123456789') {
+      const r = devKey('', d);
+      expect(r.result, 'số ' + d).toBe('more');
+      expect(r.next).toBe(d);
     }
+    // Gõ dở một mã sai vẫn giữ nguyên các số đã gõ, không xoá sạch.
+    let st = { next: '', result: 'more' as string };
+    for (const d of '4382') st = devKey(st.next, d);
+    expect(st).toEqual({ next: '4382', result: 'more' });
+  });
+
+  it('nút XOÁ ⌫ xoá một số, nút C xoá sạch', () => {
+    expect(devKey('4382', 'del')).toEqual({ next: '438', result: 'del' });
+    expect(devKey('4382', '')).toEqual({ next: '438', result: 'del' });      // ô trống cũng là xoá
+    expect(devKey('', 'del')).toEqual({ next: '', result: 'del' });          // xoá khi đã trống: không lỗi
+    expect(devKey('4382', 'clear')).toEqual({ next: '', result: 'del' });
+    // Xoá bớt rồi gõ lại đúng mã vẫn mở được.
+    let st = { next: '', result: 'more' as string };
+    for (const d of '439') st = devKey(st.next, d);
+    st = devKey(st.next, 'del');                                            // 43
+    st = devKey(st.next, 'del');                                            // 4
+    for (const d of '38291') st = devKey(st.next, d);
+    expect(st.result).toBe('ok');
+  });
+
+  it('đủ 6 số mà sai thì xoá sạch, và KHÔNG nói sai ở số nào', () => {
+    let r = { next: '', result: 'more' as string };
+    for (const d of '111111') r = devKey(r.next, d);
+    expect(r).toEqual({ next: '', result: 'wrong' });
+    // Sai ở số cuối cũng chỉ trả về “wrong” trống — không lộ vị trí sai.
+    let r2 = { next: '', result: 'more' as string };
+    for (const d of DEV_PIN.slice(0, -1) + '0') r2 = devKey(r2.next, d);
+    expect(r2.result).toBe('wrong');
+    expect(r2.next).toBe('');
+  });
+
+  it('không nhận phím lạ và không nhận quá 6 số', () => {
+    expect(devKey('438', 'x')).toEqual({ next: '438', result: 'more' });
+    expect(devKey(DEV_PIN_LEN === 6 ? DEV_PIN.slice(0, 5) : '', '1').next).toHaveLength(DEV_PIN_LEN);
+  });
+
+  it('chống dò: sai 5 lần là khoá 30 giây, và bấm 8 lần mới hiện bàn phím', () => {
+    expect(DEV_PIN_TRIES).toBe(5);
+    expect(DEV_PIN_LOCK_MS).toBe(30000);
+    expect(DEV_TAPS).toBe(8);
+  });
+
+  it('tên cũ devPinInput vẫn dùng được (tương thích)', () => {
+    expect(devPinInput).toBe(devKey);
   });
 
   /**
@@ -118,5 +162,25 @@ describe('mã PIN của menu ẩn (7777)', () => {
     expect(fn.indexOf('buyGear')).toBeLessThan(fn.indexOf('placeAt'));
     for (const id of ['ganh', 'bepthan', 'noi', 'daothot']) expect(fn).toContain(`'${id}'`);
     expect(fn).toContain('than');
+  });
+
+  /**
+   * Đúng lỗi người chơi báo: “chỉ nhập được số 7”. Nguyên nhân là `startsWith` (so tiền tố) — gõ số đầu khác 7
+   * là bị đá ra ngay. Bài này canh mã nguồn để không ai vô tình đưa kiểu so tiền tố trở lại.
+   */
+  it('không so tiền tố từng số (nguyên nhân lỗi “chỉ nhập được số 7”)', () => {
+    const src = readFileSync('src/game/devPoints.ts', 'utf8');
+    const fn = src.slice(src.indexOf('export function devKey'), src.indexOf('/** Tên cũ của `devKey`'));
+    expect(fn).not.toContain('startsWith');
+    // Chỉ phán đúng/sai khi đã gõ đủ số.
+    expect(fn).toContain('next.length < DEV_PIN_LEN');
+    // Có nhánh xoá.
+    expect(fn).toContain("'del'");
+    // Bàn phím trong UI phải có nút xoá và nút xoá sạch.
+    const ui = readFileSync('src/ui/panels.ts', 'utf8');
+    expect(ui).toContain('key(\'del\'');
+    expect(ui).toContain('key(\'clear\'');
+    // Không dùng hình ⌫ nữa (phông game không có ký tự đó).
+    expect(ui).not.toContain('⌫');
   });
 });
