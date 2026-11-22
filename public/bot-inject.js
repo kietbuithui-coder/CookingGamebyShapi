@@ -680,7 +680,8 @@ function update() {
     if (hunger >= 50) { B.binAttempts = 0; B.lockedBin = null; }
 
     // Sleep if very tired and night
-    if (energy < 20 && (hr >= 22 || hr < 5)) {
+    // Sleep if exhausted (NL < 10) OR nighttime (22h-5h) and tired (NL < 20)
+    if (energy < 10 || (energy < 20 && (hr >= 22 || hr < 5))) {
       B.target = LOC.camp;
       B.action = '😴 Kiệt sức → ngủ...';
       goTo(LOC.camp.x, LOC.camp.z, 5);
