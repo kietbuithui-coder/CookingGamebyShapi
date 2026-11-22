@@ -5,7 +5,7 @@ import { describe, it, expect } from 'vitest';
 import { RECIPES, RECIPE_LIST, STEP_NAME, STEP_TOOLS, toolsFor, fuelPerPortion } from '../src/data/recipes';
 import { INGS } from '../src/data/ingredients';
 import { RNG } from '../src/core/util';
-import { tronSpots, tronCalls, tronTapAt, tronScore, tronLimit, TRON_N, TRON_ROUNDS, TRON_GAP, TRON_HIT, TRON_RX, TRON_RZ, TRON_CZ } from '../src/cook/tron';
+import { tronSpots, tronCalls, tronTapAt, tronScore, tronLimit, tronRound, TRON_N, TRON_ROUNDS, TRON_GAP, TRON_HIT, TRON_RX, TRON_RZ, TRON_CZ } from '../src/cook/tron';
 import gamesRaw from '../src/cook/games.ts?raw';
 import cookRaw from '../src/cook/cook.ts?raw';
 import uiRaw from '../src/ui/ui.ts?raw';
@@ -117,6 +117,29 @@ describe('bánh tráng trộn trộn topping (lượt 58)', () => {
     // bấm nhầm nhiều thì không thể vẫn được điểm cao
     expect(tronScore(total, total, 5)).toBeLessThan(0.5);
     for (const v of [tronScore(0, total, 0), tronScore(99, total, 9999)]) { expect(v).toBeGreaterThanOrEqual(0.05); expect(v).toBeLessThanOrEqual(1); }
+  });
+
+  // ── Lỗi người chơi báo sau lượt 58: “topping trên khay biến mất khi ấn 1 lần”. Ván gọi 2 vòng nên đĩa phải
+  //    nằm lại suốt ván; nếu ẩn cả đĩa sau lần chạm đầu thì sang vòng 2 máy gọi vào chỗ trống, chỉ còn nhãn trơ.
+  it('máy gọi MỖI topping đúng 2 lần ⇒ đĩa phải nằm lại trên khay suốt ván, không được ẩn sau lần chạm đầu', () => {
+    const calls = tronCalls(rand(9));
+    const seen = new Map<number, number>();
+    for (const c of calls) seen.set(c, (seen.get(c) ?? 0) + 1);
+    for (let li = 0; li < TRON_N; li++) expect(seen.get(li), `topping ${li}`).toBe(TRON_ROUNDS);
+    // vòng của từng lượt: 0–4 là vòng 1, 5–9 là vòng 2
+    expect(calls.map((_, k) => tronRound(k))).toEqual([1, 1, 1, 1, 1, 2, 2, 2, 2, 2]);
+    expect(tronRound(9)).toBe(TRON_ROUNDS);
+    // lớp vẽ: chỉ xét phần TronGame (BoilGame phía trên cũng ẩn chén khi đã đổ — chuyện khác)
+    const tron = gamesRaw.slice(gamesRaw.indexOf('export class TronGame'), gamesRaw.indexOf('// ───────────────────────── Việc làm thêm'));
+    expect(tron.length).toBeGreaterThan(2000);
+    expect(tron).not.toMatch(/\.dishes\[[^\]]*\]\.g\.visible = false/);   // không ẩn đĩa nữa
+    expect(tron).not.toMatch(/d\.g\.visible = false/);
+    expect(tron).toMatch(/d\.g\.visible = true/);
+    expect(tron).toMatch(/private bits: \{ m: THREE\.Mesh; from: THREE\.Vector3; f: number \}\[\] = \[\]/);
+    expect(tron).toMatch(/this\.bits\.push\(/);
+    // nhãn chỉ vẽ cho đĩa còn topping — hết vòng thì đầy lại nên nhãn cũng trở lại
+    expect(tron).toMatch(/filter\(\(s\) => this\.dishes\[s\.li\]\.full > 0\)/);
+    expect(tron).toMatch(/for \(const x of this\.dishes\) x\.full = 1/);
   });
 
   it('mini game được nối vào bàn bếp, và MỖI ván lấy hạt giống mới (hết ván này sang ván khác vị trí đổi)', () => {

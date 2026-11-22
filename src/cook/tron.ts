@@ -50,6 +50,12 @@ export function tronSpots(rand: () => number, n = TRON_N): Spot[] {
   return out;
 }
 
+/**
+ * Vòng thứ mấy (đếm từ 1) của lượt gọi thứ `k`. Một ván gọi 2 vòng nên mỗi topping được gọi 2 lần —
+ * nghĩa là đĩa topping phải NẰM LẠI trên khay suốt ván, chỉ phần đã cho vào hộp là biến mất.
+ */
+export const tronRound = (k: number, n = TRON_N) => Math.floor(k / n) + 1;
+
 /** Thứ tự gọi tên topping trong một ván: trộn đều, mỗi vòng gọi đủ cả n lượt. */
 export function tronCalls(rand: () => number, n = TRON_N, rounds = TRON_ROUNDS): number[] {
   const out: number[] = [];

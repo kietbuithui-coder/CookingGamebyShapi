@@ -1031,6 +1031,14 @@ Bước hoàn thiện của món này đổi sang **bước `tron`** (`TronStep`
 - Thứ tự gọi (`tronCalls`) cũng trộn đều mỗi vòng, và **không gọi trùng tên hai lần liền** (kể cả ở chỗ nối hai vòng —
   nghe như máy bị kẹt).
 
+**Đĩa phải nằm lại suốt ván (hotfix sau lượt 58).** Người chơi chạm đúng một lần rồi báo *“topping trên khay biến
+mất”*. Nguyên nhân: bản đầu cho **cả cái đĩa** bay vào hộp rồi `d.g.visible = false`; nhưng một ván gọi **2 vòng**
+(`tronCalls` gọi mỗi topping 2 lần) ⇒ sang vòng 2 máy gọi đúng những topping vừa biến mất, trên khay chỉ còn cái nhãn
+trơ giữa bàn. Nay chỉ **một mẩu nhỏ** của topping tách khỏi đĩa và bay vào hộp (`bits`, bay vòng cung rồi xoá khỏi sân
+khấu), đĩa + phần topping còn lại **luôn hiện** (`d.g.visible = true`), đĩa vơi dần (nhỏ lại 18 %) và **đầy lại khi hết
+vòng** (`full = 1`); nhãn chỉ vẽ cho đĩa còn topping nên nhãn cũng tự trở lại. Đĩa bánh tráng vẽ thành **nắm sợi** có
+bóng đổ thay vì xấp bánh mỏng cùng màu đĩa — xấp cũ trông như đĩa trống, đúng chỗ dễ tưởng topping “biến mất”.
+
 **Thẻ góc màn hình**: `UI.cookCard(items, title)` nhận tiêu đề; màn trộn hiện *“Máy đang gọi (vòng 1/2)”* thay vì
 *“Thứ tự cho vào”* (bày theo phiếu không còn đúng nghĩa), hết ván đổi thành *“Đã trộn đủ 5 thứ”*.
 

@@ -1508,3 +1508,9 @@ Probe `tools/probe/steps/tron58.mjs`: 2 ván liền nhau cho 5 toạ độ khác
 
 **Bài học:** phần “ngẫu nhiên” phải tách khỏi lớp vẽ thì mới đo được bằng máy — vị trí rải nằm trong `tron.ts` nên
 test khẳng định được “40 ván ⇒ 40 cách xếp”, còn nếu rải tay trong `TronGame` thì chỉ nhìn ảnh mà đoán.
+
+**Hotfix ngay sau lượt 58** (người chơi báo: *“topping trên khay biến mất khi ấn 1 lần”*): bản đầu ẩn **cả đĩa** sau
+lần chạm đúng, mà ván gọi 2 vòng nên sang vòng 2 máy gọi vào chỗ trống. Nay đĩa nằm lại suốt ván, chỉ một **mẩu** topping
+bay vào hộp (`bits`), đĩa vơi dần rồi đầy lại khi hết vòng, nhãn vẽ theo đĩa còn topping; đĩa bánh tráng đổi sang nắm sợi
+(nhìn rõ, không còn giống đĩa trống). Test thêm 1 bài (`tests/tron58.test.ts` → 11 bài) + probe `tron58.mjs` chặn đúng
+lỗi này: chạm đúng 1 lần ⇒ `đĩaHiện: 5`, hết vòng 1 ⇒ `cònTopping: [1,1,1,1,1]`.
