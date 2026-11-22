@@ -469,8 +469,10 @@ function antiStuck() {
       }
       
       // Emergency: teleport when very stuck (esc > 30) or exhausted (NL=0)
-      if (B.stuckEscapes > 30 || (state.st?.energy ?? 100) <= 0) {
-        lg(`🆘 Kẹt 100% (${B.stuckEscapes}) → teleport về camp`, 'error');
+      const g = G();
+      const energy = g?.st?.energy ?? 100;
+      if (B.stuckEscapes > 30 || energy <= 0) {
+        lg(`🆘 Kẹt 100% (esc=${B.stuckEscapes}, NL=${energy.toFixed(0)}) → teleport về camp`, 'error');
         p.x = LOC.camp.x; p.z = LOC.camp.z;
         B.stuckEscapes = 0;
         B.lockedBin = null;
