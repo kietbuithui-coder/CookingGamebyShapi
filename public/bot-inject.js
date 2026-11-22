@@ -471,7 +471,9 @@ function antiStuck() {
       // Emergency: teleport when very stuck (esc > 30) or exhausted (NL=0)
       const g = G();
       const energy = g?.st?.energy ?? 100;
-      if (B.stuckEscapes > 30 || energy <= 0) {
+      // Add cooldown: only teleport for NL=0 every 600 ticks to avoid spam
+      const canTeleportForNL = energy <= 0 && (!B.lastNLTeleport || B.tick - B.lastNLTeleport > 600);
+      if (B.stuckEscapes > 30 || canTeleportForNL) {
         lg(`🆘 Kẹt 100% (esc=${B.stuckEscapes}, NL=${energy.toFixed(0)}) → teleport về camp`, 'error');
         p.x = LOC.camp.x; p.z = LOC.camp.z;
         B.stuckEscapes = 0;
@@ -480,6 +482,7 @@ function antiStuck() {
         B.target = null;
         B.action = '';
         B.giveUpUntil = B.tick + 600; // don't set distant targets for 10 minutes
+        if (energy <= 0) B.lastNLTeleport = B.tick; // record teleport time for cooldown
         // Blacklist current position (litter or waypoint area)
         if (!B.blacklistLit) B.blacklistLit = [];
         B.blacklistLit.push({x: B.lx, z: B.lz, tick: B.tick});
