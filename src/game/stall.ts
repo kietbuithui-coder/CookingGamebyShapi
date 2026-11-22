@@ -5,6 +5,7 @@ import { MB, MAT } from '../gfx/mb';
 import { ganhModel, cartModel, charcoalStove, gasStove, boardModel, knifeModel, panModel, potModel, grateModel, iceBox, lanternModel, umbrellaModel, plasticStool, plasticTable, ingModel, signBoardModel, speakerModel, takeawayRackModel, juicerModel, glassCaseModel, teaSetModel, standFanModel, posCounterModel, wifiSpeakerModel, commercialFridgeModel, commercialStoveModel, rangeHoodModel, washBasinModel, acUnitModel } from '../gfx/props';
 import { takeawayBag, servingTray, Look } from '../gfx/people';
 import { SPOTS, Spot, spotById, groundY, NAV_BLOCK, CORNER, edgeKey } from '../world/layout';
+import { setRoadblock } from './roads';
 import { Game, Helper, Booking, STAT_MAX, absMin, hourOf, addStack } from '../sim/state';
 import { branchTick, errandWho, arrivalRate, has, tier, menuOf, available, decide, decideGroup, review, settleSale, lostCustomer, readyCount, finishPossible, spend, earn, stove, changeRel, meet, wx, eventOn, Persona, addXp, canSell, missingFor, hasPrep, stallRoom, stallQueueCap, isNight, level, stallRent, payStallRent, helperGate, hireHelper, fireHelper, helperCandidate, helperPatience, sousCandidate, sousWork, createBooking, dueBooking, reservedSeats, expireBookings, staffReports, lowStockCount, autoBookOn, seatCount, dineIn, isRestaurant, secondOrder, periodName, PATIENCE_RANGE, onShift } from '../sim/rules';
 import { RECIPES, RecipeDef } from '../data/recipes';
@@ -1394,6 +1395,7 @@ export class StallSys {
     if (e.roadblock) {
       const ks = [edgeKey(CORNER['01NE'].id, CORNER['11NW'].id), edgeKey(CORNER['01SE'].id, CORNER['11SW'].id)];
       for (const k of ks) on ? NAV_BLOCK.add(k) : NAV_BLOCK.delete(k); ctx.city.roadblock.visible = on;
+      setRoadblock(on);   // xe cộ cũng phải quay đầu trước rào, không chỉ người đi bộ đi vòng
     }
     if (on && e.actor && this.s.where === 'placed') { this.actorId = e.actor; this.actorT = rnd.range(6, 18); this.actorTries = 0; }
   }
@@ -1599,7 +1601,7 @@ export class StallSys {
   /** Nạp lại sau khi tải save. */
   reset() { for (const n of this.customers.slice()) this.dismiss(n, false); this.builtKey = ''; this.stockKey = ''; this.busy = null; this.actorId = ''; this.rowdy = 0; this.helper = null; this.helper2 = null;
     if (this.keeper && this.keeper.state !== 'gone') ctx.npcs.leave(this.keeper);
-    this.keeper = null; this.keeperRetry = 0; this.helperTask = { 1: { mode: 'idle', holdT: 0, wipeCd: 8, yaw: 0 }, 2: { mode: 'idle', holdT: 0, wipeCd: 14, yaw: 0 } }; this.sous = null; this.sous2 = null; this.sousPhase = { 1: { idx: 0, moveCd: 7 }, 2: { idx: 0, moveCd: 9 } }; this.offerNpc = null; this.offerT = 45; this.sousT = 18; this.sous2T = 22; this.bookT = 45; ctx.city.roadblock.visible = eventOn(ctx.g, 'cam_duong'); NAV_BLOCK.clear(); if (eventOn(ctx.g, 'cam_duong')) this.onEvent('cam_duong', true); }
+    this.keeper = null; this.keeperRetry = 0; this.helperTask = { 1: { mode: 'idle', holdT: 0, wipeCd: 8, yaw: 0 }, 2: { mode: 'idle', holdT: 0, wipeCd: 14, yaw: 0 } }; this.sous = null; this.sous2 = null; this.sousPhase = { 1: { idx: 0, moveCd: 7 }, 2: { idx: 0, moveCd: 9 } }; this.offerNpc = null; this.offerT = 45; this.sousT = 18; this.sous2T = 22; this.bookT = 45; ctx.city.roadblock.visible = eventOn(ctx.g, 'cam_duong'); NAV_BLOCK.clear(); setRoadblock(false); if (eventOn(ctx.g, 'cam_duong')) this.onEvent('cam_duong', true); }
   refresh() { this.builtKey = ''; this.stockKey = ''; this.branchKey = ''; }
 }
 export function stallHint(g: Game, stowed = false): string {

@@ -11,16 +11,15 @@ import { downloadForOffline } from '../core/offline';
 import { addStack } from '../sim/state';
 import * as PUI from '../ui/phoneUI';
 import * as PH from '../sim/phone';
-import { REGULARS, FIXED } from '../data/people';
+import { REGULARS } from '../data/people';
 import { advice, destOpen, nowText } from '../sim/advice';
 import { LANDMARK_BY_ID } from '../data/landmarks';
 import { SHOPS } from '../data/shops';
 import { INGS } from '../data/ingredients';
 import { money } from '../core/util';
-import { SKINS } from '../gfx/people';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Bà Chín Ve Chai có nước da rám nắng riêng, không còn lấy màu da sáng nhất trong bảng';
+export const DEV_BUILD_TAG = 'Rào “Cấm đường” giờ chặn cả xe cộ: xe quay đầu ở vạch rào, không còn chạy xuyên qua hai hàng rào trước chợ';
 
 /**
  * MÃ PIN CỦA MENU ẨN. Bấm 7 lần chữ "Cài đặt" chỉ mở bàn phím số; nhập đúng mã này mới thấy menu test.
@@ -134,52 +133,52 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — mặt Bà Chín Ve Chai đổi sang da rám nắng (lượt 56)',
+      title: 'Mới nhất — rào Cấm đường chặn được cả xe cộ (lượt 57)',
       items: [
         {
-          id: 't56_mat_soi',
-          label: 'Soi mặt Bà Chín Ve Chai ở vựa ve chai',
-          sub: 'Tele tới sạp cân ve chai ở Khu Dân Cư rồi quay mặt vào bà — so với trước đây da sáng nhất bảng',
-          tone: 'yellow',
-          closePanel: true,
-          run: () => {
-            const a = ctx.world.anchors.v_scrap2;
-            if (!a) { toast('Không tìm thấy vựa ve chai Bà Chín.', 'warn'); return; }
-            const x = a.x, z = a.z + 2.0;
-            tpTo(x, z, Math.atan2(a.x - x, a.z - z), 'Vựa ve chai Bà Chín — quay mặt vào bà để soi nước da mới.');
-          },
-        },
-        {
-          id: 't56_mat_so_sanh',
-          label: 'Da Bà Chín đậm hơn bao nhiêu?',
-          sub: 'Đọc thẳng bảng màu da trong mã: màu cũ theo công thức và màu mới khai riêng cho Bà Chín',
+          id: 't57_cam_duong_bat',
+          label: 'Bật “Cấm đường” rồi đứng ngay trước rào xem xe',
+          sub: 'Bật sự kiện thật, tele ra đầu đoạn bị rào (tuyến dọc z tâm x = −29,5, hai vạch z = ±25) — xe phải quay đầu ở vạch, không xuyên rào',
           tone: 'green',
           closePanel: true,
           run: () => {
-            const f = FIXED.scrap2;
-            const hex = (c: number) => '#' + c.toString(16).padStart(6, '0');
-            const lum = (c: number) => 0.2126 * ((c >> 16) & 255) + 0.7152 * ((c >> 8) & 255) + 0.0722 * (c & 255);
-            const old = SKINS[(f.face * 3 + f.hat) % SKINS.length], now = f.skin ?? old;
+            const g = ctx.g;
+            R.startEvent(g, 'cam_duong');
+            const x = -29.5, z = 31;
+            tpTo(x, z, Math.PI, 'Đứng sau rào phía bắc — nhìn xuống đường xem xe có quay đầu không.');
+          },
+        },
+        {
+          id: 't57_cam_duong_do',
+          label: 'Đo lại: mấy xe đang nằm trong đoạn cấm?',
+          sub: 'Quét toàn bộ xe cộ, đếm số xe lọt vào đoạn giữa hai hàng rào — phải là 0',
+          tone: 'yellow',
+          closePanel: true,
+          run: () => {
+            const list = ctx.traffic.list;
+            const inBlock = list.filter((r) => r.axis === 1 && Math.abs(r.road + 29.5) < 0.5 && r.pos > -25 && r.pos < 25);
+            const rows = list.slice(0, 8).map((r) => {
+              const x = r.axis === 0 ? r.pos : r.road + r.lane, z = r.axis === 0 ? r.road + r.lane : r.pos;
+              return `· ${r.car ? 'ô tô' : r.moto ? 'xe máy' : 'xe đạp'} — (${x.toFixed(1)}; ${z.toFixed(1)})`;
+            });
             ctx.ui.dialog({
-              who: f.name,
-              text: `Màu da cũ (bảng chọn theo khuôn mặt + cái nón): ${hex(old)} — sáng nhất trong 5 màu da.\n`
-                + `Màu da bây giờ: ${hex(now)} — tối hơn ${Math.round(lum(old) - lum(now))} điểm độ sáng, đúng dáng người cả ngày ngoài nắng cân ve chai.\n\n`
-                + `Chỉ Bà Chín có màu riêng; ông Tư Rác và những người đứng quầy khác vẫn dùng bảng màu như cũ.`,
+              who: 'Rào cấm đường',
+              text: `Đoạn bị rào: tuyến dọc z có tâm x = −29,5, từ z = −25 tới z = 25 (rào dựng ở đầu phố chợ).\n\n`
+                + `Xe đang nằm trong đoạn cấm: ${inBlock.length}.\n\n`
+                + (rows.length ? `Xe trên đường lúc này:\n${rows.join('\n')}` : 'Lúc này chưa có xe nào trên đường — đứng đợi một chút rồi bấm lại.'),
               opts: [{ t: 'Đóng' }],
             });
           },
         },
         {
-          id: 't56_vua_tu_rac',
-          label: 'So sánh với ông Tư Rác (vựa bên Xóm Lao Động)',
-          sub: 'Hai chủ vựa ve chai: Bà Chín da rám nắng, ông Tư vẫn theo bảng màu — tele sang xem cạnh',
+          id: 't57_cam_duong_tat',
+          label: 'Tắt cấm đường (rào biến mất, xe chạy lại bình thường)',
+          sub: 'Kết thúc sự kiện đúng như khi hết giờ — rào ẩn đi và xe không bị bắt quay đầu nữa',
           tone: 'yellow',
           closePanel: true,
           run: () => {
-            const a = ctx.world.anchors.v_scrap;
-            if (!a) { toast('Không tìm thấy vựa ve chai Tư Rác.', 'warn'); return; }
-            const x = a.x, z = a.z + 2.0;
-            tpTo(x, z, Math.atan2(a.x - x, a.z - z), 'Vựa ve chai Tư Rác — ông Tư vẫn để da theo bảng màu cũ.');
+            R.endEvent(ctx.g, 'cam_duong');
+            toast('Đã dỡ rào — xe chạy lại bình thường, người đi bộ cũng không phải đi vòng.', 'info', 'flag');
           },
         },
       ],

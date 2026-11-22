@@ -19,11 +19,11 @@
 | Quầy hàng & nấu ở world | `src/game/stall.ts` (1.557), `src/cook/*` |
 | Hội thoại / menu NPC | `src/game/acts.ts` (1.390) |
 | HUD / bảng | `src/ui/ui.ts` (424), `src/ui/panels.ts` (517), `src/ui/style.css` (563) |
-| Test | `tests/*.test.ts` — **51 tệp, 618 bài**, `environment: 'node'` |
-| Thử giao diện thật | `tools/probe/` (88 kịch bản `.mjs` trong `steps/`, Chrome headless) |
+| Test | `tests/*.test.ts` — **52 tệp, 626 bài**, `environment: 'node'` |
+| Thử giao diện thật | `tools/probe/` (90 kịch bản `.mjs` trong `steps/`, Chrome headless) |
 | Bản phát hành | `docs/` — **sinh ra bởi `build:pages`, không sửa tay** |
 
-Trạng thái đo được hôm nay (2026-11-21, sau lượt 56): **typecheck ✅ · 614/614 test ✅ (50 tệp, ~12 s) · build ✅ · build:pages ✅**.
+Trạng thái đo được hôm nay (2026-11-22, sau lượt 57): **typecheck ✅ · 614/614 test ✅ (50 tệp, ~12 s) · build ✅ · build:pages ✅**.
 
 ---
 
@@ -212,6 +212,9 @@ Những test "gác cổng" dễ bị quên:
 - **`mb.cyl`/`U.cyl` tham số cuối là bán kính ĐỈNH tuyệt đối**, không phải tỉ lệ của bán kính đáy. Truyền 0,82 cho cái đĩa bán kính 0,125 là ra cái mâm 4 m (đã vấp khi vẽ đầu vòi hoa sen).
 - **Màu da nhân vật cố định không còn là công thức cứng:** `lookFromFixed()` chọn `SKINS[(face*3 + hat) % 5]`, nên ai có `face`/`hat` trùng là ra cùng một màu — chuyện Bà Chín (`face 4, hat 1`) rơi đúng màu sáng nhất bảng. Muốn một người có nước da riêng thì khai `skin` trong `FIXED` (`data/people.ts`), đừng sửa công thức (sửa công thức là đổi da cả thành phố).
 - **Chụp cận mặt trong probe:** nhãn tương tác `#focus` và bong bóng hội thoại `ui.say()` mọc đúng giữa mặt. Trước khi `shot`, tắt `ui.$('focus').style.display = 'none'`, đặt `interact.focus = null`, và `ui.unsay(n)` cho từng NPC.
+- **Chặn đường phải chặn CẢ HAI hệ.** `NAV_BLOCK` (đồ thị đi bộ) và `traffic.ts` (xe) là hai hệ riêng: lượt 57 phát hiện rào “Cấm đường” chỉ chặn người đi bộ, xe vẫn xuyên qua. Từ nay khai vùng chặn ở `game/roads.ts` (`ROADBLOCK` + `setRoadblock`) rồi cả `stall.onEvent` và `traffic.update` cùng đọc — đừng tự đoán `ctx.city.roadblock.visible`.
+- **Xe phải so vị trí SẮP tới với vạch rào**, không phải vị trí hiện tại: khung hình 0,1 s ở 9 m/s là 0,9 m, so sai là lọt rào đúng ở những khung đó (đã vấp khi viết test).
+- **Đo bằng đối chứng:** muốn chứng minh một luật có tác dụng thì tắt luật rồi đo lại. Lượt 57: bật rào → 0 mẫu xe trong đoạn cấm, tắt → 570 mẫu.
 - **NPC không đụng vật cản của người chơi.** Quầy bậc 1–4 phải tự khai hộp thân quầy (`stall.counterBox`) rồi đẩy NPC ra, và chèn waypoint vòng đầu quầy — nếu không khách sẽ đi từ sau lưng người bán xuyên thẳng qua quầy như trước lượt 55.
 
 ### 6.3 Chống side effect lặp
@@ -223,7 +226,7 @@ Những test "gác cổng" dễ bị quên:
 ### 6.4 Đo được gì, không đo được gì (trung thực)
 | Đo được | Không đo được ở sandbox |
 |---|---|
-| Luật chơi (618 test), typecheck, build, bundle size | FPS thật trên GPU (máy không có GPU; gói JS đo được 1.335 kB / gzip 420 kB + 120 kB phông chữ) |
+| Luật chơi (626 test), typecheck, build, bundle size | FPS thật trên GPU (máy không có GPU; gói JS đo được 1.335 kB / gzip 420 kB + 120 kB phông chữ) |
 | Luồng UI trong Chrome headless ở 844×390 và 390×844 | Cảm giác chạm trên điện thoại thật, tai nghe/loa thật |
 | Hình học: mặt trùng phẳng, biển bị che (`audit.mjs`) | Chơi trọn nhiều giờ liên tục, trộm đêm, chuỗi mục tiêu theo trình tự thật |
 
