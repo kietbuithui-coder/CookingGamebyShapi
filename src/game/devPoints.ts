@@ -11,15 +11,16 @@ import { downloadForOffline } from '../core/offline';
 import { addStack } from '../sim/state';
 import * as PUI from '../ui/phoneUI';
 import * as PH from '../sim/phone';
-import { REGULARS } from '../data/people';
+import { REGULARS, FIXED } from '../data/people';
 import { advice, destOpen, nowText } from '../sim/advice';
 import { LANDMARK_BY_ID } from '../data/landmarks';
 import { SHOPS } from '../data/shops';
 import { INGS } from '../data/ingredients';
 import { money } from '../core/util';
+import { SKINS } from '../gfx/people';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Sạp Dì Sáu đổi tên thành Trứng – Sữa – Giò + khách không còn đi xuyên quầy gánh + hết kẹt khi ngủ ở nhà nghỉ/nhà trọ, buồng tắm có vòi sen dựng thật';
+export const DEV_BUILD_TAG = 'Bà Chín Ve Chai có nước da rám nắng riêng, không còn lấy màu da sáng nhất trong bảng';
 
 /**
  * MÃ PIN CỦA MENU ẨN. Bấm 7 lần chữ "Cài đặt" chỉ mở bàn phím số; nhập đúng mã này mới thấy menu test.
@@ -133,109 +134,52 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — tên sạp Dì Sáu, khách không xuyên quầy, ngủ ở nhà nghỉ/trọ, buồng tắm (lượt 55)',
+      title: 'Mới nhất — mặt Bà Chín Ve Chai đổi sang da rám nắng (lượt 56)',
       items: [
         {
-          id: 't55_sap_tensach',
-          label: 'Sạp Dì Sáu giờ tên gì, bán những gì?',
-          sub: 'Đọc thẳng bảng hàng của sạp trong chợ: trứng, sữa, giò chả — kèm giá và giờ mở',
+          id: 't56_mat_soi',
+          label: 'Soi mặt Bà Chín Ve Chai ở vựa ve chai',
+          sub: 'Tele tới sạp cân ve chai ở Khu Dân Cư rồi quay mặt vào bà — so với trước đây da sáng nhất bảng',
+          tone: 'yellow',
+          closePanel: true,
+          run: () => {
+            const a = ctx.world.anchors.v_scrap2;
+            if (!a) { toast('Không tìm thấy vựa ve chai Bà Chín.', 'warn'); return; }
+            const x = a.x, z = a.z + 2.0;
+            tpTo(x, z, Math.atan2(a.x - x, a.z - z), 'Vựa ve chai Bà Chín — quay mặt vào bà để soi nước da mới.');
+          },
+        },
+        {
+          id: 't56_mat_so_sanh',
+          label: 'Da Bà Chín đậm hơn bao nhiêu?',
+          sub: 'Đọc thẳng bảng màu da trong mã: màu cũ theo công thức và màu mới khai riêng cho Bà Chín',
           tone: 'green',
           closePanel: true,
           run: () => {
-            const s = SHOPS.m_trung;
-            const lines = s.items.map((id) => {
-              const d = INGS[id];
-              return `· ${d.name} — ${money(d.price)}/${d.unit}`;
-            });
+            const f = FIXED.scrap2;
+            const hex = (c: number) => '#' + c.toString(16).padStart(6, '0');
+            const lum = (c: number) => 0.2126 * ((c >> 16) & 255) + 0.7152 * ((c >> 8) & 255) + 0.0722 * (c & 255);
+            const old = SKINS[(f.face * 3 + f.hat) % SKINS.length], now = f.skin ?? old;
             ctx.ui.dialog({
-              who: s.vendor,
-              text: `Sạp ${s.name}, mở ${s.open[0]}h–${s.open[1]}h trong chợ.\n\n${lines.join('\n')}\n\n“${s.say}”`,
+              who: f.name,
+              text: `Màu da cũ (bảng chọn theo khuôn mặt + cái nón): ${hex(old)} — sáng nhất trong 5 màu da.\n`
+                + `Màu da bây giờ: ${hex(now)} — tối hơn ${Math.round(lum(old) - lum(now))} điểm độ sáng, đúng dáng người cả ngày ngoài nắng cân ve chai.\n\n`
+                + `Chỉ Bà Chín có màu riêng; ông Tư Rác và những người đứng quầy khác vẫn dùng bảng màu như cũ.`,
               opts: [{ t: 'Đóng' }],
             });
           },
         },
         {
-          id: 't55_sap_tele',
-          label: 'Tele tới sạp Trứng – Sữa – Giò Dì Sáu',
-          sub: 'Đứng ngay trước sạp trong chợ để bấm hỏi mua từng món',
+          id: 't56_vua_tu_rac',
+          label: 'So sánh với ông Tư Rác (vựa bên Xóm Lao Động)',
+          sub: 'Hai chủ vựa ve chai: Bà Chín da rám nắng, ông Tư vẫn theo bảng màu — tele sang xem cạnh',
           tone: 'yellow',
           closePanel: true,
           run: () => {
-            tpFront(ctx.world.anchors.v_m_trung, 'Đã tới sạp Dì Sáu trong chợ — bấm vào ô hàng để hỏi mua.');
-          },
-        },
-        {
-          id: 't55_ngu_nhanghi',
-          label: 'Ngủ thử ở nhà nghỉ — xem có tỉnh dậy trong gian khác không',
-          sub: 'Thuê sẵn phòng 3 đêm rồi mở bảng ngủ; tỉnh dậy phải đứng cạnh giường, không lọt sang gian bên',
-          tone: 'green',
-          closePanel: true,
-          run: () => {
-            const g = ctx.g;
-            g.housing = 'nhanghi'; g.paidUntil = Math.max(g.paidUntil, g.day + 3);
-            const sp = ctx.acts.bedStand('nhanghi');
-            if (sp) tpTo(sp.x, sp.z, sp.yaw, 'Nhà nghỉ Bình Dân — bấm vào giường rồi chọn ngủ.');
-          },
-        },
-        {
-          id: 't55_ngu_tro',
-          label: 'Ngủ thử ở phòng trọ — cùng phép thử',
-          sub: 'Thuê sẵn phòng trọ 1 tuần rồi mở bảng ngủ ở giường cuối phòng',
-          tone: 'green',
-          closePanel: true,
-          run: () => {
-            const g = ctx.g;
-            g.housing = 'tro'; g.paidUntil = Math.max(g.paidUntil, g.day + 7);
-            const sp = ctx.acts.bedStand('tro');
-            if (sp) tpTo(sp.x, sp.z, sp.yaw, 'Phòng trọ Bác Năm — bấm vào giường rồi chọn ngủ.');
-          },
-        },
-        {
-          id: 't55_sen_nhanghi',
-          label: 'Buồng tắm nhà nghỉ — vòi sen vừa vẽ lại',
-          sub: 'Nhìn vào góc tắm cuối phòng: tường ốp gạch, khay có lỗ thoát, đầu sen có lỗ phun',
-          tone: 'yellow',
-          closePanel: true,
-          run: () => {
-            const g = ctx.g; g.housing = 'nhanghi'; g.paidUntil = Math.max(g.paidUntil, g.day + 3);
-            const w = ctx.world.anchors.wash_nhanghi;
-            if (w) standNear(w.x, w.z - 0.3, 'Buồng tắm nhà nghỉ — đứng đây ngắm vòi sen.');
-          },
-        },
-        {
-          id: 't55_sen_tro',
-          label: 'Buồng tắm nhà trọ — cùng vòi sen đó',
-          sub: 'Góc tắm cuối phòng trọ: sen treo trên vách ngăn, cạnh bàn thấp có ấm nước',
-          tone: 'yellow',
-          closePanel: true,
-          run: () => {
-            const g = ctx.g; g.housing = 'tro'; g.paidUntil = Math.max(g.paidUntil, g.day + 7);
-            const w = ctx.world.anchors.wash_tro;
-            if (w) standNear(w.x, w.z - 0.3, 'Góc tắm phòng trọ — đứng đây ngắm vòi sen.');
-          },
-        },
-        {
-          id: 't55_ganh_cho',
-          label: 'Bán gánh ở Cổng Chợ — xem khách có đi xuyên quầy',
-          sub: 'Đặt gánh ở chợ, dọn 40 phần trà đá rồi mở bán: khách phải vòng qua đầu quầy, không cắt ngang thân quầy',
-          tone: 'green',
-          closePanel: true,
-          run: () => {
-            const g = ctx.g, S = ctx.stall;
-            if (g.stall.tier > 2) { toast('Phép thử này dành cho gánh / xe đẩy (bậc 1–2) — quầy của anh chị đang ở bậc cao hơn.', 'warn'); return; }
-            g.cash = Math.max(g.cash, 500000);
-            for (const id of ['ganh', 'daothot', 'bepthan', 'noi', 'chao']) if (!R.has(g, id)) R.buyGear(g, id);
-            if (g.stall.tier > 2) { toast('Không mua được gánh — quầy đang ở bậc cao hơn.', 'warn'); return; }
-            for (const [id, n] of [['tra', 80], ['da', 80]] as const) addStack(g.stall.store, { id, n, fresh: 95, q: 0.9, cost: 1000 });
-            g.rec.tra_da.known = true; g.rec.tra_da.on = true;
-            if (!g.stall.ready.some((r) => r.rid === 'tra_da')) g.stall.ready.push({ rid: 'tra_da', n: 40, q: 0.9, cost: 3000, at: g.min });
-            const sp = SPOTS.find((s) => s.id === 'cho');
-            if (!sp) return;
-            if (!S.placeAt(sp)) return;
-            const [px, pz] = S.standPos();
-            ctx.player.place(px, pz, g.stall.yaw, -0.2);
-            S.open();
-            toast('Gánh trà đá đã mở ở Cổng Chợ — đứng đây nhìn khách đi vòng qua đầu quầy.', 'good', 'shop', true);
+            const a = ctx.world.anchors.v_scrap;
+            if (!a) { toast('Không tìm thấy vựa ve chai Tư Rác.', 'warn'); return; }
+            const x = a.x, z = a.z + 2.0;
+            tpTo(x, z, Math.atan2(a.x - x, a.z - z), 'Vựa ve chai Tư Rác — ông Tư vẫn để da theo bảng màu cũ.');
           },
         },
       ],

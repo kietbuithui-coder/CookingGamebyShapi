@@ -380,7 +380,15 @@ export const KEEPER_POOL: HelperDef[] = [
   { name: 'Má Bảy', fem: true, face: 4, hairStyle: 7, shirt: 0xb9a88a, pants: 0x3a3a42, hair: 0xd9d9d6, skin: 0xf2c9a4, wage: 88000, ask: 'Má ở nhà rảnh, ra giữ quầy phụ {ac}. Tiền lời bao nhiêu má đưa lại đủ, má chỉ lấy công.' },
 ];
 
-export interface FixedNpcDef { id: string; name: string; face: number; fem: boolean; shirt: number; pants: number; hair: number; hat: number; hairStyle: number; fat: number; h: number; }
+export interface FixedNpcDef {
+  id: string; name: string; face: number; fem: boolean; shirt: number; pants: number; hair: number; hat: number;
+  hairStyle: number; fat: number; h: number;
+  /**
+   * Màu da riêng, bỏ trống thì lấy theo bảng như cũ. Dùng cho người mà nghề nghiệp nói lên nước da:
+   * bán ve chai, bốc vác, chạy xe ngoài nắng cả ngày thì không thể trắng hồng như nhân viên ngân hàng.
+   */
+  skin?: number;
+}
 export const FIXED: Record<string, FixedNpcDef> = {
   hot_toc: { id: 'hot_toc', name: 'Chú Bảy Kéo', face: 7, fem: false, shirt: 0xf3f0e8, pants: 0x2a2e3a, hair: 0x3a2a22, hat: 0, hairStyle: 6, fat: 1.05, h: 1 },
   thoi_trang: { id: 'thoi_trang', name: 'Cô Ngọc', face: 1, fem: true, shirt: 0xe86f9a, pants: 0x2a2e3a, hair: 0x2a2420, hat: 0, hairStyle: 5, fat: 0.98, h: 0.97 },
@@ -400,7 +408,7 @@ export const FIXED: Record<string, FixedNpcDef> = {
   police: { id: 'police', name: 'Chú Tám', face: 7, fem: false, shirt: 0x6a8a4a, pants: 0x4a6238, hair: 0x1e1a18, hat: 2, hairStyle: 0, fat: 1.08, h: 1.02 },
   equip: { id: 'equip', name: 'Chú Ba Tài', face: 7, fem: false, shirt: 0x3f6a9a, pants: 0x4a4a42, hair: 0x2a2420, hat: 0, hairStyle: 3, fat: 1.2, h: 1.0 },
   eatery: { id: 'eatery', name: 'Bà Tư', face: 4, fem: true, shirt: 0xf3f0e8, pants: 0x2a2e3a, hair: 0xbfbfbc, hat: 0, hairStyle: 2, fat: 1.15, h: 0.93 },
-  scrap2: { id: 'scrap2', name: 'Bà Chín Ve Chai', face: 4, fem: true, shirt: 0x8a7a4a, pants: 0x3a3a42, hair: 0xbfbfbc, hat: 1, hairStyle: 2, fat: 1.08, h: 0.94 },
+  scrap2: { id: 'scrap2', name: 'Bà Chín Ve Chai', face: 4, fem: true, shirt: 0x8a7a4a, pants: 0x3a3a42, hair: 0xbfbfbc, hat: 1, hairStyle: 2, fat: 1.08, h: 0.94, skin: 0xb8804f },
   scrap: { id: 'scrap', name: 'Ông Tư Rác', face: 3, fem: false, shirt: 0x7a6a58, pants: 0x4a4a42, hair: 0xbfbfbc, hat: 4, hairStyle: 3, fat: 0.95, h: 0.97 },
   pawn: { id: 'pawn', name: 'Chú Lâm', face: 5, fem: false, shirt: 0x6a1e2e, pants: 0x2a2e3a, hair: 0x1e1a18, hat: 0, hairStyle: 0, fat: 1.1, h: 1.0 },
   bank: { id: 'bank', name: 'Chị Thu', face: 5, fem: true, shirt: 0x2f3a52, pants: 0x2a2e3a, hair: 0x1e1a18, hat: 0, hairStyle: 2, fat: 0.92, h: 0.97 },
