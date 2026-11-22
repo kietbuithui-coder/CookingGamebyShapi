@@ -1,12 +1,14 @@
 import { describe, it, expect } from 'vitest';
+// @ts-expect-error — chỉ dùng trong test, không cần kiểu của node
+import { readFileSync } from 'node:fs';
 import { DEV_BUILD_TAG, DEV_PIN, DEV_PIN_LEN, devPinInput, getDevSections } from '../src/game/devPoints';
 
 describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
   it('chỉ gồm mục của tính năng mới nhất + nhóm địa điểm tele nhanh', () => {
-    expect(DEV_BUILD_TAG).toContain('nồi');
+    expect(DEV_BUILD_TAG).toContain('trà');
     const sections = getDevSections();
     expect(sections.length).toBe(2);
-    expect(sections[0].title).toContain('lượt 59');
+    expect(sections[0].title).toContain('lượt 60');
     expect(sections[1].title).toContain('Địa điểm');
     const ids = new Set<string>();
     for (const sec of sections) {
@@ -20,7 +22,7 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
       }
     }
     // mục của lượt này: mở bảng việc làm, về bến cảng 5h sáng, làm hết ca bốc cá / ca chạy bàn, vác tới bao cuối, đọc sổ
-    for (const id of ['t59_noi', 't59_viec_bang', 't59_viec_sang', 't59_viec_ca_bo', 't59_viec_ca_quan', 't59_viec_bao', 't59_viec_so']) expect(ids.has(id)).toBe(true);
+    for (const id of ['t61_tra', 't61_noi_da', 't61_noi_chanh', 't59_viec_bang', 't59_viec_sang', 't59_viec_ca_bo', 't59_viec_ca_quan', 't59_viec_bao', 't59_viec_so']) expect(ids.has(id)).toBe(true);
     // tele nhanh vẫn còn nguyên
     const loc = sections[1].items.map((i) => i.id);
     for (const id of ['tp_equip', 'tp_matbang_tb', 'tp_ongtu', 'tp_scrap2', 'tp_canho', 'tp_hobo', 'tp_mart']) expect(loc).toContain(id);
@@ -107,5 +109,29 @@ describe('mã PIN của menu ẩn (7777)', () => {
       for (const d of bad) r = devPinInput(r.next, d);
       expect(r.result, bad).not.toBe('ok');
     }
+  });
+
+  /**
+   * Lỗi người chơi gặp ở lượt 61: bấm “Chạy” trên ván MỚI thì nồi không mở, vì ván mới chỉ có 18.000₫
+   * ⇒ chưa mua được gánh (cấp 1) ⇒ `placeAt` từ chối với câu “Chỗ này cần gánh hàng rong trở lên”,
+   * và cũng chưa có bếp/nồi/than. Mục dựng sẵn phải tự lo đủ ba thứ: tiền, cấp quầy, dụng cụ.
+   */
+  it('mục dựng sẵn bếp trà tự lo tiền + cấp quầy + dụng cụ (ván mới chỉ có 18.000₫)', () => {
+    const src = readFileSync('src/game/devPoints.ts', 'utf8');
+    const fn = src.slice(src.indexOf('function chuanBiNoi'), src.indexOf('export function getDevSections'));
+    expect(fn).toContain('g.cash < 400000');            // nâng tiền trước khi mua
+    for (const id of ['ganh', 'bepthan', 'noi', 'daothot']) expect(fn).toContain(`'${id}'`);
+    expect(fn.indexOf('buyGear')).toBeLessThan(fn.indexOf('placeAt')); // mua gánh TRƯỚC khi đặt chỗ
+    expect(fn).toContain("ctx.stall.placeAt");
+    expect(fn).toContain('than');                        // đốt được lửa
+    // Cả hai món trà đều đi qua hàm này, và có mục gọi thẳng cho từng món.
+    const sections = getDevSections();
+    const items = sections[0].items.map((i) => i.id);
+    expect(items).toContain('t61_tra');
+    expect(items).toContain('t61_noi_da');
+    expect(items).toContain('t61_noi_chanh');
+    const body = src.slice(src.indexOf("id: 't61_tra'"), src.indexOf("id: 't59_viec_so'"));
+    expect(body).toContain("chuanBiNoi('tra_da')");
+    expect(body).toContain("chuanBiNoi('tra_chanh')");
   });
 });

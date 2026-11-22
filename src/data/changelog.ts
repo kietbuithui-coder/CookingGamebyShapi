@@ -14,6 +14,16 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 61',
+    tag: 'Menu test ẩn dựng sẵn bếp, nồi, than và đủ nguyên liệu cho cả trà đá lẫn trà chanh — chạm một lần là vào nồi',
+    items: [
+      'Mục “Dựng sẵn bếp cho TRÀ ĐÁ và TRÀ CHANH”: đặt sẵn quầy, mua bếp than, nồi, dao thớt, cho than và đủ nguyên liệu cả hai món, rồi hỏi bạn muốn vào nồi món nào.',
+      'Thêm hai mục gọi thẳng “Vào thẳng nồi TRÀ ĐÁ” và “Vào thẳng nồi TRÀ CHANH”: một cú bấm là đứng ngay ở bước cho nguyên liệu, không hỏi gì thêm.',
+      'Lý do: bấm mục cũ trên ván mới thì nồi không mở — ván mới chỉ có 18.000₫ nên chưa mua được gánh, quầy chưa đặt được chỗ, và thiếu bếp, nồi, than. Nay các mục này tự lo đủ, chỉ còn việc chạm chén.',
+      'Chạm chén là chén bay vào nồi, nồi chuyển sang bước giữ lửa và hiện nút “Quạt lửa” / “Lọc ra” như chơi bình thường.',
+    ],
+  },
+  {
     v: 'Lượt 60',
     tag: 'Sửa lỗi không cho được nguyên liệu vào nồi: trà đá và mọi món nấu, ninh, luộc, pha giờ chạm là ăn',
     items: [
@@ -99,19 +109,6 @@ export const CHANGELOG: LogEntry[] = [
       'Uống một lon Shapi là thanh chạy hồi ngay 30 %, cạn pin mà còn lon trong túi thì chạy tiếp được — nhưng đừng uống khi thanh đã gần đầy, phí.',
       'Kệ MiniMart và quầy tạp hoá được nới thêm ô để mỗi mặt hàng chỉ nằm đúng một chỗ, không còn cảnh lấy hàng ở ô trống.',
       'Ba loại bánh mới được vẽ hình riêng: bánh mì que là ổ dài và mảnh hơn bánh mì, một đầu quấn giấy; bánh tiêu là đĩa dẹt phồng rắc mè; bánh su kem có vỏ nâu và núm kem trắng trên đầu — trước đây cả ba trông giống hệt nhau.',
-    ],
-  },
-  {
-    v: 'Lượt 53',
-    tag: 'Thanh thể lực hồi nhanh hay chậm tuỳ máu và pin — người khoẻ chạy dai, người đang thương thở dốc',
-    items: [
-      'Thanh chạy không còn hồi một tốc độ cố định cho mọi người: máu càng thấp và pin năng lượng càng cạn thì thanh càng lâu đầy.',
-      'Máu 20 thì thanh chỉ hồi khoảng một nửa tốc độ bình thường — đứng chờ 22 giây mới đầy, thay vì 11 giây như người khoẻ.',
-      'Cạn pin năng lượng thì hồi chậm thêm, nhưng không cộng dồn thành đứng im: cùng lúc tệ nhất vẫn hồi được khoảng 40 % tốc độ.',
-      'Người đang thương còn TỤT thanh nhanh hơn khi chạy: máu 25 thì chạy liền được khoảng 8 giây thay vì 10 giây, cạn pin thì ngắn hơn nữa.',
-      'Chạm vào thanh thể lực là biết vì sao lâu đầy: nó ghi rõ hồi bao nhiêu phần trăm tốc độ, đang mất máu hay thiếu ngủ, chạy liền được mấy giây và cạn rồi phải chờ bao lâu.',
-      'Muốn chạy dai trở lại thì ăn cho no, ngủ cho đủ pin và đi khám khi mất máu — không có cách nào khác.',
-      'Bảng test của người làm game có thêm mục đọc thanh chạy hiện tại, so ba mức khoẻ / máu 45 / máu 20, và hai nút đặt sẵn chỉ số để thử.',
     ],
   },
 ];

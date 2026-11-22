@@ -1,6 +1,6 @@
 // Trình chạy kịch bản thử giao diện trong Chrome không giao diện (WebGL phần mềm, giả lập cảm ứng).
 // Dùng: node play.mjs steps/<tên>.mjs     Biến môi trường: URL, W, H, DPR, DESKTOP=1, OUT, LOG=1, MAXOUT
-// Mỗi bước: { eval, args, waitFor, timeout, tap, tapsEval, gap, drag, dragEval, hold, holdUntil, key, wait, shot, clip, label }
+// Mỗi bước: { eval, args, waitFor, timeout, tap, tapsEval, clickEval, gap, drag, dragEval, hold, holdUntil, key, wait, shot, clip, label }
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
@@ -33,6 +33,7 @@ for (const s of steps) {
     if (s.eval) { const r = await ev(s.eval, ...(s.args || [])); if (!s.quiet) console.log('»', short(s.eval), '=>', (JSON.stringify(r) ?? 'undefined').slice(0, s.max || MAXOUT)); }
     if (s.waitFor) { const t0 = Date.now(), to = s.timeout || 60000; let ok = false; while (Date.now() - t0 < to) { if (await ev(s.waitFor, ...(s.args || []))) { ok = true; break; } await sleep(200); } console.log(`  waitFor ${ok ? 'ok' : 'TIMEOUT'} ${((Date.now() - t0) / 1000).toFixed(1)}s ${short(s.waitFor)}`); }
     if (s.tap) await page.touchscreen.tap(s.tap[0], s.tap[1]);
+    if (s.clickEval) { const pts = await ev(s.clickEval, ...(s.args || [])); console.log('  click', JSON.stringify(pts).slice(0, 200)); for (const p of pts || []) { await page.mouse.click(p[0], p[1]); await sleep(s.gap || 250); } }
     if (s.tapsEval) { const pts = await ev(s.tapsEval, ...(s.args || [])); console.log('  taps', JSON.stringify(pts).slice(0, 200)); for (const p of pts || []) { await page.touchscreen.tap(p[0], p[1]); await sleep(s.gap || 250); } }
     if (s.drag || s.dragEval) {
       const pts = s.drag || await ev(s.dragEval, ...(s.args || []));

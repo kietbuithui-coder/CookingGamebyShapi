@@ -1139,6 +1139,33 @@ giai đoạn nấu chỉ nhận điểm nằm gần bọt đang nổi, còn lạ
 lấy ứng viên thấp nhất, mặt phẳng chính vẫn là mặt nước, các lớp cắt/trình bày/rửa/trộn có mặt phẳng sát đồ vật (≤ 6 cm), và mọi
 công thức có `boil` đều đi qua lớp đã sửa.
 
+### 4.44 Menu ẩn dựng sẵn bếp trà — vì sao “Chạy” trên ván mới không mở được nồi (lượt 61)
+
+Người chơi bấm mục test cũ (“Mở thẳng bước *Cho nguyên liệu* của nồi”) trên **ván mới** và vẫn thấy nồi trống.
+Đo bằng probe `tools/probe/steps/dev60.mjs` (mở menu ẩn thật: 7 lần chữ Cài đặt › `7777` › bấm nút *Chạy*):
+
+| Thứ tự kiểm tra trong `Cook.prep()` | Ván mới có gì | Kết quả |
+|---|---|---|
+| `stall.where === 'placed'` | `'none'` — chưa đặt quầy | ✗ dừng ngay |
+| `placeAt()` đòi `s.tier ≥ sp.minTier` | `tier = 0` (chưa có gánh) | ✗ *“Chỗ này cần gánh hàng rong trở lên.”* |
+| `missingTools()` | không có bếp/nồi | ✗ *“Thiếu dụng cụ”* |
+| `useFuel()` | không có than | ✗ *“Hết than!”* |
+| tiền | 18.000₫ (chưa đủ mua gánh 120.000₫) | ✗ |
+
+Tức lỗi **không phải ở cảm ứng** (đo chạm vẫn ăn, xem §4.43) mà ở chỗ mục test chỉ cho nguyên liệu, **không dựng
+quầy/bếp/nồi/than**. Nay có hàm dùng chung `chuanBiNoi(rid)` trong `game/devPoints.ts`:
+
+1. nâng tiền lên 400.000₫ nếu ít hơn, 2. mua `ganh` → `bepthan` → `noi` → `daothot` (**gánh trước** để `placeAt` không từ chối),
+3. đặt quầy ở Cổng Công Viên, 4. cho ≥ 6 than, 5. bật `rec[rid].known/on`, 6. cho đủ nguyên liệu của **2 lượt nấu + dư 1**, 7. `cook.prep(r)`.
+
+Ba mục dùng nó: `t61_tra` (hỏi chọn Trà đá / Trà chanh), `t61_noi_da`, `t61_noi_chanh` (vào thẳng).
+
+**Đo lại:** cả hai món — `cook.r.id` đúng món, `mini` là `BoilGame`, `phase 'add'`; chạm chén ⇒ `fly −1 → 1`, `phase 'add' → 'cook'`,
+nút *Quạt lửa* / *Lọc ra* hiện ra. Ảnh `tools/probe/out/fix/dev61_da.png`, `dev61_chanh.png`, `dev60_cham_da.png`.
+
+**Bài học:** mục test nào mở thẳng một *bước* của bàn thao tác thì phải dựng đủ **tiền → cấp quầy → chỗ → dụng cụ → nhiên liệu → nguyên liệu**,
+theo đúng thứ tự mà `prep()` kiểm tra; thiếu một khâu là người chơi chỉ thấy một câu cảnh báo và tưởng lỗi cảm ứng vẫn còn.
+
 ## 7. Kiểm thử
 
 - `tests/nau59.test.ts` — lượt 60: tia chạm của bàn nấu ăn cắt ở nhiều độ cao (sửa lỗi không cho được nguyên liệu vào nồi).

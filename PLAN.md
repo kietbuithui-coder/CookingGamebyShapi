@@ -1568,3 +1568,23 @@ chén ở **mặt bàn** (~0,03 m) ⇒ điểm rơi lệch **0,208 m**, gấp đ
 ⇒ lệch **0,004 m** (trước 0,208 m); **chạm màn hình thật** ⇒ `fly -1 → 0,52` (chén bay vào nồi), hết chén thì hiện nút “Quạt lửa /
 Lọc ra”, bấm Lọc ra ⇒ ra món điểm 1,00. Probe `steps/nau59b.mjs` rà 7 bàn: thái ăn (lệch 0,019), chiên đảo được (`tossN 0 → 1`),
 nướng lật được, trình bày lệch 0,008, trộn `k 0 → 1`, rửa chén `hp 1 → 0,19`.
+
+## Lượt 61 — menu ẩn dựng sẵn bếp cho trà đá và trà chanh ✅ đã xong
+
+Người chơi gửi hai ảnh: mục “Mở thẳng bước Cho nguyên liệu của nồi (trà đá)” **bấm Chạy vẫn thấy nồi trống**.
+Yêu cầu: “bật sẵn cho nguyên liệu trà đá với trà chanh được đi (cho sẵn bếp, nồi…)”.
+
+**Tìm ra nguyên nhân (không phải cảm ứng):** probe `steps/dev60.mjs` bấm đúng nút *Chạy* trên **ván mới** rồi đọc toasts:
+*“Chỗ này cần gánh hàng rong trở lên.”* Ván mới có 18.000₫, `stall.tier = 0` ⇒ `buyGear('ganh')` thất bại ⇒ `placeAt` từ chối ⇒ `prep()` dừng ở
+điều kiện đầu tiên; cộng thêm thiếu bếp/nồi/than. Mục test cũ chỉ cho nguyên liệu nên không bao giờ mở được nồi.
+
+**Sửa:**
+- `game/devPoints.ts`: hàm `chuanBiNoi(rid)` lo đủ **tiền → gánh (cấp 1) → đặt quầy → bếp than + nồi + dao thớt → than → nguyên liệu 2 lượt**.
+- Ba mục: `t61_tra` (chọn Trà đá / Trà chanh), `t61_noi_da`, `t61_noi_chanh` (vào thẳng bước cho nguyên liệu). Bỏ mục `t59_noi` cũ.
+- `tests/devpoints.test.ts` thêm bài canh thứ tự mua gánh **trước** `placeAt` và hai món đều gọi `chuanBiNoi`.
+- Changelog “Lượt 61” (giữ 8 bản), `DEV_BUILD_TAG` mới, `DESIGN.md §4.44`.
+
+**Đo:** `tsc` sạch · **654/654 test (55 tệp)** · probe `steps/dev61b.mjs`: bấm `t61_noi_da` ⇒ `tra_da`/`BoilGame`/`phase add`;
+bấm `t61_noi_chanh` ⇒ `tra_chanh`/`BoilGame`/`phase add`. Probe `steps/dev60.mjs` chạm thật + bấm chuột thật: chén bay vào nồi, `phase add → cook`,
+hiện *Quạt lửa* / *Lọc ra*. `errors: none`.
+

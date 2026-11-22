@@ -19,7 +19,7 @@ import { INGS } from '../data/ingredients';
 import { money } from '../core/util';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Trần việc làm mỗi ngày + bảng việc làm đọc số thật; sửa lỗi chạm chén không vào được nồi ở mọi món nấu/ninh/luộc/pha'
+export const DEV_BUILD_TAG = 'Menu ẩn dựng sẵn bếp + nồi + than cho trà đá và trà chanh (chạm chén là vào nồi)'
 
 /**
  * MÃ PIN CỦA MENU ẨN. Bấm 7 lần chữ "Cài đặt" chỉ mở bàn phím số; nhập đúng mã này mới thấy menu test.
@@ -130,10 +130,31 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
   toast(`Đã dựng Chuỗi cửa hàng + chi nhánh ${siteName} có người trông coi. Chạm quầy chi nhánh để xem sổ.`, 'good', 'shop', true);
 }
 
+/**
+ * Dựng sẵn mọi thứ để nấu một món nước có bước nấu: quầy đã đặt, bếp + nồi + than, đủ nguyên liệu.
+ * Người chơi báo (lượt 61): bấm “Chạy” trên ván trắng thì nồi không mở — vì ván mới chỉ có 18.000₫,
+ * chưa có gánh nên `placeAt` từ chối (cần cấp 1), và thiếu bếp/nồi/than. Hàm này lo hết ba thứ đó.
+ */
+function chuanBiNoi(rid: string): boolean {
+  const g = ctx.g, r = RECIPES[rid];
+  if (g.cash < 400000) g.cash = 400000;                        // đủ tiền gánh + bếp + nồi + than
+  for (const id of ['ganh', 'bepthan', 'noi', 'daothot'] as const) if (!R.has(g, id)) R.buyGear(g, id);
+  if (g.stall.where !== 'placed') { const sp = SPOTS.find((x) => x.id === 'cv') ?? SPOTS[0]; ctx.stall.placeAt(sp); }
+  const kho = (id: string) => g.stall.store.filter((x) => x.id === id).reduce((a, b) => a + b.n, 0);
+  const cho = (id: string, need: number) => { const have = kho(id); if (have < need) addStack(g.stall.store, { id: id as never, n: need - have, fresh: 100, q: 1, cost: R.unitCost(g, id) }); };
+  if (kho('than') < 6) cho('than', 6);
+  if (!g.rec[rid]) g.rec[rid] = { known: false, price: r.ref, on: false, made: 0, best: 0 } as typeof g.rec[string];
+  g.rec[rid].known = true; g.rec[rid].on = true;
+  g.stall.preps = g.stall.preps.filter((p) => p.rid !== rid);
+  // Mỗi lượt nấu 12 phần: cho đủ 2 lượt + dư 1 để không phải đi chợ giữa chừng.
+  for (const [id, kg] of Object.entries(r.ings)) cho(id, Math.ceil(kg * 24) + 1);
+  return ctx.cook.prep(r);
+}
+
 export function getDevSections(): DevSection[] {
   return [
     {
-      title: 'Mới nhất — trần việc làm thêm mỗi ngày + bảng việc làm (lượt 59)',
+      title: 'Mới nhất — dựng sẵn bếp trà (lượt 60) + trần việc làm mỗi ngày (lượt 59)',
       items: [
         {
           id: 't59_viec_bang',
@@ -217,18 +238,42 @@ export function getDevSections(): DevSection[] {
           },
         },
         {
-          id: 't59_noi',
-          label: 'Mở thẳng bước “Cho nguyên liệu” của nồi (trà đá)',
-          sub: 'Chạm chén “Trà khô” phải bay vào nồi — đây là lỗi người chơi báo ở lượt 59b',
+          id: 't61_tra',
+          label: 'Dựng sẵn bếp cho TRÀ ĐÁ và TRÀ CHANH',
+          sub: 'Đặt quầy, mua bếp + nồi + than, đủ nguyên liệu 2 món — chọn món rồi vào ngay bước cho nguyên liệu',
           tone: 'green',
           closePanel: true,
           run: () => {
-            const g = ctx.g;
-            g.stall.preps = g.stall.preps.filter((p) => p.rid !== 'tra_da');
-            addStack(g.stall.store, { id: 'tra', n: 4, fresh: 100, q: 1, cost: R.unitCost(g, 'tra') });
-            if (!ctx.cook.prep(RECIPES.tra_da)) toast('Không mở được bước nấu — xem dòng lỗi trên màn hình.', 'warn');
-            else toast('Chạm chén “Trà khô” trên bàn để cho vào nồi.', 'info', 'dish', true);
+            const mở = (rid: string) => { if (!chuanBiNoi(rid)) toast('Không mở được nồi — xem dòng lỗi trên màn hình.', 'warn'); };
+            chuanBiNoi('tra_da');        // dựng bếp + nguyên liệu cả 2 món trước
+            chuanBiNoi('tra_chanh');
+            ctx.ui.closePanel();
+            ctx.ui.dialog({
+              who: 'Bếp trà đã dựng sẵn',
+              text: 'Chọn món để vào ngay bước “Cho nguyên liệu”.\nBếp than, nồi và trà đã có sẵn trên bàn.',
+              opts: [
+                { t: 'Trà đá', fn: () => mở('tra_da') },
+                { t: 'Trà chanh', fn: () => mở('tra_chanh') },
+                { t: 'Đóng' },
+              ],
+            });
           },
+        },
+        {
+          id: 't61_noi_da',
+          label: 'Vào thẳng nồi TRÀ ĐÁ (cho nguyên liệu)',
+          sub: 'Không hỏi gì thêm — bếp, nồi, than và trà đã dựng sẵn, chỉ việc chạm chén',
+          tone: 'green',
+          closePanel: true,
+          run: () => { if (!chuanBiNoi('tra_da')) toast('Không mở được nồi trà đá — xem dòng lỗi trên màn hình.', 'warn'); else toast('Chạm chén “Trà khô” trên bàn để cho vào nồi.', 'info', 'dish', true); },
+        },
+        {
+          id: 't61_noi_chanh',
+          label: 'Vào thẳng nồi TRÀ CHANH (cho nguyên liệu)',
+          sub: 'Cùng cách dựng bếp như trà đá, nhưng món trà chanh (thêm chanh + đường)',
+          tone: 'green',
+          closePanel: true,
+          run: () => { if (!chuanBiNoi('tra_chanh')) toast('Không mở được nồi trà chanh — xem dòng lỗi trên màn hình.', 'warn'); else toast('Chạm chén “Trà khô” trên bàn để cho vào nồi.', 'info', 'dish', true); },
         },
         {
           id: 't59_viec_so',

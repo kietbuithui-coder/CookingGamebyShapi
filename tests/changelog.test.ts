@@ -12,19 +12,20 @@ describe('nhật ký phát triển trong Cài đặt', () => {
     expect(nums).toEqual(sorted);              // bản mới nhất ở trên cùng
     expect(new Set(nums).size).toBe(nums.length);
   });
-  it('bản mới nhất là bản vừa làm xong (lượt 60 — sửa lỗi nồi nấu)', () => {
-    expect(CHANGELOG[0].v).toBe('Lượt 60');
-    // 60 = chạm chén không vào được nồi ở mọi món nấu/ninh/luộc/pha.
+  it('bản mới nhất là bản vừa làm xong (lượt 61 — dựng sẵn bếp trà trong menu test)', () => {
+    expect(CHANGELOG[0].v).toBe('Lượt 61');
+    // 61 = menu ẩn dựng sẵn bếp + nồi + than cho trà đá và trà chanh.
     expect(CHANGELOG[0].items.some((t) => /nồi/i.test(t))).toBe(true);
-    expect(CHANGELOG[0].items.some((t) => /trà/i.test(t))).toBe(true);
+    expect(CHANGELOG[0].items.some((t) => /trà chanh/i.test(t))).toBe(true);
     expect(CHANGELOG[0].tag.length).toBeGreaterThan(5);
-    // Bản ngay dưới là lượt 59 (trần việc làm + bảng việc làm).
-    expect(CHANGELOG[1].v).toBe('Lượt 59');
-    expect(CHANGELOG[1].items.some((t) => /ca bốc cá/i.test(t))).toBe(true);
-    // rồi tới lượt 58 (bánh tráng trộn) và lượt 57 (rào cấm đường).
-    expect(CHANGELOG[2].v).toBe('Lượt 58');
-    expect(CHANGELOG[2].items.some((t) => /topping/i.test(t))).toBe(true);
-    expect(CHANGELOG[3].v).toBe('Lượt 57');
+    // Bản ngay dưới là lượt 60 (sửa lỗi chạm chén không vào nồi).
+    expect(CHANGELOG[1].v).toBe('Lượt 60');
+    expect(CHANGELOG[1].items.some((t) => /mặt nước/i.test(t))).toBe(true);
+    // rồi tới lượt 59 (trần việc làm) và lượt 58 (bánh tráng trộn).
+    expect(CHANGELOG[2].v).toBe('Lượt 59');
+    expect(CHANGELOG[2].items.some((t) => /ca bốc cá/i.test(t))).toBe(true);
+    expect(CHANGELOG[3].v).toBe('Lượt 58');
+    expect(CHANGELOG[3].items.some((t) => /topping/i.test(t))).toBe(true);
   });
   it('mỗi bản có tóm tắt và ít nhất 2 việc đã làm, câu chữ đủ dài để đọc hiểu', () => {
     for (const e of CHANGELOG) {
