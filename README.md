@@ -118,7 +118,7 @@ Danh sách đầy đủ những gì còn lại (1 bậc kinh doanh, băng nhóm,
 | Vừa (mặc định điện thoại) | tối đa 1,5× | 1024 | 22 | 3 | 4 | 165 m |
 | Cao (mặc định máy tính) | tối đa 2× | 2048 | 32 | 5 | 7 | 210 m |
 
-Trong tầm nhìn có khoảng 50–280 nghìn tam giác và 25–150 lệnh vẽ (hình học được gộp sẵn theo từng khu: ô phố, chợ, công viên…). Nếu dưới 23 khung hình/giây trong 6 giây, game tự hạ một mức (tắt được trong Cài đặt). Toàn bộ game tải về khoảng 420 kB JavaScript (đã nén; đo trên bản build 2026-11-21) + 120 kB phông chữ.
+Trong tầm nhìn có khoảng 50–280 nghìn tam giác và 25–150 lệnh vẽ (hình học được gộp sẵn theo từng khu: ô phố, chợ, công viên…). Nếu dưới 23 khung hình/giây trong 6 giây, game tự hạ một mức (tắt được trong Cài đặt). Toàn bộ game tải về khoảng 432 kB JavaScript (đã nén; đo trên bản build 2026-11-22) + 120 kB phông chữ.
 
 ## Chạy trên máy
 
@@ -127,7 +127,7 @@ Cần Node.js 20 trở lên.
 ```bash
 npm install
 npm run dev          # máy chủ phát triển, mở địa chỉ được in ra
-npm test             # 560 bài kiểm thử luật chơi
+npm test             # 654 bài kiểm thử luật chơi
 npm run build        # kiểm tra kiểu + đóng gói ra dist/
 npm run build:pages  # kiểm tra kiểu + kiểm thử + đóng gói ra docs/ (GitHub Pages)
 ```

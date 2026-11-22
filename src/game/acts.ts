@@ -226,9 +226,15 @@ export class Acts {
       }
       case 'dock': {
         const on = this.job?.kind === 'dock';
-        this.D(who(n), n, on ? `Vác được ${g.wd.sacks} bao rồi. Còn sức thì làm tiếp!` : g.wd.sacks >= 12 ? 'Hôm nay hết hàng rồi em. Mai ra sớm nha.' : 'Cần người vác bao từ xe tải vô sạp gạo Bà Hai. 6.000₫ một bao, vác được bao nhiêu trả bấy nhiêu. Làm không?',
-          [on ? { t: 'Em nghỉ, cảm ơn anh.', fn: () => { this.job = null; ctx.player.setCarry(''); this.way = null; } } : { t: 'Dạ làm!', off: g.wd.sacks >= 12, fn: () => { this.job = { kind: 'dock', carrying: false }; this.setWay('dock', 'Xe tải — lấy bao hàng'); toast('Ra đuôi xe tải lấy bao hàng, vác tới sạp gạo Bà Hai.', 'info', 'box', true); } },
-            { t: 'Có ca bốc cá không anh? — 110 phút', sub: `Trả 52.000–68.000₫ · cần sức khoẻ tốt · 4h30–10h`, off: this.g.st.energy < 35 || hourOf(this.g) < 4.5 || hourOf(this.g) >= 10, fn: () => this.dockShift() }, bye]); break;
+        const left = R.sacksLeft(g), cargoLeft = R.dockShiftsLeft(g);
+        this.D(who(n), n,
+          on ? `Vác được ${g.wd.sacks}/${R.DOCK_SACKS_DAY} bao rồi. Còn sức thì làm tiếp!`
+            : left <= 0 ? `Hôm nay em vác đủ ${R.DOCK_SACKS_DAY} bao rồi, hết hàng. Mai ra sớm nha.`
+              : `Cần người vác bao từ xe tải vô sạp gạo Bà Hai. ${money(R.DOCK_SACK_PAY)} một bao, hôm nay còn ${left} bao. Làm không?`,
+          [on ? { t: 'Em nghỉ, cảm ơn anh.', fn: () => { this.job = null; ctx.player.setCarry(''); this.way = null; } }
+            : { t: 'Dạ làm!', sub: `Còn ${left} bao hôm nay`, off: left <= 0, fn: () => { this.job = { kind: 'dock', carrying: false }; this.setWay('dock', 'Xe tải — lấy bao hàng'); toast('Ra đuôi xe tải lấy bao hàng, vác tới sạp gạo Bà Hai.', 'info', 'box', true); } },
+            { t: 'Có ca bốc cá không anh? — 110 phút', sub: cargoLeft > 0 ? `${money(R.DOCK_WAGE_MIN)}–${money(R.DOCK_WAGE_MAX)} · còn ${cargoLeft}/${R.DOCK_SHIFTS_DAY} ca hôm nay · 4h30–10h` : `Hôm nay anh nhận đủ ${R.DOCK_SHIFTS_DAY} ca rồi`,
+              off: this.g.st.energy < 35 || hourOf(this.g) < 4.5 || hourOf(this.g) >= 10 || cargoLeft <= 0, fn: () => this.dockShift() }, bye]); break;
       }
       case 'hobo': {
         // Lượt 52: không còn sáu câu cứng. Ông Bảy nói câu **đúng trạng thái thật của ván** (sim/advice.ts):
@@ -616,8 +622,8 @@ export class Acts {
       drink('Gọi bạc xỉu & đọc sách', 28000, 40, 18, 16, 6, 'Ly bạc xỉu béo nhẹ, đọc vài trang sách thấy đầu óc thư thái hẳn.'),
       {
         t: 'Xin phụ chạy bàn một ca — 60 phút',
-        sub: `Công ${money(this.cafePay())} · cần sức khoẻ tốt (6h30–22h)`,
-        off: g.st.energy < 28 || h < 6.5 || h >= 22,
+        sub: R.cafeShiftsLeft(g) > 0 ? `Công ${money(this.cafePay())} · còn ${R.cafeShiftsLeft(g)}/${R.CAFE_SHIFTS_DAY} ca hôm nay (6h30–22h)` : `Hôm nay đã chạy đủ ${R.CAFE_SHIFTS_DAY} ca`,
+        off: g.st.energy < 28 || h < 6.5 || h >= 22 || R.cafeShiftsLeft(g) <= 0,
         fn: () => this.cafeShift(true),
       },
     ];
@@ -738,11 +744,21 @@ export class Acts {
   }
 
   // ───────────────────────── Việc làm thêm ─────────────────────────
-  dockTake() { const j = this.job; if (j?.kind !== 'dock' || j.carrying) return; if (this.g.st.energy < 8) { toast('Kiệt sức rồi, không vác nổi nữa. Đi ăn rồi nghỉ đi.', 'bad'); return; } j.carrying = true; ctx.player.setCarry('sack'); sfx('pick'); this.setWay('v_m_kho', 'Sạp gạo Bà Hai — giao bao hàng'); }
+  dockTake() {
+    const j = this.job, g0 = this.g;
+    if (j?.kind !== 'dock' || j.carrying) return;
+    if (R.sacksLeft(g0) <= 0) { this.job = null; ctx.player.setCarry(''); this.way = null; toast(`Hôm nay đã vác đủ ${R.DOCK_SACKS_DAY} bao rồi. Mai ra sớm nha em.`, 'info', 'box'); return; }
+    if (this.g.st.energy < 8) { toast('Kiệt sức rồi, không vác nổi nữa. Đi ăn rồi nghỉ đi.', 'bad'); return; }
+    j.carrying = true; ctx.player.setCarry('sack'); sfx('pick'); this.setWay('v_m_kho', 'Sạp gạo Bà Hai — giao bao hàng');
+  }
   dockDrop() {
-    const j = this.job, g = this.g; if (j?.kind !== 'dock' || !j.carrying) return; j.carrying = false; ctx.player.setCarry(''); g.wd.sacks++; R.earn(g, 6000, 'side'); sfx('coin'); g.st.energy = clamp(g.st.energy - 2.5, 0, STAT_MAX); g.st.hunger = clamp(g.st.hunger - 1.2, 0, STAT_MAX); g.st.hygiene = clamp(g.st.hygiene - 1, 0, STAT_MAX);
-    ctx.ui.float('+6.000₫', { x: ctx.player.x + ctx.player.fwd[0], y: 1.3, z: ctx.player.z + ctx.player.fwd[1] }, 'good');
-    if (g.wd.sacks >= 12) { this.job = null; this.way = null; toast('Hết hàng để vác rồi! Hôm nay kiếm được kha khá.', 'good', 'cash'); } else this.setWay('dock', 'Xe tải — lấy bao hàng');
+    const j = this.job, g = this.g; if (j?.kind !== 'dock' || !j.carrying) return; j.carrying = false; ctx.player.setCarry('');
+    // Đã lấy bao trên vai từ trước mà hôm nay vác đủ trần rồi thì trả bao lại, không trả tiền — nếu không sẽ vác lố.
+    if (R.sacksLeft(g) <= 0) { this.job = null; this.way = null; toast(`Đủ ${R.DOCK_SACKS_DAY} bao hôm nay rồi, trả bao lại cho anh Sáu. Mai ra sớm nha.`, 'info', 'box'); return; }
+    g.wd.sacks++; R.earn(g, R.DOCK_SACK_PAY, 'side'); sfx('coin'); g.st.energy = clamp(g.st.energy - 2.5, 0, STAT_MAX); g.st.hunger = clamp(g.st.hunger - 1.2, 0, STAT_MAX); g.st.hygiene = clamp(g.st.hygiene - 1, 0, STAT_MAX);
+    ctx.ui.float(`+${money(R.DOCK_SACK_PAY)}`, { x: ctx.player.x + ctx.player.fwd[0], y: 1.3, z: ctx.player.z + ctx.player.fwd[1] }, 'good');
+    if (R.sacksLeft(g) <= 0) { this.job = null; this.way = null; toast(`Vác đủ ${R.DOCK_SACKS_DAY} bao hôm nay rồi! Kiếm được ${money(R.DOCK_SACKS_DAY * R.DOCK_SACK_PAY)}.`, 'good', 'cash'); }
+    else { this.setWay('dock', `Xe tải — lấy bao hàng (còn ${R.sacksLeft(g)} bao)`); toast(`Còn ${R.sacksLeft(g)} bao nữa là hết hàng hôm nay.`, 'info', 'box'); }
   }
   dishes() {
     const a = ctx.world.anchors.sink, g = this.g, c = Math.cos(a.yaw), s = Math.sin(a.yaw);
@@ -771,7 +787,39 @@ export class Acts {
       }
     }
     const h = hourOf(g);
-    this.D('Bảng việc làm hôm nay', undefined, `• Vác hàng ở bến chợ (4h30–10h): 6.000₫/bao — gặp Anh Sáu Lực cạnh xe tải.\n• Rửa chén quán cơm Bà Tư (10h–14h30, 17h30–21h): 32.000₫ + bữa cơm.\n• Thu mua ve chai: vựa Tư Rác (Xóm Lao Động) hoặc vựa Bà Chín (Khu Dân Cư) — bên nào gần thì ghé.\n• Giao hàng trong khu phố (còn ${Math.max(0, 4 - g.wd.deliveries)} đơn hôm nay).` + (h < 4.5 || h > 21 ? '\nGiờ này hầu như không có việc.' : ''), [...opts, { t: 'Đóng' }]);
+    this.D('Bảng việc làm hôm nay', undefined, this.jobListText(), [...opts, { t: 'Đóng' }]);
+  }
+  /**
+   * Bảng việc làm (lượt 59): mỗi việc một dòng, ghi ĐÚNG số của ngày hôm nay — còn mấy bao, còn mấy ca,
+   * còn mấy đơn giao — và ghi cả việc đã hết (kèm lý do) thay vì lặng lẽ bỏ đi. Trước đây bảng chỉ có bốn
+   * dòng chữ cứng, số bao/ca bị chép tay nên lệch với luật thật trong mã.
+   */
+  jobListText() {
+    const g = this.g, h = hourOf(g);
+    const sackOn = h >= 4.5 && h < 10, cafeOn = h >= 6.5 && h < 22;
+    const lines: string[] = [];
+    // Đánh số chứ đừng dùng emoji: font của game không có bảng emoji, đầu dòng sẽ ra ô trống.
+    // Mỗi việc gói trong MỘT dòng — trước đây mỗi việc hai dòng nên bảng 7 việc dài hơn hộp thoại, phải cuộn mới thấy nút.
+    const add = (name: string, res: string) => lines.push(`${lines.length + 1}. ${name} — ${res}`);
+    const left = R.sacksLeft(g);
+    add('Vác hàng bến chợ (4h30–10h)', left > 0
+      ? (sackOn ? `còn ${left}/${R.DOCK_SACKS_DAY} bao · ${money(R.DOCK_SACK_PAY)}/bao` : `còn ${left}/${R.DOCK_SACKS_DAY} bao, ngoài giờ`)
+      : `đã vác đủ ${R.DOCK_SACKS_DAY} bao hôm nay`);
+    const cargo = R.dockShiftsLeft(g);
+    add('Ca bốc cá bến cảng (4h30–10h, 110 phút)', cargo > 0
+      ? `còn ${cargo}/${R.DOCK_SHIFTS_DAY} ca · ${money(R.DOCK_WAGE_MIN)}–${money(R.DOCK_WAGE_MAX)}/ca`
+      : `đã làm đủ ${R.DOCK_SHIFTS_DAY} ca hôm nay`);
+    const cafe = R.cafeShiftsLeft(g);
+    add('Chạy bàn cà phê Bóng Đá / Sân Vườn (6h–22h, 60 phút)', cafe > 0
+      ? `còn ${cafe}/${R.CAFE_SHIFTS_DAY} ca · ${money(this.cafePay())}/ca + boa${cafeOn ? '' : ', ngoài giờ'}`
+      : `đã chạy đủ ${R.CAFE_SHIFTS_DAY} ca hôm nay`);
+    add('Rửa chén quán cơm Bà Tư (10h–14h30, 17h30–21h)', g.wd.plates >= 2 ? 'hôm nay rửa đủ 2 lượt rồi' : `còn ${2 - g.wd.plates}/2 lượt · 4.000₫/đĩa + một bữa cơm`);
+    const del = Math.max(0, 4 - g.wd.deliveries);
+    add('Giao hàng trong khu phố (nhận lúc nào cũng được)', del > 0 ? `còn ${del}/4 đơn hôm nay · 9.000₫ + 130₫/mét` : 'hết đơn hôm nay rồi, mai quay lại');
+    add('Thu mua ve chai', 'lượm lon, chai, giấy quanh thùng rác — bán cho Ông Tư Rác hoặc Bà Chín');
+    add('Việc khác', 'phụ bốc hàng ở chợ, xin tiền người qua đường, lao động ở buồng tạm giữ…');
+    const warn = h < 4.5 || h >= 22 ? '\n\nGiờ này gần như không còn việc nào mở — nằm nghỉ, sáng mai ra sớm.' : '';
+    return lines.join('\n') + warn;
   }
   private deliveryCheck() {
     const j = this.job, g = this.g; if (j?.kind !== 'delivery') return;
@@ -1203,7 +1251,7 @@ export class Acts {
     }));
     if (at === 'tv_bongda') {
       if (R.eventOn(g, 'bong_da')) opts.unshift({ t: 'Chen vào xem trận bóng đang chiếu', sub: '30 phút · tinh thần +12', fn: () => { R.advance(g, 30, this.act()); R.consume(g, { m: 12 }); toast('Vàoooo! Cả quán vỡ oà. Tinh thần phấn chấn hẳn.', 'good'); sfx('yay'); ctx.anim.startFootball(); } });
-      opts.push({ t: 'Xin chạy bàn một ca — 60 phút', sub: `Công ${money(this.cafePay())} · cần sức khoẻ tốt`, off: g.st.energy < 28 || h < 6 || h >= 22, fn: () => this.cafeShift() });
+      opts.push({ t: 'Xin chạy bàn một ca — 60 phút', sub: R.cafeShiftsLeft(g) > 0 ? `Công ${money(this.cafePay())} · còn ${R.cafeShiftsLeft(g)}/${R.CAFE_SHIFTS_DAY} ca hôm nay · cần sức khoẻ tốt` : `Hôm nay đã chạy đủ ${R.CAFE_SHIFTS_DAY} ca`, off: g.st.energy < 28 || h < 6 || h >= 22 || R.cafeShiftsLeft(g) <= 0, fn: () => this.cafeShift() });
       const cafeClosed = list.length ? '' : ` Quán đóng rồi (mở ${funHoursText('tv_bongda')}).`;
       this.D('Quán cà phê Bóng Đá', undefined, (g.st.mood < 35 ? 'Quán đông nghẹt, tiếng cười nói rôm rả. Ngồi đây một chút cũng thấy nhẹ người.' : 'Quán cà phê có tivi, ghế nhựa đỏ, nhạc mở nhỏ. Muốn ngồi chơi hay kiếm chút việc?') + cafeClosed, [...opts, { t: 'Thôi, đi nha.' }]);
       return;
@@ -1256,25 +1304,31 @@ export class Acts {
   cafePay() { const g = this.g; return R.cafeWage(g.rep, g.st.mood); }
   private cafeShift(garden = false) {
     const g = this.g, h = hourOf(g);
+    if (R.cafeShiftsLeft(g) <= 0) { toast(`Hôm nay bạn đã chạy đủ ${R.CAFE_SHIFTS_DAY} ca rồi — chủ quán sợ mang tiếng bóc lột, mai quay lại nhé.`, 'info', 'clock'); return; }
     if (g.st.energy < 28) { toast('Mệt quá rồi, xin ca này chủ quán cũng không dám nhận. Ăn ngủ rồi quay lại.', 'bad', 'bolt'); return; }
     if (h < (garden ? 6.5 : 6) || h >= 22) { toast(`Quán chỉ nhận người chạy bàn từ ${garden ? '6h30' : '6h'} tới 22h.`, 'info', 'clock'); return; }
     const pay = this.cafePay(), tip = Math.round(round1k(Math.random() * 8000 + (g.st.mood > 60 ? 6000 : 0)));
     R.advance(g, 60, this.act());
     R.earn(g, pay + tip, 'side');
     R.consume(g, { e: -18, h: -3, t: -7, m: -2 });
-    g.wd.plates = (g.wd.plates ?? 0); ctx.ui.float(`+${money(pay + tip)}`, { x: ctx.player.x, y: 1.3, z: ctx.player.z }, 'good');
-    sfx('coin'); toast(`Chạy bàn một ca: ${money(pay)} công + ${money(tip)} tiền boa. Mỏi chân nhưng có tiền.`, 'good', 'cash', true);
+    g.wd.cafeShifts = (g.wd.cafeShifts ?? 0) + 1;
+    const left = R.cafeShiftsLeft(g);
+    ctx.ui.float(`+${money(pay + tip)}`, { x: ctx.player.x, y: 1.3, z: ctx.player.z }, 'good');
+    sfx('coin'); toast(`Chạy bàn một ca: ${money(pay)} công + ${money(tip)} tiền boa. Mỏi chân nhưng có tiền.` + (left > 0 ? ` Còn ${left} ca hôm nay.` : ` Hết ca hôm nay rồi (${R.CAFE_SHIFTS_DAY} ca/ngày).`), 'good', 'cash', true);
     ctx.anim.startCafeShift(garden);
   }
   /** Ca bốc vác ở cầu cảng — việc nặng, trả cao, chỉ buổi sáng. */
   dockShift() {
     const g = this.g, h = hourOf(g);
     if (h < 4.5 || h >= 10) { toast('Ca bốc hàng ở cảng chỉ chạy 4h30–10h sáng.', 'info'); return; }
+    if (R.dockShiftsLeft(g) <= 0) { toast(`Hôm nay bạn đã bốc đủ ${R.DOCK_SHIFTS_DAY} ca cá rồi — anh Sáu Lực không dám nhận thêm, mai ra sớm nha.`, 'info', 'clock'); return; }
     if (g.st.energy < 35) { toast('Kiệt sức rồi, ca này không vác nổi. Ăn ngủ rồi quay lại.', 'bad'); return; }
     const pay = R.dockWage(Math.random());
     R.advance(g, 110, this.act()); R.earn(g, pay, 'side'); R.consume(g, { e: -30, h: -6, t: -9, hy: -4 });
+    g.wd.cargoShifts = (g.wd.cargoShifts ?? 0) + 1;
+    const left = R.dockShiftsLeft(g);
     ctx.ui.float(`+${money(pay)}`, { x: ctx.player.x, y: 1.3, z: ctx.player.z }, 'good');
-    sfx('coin'); toast(`Bốc cá lên xe cả ca: nhận ${money(pay)}. Vai rã rời nhưng đủ tiền chợ.`, 'good', 'cash', true);
+    sfx('coin'); toast(`Bốc cá lên xe cả ca: nhận ${money(pay)}. Vai rã rời nhưng đủ tiền chợ.` + (left > 0 ? ` Còn ${left} ca sáng nay.` : ` Hết ${R.DOCK_SHIFTS_DAY} ca của ngày rồi.`), 'good', 'cash', true);
     ctx.anim.startDockShift();
   }
   canSleep(where: string): string | null {

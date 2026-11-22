@@ -1003,6 +1003,52 @@ vì một khung hình dài 0,1 s ở 9 m/s là 0,9 m — so sai sẽ lọt rào 
 Ảnh `tools/probe/out/f57_rao_cam_duong.png`: ba tấm rào đỏ–trắng chắn ngang đường trước chợ; `tests/camduong57.test.ts`
 (8 bài) canh toạ độ rào ↔ luật, chiều quay đầu, mô phỏng 4.000 bước không lọt rào, và không sinh xe trong đoạn cấm.
 
+### 4.41 Mini game bánh tráng trộn — 5 topping nằm ngẫu nhiên mỗi ván (lượt 58)
+
+Người chơi: *“làm mini game của bánh tráng trộn 5 tp random vị trí”*. Trước lượt này bánh tráng trộn
+(`RECIPES.banh_trang_tron`) dùng chung `AssembleGame` với 59 món còn lại: 5 chén nguyên liệu xếp vòng cung ở
+**vị trí cố định** (chỉ đổi thứ tự giữa các chén theo `hashStr(id)`) và người chơi bày lớp theo phiếu in sẵn —
+học thuộc một lần là bấm được mãi, còn “vị trí” thì không bao giờ đổi.
+
+Bước hoàn thiện của món này đổi sang **bước `tron`** (`TronStep` trong `data/recipes.ts`), các món khác giữ nguyên
+`assemble`. Luật chơi:
+
+| Thành phần | Việc |
+|---|---|
+| `cook/tron.ts` | phần **thuần** (không Three.js, không DOM) nên test được: `tronSpots`, `tronCalls`, `tronTapAt`, `tronScore`, `tronLimit`, `TRON_*` |
+| `TronGame` (`cook/games.ts`) | 5 đĩa giấy trên bàn (hình nguyên liệu thật: xấp bánh tráng, chai tương ớt, gói đậu phộng, bó rau thơm, quả chanh), hộp giấy có thành ở phía trước, vòng vàng nhấp nháy đánh dấu đĩa **đang được gọi** |
+| Luật chơi | mỗi ván **2 vòng × 5 lượt**; mỗi lượt có đồng hồ riêng (`tronLimit(k) = max(1,1; 3,1 − 0,16k)`); chạm nhầm / chạm ra ngoài / để hết giờ đều tính một lần `miss` |
+| Điểm | `tronScore = clamp((1 − 1,5·miss/tổng) · phạt-chậm · 0,97, 0,05 … 1)` — chạm đúng hết và nhanh thì ≈ 0,97, chậm quá hoặc sai nhiều thì tụt |
+
+**Vị trí rải (`tronSpots`)** — đây là phần người chơi yêu cầu phải ngẫu nhiên:
+
+- 5 chỗ nằm trên vòng elip `x ∈ ±0,36 m`, `z = −0,06 ± 0,20 m` (bàn nấu rộng ~0,84 × 0,70 m, hộp bánh ở `z = 0,32`),
+  mỗi chỗ rơi vào **một khoang riêng** của vòng tròn (chia đều 5 khoang, lệch ngẫu nhiên ≤ ±0,18 khoang).
+- Vòng lặp đẩy xa 40 lượt bảo đảm **hai chỗ bất kỳ cách nhau > `TRON_GAP` = 0,15 m > 2 · bán kính ăn tay
+  `TRON_HIT` = 0,105 m**; nếu không, ngón tay chạm chỗ này lại ra chỗ kia.
+- Mỗi ván **lấy hạt giống mới** (`new RNG(Math.random() * 2³¹)`), nên nấu lại là 5 đĩa đổi chỗ: đo trên 40 hạt giống
+  ⇒ **40 cách xếp khác nhau**, và cùng hạt giống thì tái lập được (để probe chụp lại đúng một ván).
+- Thứ tự gọi (`tronCalls`) cũng trộn đều mỗi vòng, và **không gọi trùng tên hai lần liền** (kể cả ở chỗ nối hai vòng —
+  nghe như máy bị kẹt).
+
+**Đĩa phải nằm lại suốt ván (hotfix sau lượt 58).** Người chơi chạm đúng một lần rồi báo *“topping trên khay biến
+mất”*. Nguyên nhân: bản đầu cho **cả cái đĩa** bay vào hộp rồi `d.g.visible = false`; nhưng một ván gọi **2 vòng**
+(`tronCalls` gọi mỗi topping 2 lần) ⇒ sang vòng 2 máy gọi đúng những topping vừa biến mất, trên khay chỉ còn cái nhãn
+trơ giữa bàn. Nay chỉ **một mẩu nhỏ** của topping tách khỏi đĩa và bay vào hộp (`bits`, bay vòng cung rồi xoá khỏi sân
+khấu), đĩa + phần topping còn lại **luôn hiện** (`d.g.visible = true`), đĩa vơi dần (nhỏ lại 18 %) và **đầy lại khi hết
+vòng** (`full = 1`); nhãn chỉ vẽ cho đĩa còn topping nên nhãn cũng tự trở lại. Đĩa bánh tráng vẽ thành **nắm sợi** có
+bóng đổ thay vì xấp bánh mỏng cùng màu đĩa — xấp cũ trông như đĩa trống, đúng chỗ dễ tưởng topping “biến mất”.
+
+**Thẻ góc màn hình**: `UI.cookCard(items, title)` nhận tiêu đề; màn trộn hiện *“Máy đang gọi (vòng 1/2)”* thay vì
+*“Thứ tự cho vào”* (bày theo phiếu không còn đúng nghĩa), hết ván đổi thành *“Đã trộn đủ 5 thứ”*.
+
+**Ăn khớp phần còn lại:** `tron` là bước **không dùng lửa** (`fuelPerPortion` = 0 và cả 3 chỗ lọc `!== 'assemble'`
+trong `cook.ts` thêm `!== 'tron'`), không cần dụng cụ (`STEP_TOOLS.tron = []`, món vẫn chỉ cần dao thớt), và biểu tượng
+món trong thực đơn (`dishIcon`) đọc màu topping từ bước `tron` như đọc bước `assemble`.
+
+**Kiểm:** `tests/tron58.test.ts` (10 bài) · probe `tools/probe/steps/tron58.mjs` (2 ảnh `tron58_ban.png`,
+`tron58_thanh_pham.png`) · menu test 3 mục `t58_*` · console sạch.
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
@@ -1016,8 +1062,115 @@ vì một khung hình dài 0,1 s ở 9 m/s là 0,9 m — so sai sẽ lọt rào 
 
 `localStorage`, khoá `ganhhang.save.v1` (trạng thái) và `ganhhang.settings.v1` (cài đặt). Tự lưu sau việc quan trọng, mỗi 45 giây và khi rời trang. `SAVE_VERSION = 16`; `migrate()` nạp được bản lưu cũ thiếu trường và loại bỏ nguyên liệu không còn tồn tại. Bản lưu trước v4 chưa có sổ `met` nên được coi như đã quen hết người đứng quầy. Bản lưu trước v5 (chưa có bệnh viện) được nâng sức khoẻ lên 45 nếu đang ở 0 — nếu không, mở lên là ngất liền — và thêm sổ đồ thất lạc rỗng. Bản lưu trước v6 được cấp `wanted = 0` và `jailUntil = 0` (chưa ai biết mặt). Bản lưu trước v7 chưa có điện thoại (`phone = null`). Bản lưu trước v8 chưa có sổ phút ngồi quán net (`netDay = -1`, `netMin = 0`). Bản lưu trước v9 chưa có sổ ngày đua xe đạp (`raceDay = -1`, `raceWin = 0`). Bản lưu trước v10 chưa có người phụ việc (`help = null`); dữ liệu `help` hỏng cũng bị bỏ, và bản lưu cũ đã từng bán được hàng thì được ghi mốc `firstSale = 0`. Bản lưu trước v11 chưa có ngoại hình người chơi (`Game.look`): `migrate()` cấp `defaultLook()` theo giới tính của ván, còn `look` hỏng thì `cleanLook()` kẹp lại từng trường. Bản lưu trước v12 chưa có nhà hàng bình dân (`sous = null`, `bookings = []`, `bookSeq = 1`); bản lưu trước v13 chưa có slot nhân sự thứ hai (`help2 = null`, `sous2 = null`). Bản lưu trước v14 chưa có chi nhánh (`branch = null`) — mở bậc 7 rồi mới mở được chi nhánh, và `cleanBranch()` kẹp lại dữ liệu chi nhánh đọc lên. Bản lưu trước v15 chưa có chuyến đi chợ (`errands = []`); `cleanErrands()` bỏ chuyến sai hình dạng và kẹp số phần/thời gian. Bản lưu trước v16 chưa có ca làm của người phụ quầy (`helpShift`): người thứ nhất nhận ca cả ngày, người thứ hai ca sáng — y như hành vi trước đó; giá trị ca lạ bị bỏ và thay bằng mặc định. `Game.look` có thêm `beard` (0–3, nữ luôn 0) và dáng người là hai trường `fat`/`h` đã có sẵn. Cài đặt có thêm `ui` (cỡ giao diện và cách xếp nút) và `cam3` (góc nhìn thứ ba); `cleanLayout()` làm sạch dữ liệu đọc lên.
 
+### 4.42 Trần việc làm thêm mỗi ngày + bảng việc làm đọc số thật (lượt 59)
+
+Người chơi: *“giới hạn số lần có thể làm ca bốc cá và ca chạy bàn cafe xuống, tăng số bao có thể bốc vác lên và bổ sung
+chuẩn bảng việc làm”*. Trước lượt này hai nghề trả cao nhất trong nhóm việc làm thêm **không có trần**: `dockShift()`
+(110 phút, 52.000–68.000₫) và `cafeShift()` (60 phút, sàn 38.000₫ + boa) cứ bấm là ra tiền, trong khi vác bao bị chặn
+cứng ở 12 bao (72.000₫/ngày) và rửa chén chỉ 2 lượt. Ai biết chỗ thì đứng bấm ca cả buổi, còn vác bao thành việc vô nghĩa.
+
+| Việc | Trước | Sau (lượt 59) | Ghi chú |
+|---|---|---|---|
+| Vác bao (bến chợ) | 12 bao/ngày · 6.000₫/bao | **20 bao/ngày** · 6.000₫/bao (tối đa 120.000₫) | `DOCK_SACKS_DAY`, `DOCK_SACK_PAY` |
+| Ca bốc cá | không giới hạn · 52.000–68.000₫/ca | **2 ca/ngày** (4h30–10h) | `DOCK_SHIFTS_DAY` |
+| Ca chạy bàn / phụ quán | không giới hạn · ≥ 38.000₫ + boa | **3 ca/ngày**, chung cho cả hai quán (6h–22h / 6h30–22h) | `CAFE_SHIFTS_DAY` |
+| Rửa chén | 2 lượt/ngày (8 đĩa) | giữ nguyên | `wd.plates` |
+| Giao hàng | 4 đơn/ngày | giữ nguyên | `wd.deliveries` |
+
+**Cân bằng:** trước đây một buổi bốc cá (2 ca sàn = 104.000₫) đã hơn cả ngày vác 12 bao (72.000₫), nên không ai vác bao.
+Nay 20 bao = 120.000₫ ≥ 104.000₫ (mức sàn của 2 ca), nhưng vác bao tốn sức rải ra nhiều chuyến và chỉ mở 4h30–10h —
+hai nghề cùng buổi sáng thì người chơi phải chọn. Test `tests/jobs59.test.ts` canh đúng bất đẳng thức này.
+
+**Bộ đếm:** hai trường mới `wd.cargoShifts`, `wd.cafeShifts` (đếm trong ngày, reset cùng `wd.sacks`… ở `rules.ts`).
+Không tăng `SAVE_VERSION`: `load` merge `{ ...base.wd, ...raw.wd }` nên bản lưu cũ thiếu trường vẫn chạy, và mọi hàm đếm
+đều dùng `?? 0`. Ba hàm thuần trong `sim/rules.ts` — `sacksLeft`, `dockShiftsLeft`, `cafeShiftsLeft` — trả số còn lại
+(không bao giờ âm, kể cả khi dữ liệu cũ có số lớn hơn trần).
+
+**Áp ở mọi cửa vào.** `cafeShift` được gọi từ **ba** chỗ (menu Sáu Lực, quán Bóng Đá `funMenu('tv_bongda')`, quán Sân Vườn
+`gardenCafeOpts`) và `dockShift` từ một chỗ; `dockTake`/`dockDrop` từ nhãn tương tác ở xe tải và sạp gạo. Trần đặt trong
+chính các hàm nhận ca, còn hộp thoại chỉ **hiện** số (“còn 2/3 ca hôm nay”) và tắt nút khi hết — nếu chỉ chặn ở hộp thoại
+thì vẫn còn đường spam. Ca bị chặn đều có câu giải thích riêng (hết ca hôm nay, mai quay lại).
+
+**Vác lố bao:** người chơi có thể nhận bao khi còn hạn mức rồi mới đặt xuống. `dockDrop` nay kiểm `sacksLeft` trước khi
+cộng tiền; hết trần thì **trả bao lại**, không trả công (probe đo đúng: `wd.sacks` đứng ở 20, không lên 21).
+
+**Bảng việc làm (`Acts.jobListText`).** Bản cũ chỉ bốn câu chữ cứng, số bao/ca chép tay nên lệch luật. Nay 7 dòng — vác bao,
+ca bốc cá, chạy bàn, rửa chén, giao hàng, ve chai, việc khác — mỗi dòng ghi **số thật của hôm nay** (còn mấy bao/ca/lượt/đơn,
+giờ mở cửa) và ghi rõ khi đã hết hạn mức thay vì lặng lẽ bỏ dòng. Nhãn tương tác `Đã vác x/12 bao` cũng đổi theo hằng số.
+`tests/jobs59.test.ts` quét mã nguồn để chặn số chép tay tái phát (`wd.sacks >= 12`, `6.000₫`).
+
+**Menu ẩn:** 6 mục `t59_*` thay cho mục của lượt 58 — mở bảng việc làm, về bến cảng 5h sáng, làm hết 2 ca bốc cá, làm hết 3 ca
+chạy bàn, vác tới bao cuối rồi thử vác lố, đọc sổ việc làm. `DEV_BUILD_TAG` đổi theo lượt 59.
+
+### 4.43 Tia chạm nhiều độ cao — sửa lỗi “không cho được nguyên liệu vào nồi” (lượt 60)
+
+Người chơi báo: mở nồi nấu trà đá, chạm mãi chén **Trà khô** mà nồi vẫn trống, không qua được bước *“Cho nguyên liệu”*.
+
+**Nguyên nhân (đo được, không phải đoán).** `Cook.local()` đổi điểm chạm màn hình thành toạ độ bàn bếp bằng cách cắt tia ở **một**
+mặt phẳng `mini.planeH`. `BoilGame` đặt `planeH = surf` = **mặt nước** (top + 0,155 = 0,355 m) — đúng cho việc vớt bọt — nhưng chén
+nguyên liệu nằm trên **mặt bàn** (~0,03 m). Camera nhìn chếch xuống nên cắt tia ở độ cao sai làm điểm rơi bị kéo về phía người nấu:
+chiếu chén (−0,38; −0,07) ra màn hình rồi hỏi `local()` thì nó trả về (−0,281; 0,113) — **lệch 0,208 m**, gấp đôi bán kính ăn
+0,11 m của chén ⇒ không chén nào ăn được. Lỗi nằm ở tầng chung nên **ảnh hưởng mọi món có bước nấu/ninh/luộc/pha**, không riêng trà đá.
+
+**Cách sửa.** Thêm vào `Mini` hai thành phần tuỳ chọn:
+
+| Thành phần | Việc |
+|---|---|
+| `planes?: number[]` | các độ cao khác mà tay chạm tới trong cùng ván (mét, trên bàn bếp) |
+| `pickPoint?(list)` | lớp game tự chọn điểm trong các ứng viên `{ h, p }` cắt ở từng độ cao |
+
+`Cook.local()` cắt tia ở `planeH` + `planes`, rồi trả `pickPoint(list) ?? list[0].p` — lớp nào không khai thì **hành vi y như cũ**.
+`BoilGame` khai `planes = [0.03]` (mặt bàn) và `pickPoint`: giai đoạn *cho nguyên liệu* lấy ứng viên **thấp nhất** (mặt bàn);
+giai đoạn nấu chỉ nhận điểm nằm gần bọt đang nổi, còn lại trả về mặt nước như trước.
+
+**Rà cả 7 bàn thao tác** (probe `steps/nau59b.mjs`, đo độ lệch giữa chỗ chạm và chỗ game hiểu):
+
+| Bàn | Độ lệch đo được | Ngưỡng ăn | Kết luận |
+|---|---|---|---|
+| Thái/băm (CutGame) | 0,019 m | vạch rộng ~0,045 m | đạt — nhát cắt ăn |
+| Chiên/xào (FryGame) | thao tác theo cử chỉ (sx/sy), không dùng toạ độ | — | đạt — vuốt lên là đảo |
+| Nướng (GrillGame) | 0,007 m | 0,07 m | đạt — chạm là lật |
+| Nấu/ninh (BoilGame) | **0,208 m → 0,004 m** | 0,11 m | **đã sửa** |
+| Trình bày (AssembleGame) | 0,008 m | 0,095 m | đạt |
+| Trộn topping (TronGame) | chạm theo đĩa (toạ độ tuyệt đối) | 0,105 m | đạt |
+| Rửa chén (WashGame) | 0,001 m | 0,055 m | đạt |
+
+**Canh tái phát:** `tests/nau59.test.ts` (6 bài) khẳng định `Cook.local` cắt ở nhiều độ cao, `BoilGame` khai mặt bàn, nhánh `add`
+lấy ứng viên thấp nhất, mặt phẳng chính vẫn là mặt nước, các lớp cắt/trình bày/rửa/trộn có mặt phẳng sát đồ vật (≤ 6 cm), và mọi
+công thức có `boil` đều đi qua lớp đã sửa.
+
+### 4.44 Menu ẩn dựng sẵn bếp trà — vì sao “Chạy” trên ván mới không mở được nồi (lượt 61)
+
+Người chơi bấm mục test cũ (“Mở thẳng bước *Cho nguyên liệu* của nồi”) trên **ván mới** và vẫn thấy nồi trống.
+Đo bằng probe `tools/probe/steps/dev60.mjs` (mở menu ẩn thật: 7 lần chữ Cài đặt › `7777` › bấm nút *Chạy*):
+
+| Thứ tự kiểm tra trong `Cook.prep()` | Ván mới có gì | Kết quả |
+|---|---|---|
+| `stall.where === 'placed'` | `'none'` — chưa đặt quầy | ✗ dừng ngay |
+| `placeAt()` đòi `s.tier ≥ sp.minTier` | `tier = 0` (chưa có gánh) | ✗ *“Chỗ này cần gánh hàng rong trở lên.”* |
+| `missingTools()` | không có bếp/nồi | ✗ *“Thiếu dụng cụ”* |
+| `useFuel()` | không có than | ✗ *“Hết than!”* |
+| tiền | 18.000₫ (chưa đủ mua gánh 120.000₫) | ✗ |
+
+Tức lỗi **không phải ở cảm ứng** (đo chạm vẫn ăn, xem §4.43) mà ở chỗ mục test chỉ cho nguyên liệu, **không dựng
+quầy/bếp/nồi/than**. Nay có hàm dùng chung `chuanBiNoi(rid)` trong `game/devPoints.ts`:
+
+1. nâng tiền lên 400.000₫ nếu ít hơn, 2. mua `ganh` → `bepthan` → `noi` → `daothot` (**gánh trước** để `placeAt` không từ chối),
+3. đặt quầy ở Cổng Công Viên, 4. cho ≥ 6 than, 5. bật `rec[rid].known/on`, 6. cho đủ nguyên liệu của **2 lượt nấu + dư 1**, 7. `cook.prep(r)`.
+
+Ba mục dùng nó: `t61_tra` (hỏi chọn Trà đá / Trà chanh), `t61_noi_da`, `t61_noi_chanh` (vào thẳng).
+
+**Đo lại:** cả hai món — `cook.r.id` đúng món, `mini` là `BoilGame`, `phase 'add'`; chạm chén ⇒ `fly −1 → 1`, `phase 'add' → 'cook'`,
+nút *Quạt lửa* / *Lọc ra* hiện ra. Ảnh `tools/probe/out/fix/dev61_da.png`, `dev61_chanh.png`, `dev60_cham_da.png`.
+
+**Bài học:** mục test nào mở thẳng một *bước* của bàn thao tác thì phải dựng đủ **tiền → cấp quầy → chỗ → dụng cụ → nhiên liệu → nguyên liệu**,
+theo đúng thứ tự mà `prep()` kiểm tra; thiếu một khâu là người chơi chỉ thấy một câu cảnh báo và tưởng lỗi cảm ứng vẫn còn.
+
 ## 7. Kiểm thử
 
+- `tests/nau59.test.ts` — lượt 60: tia chạm của bàn nấu ăn cắt ở nhiều độ cao (sửa lỗi không cho được nguyên liệu vào nồi).
+- `tests/jobs59.test.ts` — lượt 59: trần việc làm thêm mỗi ngày (bốc cá 2 ca, chạy bàn 3 ca, vác 20 bao), đếm số còn lại không âm, reset qua ngày, và quét mã nguồn canh số chép tay + bảng việc làm đủ 7 dòng.
+- `tests/tron58.test.ts` — lượt 58: bánh tráng trộn có mini game riêng — 5 topping rải ngẫu nhiên mỗi ván, thứ tự do máy gọi, chấm điểm theo số lần chạm nhầm/chậm.
 - `tests/camduong57.test.ts` — lượt 57: rào cấm đường chặn cả xe cộ (quay đầu ở vạch, không sinh xe trong đoạn cấm).
 - `tests/mat56.test.ts` — lượt 56: Bà Chín Ve Chai có nước da rám nắng riêng, không ai khác bị đổi da theo.
 - `tests/nghi55.test.ts` — lượt 55: tên sạp Dì Sáu + hai món sữa, hộp thân quầy đủ mọi bậc, khách vòng đầu quầy, `bedSpot`/`wake` chống kẹt giường, chi tiết buồng tắm.
@@ -1066,7 +1219,7 @@ Còn lại:
 - Đo trên điện thoại thật: người chơi báo máy của họ chạy trên 50 khung hình/giây, nhưng chưa rõ đó là máy nào. Nếu máy yếu chạy chậm: gộp các khối cơ thể NPC thành một lưới, dùng instancing cho đồ vật lặp lại, bỏ sương mù theo điểm ảnh ở mức thấp, thêm LOD cho khu ở xa.
 - Nghe thử và cân chỉnh âm thanh.
 - Cân bằng nhịp độ qua chơi thử: tốc độ kiếm vốn ngày đầu, lượng khách lúc uy tín thấp, độ khó các mini-game.
-- Kỹ thuật: tách gói JavaScript (một tệp 1.335 kB, nén còn 420 kB — đo trên bản build 2026-11-21) và nội thất cửa hàng chi tiết hơn. Chơi ngoại tuyến đã xong (lượt 40: service worker `public/sw.js` + nút trong Cài đặt).
+- Kỹ thuật: tách gói JavaScript (một tệp 1.369 kB, nén còn 432 kB — đo trên bản build 2026-11-22) và nội thất cửa hàng chi tiết hơn. Chơi ngoại tuyến đã xong (lượt 40: service worker `public/sw.js` + nút trong Cài đặt).
 
 Lỗi nhỏ đã biết: ở màn dọc HUD chật (game khuyên xoay ngang). Dòng "Dụng cụ"/"Sơ chế" trong Sổ tay đã rà ngày 2026-11-21 (`src/ui/panels.ts:273`) — không còn dấu "·" thừa.
 

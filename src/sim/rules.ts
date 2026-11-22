@@ -178,8 +178,28 @@ export const marginOf = (price: number, cost: number) => (price > 0 ? (price - c
 // ───────────────────────── Việc làm thêm ─────────────────────────
 /** Tiền công một ca chạy bàn (60 phút): theo uy tín và tinh thần lúc nhận việc. */
 export const cafeWage = (rep: number, mood: number) => round1k(38000 + Math.max(0, rep) * 120 + Math.max(0, mood - 50) * 120);
-/** Tiền công một ca bốc cá (110 phút): 52.000–68.000₫, chia bậc theo số ngẫu nhiên 0–1. */
+/**
+ * Tiền công một ca bốc cá (110 phút): 52.000–68.000₫, chia bậc theo số ngẫu nhiên 0–1.
+ * Lượt 59: câu chữ trên bảng việc làm và trần ca/ngày cùng đọc một chỗ, để con số hiện ra không lệch luật.
+ */
 export const dockWage = (roll: number) => round1k(52000 + clamp(roll, 0, 1) * 16000);
+/** Hai đầu của tiền công một ca bốc cá — dùng cho câu chữ (“52.000–68.000₫”). */
+export const DOCK_WAGE_MIN = dockWage(0), DOCK_WAGE_MAX = dockWage(1);
+// ── Trần việc làm thêm mỗi ngày (lượt 59) ──────────────────────────────
+/** Số bao hàng tối đa một ngày ở bến chợ (trước lượt 59 là 12 bao). */
+export const DOCK_SACKS_DAY = 20;
+/** Tiền công mỗi bao hàng — vác tay từ xe tải vô sạp gạo Bà Hai. */
+export const DOCK_SACK_PAY = 6000;
+/** Số ca bốc cá tối đa một ngày (ca 110 phút, sáng sớm). */
+export const DOCK_SHIFTS_DAY = 2;
+/** Số ca chạy bàn / phụ quán cà phê tối đa một ngày (mỗi ca 60 phút, tính chung cả hai quán). */
+export const CAFE_SHIFTS_DAY = 3;
+/** Đã bốc bao nhiêu trong ngày / còn vác được bao nhiêu. */
+export const sacksLeft = (g: Game) => Math.max(0, DOCK_SACKS_DAY - (g.wd.sacks ?? 0));
+/** Còn mấy ca bốc cá trong ngày. */
+export const dockShiftsLeft = (g: Game) => Math.max(0, DOCK_SHIFTS_DAY - (g.wd.cargoShifts ?? 0));
+/** Còn mấy ca chạy bàn trong ngày (hai quán dùng chung trần). */
+export const cafeShiftsLeft = (g: Game) => Math.max(0, CAFE_SHIFTS_DAY - (g.wd.cafeShifts ?? 0));
 export const suggestPrice = (g: Game, r: RecipeDef) => Math.max(round1k(recipeCost(g, r).total * 1.9), r.ref);
 export const prepIngs = (r: RecipeDef) => Object.entries(r.ings).filter(([id]) => !r.fin.includes(id));
 export const finIngs = (r: RecipeDef) => Object.entries(r.ings).filter(([id]) => r.fin.includes(id));
@@ -1751,7 +1771,7 @@ function newDay(g: Game, R: RNG) {
   g.tot.best = Math.max(g.tot.best, g.led.revenue);
   g.day++; g.min -= 1440; g.led = newLedger(g.day);
   if (waste > 500) toast(`Tổng thiệt hại đồ bỏ đi: ${money(waste)}.`, 'bad', 'box');
-  g.wd.picked = []; g.wd.sacks = 0; g.wd.plates = 0; g.wd.deliveries = 0; g.wd.begTired = Math.max(0, g.wd.begTired - 60); g.wd.haggled = {}; g.wd.litterDay = g.day;
+  g.wd.picked = []; g.wd.sacks = 0; g.wd.plates = 0; g.wd.deliveries = 0; g.wd.cargoShifts = 0; g.wd.cafeShifts = 0; g.wd.begTired = Math.max(0, g.wd.begTired - 60); g.wd.haggled = {}; g.wd.litterDay = g.day;
   s.dirt = clamp(s.dirt + 6, 0, 100); s.open = false;
   dailyDebts(g); dailyHousing(g);
   // sạp cố định: phí chỗ tính tự động mỗi ngày, thiếu tiền thì quầy phải đóng

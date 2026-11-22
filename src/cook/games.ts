@@ -3,11 +3,12 @@ import * as THREE from 'three';
 import { ctx } from '../game/ctx';
 import type { Cook, Mini } from './cook';
 import { Heat, GEO, mk, pm } from './cook';
-import type { CutStep, FryStep, GrillStep, BoilStep, AssembleStep, RecipeDef, Look, Vessel } from '../data/recipes';
+import type { CutStep, FryStep, GrillStep, BoilStep, AssembleStep, TronStep, RecipeDef, Look, Vessel } from '../data/recipes';
 import { INGS } from '../data/ingredients';
 import { MB, MAT, mix, shade } from '../gfx/mb';
-import { ingModel, boardModel, knifeModel, panModel, potModel, grateModel } from '../gfx/props';
+import { ingModel, boardModel, knifeModel, panModel, potModel, grateModel, ingGeo } from '../gfx/props';
 import { clamp, lerp, RNG, hashStr } from '../core/util';
+import { tronSpots, tronCalls, tronTapAt, tronScore, tronLimit, tronRound, TRON_ROUNDS } from './tron';
 import { sfx } from '../core/bus';
 
 const col = new THREE.Color(), GOLD = new THREE.Color(0xc8852e), BURNT = new THREE.Color(0x1a1410);
@@ -72,7 +73,7 @@ export class CutGame implements Mini {
 
 // ───────────────────────── 2. XÀO / CHIÊN / ỐP LA ─────────────────────────
 export class FryGame implements Mini {
-  planeH = 0.2; frame: [number, number, number] = [0.74, 0.62, 0]; private heat!: Heat; private pan = new THREE.Group(); private pieces: { m: THREE.Mesh; base: THREE.Color; vy: number; y: number }[] = [];
+  planeH = 0.2; /** mặt chảo — chạm/vuốt đảo diễn ra ngay trên mặt chảo nên một độ cao là đủ */ frame: [number, number, number] = [0.74, 0.62, 0]; private heat!: Heat; private pan = new THREE.Group(); private pieces: { m: THREE.Mesh; base: THREE.Color; vy: number; y: number }[] = [];
   private cookV = 0; private burn = 0; private tossN = 0; private missed = 0; private prompt = 0; private lo: number; private hi: number; private result: number | null = null; private sx = 0; private sy = 0; private smokeT = 0; private single: boolean; private flipped = 0;
   constructor(private cook: Cook, private step: FryStep, private portions: number) { const w = 0.13 * clamp(cook.ease, 0.7, 1.35); this.lo = step.heat - w; this.hi = step.heat + w; this.single = step.mode === 'ốp la'; }
   start() {
@@ -139,7 +140,7 @@ export class FryGame implements Mini {
 
 // ───────────────────────── 3. NƯỚNG ─────────────────────────
 export class GrillGame implements Mini {
-  planeH = 0.25; frame: [number, number, number] = [0.74, 0.62, 0.02]; private heat!: Heat; private items: { g: THREE.Group; mat: THREE.MeshPhongMaterial; dot: THREE.Mesh; d: [number, number]; down: 0 | 1; x: number; flip: number }[] = [];
+  planeH = 0.25; /** mặt vỉ; món nằm thấp hơn 3,5 cm nên tia chạm lệch < 2 cm, dưới ngưỡng ăn 7 cm */ frame: [number, number, number] = [0.74, 0.62, 0.02]; private heat!: Heat; private items: { g: THREE.Group; mat: THREE.MeshPhongMaterial; dot: THREE.Mesh; d: [number, number]; down: 0 | 1; x: number; flip: number }[] = [];
   private result: number | null = null; private smokeT = 0; private lo = 0.48; private hi = 0.8; private said = false;
   constructor(private cook: Cook, private step: GrillStep, private r: RecipeDef, private portions: number) { const w = clamp(cook.ease, 0.7, 1.35); this.lo = 0.64 - 0.16 * w; this.hi = 0.64 + 0.16 * w; }
   start() {
@@ -193,13 +194,15 @@ export class GrillGame implements Mini {
 // ───────────────────────── 4. NẤU / NINH / LUỘC / PHA ─────────────────────────
 export class BoilGame implements Mini {
   planeH = 0.3; frame: [number, number, number] = [1.06, 0.74, -0.03]; private heat!: Heat; private bowls: { g: THREE.Group; x: number; z: number; id: string; fly: number }[] = []; private liquid!: THREE.Mesh; private bub: THREE.Mesh[] = []; private foam: THREE.Mesh[] = [];
+  /** Độ cao nhận tay: mặt bàn (chén nguyên liệu) và mặt nước (vớt bọt). */
+  planes: number[] = [0.03];
   private phase: 'add' | 'cook' = 'add'; private prog = 0; private zoneT = 0; private total = 0; private pen = 0; private overT = 0; private skimDone = 0; private foamT = 0; private result: number | null = null; private lo = 0.45; private hi = 0.7; private brew: boolean; private surf = 0;
   private c0 = new THREE.Color(0xcfe6f2); private c1: THREE.Color;
   constructor(private cook: Cook, private step: BoilStep) {
     this.brew = step.mode === 'pha'; const w = clamp(cook.ease, 0.7, 1.35), mid = step.mode === 'luộc' ? 0.74 : step.mode === 'cơm' ? 0.58 : 0.55; this.lo = mid - 0.14 * w; this.hi = mid + 0.14 * w; this.c1 = new THREE.Color(step.col);
   }
   start() {
-    const st = this.cook.stage; this.heat = new Heat(this.cook, st); const top = this.heat.top; this.surf = top + 0.155; this.planeH = this.surf;
+    const st = this.cook.stage; this.heat = new Heat(this.cook, st); const top = this.heat.top; this.surf = top + 0.155; this.planeH = this.surf; this.planes = [0.03];
     const mb = new MB(); potModel(mb, 0, top, 0, 1); st.add(this.cook.meshOf(mb, MAT.lit));
     this.liquid = mk(GEO.disc, 0xcfe6f2, 0.335, 0.004, 0.335, 0, this.surf, 0, st); this.liquid.material = pm(0xcfe6f2, { opacity: 0.92 });
     for (let i = 0; i < 7; i++) { const b = mk(GEO.sph, 0xffffff, 0.02, 0.012, 0.02, 0, this.surf + 0.004, 0, st); b.material = pm(0xffffff, { opacity: 0.6 }); b.visible = false; this.bub.push(b); }
@@ -217,6 +220,19 @@ export class BoilGame implements Mini {
     if (id === 'done' && this.brew) { const s = this.prog; this.result = (s < 0.78 ? Math.pow(clamp(s / 0.78), 1.6) : s <= 1.0 ? 1 : clamp(1 - (s - 1) * 2.6)) - this.pen; ctx.ui.floatAt(s < 0.7 ? 'Còn nhạt!' : s > 1.08 ? 'Đắng chát!' : 'Vừa đậm!', this.cook.world(0, 0.5, 0), s < 0.7 || s > 1.08 ? 'bad' : 'good'); }
   }
   slide(v: number) { this.heat.flame = v; }
+  /**
+   * Chạm vào chén nguyên liệu thì phải cắt tia ở MẶT BÀN (chén nằm trên bàn), chạm để vớt bọt thì ở MẶT NƯỚC.
+   * Trước đây `Cook.local()` chỉ cắt ở mặt nước nên điểm rơi lệch 0,2 m và không chén nào ăn được (lượt 59).
+   */
+  pickPoint(list: { h: number; p: THREE.Vector3 }[]) {
+    const base = list[0].p;
+    if (this.phase === 'add') return list.reduce((a, b) => (b.h < a.h ? b : a)).p;   // mặt bàn (thấp nhất)
+    // Lúc nấu: chỉ quan tâm bọt nổi trên mặt nước; tay chạm chỗ khác thì trả về mặt nước như cũ.
+    const bọt = this.foam.filter((f) => f.visible).map((f) => [f.position.x, f.position.z] as const);
+    if (!bọt.length) return base;
+    for (const c of list) if (bọt.some(([x, z]) => Math.hypot(x - c.p.x, z - c.p.z) < 0.09)) return c.p;
+    return base;
+  }
   down(p: THREE.Vector3) {
     if (this.phase === 'add') { for (const b of this.bowls) if (b.fly < 0 && Math.hypot(b.x - p.x, b.z - p.z) < 0.11) { b.fly = 0; sfx('plop'); this.labels(); break; } }
     else this.move(p);
@@ -261,7 +277,7 @@ const VES: Record<Vessel, { R: number; y0: number; H: number }> = {
   glass: { R: 0.036, y0: 0.008, H: 0.11 }, paper: { R: 0.08, y0: 0.012, H: 0.004 }, bun: { R: 0.062, y0: 0.03, H: 0.004 }, roll: { R: 0.085, y0: 0.007, H: 0.003 },
 };
 export class AssembleGame implements Mini {
-  planeH = 0.04; frame: [number, number, number] = [1.0, 0.6, -0.03]; private bowls: { g: THREE.Group; x: number; z: number; li: number; shake: number }[] = []; private cur = 0; private mistakes = 0; private pours: number[] = []; private pouring = false; private fill = 0; private t = 0; private doneT = -1;
+  planeH = 0.04; /** mặt bàn — chén nguyên liệu nằm ngay đây (mặt đĩa ~0,014 m) nên một độ cao là đủ */ frame: [number, number, number] = [1.0, 0.6, -0.03]; private bowls: { g: THREE.Group; x: number; z: number; li: number; shake: number }[] = []; private cur = 0; private mistakes = 0; private pours: number[] = []; private pouring = false; private fill = 0; private t = 0; private doneT = -1;
   private ves = new THREE.Group(); private y = 0; private liq: THREE.Mesh | null = null; private stream!: THREE.Mesh; private V: { R: number; y0: number; H: number }; private R = new RNG(11); private topper: THREE.Object3D | null = null; private pourBowl = -1;
   constructor(private cook: Cook, private step: AssembleStep, private r: RecipeDef) { this.V = VES[r.vessel]; this.y = this.V.y0; }
   start() {
@@ -356,6 +372,177 @@ export class AssembleGame implements Mini {
     if (this.topper) this.topper.position.y = Math.max(0, this.topper.position.y - dt * 0.7);
     if (this.ves.userData.roll) { const k = Math.min(1, (0.7 - this.doneT) / 0.5); this.ves.scale.set(1, 1 + k * 2.2, 1 - k * 0.62); }
     if (this.doneT >= 0) { this.doneT -= dt; if (this.doneT < 0) { const n = this.step.layers.length, pour = this.pours.length ? this.pours.reduce((a, b) => a + b, 0) / this.pours.length : 1; return clamp((1 - 0.17 * this.mistakes) * (0.4 + 0.6 * pour) * timeFactor(this.t, n * 2 + 3)); } }
+    return null;
+  }
+}
+
+// ───────────────────────── 5b. TRỘN TOPPING (bánh tráng trộn) ─────────────────────────
+/**
+ * Bánh tráng trộn bày topping kiểu “máy gọi tên”: 5 topping rải ở vị trí NGẪU NHIÊN mỗi ván,
+ * màn hình gọi tên từng thứ (mỗi ván 2 vòng, vòng sau gấp hơn) và người chơi phải chạm đúng
+ * cái đang được gọi trước khi hết giờ. Chạm nhầm hay để hết giờ đều mất điểm; xong cả ván thì
+ * cả 5 thứ nằm trong hộp bánh tráng như bước trình bày cũ.
+ * Vị trí rải tính ở `tron.ts` (thuần, có test) chứ không rải tay trong lớp vẽ này —
+ * để máy đo được “vị trí có đổi mỗi ván không” mà không phải mở trình duyệt.
+ */
+export class TronGame implements Mini {
+  planeH = 0.05; frame: [number, number, number] = [1.06, 0.7, 0.02];
+  private spots: { x: number; z: number; li: number }[] = [];
+  /** Mỗi đĩa: `top` là phần topping (luôn nằm trên đĩa), `bit` là mẩu đã gắp, `full` là số mẩu còn lại. */
+  private dishes: { g: THREE.Group; top: THREE.Group; bit: THREE.Mesh | null; fly: number; full: number; shake: number }[] = [];
+  private calls: number[] = [];
+  private k = 0; private left = 0; private t = 0; private miss = 0; private doneT = -1;
+  private box = new THREE.Group(); private ring!: THREE.Mesh; private R: RNG; private pops: THREE.Object3D[] = [];
+  /** Mẩu topping đang bay từ đĩa vào hộp. */
+  private bits: { m: THREE.Mesh; from: THREE.Vector3; f: number }[] = [];
+  /** Hạt giống mới mỗi ván: nấu lại là 5 topping đổi chỗ, không học thuộc được. */
+  constructor(private cook: Cook, private step: TronStep, private r: RecipeDef) {
+    this.R = new RNG((Math.random() * 2 ** 31) | 0);
+  }
+  start() {
+    const st = this.cook.stage, L = this.step.layers, n = L.length, rand = () => this.R.next();
+    // hộp giấy có thành: đáy + 4 vách mỏng, để nhìn ra là cái hộp chứ không phải tấm giấy dán bàn
+    const mb = new MB();
+    mb.box(0, 0, 0, 0.24, 0.012, 0.15, 0xf7f3e6, 0xfdfbf2, 0.06);
+    for (const sx of [-1, 1]) mb.box(sx * 0.116, 0.022, 0, 0.008, 0.024, 0.15, 0xf7f3e6, 0xfdfbf2, 0.03);
+    for (const sz of [-1, 1]) mb.box(0, 0.022, sz * 0.071, 0.24, 0.024, 0.008, 0xf7f3e6, 0xfdfbf2, 0.03);
+    this.box.add(this.cook.meshOf(mb, MAT.food)); this.box.position.set(0, 0, 0.32); st.add(this.box);
+    this.calls = tronCalls(rand, n, TRON_ROUNDS);
+    tronSpots(rand, n).forEach((p, i) => {
+      const l = L[i], c = ingCol(l.ing, l.col), g = new THREE.Group(), top = new THREE.Group();
+      mk(GEO.disc, 0xe8e2cf, 0.15, 0.012, 0.15, 0, 0.006, 0, g); mk(GEO.disc, 0xf2ecd9, 0.126, 0.002, 0.126, 0, 0.013, 0, g);
+      // hình nguyên liệu thật của món (bánh tráng = nắm sợi, đậu phộng = gói, rau thơm = bó, tương ớt = chai, chanh = quả)
+      if (INGS[l.ing].shape === 'stack') {
+        // Bánh tráng là xấp bánh mỏng, cùng màu với đĩa nên đứng xa là trông như đĩa trống — bày thành nắm SỢI
+        // vàng ngà có bóng đổ bên dưới cho nhìn rõ là còn topping trên đĩa.
+        mk(GEO.sph, 0x8a7a52, 0.115, 0.006, 0.075, 0, 0.016, 0, top).material = pm(0x8a7a52, { opacity: 0.28 });
+        for (let j = 0; j < 9; j++) {
+          const a = (j / 9) * Math.PI * 2, r = 0.016 + (j % 3) * 0.012;
+          mk(GEO.box, j % 2 ? c : shade(c, 0.9), 0.085 - (j % 3) * 0.012, 0.005, 0.006, Math.cos(a) * r, 0.028 + (j % 3) * 0.008, Math.sin(a) * r, top).rotation.set(0, a, (j % 2 ? 1 : -1) * 0.12);
+        }
+      } else { const im = new MB(); ingModel(im, INGS[l.ing], 0, 0.014, 0, 0.6); top.add(this.cook.meshOf(im)); }
+      if (l.look === 'drizzle' || l.look === 'sprinkle' || l.look === 'greens') mk(GEO.sph, c, 0.055, 0.018, 0.055, 0, 0.055, 0, top);
+      g.add(top); g.position.set(p.x, 0, p.z); st.add(g);
+      this.spots.push({ x: p.x, z: p.z, li: i }); this.dishes.push({ g, top, bit: null, fly: 0, full: 1, shake: 0 });
+    });
+    this.ring = mk(GEO.ring, 0xffd35a, 0.29, 0.05, 0.29, 0, 0.013, 0, st);
+    (this.ring.material as THREE.Material) = pm(0xffd35a, { opacity: 0.9, emissive: 0x7a5200 });
+    this.refresh();
+    ctx.ui.cookHint('Máy gọi thứ nào thì chạm đúng đĩa đó — mỗi ván 5 topping nằm một chỗ khác nhau.');
+  }
+  private name(i: number) { const l = this.step.layers[i]; return ingName(l.ing, l.name); }
+  private refresh() {
+    const cur = this.calls[Math.min(this.k, this.calls.length - 1)];
+    const round = tronRound(Math.min(this.k, this.calls.length - 1), this.step.layers.length), rounds = Math.ceil(this.calls.length / this.step.layers.length);
+    ctx.ui.cookCard(this.step.layers.map((l, i) => ({ t: ingName(l.ing, l.name), state: i === cur ? 1 : 0 })), `Máy đang gọi${rounds > 1 ? ` (vòng ${round}/${rounds})` : ''}`);
+    // nhãn chỉ hiện cho đĩa CÒN topping trên khay — đĩa đã dùng hết trong vòng này thì biến mất cùng nhãn,
+    // nhưng khi sang vòng mới (máy gọi lại) là đĩa và nhãn có lại, không còn cảnh “nhãn trơ” trên bàn trống.
+    ctx.ui.cookLabels(this.spots.filter((s) => this.dishes[s.li].full > 0).map((s) => ({ t: this.name(s.li), p: this.cook.world(s.x, 0.17, s.z), cur: s.li === cur })));
+    const sp = this.spots.find((s) => s.li === cur);
+    if (sp) { this.ring.position.set(sp.x, 0.013, sp.z); this.ring.visible = true; }
+    this.left = tronLimit(this.k);
+    ctx.ui.cookHint(round < rounds ? `Chạm đĩa “${this.name(cur)}” — nhanh tay lên!` : `Vòng cuối, gấp rồi — chạm đĩa “${this.name(cur)}”!`);
+  }
+  down(p: THREE.Vector3) {
+    if (this.doneT >= 0 || this.k >= this.calls.length) return;
+    const want = this.calls[this.k], i = tronTapAt(this.spots, p.x, p.z), L = this.step.layers;
+    if (i < 0) { this.penalty('Chạm ra ngoài đĩa!'); return; }
+    if (this.spots[i].li !== want) {
+      this.dishes[i].shake = 0.3;
+      this.penalty(`Nhầm rồi — đang gọi ${this.name(want)}!`);
+      return;
+    }
+    // CHỈ một mẩu topping bay vào hộp: đĩa phải nằm lại trên khay vì ván còn vòng sau và máy sẽ gọi lại
+    // đúng những topping này (trước đây ẩn cả đĩa ⇒ sang vòng 2 máy gọi vào chỗ trống, nhãn nằm trơ trên bàn).
+    const d = this.dishes[i];
+    this.takeBit(d, this.step.layers[i], i); d.fly = 0.001;
+    sfx('plop'); this.cook.puff(this.spots[i].x, 0.1, this.spots[i].z, 0xf0dfb0, 2, 0.05);
+    this.k++;
+    if (this.k >= this.calls.length) this.done();
+    else {
+      // hết một vòng thì 5 đĩa đầy lại như lúc đầu (máy gọi lại từ đầu danh sách)
+      if (this.k % L.length === 0) { for (const x of this.dishes) x.full = 1; this.mix(); }
+      this.refresh(); sfx('ding');
+    }
+  }
+  /** Gắp một mẩu nhỏ khỏi đĩa: mẩu bay sang hộp rồi biến mất, đĩa vơi dần và tự đầy lại khi sang vòng mới. */
+  private takeBit(d: { full: number }, l: { ing: string; col?: number; look: string }, i: number) {
+    d.full = Math.max(0, d.full - 1);
+    const c = ingCol(l.ing, l.col), sp = this.spots[i];
+    const m = l.look === 'nest' ? mk(GEO.ring, c, 0.07, 0.024, 0.05, sp.x, 0.05, sp.z, this.cook.stage)
+      : l.look === 'drizzle' ? mk(GEO.box, c, 0.05, 0.003, 0.006, sp.x, 0.055, sp.z, this.cook.stage)
+      : mk(GEO.sph, c, l.look === 'sprinkle' ? 0.014 : 0.026, l.look === 'sprinkle' ? 0.009 : 0.008, l.look === 'sprinkle' ? 0.014 : 0.02, sp.x, 0.05, sp.z, this.cook.stage);
+    this.bits.push({ m, from: new THREE.Vector3(sp.x, 0.05, sp.z), f: 0.001 });
+  }
+  private penalty(msg: string) { this.miss++; sfx('bad'); ctx.ui.floatAt(msg, this.cook.world(0, 0.3, 0.08), 'bad'); }
+  /** Hết một vòng (đủ 5 thứ) thì đảo một lượt cho trông như đã trộn. */
+  private mix() {
+    for (let i = 0; i < 5; i++) this.cook.puff((this.R.next() - 0.5) * 0.16, 0.06, 0.32 + (this.R.next() - 0.5) * 0.08, 0xf0dfb0, 1, 0.045);
+    sfx('skim');
+  }
+  private done() {
+    this.doneT = 0.75; this.ring.visible = false;
+    ctx.ui.cookLabels([]); ctx.ui.cookProg(null); ctx.ui.cookHint('Trộn đều rồi — xúc ra hộp thôi!');
+    ctx.ui.cookCard(this.step.layers.map((l) => ({ t: ingName(l.ing, l.name), state: 2 })), 'Đã trộn đủ 5 thứ');
+    // Bày 5 lớp vào hộp như bước trình bày cũ, để thành phẩm nhìn vẫn ra bánh tráng trộn:
+    // sợi bánh tráng lót đáy, tương ớt rưới thành vệt, đậu phộng rắc lấm tấm, rau thơm và chanh rải lên trên.
+    this.step.layers.forEach((l, i) => {
+      const c = ingCol(l.ing, l.col), g = new THREE.Group(), R = this.R, y0 = 0.03 + i * 0.004;
+      const P = (geo: THREE.BufferGeometry, cc: number, sx: number, sy: number, sz: number, x: number, y: number, z: number) => {
+        const m = mk(geo, cc, sx, sy, sz, x, y, z, g); m.userData.pop = 0; return m;
+      };
+      switch (l.look) {
+        case 'nest':   // bánh tráng cắt sợi: một nắm sợi vàng ngà nằm gọn trong hộp
+          P(GEO.sph, c, 0.19, 0.028, 0.1, 0, y0, 0);
+          for (let j = 0; j < 4; j++) P(GEO.ring, shade(c, 0.94), 0.055 + j * 0.032, 0.02, 0.03 + j * 0.02, R.range(-0.01, 0.01), y0 + 0.008, R.range(-0.008, 0.008));
+          break;
+        case 'drizzle': {  // rưới thành từng vệt mảnh, không phải cục tròn
+          for (let j = 0; j < 7; j++) P(GEO.box, c, 0.13 - Math.abs(j - 3) * 0.012, 0.003, 0.006, R.range(-0.008, 0.008), y0 + 0.004, (j - 3) * 0.013).rotation.y = j % 2 ? 0.22 : -0.22;
+          break;
+        }
+        case 'sprinkle':   // đậu phộng rang rắc lấm tấm
+          for (let j = 0; j < 14; j++) P(GEO.sph, j % 3 ? c : shade(c, 0.85), 0.011, 0.007, 0.011, R.range(-0.075, 0.075), y0 + 0.006, R.range(-0.04, 0.04));
+          break;
+        case 'greens':     // rau thơm: lá nhỏ nằm ngang
+          for (let j = 0; j < 8; j++) P(GEO.sph, j % 2 ? c : shade(c, 1.18), 0.026, 0.004, 0.014, R.range(-0.07, 0.07), y0 + 0.006, R.range(-0.038, 0.038)).rotation.y = R.range(0, 3.14);
+          break;
+        default:
+          for (let j = 0; j < 6; j++) P(GEO.sph, c, 0.02, 0.006, 0.018, R.range(-0.07, 0.07), y0 + 0.005, R.range(-0.038, 0.038));
+          break;
+      }
+      g.position.set(0, 0, 0.32); this.cook.stage.add(g); this.pops.push(g);
+    });
+    sfx('good');
+  }
+  update(dt: number) {
+    this.t += dt;
+    if (this.ring.visible) { const s = 0.29 + Math.sin(this.t * 6) * 0.013; this.ring.scale.set(s, 0.05, s); (this.ring.material as THREE.MeshPhongMaterial).opacity = 0.6 + Math.sin(this.t * 6) * 0.25; }
+    this.dishes.forEach((d, i) => {
+      if (d.shake > 0) { d.shake -= dt; d.g.position.x = this.spots[i].x + Math.sin(d.shake * 70) * 0.008; } else d.g.position.x = this.spots[i].x;
+      // đĩa đã dùng thì nhỏ lại một chút (vẫn thấy rõ là còn trên khay), sang vòng mới thì trở lại như cũ
+      const want = 1 - (1 - d.full) * 0.18;
+      d.g.scale.setScalar(lerp(d.g.scale.x, want, Math.min(1, dt * 8)));
+      d.g.visible = true;
+    });
+    // mẩu đã gắp: bay vòng cung sang hộp rồi biến mất (đĩa và phần topping còn lại vẫn nằm trên khay)
+    for (let i = this.bits.length - 1; i >= 0; i--) {
+      const b = this.bits[i];
+      b.f = Math.min(1, b.f + dt * 2.8); const k = b.f;
+      b.m.position.set(lerp(b.from.x, 0, k), 0.05 + Math.sin(k * Math.PI) * 0.09, lerp(b.from.z, 0.32, k));
+      b.m.scale.setScalar(1 - k * 0.35);
+      if (k >= 1) { this.cook.stage.remove(b.m); this.bits.splice(i, 1); }
+    }
+    for (const g of this.pops) for (const m of g.children) if (m.userData.pop !== undefined && m.userData.pop < 1) m.userData.pop = Math.min(1, m.userData.pop + dt * 5);
+    if (this.doneT < 0 && this.k < this.calls.length) {
+      this.left -= dt;
+      ctx.ui.cookProg(clamp(this.left / tronLimit(this.k)), 0, 0, `Còn ${Math.max(0, this.left).toFixed(1)} giây`);
+      if (this.left <= 0) {
+        this.miss++; sfx('bad'); ctx.ui.floatAt('Trễ rồi!', this.cook.world(0, 0.3, 0.08), 'bad');
+        this.k++;
+        if (this.k >= this.calls.length) this.done(); else { this.refresh(); this.cook.puff(0, 0.2, 0.32, 0xf0dfb0, 2, 0.05); }
+      }
+    }
+    if (this.doneT >= 0) { this.doneT -= dt; if (this.doneT < 0) return tronScore(this.miss, this.calls.length, this.t); }
     return null;
   }
 }

@@ -1,7 +1,7 @@
 // Người chơi báo "bánh mì / sữa bỏ vào quầy rồi biến mất". Thực ra là đồ hỏng bị dọn qua đêm mà KHÔNG nói gì.
 // Bài này canh ba việc: (1) bỏ quầy thì vẫn còn nguyên tới ngày hôm sau, (2) lúc dọn phải báo tên món hỏng,
 // (3) bánh mì giữ được lâu gấp đôi trước.
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { fresh, withStall, give, IDLE } from './helpers';
 import { advance, shopRows, shopPrice, canTakeFromStore, nearStall } from '../src/sim/rules';
 import { SHOPS } from '../src/data/shops';
@@ -9,7 +9,19 @@ import { countOf } from '../src/sim/state';
 import { INGS } from '../src/data/ingredients';
 import { bus } from '../src/core/bus';
 
-const toasts = () => { const out: string[] = []; const off = bus.on('toast', (t) => out.push(t.text)); return { out, off }; };
+/**
+ * Bắt toast qua `bus` (kênh toàn cục). Vì là toàn cục nên phải tự dọn: bài nào quên `off()` là bộ nghe còn sống sang
+ * bài khác, và một mảng phình ra hàng nghìn dòng thì bài "báo tên món hỏng" (vòng lặp 120 bước) chập chờn khi chạy
+ * cả bộ 54 tệp song song. Nay mọi bộ nghe được `unsubToasts()` dọn ở `afterEach`.
+ */
+let unsub: (() => void) | null = null;
+const unsubToasts = () => { unsub?.(); unsub = null; };
+const toasts = () => {
+  unsubToasts();
+  const out: string[] = []; unsub = bus.on('toast', (t) => out.push(t.text));
+  return { out, off: unsubToasts };
+};
+afterEach(() => { unsubToasts(); });
 
 describe('đồ bỏ vào quầy không biến mất oan', () => {
   it('bánh mì và sữa để trong quầy vẫn còn nguyên qua nhiều giờ trong ngày', () => {

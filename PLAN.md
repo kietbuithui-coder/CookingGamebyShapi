@@ -1473,3 +1473,118 @@ trước lượt 57) → **570** mẫu lọt vào, xe ở `x = −27,8` chạy q
 
 **Bài học:** hai hệ (người đi bộ và xe) từng có hai bản đồ chặn đường riêng. Từ nay mọi thứ “chặn đường” khai ở
 `roads.ts` và cả hai bên cùng đọc một biến.
+
+---
+
+## Lượt 58 — mini game bánh tráng trộn: 5 topping nằm ngẫu nhiên mỗi ván ✅ đã xong
+
+Người chơi: *"làm mini game của bánh tráng trộn 5 tp random vị trí"*, chốt qua câu hỏi: kiểu chơi **“chạm đúng topping
+đang được gọi”** (phản xạ), và **thay** bước trình bày của riêng món này (không thêm bước mới).
+
+**Trước lượt này:** bánh tráng trộn dùng chung `AssembleGame` — 5 chén xếp vòng cung ở vị trí cố định, bày theo phiếu;
+vị trí không bao giờ đổi nên học thuộc một lần là xong.
+
+**Sửa:**
+- `cook/tron.ts` (mới, thuần, không Three.js/DOM): `tronSpots` chia vòng elip thành 5 khoang rồi rải ngẫu nhiên
+  (đẩy xa nhau tới khi mọi cặp cách > 0,15 m > 2 · bán kính ăn tay), `tronCalls` (2 vòng × 5, không gọi trùng hai lần
+  liền), `tronTapAt`, `tronLimit`, `tronScore`.
+- `cook/games.ts`: `TronGame implements Mini` — đĩa giấy + hình nguyên liệu thật, vòng vàng đánh dấu đĩa đang gọi, đĩa
+  chạm đúng bay vào hộp, hết một vòng thì đảo thau, xong ván thì bày 5 lớp vào hộp có thành (thành phẩm nhìn vẫn ra
+  bánh tráng trộn). **Mỗi ván lấy hạt giống mới** nên vị trí đổi.
+- `data/recipes.ts`: thêm `TronStep` (`t: 'tron'`), `STEP_NAME.tron = 'Trộn topping'`, `STEP_TOOLS.tron = []`,
+  `fuelPerPortion` coi `tron` là bước không dùng lửa; bánh tráng trộn đổi `finish` sang `tron(...)` với đúng 5 lớp cũ.
+- `cook/cook.ts`: `case 'tron'` → `TronGame`; ba chỗ lọc bước dùng lửa thêm `tron`; thêm getter `current` để bảng test
+  đọc được ván đang mở.
+- `ui/ui.ts`: `cookCard(items, title)` — màn trộn hiện “Máy đang gọi (vòng 1/2)”; `dishIcon` đọc màu topping từ `tron`.
+- `main.ts`: cửa hậu `?debug` thêm `__rec` (bảng công thức) để probe mở đúng món.
+- Test `tests/tron58.test.ts` (10 bài) + cập nhật `tests/devpoints.test.ts`, `tests/changelog.test.ts`.
+- Menu test thay bằng 3 mục `t58_*` (chuẩn bị quầy + sơ chế sẵn · vào thẳng mini game · đọc toạ độ 5 đĩa của ván đang mở).
+- Changelog thêm “Lượt 58”, bỏ bản cũ nhất (lượt 49) để giữ 8 bản.
+
+**Đo:** 60 hạt giống ⇒ vị trí luôn gọn trên bàn và mọi cặp cách > 0,105 m; 40 hạt giống ⇒ **40 cách xếp khác nhau**.
+Probe `tools/probe/steps/tron58.mjs`: 2 ván liền nhau cho 5 toạ độ khác hẳn; chạm sai → `miss 0 → 1`, `k` không tăng;
+để hết giờ → `miss 1 → 2`, tự sang lượt sau; bấm đúng hết 10 lượt → ra món, chất lượng **0,94** (ván 2, không sai) và
+**0,65** (ván 1, sai + trễ 2 lượt) — đúng ý “chạm nhầm thì mất điểm”.
+
+**Bài học:** phần “ngẫu nhiên” phải tách khỏi lớp vẽ thì mới đo được bằng máy — vị trí rải nằm trong `tron.ts` nên
+test khẳng định được “40 ván ⇒ 40 cách xếp”, còn nếu rải tay trong `TronGame` thì chỉ nhìn ảnh mà đoán.
+
+**Hotfix ngay sau lượt 58** (người chơi báo: *“topping trên khay biến mất khi ấn 1 lần”*): bản đầu ẩn **cả đĩa** sau
+lần chạm đúng, mà ván gọi 2 vòng nên sang vòng 2 máy gọi vào chỗ trống. Nay đĩa nằm lại suốt ván, chỉ một **mẩu** topping
+bay vào hộp (`bits`), đĩa vơi dần rồi đầy lại khi hết vòng, nhãn vẽ theo đĩa còn topping; đĩa bánh tráng đổi sang nắm sợi
+(nhìn rõ, không còn giống đĩa trống). Test thêm 1 bài (`tests/tron58.test.ts` → 11 bài) + probe `tron58.mjs` chặn đúng
+lỗi này: chạm đúng 1 lần ⇒ `đĩaHiện: 5`, hết vòng 1 ⇒ `cònTopping: [1,1,1,1,1]`.
+
+## Lượt 59 — trần việc làm thêm mỗi ngày + bảng việc làm đọc số thật ✅ đã xong
+
+Người chơi: *“giới hạn số lần có thể làm ca bốc cá và ca chạy bàn cafe xuống, tăng số bao có thể bốc vác lên và bổ sung
+chuẩn bảng việc làm”*. Ba nghề trong nhóm việc làm thêm đang lệch nhau: hai nghề trả cao (bốc cá 110 phút · 52.000–68.000₫,
+chạy bàn 60 phút · ≥ 38.000₫ + boa) **không có trần** nên đứng bấm cả buổi là ra tiền, còn vác bao thì chặn cứng ở 12 bao
+(72.000₫/ngày) — nghề nào cũng có mà vác bao thành vô nghĩa.
+
+**Sửa:**
+- `sim/rules.ts`: thêm hằng số dùng chung `DOCK_SACKS_DAY = 20` (trước 12), `DOCK_SACK_PAY = 6000`,
+  `DOCK_SHIFTS_DAY = 2`, `CAFE_SHIFTS_DAY = 3`, `DOCK_WAGE_MIN/MAX`; ba hàm đếm `sacksLeft`, `dockShiftsLeft`,
+  `cafeShiftsLeft` (không bao giờ âm, `?? 0` cho bản lưu cũ).
+- `sim/state.ts`: `wd.cargoShifts`, `wd.cafeShifts` + reset theo ngày ở `rules.ts`; **không** tăng `SAVE_VERSION`
+  (merge `{ ...base.wd, ...raw.wd }` đã lo bản lưu cũ).
+- `game/acts.ts`: trần áp trong chính hàm nhận ca — `cafeShift` (3 cửa vào: menu Sáu Lực, quán Bóng Đá, quán Sân Vườn),
+  `dockShift`, `dockTake`, `dockDrop`; ca bị chặn có câu giải thích riêng. `dockDrop` còn kiểm trần để không vác lố bao
+  thứ 21 (trả bao lại, không trả công). Toast sau mỗi ca ghi còn mấy ca.
+- `game/acts.ts` `jobListText()` (mới): bảng việc làm 7 dòng, mỗi dòng ghi số thật của hôm nay và giờ mở cửa; việc hết
+  hạn mức thì ghi thẳng lý do thay vì bỏ dòng.
+- `game/interact.ts`: nhãn `Đã vác x/12 bao` → đọc `R.sacksLeft(g)` / `R.DOCK_SACKS_DAY`, tiền `+6.000₫` → `money(R.DOCK_SACK_PAY)`.
+- Menu ẩn (`game/devPoints.ts`): thay mục test của lượt 58 bằng **6 mục `t59_*`** — mở bảng việc làm · về bến cảng 5h sáng
+  (đủ sức, sạch, 200.000₫) · làm hết 2 ca bốc cá rồi thử ca 3 · làm hết 3 ca chạy bàn rồi thử ca 4 · vác tới bao cuối rồi
+  thử vác lố · đọc sổ việc làm hôm nay. `DEV_BUILD_TAG` đổi sang câu của lượt 59.
+- Test `tests/jobs59.test.ts` (10 bài) + `tests/time.test.ts` cập nhật theo hằng số + `tests/devpoints.test.ts` (mục `t59_*`,
+  `t58_*` vào danh sách phải biến mất); changelog “Lượt 59” (bỏ bản cũ nhất).
+
+**Đo:** `npx tsc --noEmit` sạch · `npx vitest run` **647/647 (54 tệp)** · `npm run build:pages` OK.
+Probe `tools/probe/steps/jobs59.mjs` (`errors: none`): ca bốc cá 1 → 2, ca 3 **bị chặn** (tiền đứng 140.000₫, toast nói
+“đã bốc đủ 2 ca”); chạy bàn 1 → 3, ca 4 **bị chặn**; vác đủ trần rồi `dockDrop` **không** cộng bao (20, không phải 21);
+nút ca bốc cá trong hội thoại anh Sáu Lực ở trạng thái `off` kèm lý do; bảng việc làm 5h sáng đọc `20/20 bao`, `2/2 ca`,
+`3/3 ca`, `4/4 đơn`; sang ngày mới cả ba trần mở lại (`20`, `2`, `3`).
+Probe `tools/probe/steps/dev59.mjs` (mở menu ẩn bằng 7 lần bấm + mã 7777, `errors: none`): 6 mục `t59_*` hiện đủ trong bảng;
+bấm “làm hết ca bốc cá” ⇒ `2/2` rồi bấm ca lần nữa `bịChặn: true`; “làm hết ca chạy bàn” ⇒ `3/3`; “vác tới bao cuối” ⇒
+`20/20` và thử vác lố vẫn `20/20`; “đọc sổ việc làm” in `Bây giờ: 9h41 · ngày 1 · Bao 20/20 · Ca bốc cá 1/2 · Ca chạy bàn 3/3`.
+
+## Lượt 60 — sửa lỗi không cho được nguyên liệu vào nồi (trà đá bấm mãi không qua) ✅ đã xong
+
+Người chơi báo kèm ảnh: mở nồi nấu trà đá, nồi trống, chén “Trà khô” nằm trên bàn, chạm mãi không vào.
+
+**Nguyên nhân đo được:** `Cook.local()` cắt tia chạm ở một mặt phẳng `mini.planeH`; `BoilGame` đặt nó ở **mặt nước** (0,355 m) trong khi
+chén ở **mặt bàn** (~0,03 m) ⇒ điểm rơi lệch **0,208 m**, gấp đôi bán kính ăn 0,11 m. Ảnh hưởng **mọi món có bước nấu/ninh/luộc/pha**.
+
+**Sửa:**
+- `cook/cook.ts`: `Mini.planes` (khai thêm độ cao) + `Mini.pickPoint` (lớp tự chọn điểm); `local()` cắt tia ở mọi độ cao rồi
+  `pickPoint(list) ?? list[0].p` — lớp không khai thì hành vi y như cũ.
+- `cook/games.ts`: `BoilGame` khai `planes = [0.03]` + `pickPoint` (đang cho nguyên liệu → mặt bàn; đang nấu → mặt nước/giữa bọt).
+  Ghi chú rõ độ cao ở các lớp khác (thái 0,06 · chảo 0,2 · vỉ 0,25 · trình bày 0,04 · trộn 0,05 · rửa 0,03).
+- Test `tests/nau59.test.ts` (6 bài) + `tests/devpoints.test.ts` (thêm mục `t59_noi`) + changelog “Lượt 60”.
+- Menu ẩn: thêm mục **`t59_noi`** mở thẳng bước “Cho nguyên liệu” của nồi trà đá.
+
+**Đo:** `tsc` sạch · **653/653 test (55 tệp)** · probe `steps/nau59.mjs` (`errors: none`): chiếu chén ra màn hình rồi hỏi `local()`
+⇒ lệch **0,004 m** (trước 0,208 m); **chạm màn hình thật** ⇒ `fly -1 → 0,52` (chén bay vào nồi), hết chén thì hiện nút “Quạt lửa /
+Lọc ra”, bấm Lọc ra ⇒ ra món điểm 1,00. Probe `steps/nau59b.mjs` rà 7 bàn: thái ăn (lệch 0,019), chiên đảo được (`tossN 0 → 1`),
+nướng lật được, trình bày lệch 0,008, trộn `k 0 → 1`, rửa chén `hp 1 → 0,19`.
+
+## Lượt 61 — menu ẩn dựng sẵn bếp cho trà đá và trà chanh ✅ đã xong
+
+Người chơi gửi hai ảnh: mục “Mở thẳng bước Cho nguyên liệu của nồi (trà đá)” **bấm Chạy vẫn thấy nồi trống**.
+Yêu cầu: “bật sẵn cho nguyên liệu trà đá với trà chanh được đi (cho sẵn bếp, nồi…)”.
+
+**Tìm ra nguyên nhân (không phải cảm ứng):** probe `steps/dev60.mjs` bấm đúng nút *Chạy* trên **ván mới** rồi đọc toasts:
+*“Chỗ này cần gánh hàng rong trở lên.”* Ván mới có 18.000₫, `stall.tier = 0` ⇒ `buyGear('ganh')` thất bại ⇒ `placeAt` từ chối ⇒ `prep()` dừng ở
+điều kiện đầu tiên; cộng thêm thiếu bếp/nồi/than. Mục test cũ chỉ cho nguyên liệu nên không bao giờ mở được nồi.
+
+**Sửa:**
+- `game/devPoints.ts`: hàm `chuanBiNoi(rid)` lo đủ **tiền → gánh (cấp 1) → đặt quầy → bếp than + nồi + dao thớt → than → nguyên liệu 2 lượt**.
+- Ba mục: `t61_tra` (chọn Trà đá / Trà chanh), `t61_noi_da`, `t61_noi_chanh` (vào thẳng bước cho nguyên liệu). Bỏ mục `t59_noi` cũ.
+- `tests/devpoints.test.ts` thêm bài canh thứ tự mua gánh **trước** `placeAt` và hai món đều gọi `chuanBiNoi`.
+- Changelog “Lượt 61” (giữ 8 bản), `DEV_BUILD_TAG` mới, `DESIGN.md §4.44`.
+
+**Đo:** `tsc` sạch · **654/654 test (55 tệp)** · probe `steps/dev61b.mjs`: bấm `t61_noi_da` ⇒ `tra_da`/`BoilGame`/`phase add`;
+bấm `t61_noi_chanh` ⇒ `tra_chanh`/`BoilGame`/`phase add`. Probe `steps/dev60.mjs` chạm thật + bấm chuột thật: chén bay vào nồi, `phase add → cook`,
+hiện *Quạt lửa* / *Lọc ra*. `errors: none`.
+

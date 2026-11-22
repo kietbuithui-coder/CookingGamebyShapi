@@ -11,11 +11,23 @@ import { clamp } from '../core/util';
 import { softDot } from '../gfx/tex';
 import type { PtrHandler } from '../game/input';
 import type { Station } from '../game/stall';
-import { CutGame, FryGame, GrillGame, BoilGame, AssembleGame, WashGame } from './games';
+import { CutGame, FryGame, GrillGame, BoilGame, AssembleGame, TronGame, WashGame } from './games';
 
 export interface Mini {
   /** local y của mặt phẳng nhận thao tác tay */
   planeH: number;
+  /**
+   * Các độ cao KHÁC mà tay có thể chạm tới trong cùng ván, tính bằng mét trên bàn bếp.
+   * `Cook.local()` cắt tia ở từng độ cao trong `planeH` + danh sách này, chọn điểm gần tay nhất trên màn hình.
+   *
+   * Vì sao cần: tia chạm chỉ cắt ở MỘT mặt phẳng, nên nếu mặt phẳng đó cao hơn nơi đồ vật nằm thì điểm rơi bị kéo
+   * lệch về phía người nấu. Lượt 59 đo được ở nồi nấu: `planeH` = mặt nước (0,355 m) mà chén nguyên liệu nằm trên
+   * mặt bàn (~0,03 m) ⇒ chạm đúng chén “Trà khô” lại ra toạ độ lệch 0,208 m, gấp đôi bán kính ăn 0,11 m, nên
+   * **không món nào nấu/ninh/luộc/pha cho được nguyên liệu vào nồi**. Nay mỗi lớp khai thêm độ cao của đồ vật.
+   */
+  planes?: number[];
+  /** Chọn điểm chạm trong các ứng viên cắt ở từng độ cao (`{ h, p }`, `planeH` luôn đứng đầu). */
+  pickPoint?(list: { h: number; p: THREE.Vector3 }[]): THREE.Vector3;
   /** Khung hình cần thấy: [rộng, cao (đã chiếu lên màn hình), tâm z] tính bằng mét trên bàn bếp. */
   frame?: [number, number, number];
   start(): void; update(dt: number): number | null;   // trả về điểm 0–1 khi xong
@@ -94,6 +106,8 @@ export class Cook implements PtrHandler {
     this.begin(r, 'finish', r.finish, n, done ?? null); return true;
   }
   /** Việc rửa chén ở quán cơm (dùng chung cơ chế bàn thao tác). */
+  /** Mini game đang chạy (chỉ đọc, để bảng test đọc vị trí topping của ván đang mở). */
+  get current(): Mini | null { return this.mini; }
   wash(st: Station, plates: number, done: (score: number) => void) {
     this.r = RECIPES.tra_da; this.phase = 'job'; this.steps = []; this.idx = 0; this.scores = []; this.jobDone = done; this.enter(st);
     ctx.ui.cookShow('Rửa chén thuê — Quán cơm Bà Tư', ['Rửa chén'], 0); this.setMini(new WashGame(this, plates));
@@ -108,7 +122,7 @@ export class Cook implements PtrHandler {
   /** Đốt nhiên liệu cho các bước dùng lửa — chỉ gọi sau khi đã chắc đủ nguyên liệu. */
   private fuel(steps: Step[]): boolean {
     const g = ctx.g;
-    const heats = steps.filter((x) => x.t !== 'cut' && x.t !== 'assemble').length;
+    const heats = steps.filter((x) => x.t !== 'cut' && x.t !== 'assemble' && x.t !== 'tron').length;
     if (heats) {
       if (wx(g).id === 'bao') { toast('Bão thế này không nhóm bếp nổi!', 'bad', 'storm'); return false; }
       if (!useFuel(g, heats)) { toast(stove(g) === 'bepgas' ? 'Hết gas! Mua bình gas mini ở tạp hoá Cô Ba.' : 'Hết than! Mua than ở tạp hoá Cô Ba hoặc vựa đầu mối.', 'warn', 'fire'); return false; }
@@ -151,6 +165,8 @@ export class Cook implements PtrHandler {
       case 'grill': this.setMini(new GrillGame(this, s, r, this.portions)); break;
       case 'boil': this.setMini(new BoilGame(this, s)); break;
       case 'assemble': this.setMini(new AssembleGame(this, s, r)); break;
+      // Bánh tráng trộn: bày topping kiểu "máy gọi tên — chạm đúng cái đang gọi", vị trí rải ngẫu nhiên mỗi ván.
+      case 'tron': this.setMini(new TronGame(this, s, r)); break;
     }
     void g;
   }
@@ -158,10 +174,22 @@ export class Cook implements PtrHandler {
     for (const c of this.stage.children.slice()) { this.stage.remove(c); c.traverse((o) => { const m = o as THREE.Mesh; if (m.geometry && !Object.values(GEO).includes(m.geometry as any) && !m.userData.shared) m.geometry.dispose(); }); }
     for (const p of this.puffs) { p.life = 0; p.s.visible = false; }
   }
+  /**
+   * Đổi một điểm chạm trên màn hình thành toạ độ trên bàn bếp.
+   * Cắt tia ở MỌI độ cao mà lớp game khai (`planeH` + `planes`), rồi để lớp đó tự chọn
+   * (`pickPoint`) — mặc định lấy mặt phẳng chính như cũ.
+   */
   private local(sx: number, sy: number): THREE.Vector3 | null {
+    if (!this.mini) return null;
     this.ndc.set((sx / window.innerWidth) * 2 - 1, -(sy / window.innerHeight) * 2 + 1); this.ray.setFromCamera(this.ndc, ctx.camera);
-    const o = this.ray.ray.origin, d = this.ray.ray.direction, py = this.st.y + (this.mini?.planeH ?? 0), t = (py - o.y) / d.y; if (!(t > 0)) return null;
-    return this.group.worldToLocal(this.v.copy(o).addScaledVector(d, t)).clone();
+    const o = this.ray.ray.origin, d = this.ray.ray.direction;
+    const list: { h: number; p: THREE.Vector3 }[] = [];
+    for (const h of [this.mini.planeH, ...(this.mini.planes ?? [])]) {
+      const py = this.st.y + h, t = (py - o.y) / d.y; if (!(t > 0)) continue;
+      list.push({ h, p: this.group.worldToLocal(this.v.copy(o).addScaledVector(d, t)).clone() });
+    }
+    if (!list.length) return null;
+    return this.mini.pickPoint?.(list) ?? list[0].p;
   }
   down(x: number, y: number) { if (!this.mini || this.gradeT > 0) return; const p = this.local(x, y); if (p) this.mini.down?.(p, x, y); }
   move(x: number, y: number) { if (!this.mini || this.gradeT > 0) return; const p = this.local(x, y); if (p) this.mini.move?.(p, x, y); }
@@ -187,7 +215,7 @@ export class Cook implements PtrHandler {
     if (this.idx < this.steps.length) { this.next(); return; }
     // tổng kết: trừ nguyên liệu, tính chất lượng, cất thành phẩm
     const g = ctx.g, r = this.r, n = this.portions, score = this.scores.reduce((a, b) => a + b, 0) / Math.max(1, this.scores.length), now = absMin(g);
-    const fuel = this.steps.filter((x) => x.t !== 'cut' && x.t !== 'assemble').length * fuelUnitCost(g);
+    const fuel = this.steps.filter((x) => x.t !== 'cut' && x.t !== 'assemble' && x.t !== 'tron').length * fuelUnitCost(g);
     if (this.phase === 'prep') {
       const c = consumePrep(g, r, n), q = clamp(score * (0.35 + 0.65 * c.q), 0.02, 1);
       g.stall.preps.push({ rid: r.id, n, q, at: now, cost: (c.cost + fuel) / n });
@@ -199,7 +227,7 @@ export class Cook implements PtrHandler {
       if (n > 1) toast(`Ra lò ${n} phần ${r.name}. Phần dư để sẵn trên khay.`, 'info', 'dish');
     }
     for (const st of this.steps) for (const t of st.t === 'cut' ? ['daothot'] : st.t === 'fry' ? ['chao'] : st.t === 'grill' ? ['vi'] : st.t === 'boil' ? ['noi'] : []) this.wear(t);
-    if (this.steps.some((x) => x.t !== 'cut' && x.t !== 'assemble')) this.wear(stove(g)!);
+    if (this.steps.some((x) => x.t !== 'cut' && x.t !== 'assemble' && x.t !== 'tron')) this.wear(stove(g)!);
     g.stall.dirt = clamp(g.stall.dirt + 1.5 + (1 - score) * 2, 0, 100); g.st.hygiene = clamp(g.st.hygiene - 0.6, 0, STAT_MAX); addXp(g, score);
     void recipeCost;
     const d = this.done; this.exit(); d?.(); bus.emit('ui', 'cook');

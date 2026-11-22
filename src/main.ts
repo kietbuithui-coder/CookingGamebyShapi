@@ -28,6 +28,7 @@ import * as Rules from './sim/rules';
 import { advance, wx, floodPct, activeEvents, mods, eventOn, blackoutAt } from './sim/rules';
 import { bus, toast } from './core/bus';
 import { districtAt } from './world/layout';
+import { RECIPES } from './data/recipes';
 import { clamp } from './core/util';
 import { initOffline } from './core/offline';
 
@@ -171,6 +172,8 @@ async function boot() {
     w.__lvl = (n: number) => { const g = ctx.g; g.xp = Math.max(0, 30 * n * n - 3); Rules.addXp(g, 1); return { xp: g.xp, known: Object.values(g.rec).filter((r) => r.known).length }; };
     w.__rude = (kind?: 'paper' | 'spit' | 'curse' | 'chase') => { const p = ctx.player, n = ctx.npcs.list.filter((x) => x.kind === 'ped').sort((a, b) => (a.x - p.x) ** 2 + (a.z - p.z) ** 2 - ((b.x - p.x) ** 2 + (b.z - p.z) ** 2))[0]; if (!n) return null; if (kind === 'spit') ctx.npcs.spit(n); else if (kind === 'chase') ctx.npcs.chase(n); else ctx.npcs['rude'](n, kind); return n.id; };
     w.__open = (id: string) => placeOpen(id);
+    // Bảng công thức, để kịch bản thử mở đúng món mà không phải dò trong thực đơn.
+    w.__rec = RECIPES;
     w.__cam3 = (on?: boolean) => { if (on !== undefined) ctx.set.cam3 = on; else ctx.player.toggleView(); return ctx.set.cam3; };
     // Bảng tra biểu cảm: vẽ nguyên atlas mặt lên màn hình để chụp ảnh kiểm tra.
     w.__faces = () => {

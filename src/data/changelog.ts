@@ -14,6 +14,53 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 61',
+    tag: 'Menu test ẩn dựng sẵn bếp, nồi, than và đủ nguyên liệu cho cả trà đá lẫn trà chanh — chạm một lần là vào nồi',
+    items: [
+      'Mục “Dựng sẵn bếp cho TRÀ ĐÁ và TRÀ CHANH”: đặt sẵn quầy, mua bếp than, nồi, dao thớt, cho than và đủ nguyên liệu cả hai món, rồi hỏi bạn muốn vào nồi món nào.',
+      'Thêm hai mục gọi thẳng “Vào thẳng nồi TRÀ ĐÁ” và “Vào thẳng nồi TRÀ CHANH”: một cú bấm là đứng ngay ở bước cho nguyên liệu, không hỏi gì thêm.',
+      'Lý do: bấm mục cũ trên ván mới thì nồi không mở — ván mới chỉ có 18.000₫ nên chưa mua được gánh, quầy chưa đặt được chỗ, và thiếu bếp, nồi, than. Nay các mục này tự lo đủ, chỉ còn việc chạm chén.',
+      'Chạm chén là chén bay vào nồi, nồi chuyển sang bước giữ lửa và hiện nút “Quạt lửa” / “Lọc ra” như chơi bình thường.',
+    ],
+  },
+  {
+    v: 'Lượt 60',
+    tag: 'Sửa lỗi không cho được nguyên liệu vào nồi: trà đá và mọi món nấu, ninh, luộc, pha giờ chạm là ăn',
+    items: [
+      'Trước bản này, món nào có bước nấu/ninh/luộc/pha (trà đá, nước sâm, kho thịt, nồi cá…) đều bị kẹt ở bước “Cho nguyên liệu”: chạm đúng chén “Trà khô” mà nồi vẫn trống, bấm mãi không qua được.',
+      'Nguyên nhân: bàn nấu nhận tay theo một mặt phẳng duy nhất đặt ở MẶT NƯỚC nồi, trong khi chén nguyên liệu nằm trên MẶT BÀN. Điểm chạm vì thế bị kéo lệch khoảng 20 cm — xa hơn bán kính chạm của chén, nên không chén nào ăn được.',
+      'Nay bàn nấu nhận tay ở cả hai độ cao: chạm chén thì lấy đúng mặt bàn, chạm để vớt bọt thì lấy mặt nước. Đo lại: chạm đúng chén thì lệch chỉ còn 4 mm (trước là 208 mm).',
+      'Rà cả 7 bàn thao tác còn lại: thái/băm, chiên/xào, nướng, trình bày ra đĩa – ly, trộn topping, rửa chén — đều chạm đúng (lệch 1–19 mm, đều dưới ngưỡng ăn).',
+      'Bảng test của người làm game có thêm mục mở thẳng bước nấu trà đá để thử lại nhanh.',
+    ],
+  },
+  {
+    v: 'Lượt 59',
+    tag: 'Mỗi ngày chỉ nhận được vài ca bốc cá, vài ca chạy bàn; vác bao tăng lên 20 bao/ngày, và bảng việc làm liệt kê đủ mọi việc kèm số còn lại thật',
+    items: [
+      'Ca bốc cá bến cảng giờ chỉ nhận 2 ca một ngày (mỗi ca 110 phút, 4h30–10h). Làm hết ca thứ hai là anh Sáu Lực từ chối, kèm câu nhắc “mai ra sớm nha” — không còn chuyện đứng bấm cả buổi sáng ra tiền.',
+      'Ca chạy bàn / phụ quán cà phê chỉ nhận 3 ca một ngày, tính chung cho cả quán Bóng Đá lẫn quán Sân Vườn. Hết 3 ca thì cả hai quán cùng từ chối và nói rõ là hết ca hôm nay.',
+      'Lượt ca còn lại hiện ngay trên dòng chọn việc (“còn 2/3 ca hôm nay”), và sau mỗi ca có thông báo còn mấy ca — không phải đoán.',
+      'Vác bao ở bến chợ tăng từ 12 lên 20 bao một ngày (6.000₫/bao, tối đa 120.000₫). Đã vác đủ thì dòng chọn việc biến mất, và lỡ đang vác dở bao trên vai cũng phải trả lại chứ không được tính tiền.',
+      'Bảng việc làm viết lại: mỗi việc một dòng, đủ 7 việc (vác bao, bốc cá, chạy bàn, rửa chén, giao hàng, ve chai, việc khác), ghi đúng số của ngày hôm nay — còn mấy bao, mấy ca, mấy lượt rửa chén, mấy đơn giao — và ghi rõ giờ mở cửa của từng chỗ.',
+      'Việc nào hết thì bảng không im lặng bỏ đi mà ghi thẳng “đã vác đủ 20 bao hôm nay”, để người chơi biết là do hết hạn mức chứ không phải mình tìm sai chỗ.',
+      'Qua ngày mới mọi hạn mức tự mở lại; bản lưu cũ vẫn đọc được bình thường, không phải chơi lại từ đầu.',
+      'Bảng test của người làm game có mục đo trần: bốc cá tới ca 3, chạy bàn tới ca 4, vác tới bao thứ 21 — cả ba đều bị chặn và sổ ngày không nhích.',
+    ],
+  },
+  {
+    v: 'Lượt 58',
+    tag: 'Bánh tráng trộn có mini game riêng: 5 topping nằm ở vị trí ngẫu nhiên mỗi ván, màn hình gọi tên thứ nào thì chạm đúng đĩa đó',
+    items: [
+      'Làm bánh tráng trộn không còn bày lớp theo thứ tự in sẵn trên phiếu: 5 topping (bánh tráng sợi, tương ớt, đậu phộng, rau thơm, chanh) được rải ra 5 cái đĩa quanh thau, và mỗi lần nấu chúng lại nằm ở chỗ khác — không học thuộc vị trí được.',
+      'Máy gọi tên từng thứ một (“Chạm đĩa Tương ớt!”), người chơi phải chạm đúng đĩa đang được gọi trước khi hết giờ; đĩa đang gọi có vòng sáng vàng nhấp nháy nên không phải đoán.',
+      'Mỗi ván gọi đủ 5 thứ hai vòng, vòng sau gấp hơn vòng trước; chạm nhầm hay chạm ra ngoài đĩa bị trừ điểm, để hết giờ cũng mất điểm, còn chạm đúng liên tục thì điểm cao.',
+      'Chạm đúng là đĩa bay vào hộp giấy; hết một vòng thì thau được đảo một lượt cho đều, và xong cả ván thì thành phẩm bày trong hộp nhìn vẫn ra bánh tráng trộn như trước.',
+      'Chỉ riêng món này đổi cách làm: các món khác vẫn trình bày theo phiếu như cũ, còn bước trộn không tốn than hay gas và không cần thêm dụng cụ ngoài dao thớt.',
+      'Bảng test của người làm game có mục chuẩn bị sẵn quầy bánh tráng trộn, mục vào thẳng mini game trộn, và mục đọc toạ độ 5 đĩa của ván đang mở để so hai ván liền nhau xem vị trí có đổi thật không.',
+    ],
+  },
+  {
     v: 'Lượt 57',
     tag: 'Rào “Cấm đường” chặn được cả xe cộ: xe tới vạch rào là quay đầu, không còn xuyên qua hai hàng rào',
     items: [
@@ -62,62 +109,6 @@ export const CHANGELOG: LogEntry[] = [
       'Uống một lon Shapi là thanh chạy hồi ngay 30 %, cạn pin mà còn lon trong túi thì chạy tiếp được — nhưng đừng uống khi thanh đã gần đầy, phí.',
       'Kệ MiniMart và quầy tạp hoá được nới thêm ô để mỗi mặt hàng chỉ nằm đúng một chỗ, không còn cảnh lấy hàng ở ô trống.',
       'Ba loại bánh mới được vẽ hình riêng: bánh mì que là ổ dài và mảnh hơn bánh mì, một đầu quấn giấy; bánh tiêu là đĩa dẹt phồng rắc mè; bánh su kem có vỏ nâu và núm kem trắng trên đầu — trước đây cả ba trông giống hệt nhau.',
-    ],
-  },
-  {
-    v: 'Lượt 53',
-    tag: 'Thanh thể lực hồi nhanh hay chậm tuỳ máu và pin — người khoẻ chạy dai, người đang thương thở dốc',
-    items: [
-      'Thanh chạy không còn hồi một tốc độ cố định cho mọi người: máu càng thấp và pin năng lượng càng cạn thì thanh càng lâu đầy.',
-      'Máu 20 thì thanh chỉ hồi khoảng một nửa tốc độ bình thường — đứng chờ 22 giây mới đầy, thay vì 11 giây như người khoẻ.',
-      'Cạn pin năng lượng thì hồi chậm thêm, nhưng không cộng dồn thành đứng im: cùng lúc tệ nhất vẫn hồi được khoảng 40 % tốc độ.',
-      'Người đang thương còn TỤT thanh nhanh hơn khi chạy: máu 25 thì chạy liền được khoảng 8 giây thay vì 10 giây, cạn pin thì ngắn hơn nữa.',
-      'Chạm vào thanh thể lực là biết vì sao lâu đầy: nó ghi rõ hồi bao nhiêu phần trăm tốc độ, đang mất máu hay thiếu ngủ, chạy liền được mấy giây và cạn rồi phải chờ bao lâu.',
-      'Muốn chạy dai trở lại thì ăn cho no, ngủ cho đủ pin và đi khám khi mất máu — không có cách nào khác.',
-      'Bảng test của người làm game có thêm mục đọc thanh chạy hiện tại, so ba mức khoẻ / máu 45 / máu 20, và hai nút đặt sẵn chỉ số để thử.',
-    ],
-  },
-  {
-    v: 'Lượt 52',
-    tag: 'Ông Bảy dưới gầm cầu gợi ý theo đúng tình cảnh của bạn, bấm một nút là ghim đường đi',
-    items: [
-      'Hỏi Ông Bảy không còn ra mấy câu thuộc lòng: ông nhìn máu, cái bụng, túi tiền, giờ trong ngày và cái quầy của bạn mà nói.',
-      'Sắp ngất thì ông chỉ vô Bệnh viện Phước An, kèm giá khám 20.000₫ và phòng hồi sức 5.000₫/giờ.',
-      'Đói thì chỉ Quán cơm Bà Tư; quán đóng cửa rồi thì chỉ MiniMart 24h hoặc Tạp hoá Cô Ba — chỗ nào còn mở mới chỉ.',
-      'Hết tiền thì ông giục đúng cái việc đang mở ở giờ đó: sáng ra bến bốc hàng, trưa ghé quán Bà Tư xin rửa chén, khuya thì ra Bảng việc làm.',
-      'Đang bán mà món chính hết nguyên liệu: ông nói thiếu món gì và sạp nào đang mở, bán món đó.',
-      'Quầy vắng khách: ông nói giờ nào đông nhất ở đúng khu bạn đang đặt quầy, ngồi giữ tới đó.',
-      'Nợ Hùng Sẹo còn hai ngày là ông cảnh báo, kèm số tiền và số ngày còn lại; đêm thì dặn sáng 9 giờ mới gặp được nó.',
-      'Trời sắp mưa mà chưa có áo mưa thì ông nhắc mua; khuya thì ông đuổi về đúng căn mình đang thuê mà ngủ.',
-      'Câu nào cũng ghi cách đây bao nhiêu mét, và có nút "Chỉ con đường tới…" là cắm cột sáng vàng chỉ đường như trên Bản đồ.',
-      'Ghé liền ba lần thì ông nói ba câu khác nhau, không lải nhải một câu.',
-      'Bảng test của người làm game (bấm 7 lần chữ "Cài đặt") nay hỏi mã 4 số trước khi mở, người chơi lỡ tay không mở nhầm nữa.',
-    ],
-  },
-  {
-    v: 'Lượt 51',
-    tag: 'Sửa giao diện theo báo cáo lượt 50: màn thấp hết chồng, chạm đúng chỗ, chơi dọc nhớ lựa chọn',
-    items: [
-      'Trên màn hình thấp (điện thoại nằm ngang, cửa sổ nhỏ) ô mục tiêu không còn đè lên thanh chỉ số: hết chỗ thì nó tự tụt xuống dưới, các chip hướng đi và sự kiện xuống theo.',
-      'Chạm để tương tác phải đứng đủ gần: đang xoay camera quanh quầy hay đi ngang qua người lạ thì không còn mở nhầm bảng Quầy hay hộp thoại.',
-      'Cần ảo nhận ngón tay từ cao hơn (bỏ 28 % màn hình trên xuống còn 12 %) nên máy ngang thấp đặt ngón cái đâu cũng đi được; đẩy mạnh hơn một chút là chạy, không phải đẩy hết cỡ.',
-      'Nút Chạy có chữ ĐI/CHẠY và nhắc đúng một lần cách dùng; FPS mặc định tắt trên điện thoại cho gọn HUD.',
-      'Máy tính: phím Z xoay phải (trước chỉ có Q), bật được khoá con trỏ chuột để rê chuột là xoay, và tuỳ chọn ẩn bốn nút cảm ứng.',
-      'Bấm lại đúng phím tắt (M, B, Tab, P) thì bảng đang mở tự đóng; chạm vào biểu tượng chỉ số thì lời giải thích giữ lại trên màn hình, chạm lại mới tắt; thanh chỉ số không còn chen số vào giữa hàng.',
-      'Bấm “Bỏ dở” giữa lúc nấu: lần đầu chỉ hỏi lại “Chắc chưa?”, lần hai mới bỏ mẻ — hết mất cả mẻ vì lỡ tay.',
-      'Cài đặt có nút xoá bản lưu (bấm hai lần mới xoá) và mục “Cách điều khiển” ghi rõ phím cho máy tính lẫn điện thoại.',
-      'Màn dọc: đã chọn “Cứ chơi dọc” thì lần sau mở game không bị lớp phủ che mất nút Chơi mới / Chơi tiếp nữa.',
-    ],
-  },
-  {
-    v: 'Lượt 49',
-    tag: 'Xe cộ chạy đúng đường, thêm 3 màu xe, còi xe hơi riêng',
-    items: [
-      'Xe không còn “mọc” từ chỗ không có đường nữa: hết cảnh xe hiện ra giữa bãi đất gầm cầu, trên bờ kênh hay ngoài rìa thành phố.',
-      'Xe chỉ xuất hiện sau lưng bạn hoặc ở rất xa phía trước, không còn đột ngột hiện ra ngay trước mặt.',
-      'Chạy hết mặt đường thì xe quay đầu ở giao lộ cuối, không phóng ra bãi đất.',
-      'Ba màu sơn mới cho xe hơi: đỏ đô, xanh rêu, vàng taxi — và xe đổi màu mỗi lần vào lại đường nên gặp đủ màu.',
-      'Còi xe hơi riêng từng loại: xe nhỏ “bíp bíp”, sedan “bìm bìm”, xe tải “bừm” trầm — nghe là biết xe gì đang tới.',
     ],
   },
 ];
