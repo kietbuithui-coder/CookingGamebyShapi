@@ -950,6 +950,24 @@ trước quầy, `cross: []`) · `fix55c.mjs` (4 ảnh `f55c_nhanghi_wash`, `f55
 `f55c_tro_room`) · `fix55e.mjs` (bấm từng mục test mới: `focus` ra đúng “Nói chuyện với người bán trứng, sữa, giò
 chả”, “Tắm vòi sen” ×2, “Ngủ — Nhà nghỉ Bình Dân”, “Ngủ — Phòng trọ”) · console sạch.
 
+### 4.39 Nước da của nhân vật cố định (lượt 56)
+
+Người chơi: *“sửa mặt bà bán ve chai đen một tí”*. Mặt Bà Chín Ve Chai (`FIXED.scrap2`, vựa ve chai ở Khu Dân Cư)
+trước đây **không có màu da riêng**: `lookFromFixed()` chọn da bằng công thức
+`SKINS[(face * 3 + hat) % SKINS.length]`, và với `face 4, hat 1` thì rơi đúng ô `#f6d6b6` — **màu sáng nhất** trong
+bảng 5 màu. Một bà cụ cân ve chai ngoài nắng cả ngày mà da sáng hơn cả nhân viên ngân hàng, nên ảnh soi cận trông
+sai hẳn.
+
+`FixedNpcDef` có thêm trường tuỳ chọn `skin`, `lookFromFixed()` đọc `f.skin ?? SKINS[...]` — ai không khai thì giữ
+nguyên hành vi cũ, nên **không nhân vật nào khác đổi màu da** (`tests/mat56.test.ts` canh: chỉ `scrap2` có `skin`).
+Bà Chín dùng `#b8804f`: tối hơn màu cũ **~82 điểm độ sáng** (136 so với 218,5 theo công thức Rec.709), vẫn là tông da
+ấm (đỏ > lục > lam, `r − b = 104`) chứ không thành da xám. Khuôn mặt (`face 4` — bà cụ, tóc bạc, có nếp nhăn), nón lá,
+kiểu tóc và dáng người **giữ nguyên**: chỉ đổi nước da, không đổi người.
+
+**Kiểm:** `tests/mat56.test.ts` (4 bài: có da riêng + tối hơn hẳn bảng màu · vẫn là tông da ấm · không ai khác bị đổi ·
+`lookFromFixed` ưu tiên `f.skin`) · probe `tools/probe/steps/scrap56.mjs` (2 ảnh soi cận `f56_ba_chin_mat`,
+`f56_ba_chin_cheo`, in ra `skin: #b8804f`) · menu test 3 mục `t56_*` · console sạch.
+
 ## 5. Điều khiển cảm ứng
 
 - Chạm trong vùng bên trái (42% bề ngang, trừ dải 28% trên cùng) rồi kéo = cần đi; nơi khác = vuốt nhìn.
@@ -965,6 +983,7 @@ chả”, “Tắm vòi sen” ×2, “Ngủ — Nhà nghỉ Bình Dân”, “N
 
 ## 7. Kiểm thử
 
+- `tests/mat56.test.ts` — lượt 56: Bà Chín Ve Chai có nước da rám nắng riêng, không ai khác bị đổi da theo.
 - `tests/nghi55.test.ts` — lượt 55: tên sạp Dì Sáu + hai món sữa, hộp thân quầy đủ mọi bậc, khách vòng đầu quầy, `bedSpot`/`wake` chống kẹt giường, chi tiết buồng tắm.
 - `tests/state.test.ts` — ván mới, kho, hư hỏng, nâng cấp bản lưu.
 - `tests/economy.test.ts` — tiền, giá chợ, mặc cả, giá vốn, nhiên liệu, sơ chế/hoàn thiện, đồ nghề, vay nợ, phá sản.

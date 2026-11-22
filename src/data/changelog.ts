@@ -14,6 +14,17 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 56',
+    tag: 'Bà Chín Ve Chai có nước da rám nắng đúng dáng người cả ngày ngoài nắng',
+    items: [
+      'Mặt Bà Chín Ve Chai ở vựa ve chai Khu Dân Cư đổi sang màu da rám nắng, tối hơn hẳn màu da sáng nhất mà game vẫn cấp cho người đứng quầy.',
+      'Trước đây màu da của nhân vật cố định chỉ được chọn theo công thức từ khuôn mặt và cái nón, nên Bà Chín rơi đúng vào màu sáng nhất bảng — nhìn không ra người phơi nắng cả ngày.',
+      'Từ nay nhân vật nào có nghề nói lên nước da thì được khai màu da riêng; ông Tư Rác và những người đứng quầy khác vẫn giữ nguyên màu như cũ.',
+      'Khuôn mặt bà vẫn là khuôn mặt bà cụ tóc bạc, vẫn đội nón lá như trước — chỉ đổi nước da, không đổi ai ra ai.',
+      'Bảng test của người làm game có mục soi mặt Bà Chín, mục đọc màu da cũ và màu mới, và mục tele sang vựa ông Tư Rác để so hai chủ vựa cạnh nhau.',
+    ],
+  },
+  {
     v: 'Lượt 55',
     tag: 'Sạp Dì Sáu đổi tên, khách không còn đi xuyên quầy, và ngủ ở nhà nghỉ / nhà trọ không còn bị văng sang gian khác',
     items: [
@@ -105,16 +116,6 @@ export const CHANGELOG: LogEntry[] = [
       'Giường xịn giờ hồi năng lượng nhanh hơn thật: 8 tiếng ở khách sạn được +89 năng lượng, ghế đá +43 (trước đây cả hai đều chạm trần 43).',
       'Nghỉ trên ghế đá hiệu quả hơn một chút: tinh thần +9 (trước +7), năng lượng +6 (trước +4), vẫn miễn phí.',
       'Biển “CHỖ BÁN HÀNG” hết sai giá: đọc thẳng giá thật trong game (Cổng Chợ 18.000₫, Cổng Công Viên 12.000₫, Phố Văn Phòng 60.000₫, Mặt bằng Phố Văn Phòng 160.000₫, Mặt bằng Khu Căn Hộ 120.000₫).',
-    ],
-  },
-  {
-    v: 'Lượt 47',
-    tag: 'Sửa lỗi mở game trên điện thoại: không còn màn hình đen',
-    items: [
-      'Hết cảnh mở game ra chỉ thấy màn hình đen, không vào được menu: nếu tệp game không tải được, máy sẽ hiện bảng báo lỗi kèm hai nút.',
-      'Nút “Sửa lỗi tải”: tự xoá bộ nhớ đệm cũ trên máy rồi mở lại. Tiến trình chơi vẫn giữ nguyên.',
-      'Game luôn mở bản mới nhất khi có mạng, chỉ dùng bản lưu khi mất mạng — không còn kẹt ở bản cũ sau mỗi lần cập nhật.',
-      'Đang tải mà quá 15 giây chưa lên thì có lời báo thay vì đứng im.',
     ],
   },
 ];

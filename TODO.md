@@ -91,6 +91,7 @@ Còn thiếu (để lượt sau, chưa làm):
 - **Thể lực (lượt 53)**: mới có hệ số theo máu + pin. Còn thiếu: **thể trạng cơ thể** (gọn/đậm) tác động lên hệ số này, **mang nặng** (bao gạo, thùng hàng) làm tụt nhanh hơn hiện tại (mới chỉ phạt tốc độ đi), và **đồ uống tăng lực** (nước tăng lực bán ở MiniMart) hồi thanh ngay một phần.
 - **Buồng tắm (lượt 55)**: nhà nghỉ và nhà trọ đã có vòi sen dựng thật, nhưng **khách sạn Hoa Sen / căn hộ An Bình / nhà riêng / cửa hàng** vẫn dùng khay phẳng cũ (`HOUSING[*].shower = true` mà chưa có buồng). Muốn vẽ tiếp thì gọi `places.shower()` — hàm đã tham số hoá hướng `nx/nz`, chỉ cần chọn chỗ trống trong từng lô.
 - **Chỗ đứng khi ngủ (lượt 55)**: `bedSpot` quét quanh mỏ neo giường, nên nếu sau này kê thêm đồ sát giường thì nó vẫn tìm được chỗ — nhưng nếu bịt kín cả 35 điểm thử thì người chơi quay về đứng **đúng tâm nệm** (như cũ). Chưa có test hình học nào canh chuyện đó vì vitest không dựng được `World`.
+- **Nước da nhân vật (lượt 56)**: mới chỉ Bà Chín Ve Chai có màu da khai riêng. Người bốc vác (Anh Sáu Lực), ông Tư Rác, mấy cô bán ngoài chợ vẫn lấy màu theo bảng — nếu thấy nhạt nhoà thì khai thêm `skin` trong `FIXED` (mỗi người một dòng, không phải sửa công thức).
 - **Màn dọc**: HUD vẫn chật khi điện thoại để dọc (đã có thanh cỡ giao diện 70–160% và lời khuyên xoay ngang, nhưng chưa bố trí lại riêng cho màn dọc).
 - **Bậc 6 chưa có probe giao diện**: luật đã có test (`tests/nhahang.test.ts`), nhưng chưa chạy `tools/probe` cho nhà hàng bình dân (8 ghế, khách đoàn, bảng đặt bàn trước, phụ bếp) ở cả màn ngang và màn dọc.
 

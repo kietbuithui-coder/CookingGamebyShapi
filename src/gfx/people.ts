@@ -28,7 +28,7 @@ export function lookFromArch(a: ArchDef, R: RNG, fem = R.chance(a.fem)): Look {
   };
 }
 export function lookFromFixed(f: FixedNpcDef, apron = 0): Look {
-  return { face: f.face, fem: f.fem, shirt: f.shirt, pants: f.pants, hair: f.hair, hat: f.hat, hairStyle: f.hairStyle, fat: f.fat, h: f.h, skin: SKINS[(f.face * 3 + f.hat) % SKINS.length], bag: 0, hatCol: 0x2f6fb5, long: false, apron, shoe: 0x2a2a2e };
+  return { face: f.face, fem: f.fem, shirt: f.shirt, pants: f.pants, hair: f.hair, hat: f.hat, hairStyle: f.hairStyle, fat: f.fat, h: f.h, skin: f.skin ?? SKINS[(f.face * 3 + f.hat) % SKINS.length], bag: 0, hatCol: 0x2f6fb5, long: false, apron, shoe: 0x2a2a2e };
 }
 
 let _faceTex: THREE.Texture | null = null, _faceMat: THREE.Material | null = null, _blobMat: THREE.Material | null = null, _blobGeo: THREE.BufferGeometry | null = null, _faceGeo: THREE.BufferGeometry | null = null;

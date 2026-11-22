@@ -1427,3 +1427,21 @@ phòng"*. Người chơi cho phép **dời giường** nếu cần — kết lu�
 - Test: `tests/nghi55.test.ts` (12 bài) + `tests/devpoints.test.ts` và `tests/changelog.test.ts` cập nhật theo bộ mục mới.
 - Probe: `fix55a3.mjs`, `fix55b5.mjs`, `fix55c.mjs` (4 ảnh), `fix55d.mjs` (bấm cả bộ mục + cho khách kéo tới quầy),
   `fix55e.mjs` (kiểm `interact.focus` sau mỗi lần tele).
+
+---
+
+## Lượt 56 — mặt Bà Chín Ve Chai đen lại một tí ✅ đã xong
+
+Người chơi: *"sửa mặt bà bán ve chai đen một tí"*. Hỏi lại (`ask_user`) vì "đen" có thể là **da ngăm** hoặc **khuôn mặt
+tối/dữ**; người chơi chọn **da ngăm/đen hơn cho ra dáng người phơi nắng**, nên không đụng tới biểu cảm.
+
+- Tìm ra nguyên nhân: `lookFromFixed()` chọn màu da bằng `SKINS[(face*3 + hat) % 5]`; Bà Chín (`scrap2`, face 4, hat 1)
+  rơi đúng `#f6d6b6` — màu **sáng nhất** bảng.
+- `data/people.ts`: `FixedNpcDef` thêm `skin?: number`; `scrap2` khai `skin: 0xb8804f` (tối hơn ~82 điểm độ sáng,
+  vẫn tông da ấm). Không ai khác khai `skin` nên cả thành phố giữ nguyên màu da.
+- `gfx/people.ts`: `lookFromFixed()` đọc `f.skin ?? SKINS[...]`.
+- Test `tests/mat56.test.ts` (4 bài) + cập nhật `tests/devpoints.test.ts`, `tests/changelog.test.ts`.
+- Probe `tools/probe/steps/scrap56.mjs`: ảnh `f56_ba_chin_mat.png` / `f56_ba_chin_cheo.png`.
+  **Bẫy khi chụp:** nhãn tương tác `#focus` và bong bóng hội thoại của NPC hay mọc đúng giữa mặt — phải
+  `ui.$('focus').style.display='none'`, `interact.focus=null`, `ui.unsay(n)` cho từng NPC trước khi chụp.
+- Menu test thay bằng 3 mục `t56_*` (soi mặt · đọc bảng màu cũ/mới · tele sang vựa ông Tư Rác để so).
