@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 // @ts-expect-error — chỉ dùng trong test, không cần kiểu của node
 import { readFileSync } from 'node:fs';
 import { DEV_BUILD_TAG, DEV_PIN, DEV_PIN_LEN, DEV_PIN_LOCK_MS, DEV_PIN_TRIES, DEV_TAPS, devKey, devPinInput, getDevSections } from '../src/game/devPoints';
+import { CHANGELOG } from '../src/data/changelog';
 
 describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
   it('chỉ còn nhóm “Địa điểm — tele nhanh”: mọi mục test đã được xoá (lượt 63)', () => {
@@ -12,7 +13,11 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
     const ids = sections[0].items.map((i) => i.id);
     expect(ids.length).toBeGreaterThan(5);
     for (const id of ids) expect(id.startsWith('tp_')).toBe(true);
-    for (const id of ['tp_equip', 'tp_matbang_tb', 'tp_ongtu', 'tp_scrap2', 'tp_canho', 'tp_hobo', 'tp_mart']) expect(ids).toContain(id);
+    // Lượt 67: các mục cũ đổi tên theo đúng người/chỗ (tp_ongtu → tp_danh_co), và thêm mục cho mọi
+    // nhân vật cố định ngoài phố. Đòi cả nhóm cốt lõi lẫn ba mục mới của lượt 66–67.
+    for (const id of ['tp_equip', 'tp_matbang_tb', 'tp_danh_co', 'tp_scrap2', 'tp_canho', 'tp_hobo', 'tp_mart',
+      'tp_chu_ba', 'tp_wholesale', 'tp_kiosk', 'tp_tro', 'tp_hotel', 'tp_motel', 'tp_hospital', 'tp_police',
+      'tp_tra_da', 'tp_sua_xe', 'tp_hat_rong', 'tp_danh_giay', 'tp_rap', 'tp_dua', 'tp_net', 'tp_cafe']) expect(ids).toContain(id);
     expect(new Set(ids).size).toBe(ids.length);
     for (const item of sections[0].items) {
       expect(typeof item.run).toBe('function');
@@ -182,5 +187,78 @@ describe('bàn phím PIN của menu ẩn (lượt 64)', () => {
     expect(ui).toContain('key(\'clear\'');
     // Không dùng hình ⌫ nữa (phông game không có ký tự đó).
     expect(ui).not.toContain('⌫');
+  });
+});
+
+/**
+ * Lượt 67 — người chơi: *“chưa cập nhật menu ẩn và các tính năng được sửa”*.
+ *
+ * Ba lỗi thật của menu ẩn sau lượt 66:
+ * 1. Dòng “Phiên bản mới nhất” viết tay, đứng nguyên ở bản lượt 62 suốt bốn lượt.
+ * 2. Mục Chú Ba đứng cách ổng 2,4 m (lệch góc) thay vì sát bên; nhiều nhân vật ngoài phố (vựa sỉ, tạp hoá,
+ *    nhà trọ, khách sạn, bệnh viện, công an, cô hát rong, bé đánh giày, Bin, nhóm đua, quán net, cà phê…)
+ *    không có mục nào để tới.
+ * 3. Bấm “Chạy” lúc nơi đó đóng cửa thì tới nơi chẳng có ai (người bán đi ngủ).
+ */
+describe('menu ẩn — mục đi nhanh khớp dữ liệu thật (lượt 67)', () => {
+  const items = () => getDevSections().flatMap((s) => s.items);
+  /** Gom neo khai trong `src/world`: `b.anchor('v_xxx', …)`. */
+  const anchorsInCode = () => {
+    const src = ['city', 'places', 'side'].map((f) => readFileSync(`src/world/${f}.ts`, 'utf8')).join('\n');
+    const out = new Set<string>();
+    for (const m of src.matchAll(/anchor\(\s*'([^']+)'/g)) out.add(m[1]);
+    // Neo dựng qua biến: `b.anchor('v_' + shop, …)` và `'v_' + (l.id ?? 'scrap')` ⇒ khai tường minh.
+    for (const m of src.matchAll(/anchor\(\s*'v_' \+\s*(\w+)/g)) {
+      void m;
+    }
+    for (const s of ['m_rau', 'm_cu', 'm_thit', 'm_haisan', 'm_kho', 'm_giavi', 'm_trung', 'bakery', 'kiosk', 'pawn', 'pharmacy']) out.add('v_' + s);
+    for (const s of ['scrap', 'scrap2']) out.add('v_' + s);
+    return out;
+  };
+
+  it('dòng “Bản mới nhất” không viết tay: luôn bằng tóm tắt bản mới nhất trong nhật ký', () => {
+    expect(DEV_BUILD_TAG).toBe(CHANGELOG[0].tag);
+    expect(DEV_BUILD_TAG).not.toMatch(/đá viên tan chậm/i);   // câu của lượt 62 phải biến mất
+    expect(DEV_BUILD_TAG.length).toBeGreaterThan(20);
+    // Nguồn: không được viết cứng chuỗi nữa.
+    const src = readFileSync('src/game/devPoints.ts', 'utf8');
+    const line = src.split('\n').find((l: string) => l.startsWith('export const DEV_BUILD_TAG'))!;
+    expect(line).toContain('CHANGELOG[0]');
+  });
+
+  it('mỗi mục tp_… khai một neo CÓ THẬT trong src/world (dời/xoá nhân vật là test đỏ)', () => {
+    const have = anchorsInCode();
+    const withAnchor = items().filter((i) => i.anchor);
+    expect(withAnchor.length).toBeGreaterThanOrEqual(25);
+    for (const it of withAnchor) expect(have, `mục ${it.id} trỏ vào neo ${it.anchor}`).toContain(it.anchor!);
+  });
+
+  it('phủ hết nhân vật cố định ngoài phố: mỗi người có đúng một mục đi nhanh', () => {
+    const anchors = items().filter((i) => i.anchor).map((i) => i.anchor!);
+    for (const a of ['v_chu_ba', 'v_hobo', 'v_tra_da', 'v_sua_xe', 'v_hat_rong', 'v_danh_co', 'v_danh_giay',
+      'v_rap', 'v_dua', 'v_net', 'v_cafe', 'v_wholesale', 'v_kiosk', 'v_bank', 'v_pawn', 'v_hot_toc',
+      'v_thoi_trang', 'v_tro', 'v_hotel', 'v_motel', 'v_hospital', 'v_police', 'v_scrap2', 'v_mart', 'v_eatery',
+      'v_pharmacy', 'bell_canho']) expect(anchors, 'thiếu mục tới ' + a).toContain(a);
+    // Không mục nào trùng neo (bấm hai chỗ ra cùng một người là dấu hiệu copy-paste).
+    expect(new Set(anchors).size).toBe(anchors.length);
+  });
+
+  it('mục nào cũng tự tua đồng hồ tới giờ mở cửa (bấm lúc 3 giờ sáng vẫn gặp người bán)', () => {
+    const src = readFileSync('src/game/devPoints.ts', 'utf8');
+    // Có hàm tua giờ, đọc giờ thật từ PLACE_HOURS / SHOPS chứ không viết cứng.
+    expect(src).toContain('function openNow(');
+    expect(src).toContain('PLACE_HOURS[id] ?? SHOPS[id]?.open');
+    // tpNear gọi openNow trước khi đặt chỗ đứng.
+    const near = src.slice(src.indexOf('function tpNear('), src.indexOf('/** Đi tới điểm đặt quầy'));
+    expect(near.indexOf('openNow(')).toBeLessThan(near.indexOf('tpTo('));
+    // Chống kẹt: phải thử nhiều hướng trước khi đặt người chơi.
+    expect(near).toContain('ctx.world.blocked');
+    expect(near).toContain('Math.atan2(a.x - x, a.z - z)');       // quay mặt VÀO người đó
+  });
+
+  it('nhãn nút khoá đọc DEV_TAPS, không viết cứng “7 lần”', () => {
+    const ui = readFileSync('src/ui/panels.ts', 'utf8');
+    expect(ui).toContain('Ẩn & khoá lại (${DEV_TAPS} lần + mã PIN)');
+    expect(ui).not.toContain('(7 lần + mã PIN)');
   });
 });

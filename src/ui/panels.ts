@@ -96,7 +96,8 @@ export function openPanel(ui: UI, name: string) {
       if (devTaps >= DEV_TAPS) { devTaps = 0; devPin = ''; devPinErr = 'v'; sfx('ui'); render(); }   // mở bàn phím số
       return;
     }
-    // Bàn phím số của menu ẩn: bấm số thì ghép vào mã, đủ 4 số là so; sai thì xoá sạch và báo.
+    // Bàn phím số của menu ẩn: bấm số thì ghép vào mã, đủ DEV_PIN_LEN số mới so; sai thì xoá sạch và báo.
+    // Số lần bấm lấy từ `DEV_TAPS` (8) — nhãn nút khoá bên dưới cũng đọc chính hằng số đó, đừng viết cứng.
     if (name === 'settings' && !devOpen && devPinErr) {
       const dg = t.closest('[data-pin]') as HTMLElement | null;
       if (dg) {
@@ -493,9 +494,10 @@ export function openPanel(ui: UI, name: string) {
             }
           }
         };
-        const body = `<p class="muted"><b>Phiên bản mới nhất:</b> ${DEV_BUILD_TAG}. Mục thử tính năng đã được dọn hết — chỉ còn chỗ dịch chuyển nhanh.</p>` +
+        // “Chạy” một mục là bảng đóng lại; menu nhớ mã trong phiên nên mở lại Cài đặt là thấy danh sách ngay.
+        const body = `<p class="muted"><b>Bản mới nhất:</b> ${DEV_BUILD_TAG}. Mục thử tính năng đã dọn hết — chỉ còn ${sections[0].items.length} chỗ dịch chuyển nhanh; bấm là đứng cạnh người đó, đồng hồ tự tua tới giờ họ có mặt.</p>` +
           sections.map((sec) => `<h4>${sec.title}</h4><div class="list">${sec.items.map((it) => `<div class="item"><div class="grow"><b>${it.label}</b><small>${it.sub}</small></div><button class="btn small${it.tone ? ' ' + it.tone : ''}" data-a="devRun" data-k="${it.id}">Chạy</button></div>`).join('')}</div>`).join('');
-        draw(`${ic('bolt')} Menu ẩn — Dịch chuyển nhanh`, [], body, `<button class="btn" data-a="devBack">Quay lại Cài đặt</button><button class="btn" data-a="devLock">Ẩn & khoá lại (7 lần + mã PIN)</button>`);
+        draw(`${ic('bolt')} Menu ẩn — Dịch chuyển nhanh`, [], body, `<button class="btn" data-a="devBack">Quay lại Cài đặt</button><button class="btn" data-a="devLock">Ẩn & khoá lại (${DEV_TAPS} lần + mã PIN)</button>`);
         return;
       }
       const st = ctx.set;

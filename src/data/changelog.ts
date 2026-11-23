@@ -14,6 +14,17 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 67',
+    tag: 'Menu ẩn theo kịp game: 34 chỗ đi nhanh tới đúng người, tự tua tới giờ họ có mặt, dòng “bản mới nhất” đọc từ nhật ký',
+    items: [
+      'Trước bản này bấm “Chạy” ở menu ẩn mà nơi đó đóng cửa thì tới nơi chẳng có ai — 3 giờ sáng tới tiệm đồ nghề là đứng nhìn cửa khoá. Nay menu tự tua đồng hồ tới giờ mở cửa của chỗ đó (giờ lấy đúng từ dữ liệu của game), nên bấm là gặp người bán.',
+      'Thêm 21 chỗ đi nhanh còn thiếu: vựa đầu mối Tám Lúa, tạp hoá Cô Ba, quán cơm Bà Tư, nhà thuốc, ngân hàng, cầm đồ, tiệm hớt tóc, tiệm quần áo, nhà trọ, khách sạn, nhà nghỉ, bệnh viện, công an, quán trà đá, chú vá xe, cô hát rong, bé đánh giày, góc nhảy của Bin, chỗ đua xe đạp, quán net, quán cà phê.',
+      'Mục “Bàn cờ Ông Tư” đổi thành “Bàn cờ Ông Tư” đứng đúng cạnh ông; Chú Ba xe ôm thì đứng sát bên ổng (1,7 m) thay vì lệch 2,4 m như trước.',
+      'Menu tự tìm chỗ đứng trống quanh người đó, không đặt bạn vào trong cột cầu, quầy hay kệ — trước đây vài mục đặt người chơi lọt thỏm trong đồ vật.',
+      'Dòng “bản mới nhất” trong menu ẩn nay đọc thẳng từ nhật ký phát triển, nên nó không còn đứng nguyên ở bản cũ bốn lượt liền; nút khoá cũng ghi đúng “8 lần” thay vì “7 lần”.',
+    ],
+  },
+  {
     v: 'Lượt 66',
     tag: 'Xe ôm Chú Ba: ổng đứng dưới gầm cầu, có xe thật — nhờ chở tới tận cửa, hoặc gọi điện là ổng chạy tới rước',
     items: [
@@ -90,18 +101,6 @@ export const CHANGELOG: LogEntry[] = [
       'Việc nào hết thì bảng không im lặng bỏ đi mà ghi thẳng “đã vác đủ 20 bao hôm nay”, để người chơi biết là do hết hạn mức chứ không phải mình tìm sai chỗ.',
       'Qua ngày mới mọi hạn mức tự mở lại; bản lưu cũ vẫn đọc được bình thường, không phải chơi lại từ đầu.',
       'Bảng test của người làm game có mục đo trần: bốc cá tới ca 3, chạy bàn tới ca 4, vác tới bao thứ 21 — cả ba đều bị chặn và sổ ngày không nhích.',
-    ],
-  },
-  {
-    v: 'Lượt 58',
-    tag: 'Bánh tráng trộn có mini game riêng: 5 topping nằm ở vị trí ngẫu nhiên mỗi ván, màn hình gọi tên thứ nào thì chạm đúng đĩa đó',
-    items: [
-      'Làm bánh tráng trộn không còn bày lớp theo thứ tự in sẵn trên phiếu: 5 topping (bánh tráng sợi, tương ớt, đậu phộng, rau thơm, chanh) được rải ra 5 cái đĩa quanh thau, và mỗi lần nấu chúng lại nằm ở chỗ khác — không học thuộc vị trí được.',
-      'Máy gọi tên từng thứ một (“Chạm đĩa Tương ớt!”), người chơi phải chạm đúng đĩa đang được gọi trước khi hết giờ; đĩa đang gọi có vòng sáng vàng nhấp nháy nên không phải đoán.',
-      'Mỗi ván gọi đủ 5 thứ hai vòng, vòng sau gấp hơn vòng trước; chạm nhầm hay chạm ra ngoài đĩa bị trừ điểm, để hết giờ cũng mất điểm, còn chạm đúng liên tục thì điểm cao.',
-      'Chạm đúng là đĩa bay vào hộp giấy; hết một vòng thì thau được đảo một lượt cho đều, và xong cả ván thì thành phẩm bày trong hộp nhìn vẫn ra bánh tráng trộn như trước.',
-      'Chỉ riêng món này đổi cách làm: các món khác vẫn trình bày theo phiếu như cũ, còn bước trộn không tốn than hay gas và không cần thêm dụng cụ ngoài dao thớt.',
-      'Bảng test của người làm game có mục chuẩn bị sẵn quầy bánh tráng trộn, mục vào thẳng mini game trộn, và mục đọc toạ độ 5 đĩa của ván đang mở để so hai ván liền nhau xem vị trí có đổi thật không.',
     ],
   },
 ];

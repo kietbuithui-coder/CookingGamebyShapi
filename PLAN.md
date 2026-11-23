@@ -1651,3 +1651,21 @@ chỉ hiện đúng giờ + đúng giá. `game/devPoints.ts`: thêm `tp_chu_ba`.
 **Đo:** `tsc` sạch · **679/679 test (57 tệp)** · probe `steps/xeom.mjs`: Chú Ba ở `(65,5; 98,4)` `state='fixed'`, đứng cạnh ổng hiện
 “Nói chuyện với chú xe ôm”, hộp thoại 12 nút (bảng giá 3.000/5.000/8.000₫), chọn “Vựa đầu mối Tám Lúa — 5.000₫” ⇒ tiền 18.000 → 13.000,
 giờ 546,0 → 550,0, người chơi ở `(37,2; 55,1)`; gọi điện ⇒ hẹn +3 phút; +4 phút ⇒ ổng tới cách 2,3 m và mở bảng chỗ đi. `errors: none`.
+
+## Lượt 67 — menu ẩn theo kịp game ✅ đã xong
+
+Người chơi: *“um bạn chưa cập nhật menu ẩn và các tính năng đc sửa”* — đúng, menu ẩn tụt lại sau lượt 66.
+
+**Sửa:** `game/devPoints.ts` — `DEV_BUILD_TAG` nay = `CHANGELOG[0].tag` (hết cảnh câu “Đá viên tan chậm…” đứng nguyên bốn lượt);
+`DevAction.anchor` để test canh neo; hàm mới `tpNear(anchor, label)` (5 khoảng cách × 10 hướng, bỏ chỗ `world.blocked`,
+quay mặt vào neo) và `openNow(id)` (tua đồng hồ tới `PLACE_HOURS[id]` / `SHOPS[id].open` +30 phút); nhóm tele từ **13 → 34 mục**
+(phủ mọi nhân vật cố định ngoài phố, mọi sạp/tiệm, chỗ ở, bệnh viện, công an, 4 chỗ đặt quầy, bồn rửa tay).
+`ui/panels.ts`: nhãn nút khoá đọc `${DEV_TAPS}` (trước ghi cứng “7 lần” trong khi mã đòi 8), dòng mô tả menu ghi số mục thật.
+`data/changelog.ts`: thêm bản **Lượt 67**, bỏ bản cũ nhất (Lượt 58). `tests/devpoints.test.ts`: 12 → **17 bài**;
+`tests/changelog.test.ts` cập nhật theo bản mới. `DESIGN.md`: viết lại §4.35, thêm **§4.49**; sửa §4.28 (nhóm “Mới nhất — Bậc 7”
+đã xoá từ lượt 63) và §4.44 (mã 7777 → 438291). `README.md`: mô tả menu ẩn mới.
+
+**Đo:** `tsc` sạch · **684/684 test (57 tệp)** · probe `steps/dev67.mjs` (bấm chuột thật): 7 lần → chưa có bàn phím, lần 8 → 12 phím
++ 6 chấm, gõ `438291` → menu mở `sốMục: 34`; 28 mục đều đứng **1,70 m** từ neo (Chú Ba trước 2,4 m), không mục nào `kẹt`;
+tua giờ thấy rõ (`tp_hat_rong` 8h54 → 9h30, `tp_rap`/`tp_dua`/`tp_net` → 15h00); `tp_lavabo` báo “Cần dựng nhà hàng trước.”;
+“Ẩn & khoá lại” xong mở Cài đặt **không** lộ menu. `errors: none`.
