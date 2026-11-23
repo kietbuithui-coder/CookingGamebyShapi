@@ -1240,8 +1240,35 @@ gõ `4,3,8` rồi **Xoá** rồi `8,2,9,1` ⇒ menu mở (`đãMở: true`); gõ
 Test `tests/devpoints.test.ts`: gõ được **mọi** chữ số, `del`/`clear`, đủ 6 số sai thì xoá sạch và không lộ vị trí sai,
 và bài canh **nguồn** (không còn `startsWith` trong `devKey`) để lỗi này không quay lại.
 
+### 4.48 Xe ôm Chú Ba — ổng chở, hoặc gọi là ổng tới rước (lượt 66)
+
+Người chơi: *“làm xe ôm Chú Ba — gọi là ổng đến rước đi hoặc kêu khi gặp ổng”*. Trước lượt này `chu_ba` **chỉ** là một
+khách quen ăn trưa trong `REGULARS` (`src/game/stall.ts` thỉnh thoảng cho ghé), không có xe, không có chỗ đứng; tin bịa
+“đứng đầu hẻm” đã bị xoá từ lượt 52 vì nói về một người **không tồn tại ngoài phố**.
+
+**Nguyên tắc:** hai đường dùng, cùng một người, cùng một bảng giá —
+(a) **gặp ổng** dưới gầm cầu rồi nhờ chở; (b) **gọi điện** (số trong danh bạ) rồi 3 phút sau ổng chạy tới chỗ mình đứng.
+
+| Việc | Chỗ sửa | Ghi chú |
+|---|---|---|
+| Người thật | `data/people.ts` `FIXED.chu_ba` + `FIXED_ROLE.chu_ba` | da ngăm `0xb8804f`, nón bảo hiểm `hat: 3`; `npc.ts` tự dựng vì có neo `v_chu_ba` |
+| Chỗ đứng + xe | `world/side.ts` khối 7 | `b.bike()` + bạt che + biển **XE ÔM CHÚ BA** + ghế nhựa; neo ở (65,5; 98,4) — **giữa hai trụ cầu** (trụ ở x = 55 / 77), tránh bị cột che khi nhìn từ lều |
+| Giờ đứng | `data/hours.ts` `chu_ba: [5, 22.5]` | `npc.updFixed` ẩn ổng ngoài giờ; `sim/xeom.onDuty` dùng cùng mốc |
+| Luật giá | `sim/xeom.ts` (mới) | 3.000 / 5.000 / 8.000₫ theo quãng (<45 m / <95 m / xa hơn), +2.000 mưa, +2.000 chở gánh/xe đẩy, −1.000 (thân ≥ 25) / −2.000 (thân ≥ 60), sàn 2.000₫ |
+| Thời gian | `sim/xeom.rideMinutes` | 13 m/phút so với đi bộ 4,4 m/phút ⇒ nhanh ~3 lần; mỗi chuyến ít nhất 1 phút |
+| Gọi điện | `sim/phone.ts` `Contact.hot = 'xeom'` | Chú Ba vào danh bạ **một dòng** khi `g.met.chu_ba` hoặc đã bán cho ổng; xếp sau 2 tổng đài. 2 cuộc/ngày, cước `CALL_FEE`, còn `rel.owe` thì từ chối |
+| Hộp thoại | `game/acts.ts` `xeomMenu/xeomRide/xeomSmallTalk/phoneXeom/xeomTick/xeomReturn` | danh sách đích = `acts.places()` (cùng nguồn với Bản đồ), cách > 22 m; mỗi nút ghi giá + mét + phút xe/phút đi bộ |
+| Tới rước | `xeomTick` (gọi từ `Acts.update`) | đúng hẹn ⇒ dời `n.home` của ổng tới cạnh người chơi rồi mở bảng chỗ đi; người chơi đi khỏi > 7 m ⇒ `xeomReturn` trả ổng về gầm cầu |
+| Bản tin | `sim/news.ts` mục 9c | chỉ hiện khi `onDuty(g)`, nói đúng giá đang áp (mưa có phụ phí) — cùng nguyên tắc “tin phải thật” của lượt 30 |
+| Dịch chuyển thử | `game/devPoints.ts` `tp_chu_ba` | menu ẩn vẫn chỉ có nhóm `tp_…` (luật lượt 63) |
+
+**Đo:** `tsc` sạch · **679/679 test (57 tệp)** · probe `steps/xeom.mjs` (ảnh `out/xeom/01…04`): ổng ở `(65,5; 98,4)` `state='fixed'`,
+nói chuyện ⇒ 12 nút, giá 3.000/5.000/8.000₫; chọn “Vựa đầu mối Tám Lúa — 5.000₫ (52 m, xe 4 phút, đi bộ 12 phút)” ⇒ tiền 18.000 → 13.000,
+giờ 546 → 550, người chơi ở `(37,2; 55,1)`; gọi điện ⇒ hẹn +3 phút; +4 phút ⇒ ổng tới cách 2,3 m, mở bảng chỗ đi. `errors: none`.
+
 ## 7. Kiểm thử
 
+- `tests/xeom.test.ts` — lượt 66: Chú Ba là người thật (neo + xe + biển ở đúng gầm cầu, giờ 5–22h30), giá theo quãng/mưa/chở nặng, ơn thân quen + sàn 2.000₫, xe nhanh hơn đi bộ ~3 lần, gọi điện (cước, 2 lần/ngày, hết pin/ngoài giờ/nợ tiền cơm thì từ chối, hẹn 3 phút, hẹn quá 4 tiếng tự bỏ), danh bạ một dòng, tin radio chỉ hiện đúng giờ + đúng giá.
 - `tests/nau59.test.ts` — lượt 60: tia chạm của bàn nấu ăn cắt ở nhiều độ cao (sửa lỗi không cho được nguyên liệu vào nồi).
 - `tests/jobs59.test.ts` — lượt 59: trần việc làm thêm mỗi ngày (bốc cá 2 ca, chạy bàn 3 ca, vác 20 bao), đếm số còn lại không âm, reset qua ngày, và quét mã nguồn canh số chép tay + bảng việc làm đủ 7 dòng.
 - `tests/tron58.test.ts` — lượt 58: bánh tráng trộn có mini game riêng — 5 topping rải ngẫu nhiên mỗi ván, thứ tự do máy gọi, chấm điểm theo số lần chạm nhầm/chậm.

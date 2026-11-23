@@ -180,6 +180,11 @@ export function getDevSections(): DevSection[] {
           const a = ctx.world.anchors.v_hobo;
           if (a) tpTo(a.x, a.z + 2.2, Math.PI, 'Đã tới gầm cầu — chỗ Ông Bảy ngồi.');
         } },
+        { id: 'tp_chu_ba', label: 'Chú Ba xe ôm', sub: 'Gầm cầu — nhờ chở đi, hoặc nói chuyện để lấy số trong danh bạ', run: () => {
+          const g = ctx.g, a = ctx.world.anchors.v_chu_ba;
+          g.min = Math.max(g.min, 6 * 60);
+          if (a) tpTo(a.x - 1.6, a.z + 1.8, Math.atan2(a.x - (a.x - 1.6), a.z - (a.z + 1.8)), 'Đã tới chỗ Chú Ba xe ôm đứng.');
+        } },
         { id: 'tp_mart', label: 'MiniMart 24h', sub: 'Chỗ mua đồ ăn/nguyên liệu lúc khuya mà quán khác đóng', run: () => {
           const a = ctx.world.anchors.v_mart;
           if (a) tpTo(a.x, a.z + 1.5, Math.PI, 'Đã tới MiniMart 24h.');

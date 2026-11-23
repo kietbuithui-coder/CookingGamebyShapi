@@ -10,6 +10,8 @@ export const PLACE_HOURS: Record<string, [number, number]> = { equip: [7, 20], b
   net: [6, 23], net_bi: [16, 22], net_nhung: [18, 22.5],
   dua: [14.5, 18], dua_mai: [14.5, 18], dua_thao: [14.5, 18],
   tra_da: [5.5, 22], rap: [14.5, 23], sua_xe: [7, 19], hat_rong: [9, 21], danh_co: [6.5, 18.5], danh_giay: [6, 19.5],
-  hot_toc: [7, 19], thoi_trang: [7.5, 20] };
+  hot_toc: [7, 19], thoi_trang: [7.5, 20],
+  // Chú Ba xe ôm: sáng sớm ra gầm cầu đứng, tối về nhà — trùng giờ trong `sim/xeom.ts`.
+  chu_ba: [5, 22.5] };
 /** Nơi không ghi giờ thì coi như mở cả ngày (bảng tin việc làm, chùa, công viên…). */
 export const placeHours = (id: string): [number, number] | undefined => PLACE_HOURS[id];

@@ -1633,3 +1633,21 @@ Test: 8 bài mới trong `tests/devpoints.test.ts` (11 bài cho phần PIN) + b�
 **Đo:** `tsc` sạch · **666/666 test (56 tệp)** · probe `steps/devpin64.mjs` (bấm chuột thật): gõ `4,3,8` → **Xoá** → `8,2,9,1`
 ⇒ `đãMở: true`; sai 30 lần ⇒ “Sai quá 5 lần — chờ 30 giây rồi gõ lại.”; `errors: none`.
 
+## Lượt 66 — xe ôm Chú Ba ✅ đã xong
+
+Người chơi: “làm xe ôm Chú Ba — gọi là ổng đến rước đi, hoặc kêu khi gặp ổng”.
+
+**Sửa:** `sim/xeom.ts` (mới, luật thuần: giá theo quãng 3.000/5.000/8.000₫ + mưa 2.000 + chở nặng 2.000, ơn thân quen −1.000/−2.000,
+sàn 2.000₫, `rideMinutes` ≈ 13 m/phút so với đi bộ 4,4 m/phút, giờ đứng 5–22h30, mỗi ngày 2 cuộc gọi, hẹn 3 phút, tự bỏ hẹn quá 4 tiếng).
+`data/people.ts`: `FIXED.chu_ba` (da ngăm 0xb8804f, nón bảo hiểm) + `FIXED_ROLE.chu_ba` = “Chú xe ôm” + câu riêng trong `LINES.own`.
+`world/side.ts`: khối 7 dựng xe số (`b.bike`), bạt che, biển “XE ÔM CHÚ BA”, ghế nhựa, neo `v_chu_ba` ở (65,5; 98,4) — giữa hai trụ cầu
+để không bị cột che. `data/hours.ts` `chu_ba: [5, 22.5]`; `data/landmarks.ts` đích `xeom`.
+`game/acts.ts`: `case 'chu_ba'` → `xeomMenu()` (bảng chỗ đi, giá, phút lái/đi bộ), `xeomRide()`, `xeomSmallTalk()`, `phoneXeom()`,
+`xeomTick()` (đúng hẹn thì ổng chạy tới cạnh người chơi rồi mở bảng chỗ đi) + `xeomReturn()` (đi khỏi là ổng về gầm cầu).
+`sim/phone.ts`: `Contact.hot = 'xeom'`, Chú Ba vào danh bạ khi đã biết mặt (hoặc đã bán cho ổng) — **một dòng duy nhất**, xếp sau 2 tổng đài.
+`ui/phoneUI.ts`: dòng danh bạ riêng (còn mấy lần gọi, đang trên đường tới, mưa phụ phí). `sim/news.ts`: tin “Xe ôm dưới gầm cầu”
+chỉ hiện đúng giờ + đúng giá. `game/devPoints.ts`: thêm `tp_chu_ba`.
+
+**Đo:** `tsc` sạch · **679/679 test (57 tệp)** · probe `steps/xeom.mjs`: Chú Ba ở `(65,5; 98,4)` `state='fixed'`, đứng cạnh ổng hiện
+“Nói chuyện với chú xe ôm”, hộp thoại 12 nút (bảng giá 3.000/5.000/8.000₫), chọn “Vựa đầu mối Tám Lúa — 5.000₫” ⇒ tiền 18.000 → 13.000,
+giờ 546,0 → 550,0, người chơi ở `(37,2; 55,1)`; gọi điện ⇒ hẹn +3 phút; +4 phút ⇒ ổng tới cách 2,3 m và mở bảng chỗ đi. `errors: none`.

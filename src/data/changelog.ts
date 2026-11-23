@@ -14,6 +14,19 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 66',
+    tag: 'Xe ôm Chú Ba: ổng đứng dưới gầm cầu, có xe thật — nhờ chở tới tận cửa, hoặc gọi điện là ổng chạy tới rước',
+    items: [
+      'Chú Ba xe ôm nay là người thật dưới gầm cầu (cạnh lều của bạn): áo sơ mi sờn, nón bảo hiểm, da ngăm vì chạy nắng, xe số dựng nghiêng bên cạnh, biển “XE ÔM CHÚ BA”, ghế nhựa ngồi chờ khách. Ổng đứng đó từ 5 giờ sáng tới 22 giờ 30.',
+      'Lại gần bấm nói chuyện là mở bảng chỗ đi: mỗi đích có giá, số mét, xe chạy mấy phút và đi bộ mất mấy phút — đi xe nhanh hơn đi bộ khoảng ba lần.',
+      'Giá theo quãng như bảng dán ngoài hẻm: trong xóm 3.000₫, sang phố bên 5.000₫, ra chợ hay ra bến 8.000₫. Trời mưa phụ phí 2.000₫; mang gánh hàng hay xe đẩy cũng phụ phí 2.000₫ vì nặng xe.',
+      'Thân với ổng thì ổng bớt 1.000–2.000₫ (bán cho ổng ăn trưa vài lần là thân). Chưa thân thì tính đủ, ổng không cho thiếu tiền xe.',
+      'Gọi điện: biết mặt ổng rồi thì số “Chú Ba xe ôm” nằm trong danh bạ; gọi là ổng chạy tới đúng chỗ bạn đứng sau 3 phút, hỏi đi đâu như ngoài đời. Mỗi ngày gọi hai lần, có cước như mọi cuộc gọi. Còn nợ tiền cơm thì ổng từ chối chở, khuya quá ổng về nhà.',
+      'Bản tin radio/WAP nhắc Chú Ba đúng lúc ổng đang đứng dưới gầm cầu, đúng giá đang áp (mưa thì có phụ phí) — không còn câu bịa “đứng đầu hẻm”.',
+      'Bản đồ có thêm đích “Chú Ba xe ôm”; menu ẩn thêm mục dịch chuyển nhanh tới chỗ ổng đứng.',
+    ],
+  },
+  {
     v: 'Lượt 64',
     tag: 'Sửa bàn phím mã PIN của menu ẩn: gõ được mọi số, có nút Xoá, mã 6 số khó đoán, sai nhiều thì khoá',
     items: [
@@ -91,16 +104,4 @@ export const CHANGELOG: LogEntry[] = [
       'Bảng test của người làm game có mục chuẩn bị sẵn quầy bánh tráng trộn, mục vào thẳng mini game trộn, và mục đọc toạ độ 5 đĩa của ván đang mở để so hai ván liền nhau xem vị trí có đổi thật không.',
     ],
   },
-  {
-    v: 'Lượt 57',
-    tag: 'Rào “Cấm đường” chặn được cả xe cộ: xe tới vạch rào là quay đầu, không còn xuyên qua hai hàng rào',
-    items: [
-      'Xe cộ không còn chạy xuyên qua rào khi phố bị cấm đường: tới vạch rào là dừng lại, quay đầu sang làn bên kia và chạy ngược lại — đúng như ngoài đời gặp rào chắn.',
-      'Rào dựng ở hai đầu đoạn phố trước chợ (z = −25 và z = 25) nên từ nay đoạn giữa hai hàng rào không còn chiếc xe nào đi qua, kể cả ô tô chạy nhanh.',
-      'Đo lại bằng máy: bật cấm đường rồi đo hơn một nghìn lần vị trí xe, không lần nào có xe nằm giữa hai hàng rào; tắt luật mới thì đo được 570 lần xe lọt vào — đúng là lỗi cũ.',
-      'Xe cũng không còn “mọc ra” trong đoạn đường đang rào: chỗ sinh xe dời ra ngoài hai đầu rào, nên không có chiếc nào hiện ra ngay sau lưng rào.',
-      'Người đi bộ vẫn đi vòng như trước, giờ đi chung một nguồn sự thật với xe nên hai bên không lệch nhau nữa.',
-      'Bảng test của người làm game có ba mục: bật cấm đường rồi tele ra trước rào, đọc số xe đang nằm trong đoạn cấm, và dỡ rào cho phố chạy lại bình thường.',
-    ],
-  }
 ];

@@ -11,6 +11,7 @@ import { esc } from './ui';
 import { PhoneDef, PhoneFeat, appsOf } from '../data/phone';
 import * as R from '../sim/rules';
 import * as PH from '../sim/phone';
+import * as XE from '../sim/xeom';
 import type { Contact } from '../sim/phone';
 import { ledgerBody } from './panels';
 import { RECIPES } from '../data/recipes';
@@ -114,6 +115,14 @@ function rowsOf(g: Game, m: PhoneDef, app: PhoneApp): { b: string; s: string; ac
     return list.map((c: Contact) => {
       if (c.hot === 'wx') return { b: c.name, s: c.where, act: 'hotwx', k: 'wx', off: !on || g.cash < PH.WX_FEE };
       if (c.hot === 'scam') return { b: c.name, s: c.where, act: 'hotscam', k: 'scam', off: !on || g.cash < 5000 };
+      if (c.hot === 'xeom') {
+        const left = XE.callsLeft(g), wait = XE.waitingLeft(g);
+        return {
+          b: c.name,
+          s: wait > 0 ? `Đang trên đường tới — còn ${wait} phút` : `${c.where} · còn ${left} lần gọi hôm nay${XE.raining(g) ? ' · mưa phụ phí' : ''}`,
+          act: 'hoteom', k: XE.XEOM_ID, off: !on || g.cash < PH.CALL_FEE || left <= 0 || wait > 0,
+        };
+      }
       return {
         b: c.name, s: c.where + (c.regular && g.flags['call_' + c.id] === g.day ? ' · hôm nay gọi rồi' : ''),
         act: c.regular ? 'call' : undefined, k: c.id, off: c.regular && (!on || g.cash < PH.CALL_FEE || g.flags['call_' + c.id] === g.day),
@@ -144,6 +153,7 @@ export function runRow(app: PhoneApp, row: { act?: string; k?: string }) {
   if (row.act === 'call' && row.k) { ctx.acts.phoneCall(row.k); return true; }
   if (row.act === 'hotwx') { ctx.acts.phoneWeather(); return true; }
   if (row.act === 'hotscam') { ctx.acts.phoneScam(); return true; }
+  if (row.act === 'hoteom') { ctx.acts.phoneXeom(); return true; }
   if (row.act === 'fun' && row.k) { ctx.acts.phoneFun(row.k as 'radio' | 'music' | 'wap'); return true; }
   if (row.act === 'shopopen' && row.k) { return R.setShopOpen(g, row.k as 'main' | 'branch', !(row.k === 'main' ? g.stall.open : !!g.branch?.open)) === 'ok'; }
   if (row.act === 'charge') { ctx.ui.closePanel(); ctx.ui.panel('map'); return true; }

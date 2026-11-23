@@ -75,21 +75,30 @@ export function markSeen(g: Game) { g.flags.smsSeen = Math.max(g.flags.smsSeen ?
 
 export interface Contact {
   id: string; name: string; where: string; regular: boolean;
-  /** Số tổng đài đặc biệt: `'wx'` = 1080 dự báo thời tiết, `'scam'` = 1900 1234 trúng thưởng. */
-  hot?: 'wx' | 'scam';
+  /**
+   * Số đặc biệt: `'wx'` = 1080 dự báo thời tiết, `'scam'` = 1900 1234 trúng thưởng,
+   * `'xeom'` = Chú Ba xe ôm (gọi là ổng chạy tới rước — xem `sim/xeom.ts`).
+   */
+  hot?: 'wx' | 'scam' | 'xeom';
 }
 
 /** Danh bạ: người đã quen (nhân vật cố định) và khách quen từng ghé. */
 export function contacts(g: Game): Contact[] {
   const out: Contact[] = [];
   for (const id of Object.keys(FIXED)) {
+    if (id === 'chu_ba') continue;              // xử riêng bên dưới (một người, một số)
     if (g.met[id] === undefined) continue;
     out.push({ id, name: FIXED[id].name, where: FIXED_ROLE[id] ?? 'Người trong xóm', regular: false });
   }
   for (const r of REGULARS) {
     const rel = g.rel[r.id];
-    if (!rel || rel.n <= 0) continue;
+    if (r.id === 'chu_ba' || !rel || rel.n <= 0) continue;
     out.push({ id: r.id, name: r.name, where: `Khách quen · thường ghé ${Math.floor(r.hour)}h`, regular: true });
+  }
+  // Chú Ba xe ôm: biết mặt ổng (đã nói chuyện dưới gầm cầu) hoặc đã bán cho ổng lần nào là có số trong danh bạ.
+  // Gọi số này không phải “tám chuyện” như khách quen khác mà là **nhờ ổng chạy tới rước** (sim/xeom.ts).
+  if (g.met['chu_ba'] !== undefined || (g.rel['chu_ba']?.n ?? 0) > 0) {
+    out.push({ id: 'chu_ba', name: FIXED.chu_ba.name, where: 'Xe ôm · gọi là chú chạy tới rước', regular: true, hot: 'xeom' });
   }
   // Hai số tổng đài đứng đầu danh bạ. 1900 1234 chỉ xuất hiện sau khi tin nhắn mời gọi tới máy.
   out.unshift({ id: 'wx1080', name: 'Tổng đài 1080', where: 'Dự báo thời tiết ngày mai · 2.000₫/phút', regular: false, hot: 'wx' });
@@ -97,7 +106,9 @@ export function contacts(g: Game): Contact[] {
     id: 'scam1900', name: '1900 1234', regular: false, hot: 'scam',
     where: scammed(g) === 'done' ? 'Số lừa đảo — bạn đã biết rồi' : 'Số lạ gửi tin “trúng thưởng” · cước 15.000₫',
   });
-  return out.sort((a, b) => Number(!!b.hot) - Number(!!a.hot) || Number(b.regular) - Number(a.regular) || a.name.localeCompare(b.name, 'vi'));
+  // Thứ tự: hai tổng đài trước (1900 1234 rồi 1080 như cũ), rồi tới Chú Ba xe ôm, rồi khách quen / người quen.
+  const rank = (c: Contact) => (c.hot === 'scam' ? 0 : c.hot === 'wx' ? 1 : c.hot === 'xeom' ? 2 : c.regular ? 4 : 3);
+  return out.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, 'vi'));
 }
 
 /** Gọi cho khách quen: tốn tiền cước, mỗi người một lần một ngày, thân hơn một chút. */

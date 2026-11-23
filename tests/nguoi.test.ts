@@ -120,7 +120,10 @@ describe('câu thoại riêng của nhân vật cố định', () => {
   it('không nhân vật nào nói câu "đứng đầu hẻm" (bài canh câu bịa trước đây)', () => {
     const all = JSON.stringify(LINES.own).toLowerCase();
     expect(all).not.toContain('đầu hẻm');
-    expect(all).not.toContain('xe ôm chú ba');
+    // Từ lượt 66 Chú Ba xe ôm là người THẬT đứng dưới gầm cầu (FIXED.chu_ba + neo v_chu_ba),
+    // nên câu của ổng được phép nói đúng chỗ đứng thật — nhưng vẫn không được bịa “đầu hẻm”.
+    expect(all).toContain('xe ôm chú ba');
+    expect(FIXED.chu_ba).toBeTruthy();
   });
 });
 

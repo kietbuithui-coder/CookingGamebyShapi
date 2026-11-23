@@ -24,9 +24,10 @@ describe('mặt Bà Chín Ve Chai (lượt 56)', () => {
     expect(r - b).toBeGreaterThan(60);   // đủ ngả nâu, không bị xám
   });
 
-  it('nhân vật cố định khác không bị đổi màu da theo', () => {
+  it('chỉ những người làm nghề ngoài nắng mới có màu da riêng — không lây sang người khác', () => {
     const withSkin = Object.values(FIXED).filter((f) => f.skin !== undefined).map((f) => f.id);
-    expect(withSkin).toEqual(['scrap2']);
+    // Bà Chín ve chai (lượt 56) + Chú Ba xe ôm (lượt 66: chạy xe ngoài đường cả ngày, da ngăm).
+    expect(withSkin.sort()).toEqual(['chu_ba', 'scrap2']);
   });
 
   it('màu da khai riêng thắng công thức chọn da của bảng', () => {

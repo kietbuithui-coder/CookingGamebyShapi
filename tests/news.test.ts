@@ -102,8 +102,17 @@ describe('tin trong ván: radio và WAP chỉ nói chuyện có thật', () => {
 
   it('không bịa chuyện ngoài đường: chưa quen khách nào thì bản tin không nhắc ai, quen rồi mới nhắc đúng người', () => {
     const g = boot();
-    for (const n of news(g)) expect(n.title).not.toContain('Xe ôm');
+    // Không còn câu bịa “đứng đầu hẻm” ở bất cứ đâu trong bản tin.
     for (const n of news(g)) expect(n.body).not.toContain('đầu hẻm');
+    // Chú Ba giờ là người thật dưới gầm cầu: tin chỉ hiện ĐÚNG giờ ổng đứng đó (5h–22h30), đúng giá đang áp.
+    g.min = 9 * 60;
+    const xeom = news(g).find((n) => n.title.includes('Xe ôm'));
+    expect(xeom, 'giờ ổng đứng dưới gầm cầu mà bản tin không nhắc').toBeTruthy();
+    expect(xeom!.body).toContain('gầm cầu');
+    expect(xeom!.body).toContain('3.000₫');
+    g.min = 2 * 60;                       // 2 giờ sáng: ổng về nhà rồi → không được nhắc
+    expect(news(g).some((n) => n.title.includes('Xe ôm'))).toBe(false);
+    g.min = 9 * 60;
     // quen Chú Ba xe ôm (đã ghé quán 2 lần) → bản tin nhắc anh ấy, đúng giờ trong dữ liệu khách quen
     g.rel.chu_ba = { v: 20, n: 2, last: -1 };
     const line = news(g).find((x) => x.title.includes('Chú Ba xe ôm'));

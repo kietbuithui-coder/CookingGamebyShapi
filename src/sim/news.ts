@@ -10,6 +10,7 @@ import { INGS } from '../data/ingredients';
 import { SHOPS, SHOP_LIST } from '../data/shops';
 import { HOUSING } from '../data/gear';
 import { REGULARS } from '../data/people';
+import { onDuty as xeomOnDuty, raining as xeomRaining, fare as xeomFare, XEOM_HOURS } from './xeom';
 import { money } from '../core/util';
 import * as R from './rules';
 
@@ -134,6 +135,16 @@ export function news(g: Game): News[] {
     const when = h < r.hour ? `khoảng ${dueH} giờ ${dueM ? dueM + ' ' : ''}` : 'giờ này';
     out.push({ title: `${r.name} quen quán`, body: `Khách quen đã ghé ${rel.n} lần, hay tới ${when}. ${r.note}`, tone: 'info' });
     break;
+  }
+  // 9c. Chú Ba xe ôm: chỉ nói khi ổng THẬT SỰ đang đứng dưới gầm cầu (đúng giờ trong sim/xeom.ts),
+  //     và nói đúng giá đang áp (mưa thì có phụ phí) — không bịa chuyện ngoài đường.
+  if (xeomOnDuty(g)) {
+    const rain = xeomRaining(g);
+    out.push({
+      title: 'Xe ôm dưới gầm cầu',
+      body: `Chú Ba đứng dưới gầm cầu (cạnh lều của bạn) từ ${Math.floor(XEOM_HOURS[0])} giờ tới ${String(Math.floor(XEOM_HOURS[1])).padStart(2, '0')} giờ ${String(Math.round((XEOM_HOURS[1] % 1) * 60)).padStart(2, '0')}. Trong xóm ${money(xeomFare(g, 30))}, sang phố bên ${money(xeomFare(g, 70))}, ra chợ ${money(xeomFare(g, 120))}${rain ? ' — trời mưa nên có phụ phí' : ''}. Quen rồi thì gọi số trong danh bạ là chú chạy tới rước.`,
+      tone: rain ? 'hot' : 'info',
+    });
   }
   // 10. hàng trong quầy của mình còn tươi không (món dễ hỏng nhất)
   //     Đá viên thì không “hỏng” mà tan dần, nên tin ghi **độ lạnh** thay vì “tươi %”.
