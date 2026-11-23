@@ -1,7 +1,7 @@
 # Việc còn lại
 
-Danh sách những gì **chưa làm**, rà theo mã ngày 2026-11-21 (`main` = `a152a6f`, sau lượt 51). Đã xong: 60/60 món · 8/8 kiểu chỗ ở ·
-7/7 bậc kinh doanh · 8 thời tiết · 22 sự kiện · 75 nguyên liệu · 12 nơi bán · 37 món đồ nghề · 16 nhóm người ·
+Danh sách những gì **chưa làm**, rà lại theo mã ngày 2026-11-22 (`main` = `aa03236`, sau lượt 64). Đã xong: 60/60 món · 8/8 kiểu chỗ ở ·
+7/7 bậc kinh doanh · 8 thời tiết · 22 sự kiện · 81 nguyên liệu · 12 nơi bán · 37 món đồ nghề · 16 nhóm người ·
 11 khách quen · 44 nhân vật cố định · chuỗi 11 mục tiêu hướng dẫn · điện thoại · quán net · công an · bệnh viện ·
 đua xe đạp · NPC sinh hoạt theo giờ · giao diện dễ đọc · 16 biểu cảm · 8 kiểu tóc · người phụ việc ·
 ngoại hình người chơi (góc nhìn thứ ba, cắt tóc, thời trang) · quán có chỗ ngồi (sáu ghế bàn gỗ, thực đơn theo buổi, gọi thêm) ·
@@ -76,7 +76,7 @@ Còn thiếu (để lượt sau, chưa làm):
 
 - **Chưa đo trên máy yếu thật**: người chơi báo máy chạy trên 50 khung hình/giây nhưng chưa rõ máy nào.
 - Khi cần tối ưu: gộp các khối cơ thể NPC thành một lưới, dùng instancing cho đồ vật lặp lại (ghế, cây, xe), bỏ sương mù theo điểm ảnh ở mức đồ hoạ thấp, thêm LOD cho khu ở xa.
-- **Tách gói JavaScript**: hiện một tệp khoảng 1.335 kB (nén còn 420 kB — đo 2026-11-21). Nên tách phần dựng thành phố ra khỏi phần giao diện.
+- **Tách gói JavaScript**: hiện một tệp khoảng 1.369 kB (nén còn 432 kB — đo 2026-11-22, `docs/assets/index-CqyE6UOd.js`). Nên tách phần dựng thành phố ra khỏi phần giao diện.
 - **Báo cáo của người làm**: ✅ đã báo sắp hết nguyên liệu + gợi ý đi chợ + tự duyệt đặt bàn; ✅ app điện thoại đã báo **giá bán lỗ** so với giá vốn và bật/tắt bán từ xa. Còn thiếu: báo **bàn đặt trước bị trùng giờ / quá chỗ** và tuỳ chọn **chỉ nhận bàn ≤ N người**.
 - **Đi chợ thuê người**: mới có một kiểu chuyến (mua theo món cần, giá tốt nhất trong giờ). Còn thiếu: **mặc cả hộ** (người làm có thể trả giá theo độ thân với người bán), **mua theo danh sách tự soạn** (tự chọn từng nguyên liệu + số lượng), **đi chợ bị mưa/ kẹt xe nên về muộn**, và **mua hộ cho chi nhánh** (hiện người trông coi vẫn chất hàng về kho quầy chính).
 - ✅ **Chơi ngoại tuyến** (lượt 40): service worker `public/sw.js` + nút “Lưu để chơi offline” trong Cài đặt; mất mạng vẫn mở được (đã chạy thử, xem `core/offline.ts`).
@@ -102,3 +102,15 @@ Còn thiếu (để lượt sau, chưa làm):
 - Bảng "Nợ & khách quen" chưa có nút nhắc nợ qua điện thoại (chỉ nhắc khi gặp mặt).
 - Đã xoá `HANDOFF.md` (bàn giao lượt cờ vua, số liệu 292 bài đã lỗi thời), 13 ảnh lẻ ở `anh_ket_qua/` không tài liệu nào dùng, và 2 probe chưa từng được gọi (`hatrong.mjs`, `staff_anim.mjs`) — đừng tìm lại.
 - Chưa có bảng thành tích / thống kê sau khi chơi xong (mới có tổng kết cuối ngày).
+
+## 9. Việc còn lại sau các lượt gần đây (58–64)
+
+- **Chạm trên máy cảm ứng thật chưa kiểm**: lỗi “chén không vào nồi” (lượt 60) đã sửa và đo bằng probe + chuột thật,
+  nhưng chưa ai thử bằng **ngón tay thật** trên điện thoại/tablet. Máy ảo chỉ giả lập cảm ứng được.
+- **Menu ẩn chỉ còn dịch chuyển nhanh** (lượt 63): không còn mục thử tính năng nào, nên muốn thử nhanh một tính năng mới
+  thì phải viết probe trong `tools/probe/steps/` (xem `PLAYBOOK.md` §6.2). Nếu sau này cần mục thử thì thêm lại có chủ đích.
+- **Mã PIN menu ẩn `438291`** (lượt 64) là mã chọn ngẫu nhiên, **không mang ý nghĩa gì**. Muốn mã riêng (ngày kỷ niệm,
+  số nhà…) thì chỉ cần đổi `DEV_PIN` trong `src/game/devPoints.ts` + câu trong `README.md`; test canh theo hằng số đó.
+- **Đá viên tan chậm 3 lần** (lượt 62) mới áp cho `da`. Nếu thấy hợp lý thì có thể áp tương tự cho các món đông lạnh khác
+  (hiện chỉ có đá), nhưng chưa có món nào khác trong bảng cần.
+
