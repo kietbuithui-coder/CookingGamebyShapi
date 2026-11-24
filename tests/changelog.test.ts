@@ -15,7 +15,10 @@ describe('nhật ký phát triển trong Cài đặt', () => {
   it('bản mới nhất là bản vừa làm xong (lượt 67 — menu ẩn theo kịp game)', () => {
     expect(CHANGELOG[0].v).toBe('Lượt 67');
     expect(CHANGELOG[0].items.some((t) => /menu ẩn|đi nhanh/i.test(t))).toBe(true);
-    expect(CHANGELOG[0].items.some((t) => /giờ mở cửa/i.test(t))).toBe(true);
+    // Lượt 68: người chơi yêu cầu BỎ cơ chế tua đồng hồ ⇒ nhật ký không được nhắc lại nó nữa.
+    expect(CHANGELOG[0].items.some((t) => /tua/i.test(t))).toBe(false);
+    expect(CHANGELOG[0].tag).not.toMatch(/tua/i);
+    expect(CHANGELOG[0].items.some((t) => /không đổi giờ/i.test(t))).toBe(true);
     // bản ngay dưới là lượt 66 (xe ôm Chú Ba)
     expect(CHANGELOG[1].v).toBe('Lượt 66');
     expect(CHANGELOG[1].items.some((t) => /xe ôm/i.test(t))).toBe(true);

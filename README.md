@@ -140,7 +140,7 @@ GitHub Pages của kho này đang trỏ vào **thư mục gốc** của `main`, 
 
 ## Menu ẩn (dành cho người làm game)
 
-Bấm **8 lần** vào chữ *Cài đặt* ở đầu bảng Cài đặt, rồi nhập mã **`438291`** (bàn phím có nút *Xoá* và *C*; sai 5 lần thì khoá 30 giây). Menu ẩn hiện ra **34 chỗ đi nhanh** — mọi nhân vật cố định ngoài phố (Chú Ba xe ôm, Ông Bảy, Cô Thắm, chú vá xe, cô hát rong, Ông Tư, bé đánh giày, Bin, nhóm đua xe đạp, quán net…) cùng các sạp/tiệm, chỗ ở, bệnh viện, công an và bốn chỗ đặt quầy. Bấm một mục là đứng **sát bên người đó** (menu tự tìm chỗ trống, không đặt bạn vào trong cột hay quầy) và **tự tua đồng hồ tới giờ họ có mặt** — 3 giờ sáng bấm tới tiệm đồ nghề cũng gặp chủ tiệm. Dòng đầu bảng ghi bản mới nhất, đọc thẳng từ nhật ký phát triển. Mở một lần là nhớ trong phiên chơi; nút *"Ẩn & khoá lại"* đưa về như cũ.
+Bấm **8 lần** vào chữ *Cài đặt* ở đầu bảng Cài đặt, rồi nhập mã **`438291`** (bàn phím có nút *Xoá* và *C*; sai 5 lần thì khoá 30 giây). Menu ẩn hiện ra **34 chỗ đi nhanh** — mọi nhân vật cố định ngoài phố (Chú Ba xe ôm, Ông Bảy, Cô Thắm, chú vá xe, cô hát rong, Ông Tư, bé đánh giày, Bin, nhóm đua xe đạp, quán net…) cùng các sạp/tiệm, chỗ ở, bệnh viện, công an và bốn chỗ đặt quầy. Bấm một mục là đứng **sát bên người đó** (menu tự tìm chỗ trống, không đặt bạn vào trong cột hay quầy). Đi nhanh **không đổi giờ trong ngày** — tới lúc nào thì gặp đúng chuyện lúc đó, y như tự đi bộ ra đó. Dòng đầu bảng ghi bản mới nhất, đọc thẳng từ nhật ký phát triển. Mở một lần là nhớ trong phiên chơi; nút *"Ẩn & khoá lại"* đưa về như cũ.
 Mã nằm trong gói JavaScript nên **không phải bảo mật** — chỉ để người chơi không vô tình mở bảng test.
 
 ## Cấu trúc mã nguồn

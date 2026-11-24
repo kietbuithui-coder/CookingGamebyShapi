@@ -30,7 +30,9 @@ const menuMở = () => ({ đãMở: !!document.querySelector('[data-a="devRun"]'
 const ởĐâu = (anchor) => { const g0 = window.__game, p = g0.player, a = g0.world.anchors[anchor];
   const d = a ? Math.hypot(p.x - a.x, p.z - a.z) : -1;
   return { neo: anchor, x: +p.x.toFixed(1), z: +p.z.toFixed(1), cách: +d.toFixed(2),
-    kẹt: g0.world.blocked(p.x, p.z, 0.34), y: +(p.y ?? 0).toFixed(2), giờ: +(g0.g.min % 1440 / 60).toFixed(2) }; };
+    kẹt: g0.world.blocked(p.x, p.z, 0.34), y: +(p.y ?? 0).toFixed(2), phút: Math.round(g0.g.min) }; };
+/** Đọc đồng hồ trong ván (phút tuyệt đối) — dùng để canh “đi nhanh KHÔNG đổi giờ”. */
+const đồngHồ = () => { const g = window.__game.g; return { phút: Math.round(g.min), giờ: +(g.min % 1440 / 60).toFixed(2), ngày: g.day }; };
 const toastCuối = () => ([...(document.querySelectorAll('#toasts .toast'))].map((t) => t.innerText.replace(/\s+/g, ' ').trim()).slice(-2));
 
 /** [mã mục, neo, khoảng cách hợp lý tối thiểu, tối đa] — mục nào cũng phải đứng SÁT neo của người đó. */
@@ -80,23 +82,27 @@ for (const d of '438291') steps.push({ clickEval: (s, k) => { const p = eval('('
 steps.push({ eval: (s) => eval('(' + s + ')()'), args: [menuMở.toString()], max: 1600 });
 steps.push({ shot: OUT + '02_menu' });
 
+steps.push({ label: '④ đồng hồ TRƯỚC khi bấm bất kỳ mục nào' });
+steps.push({ eval: (s) => eval('(' + s + ')()'), args: [đồngHồ.toString()], max: 300 });
 for (const [id, neo] of MỤC) {
   steps.push({ label: '④ ' + id + ' → đo chỗ đứng so với ' + neo });
   steps.push({ clickEval: (s, k) => { const p = eval('(' + s + ')')(k); return p ? [p] : []; }, args: [tâm.toString(), `[data-a="devRun"][data-k="${id}"]`], gap: 300 });
   steps.push({ eval: (s, a) => eval('(' + s + ')')(a), args: [ởĐâu.toString(), neo], wait: 500, max: 400 });
 }
 
-steps.push({ label: '⑤ ba mục không có neo riêng: hai mặt bằng + giữa đường lớn' });
+steps.push({ label: '⑤ đồng hồ SAU 28 lần bấm — phải y nguyên (không tua)' });
+steps.push({ eval: () => { const g = window.__game.g; return { phút: Math.round(g.min), giờ: +(g.min % 1440 / 60).toFixed(2) }; }, max: 300 });
+steps.push({ label: '⑥ hai mục mặt bằng (không có neo riêng) — đo chỗ đứng, đồng hồ vẫn không đổi' });
 steps.push({ eval: () => { const g0 = window.__game, p = g0.player; return { spot: 'giữa đường', x: +p.x.toFixed(1), z: +p.z.toFixed(1), kẹt: g0.world.blocked(p.x, p.z, 0.34) }; } });
 for (const id of ['tp_matbang_tb', 'tp_matbang_dc']) {
   steps.push({ clickEval: (s, k) => { const p = eval('(' + s + ')')(k); return p ? [p] : []; }, args: [tâm.toString(), `[data-a="devRun"][data-k="${id}"]`], gap: 300 });
   steps.push({ eval: () => { const g0 = window.__game, p = g0.player; return { x: +p.x.toFixed(1), z: +p.z.toFixed(1), kẹt: g0.world.blocked(p.x, p.z, 0.34), y: +(p.y ?? 0).toFixed(2) }; }, wait: 500, max: 300 });
 }
-steps.push({ label: '⑥ bồn rửa tay khi CHƯA dựng nhà hàng → phải báo “Cần dựng nhà hàng trước.”' });
+steps.push({ label: '⑦ bồn rửa tay khi CHƯA dựng nhà hàng → phải báo “Cần dựng nhà hàng trước.”' });
 steps.push({ clickEval: (s, k) => { const p = eval('(' + s + ')')(k); return p ? [p] : []; }, args: [tâm.toString(), '[data-a="devRun"][data-k="tp_lavabo"]'], gap: 400 });
 steps.push({ eval: (s) => eval('(' + s + ')()'), args: [toastCuối.toString()], wait: 300, max: 400 });
 steps.push({ shot: OUT + '03_lavabo' });
-steps.push({ label: '⑦ ẩn & khoá lại → mở Cài đặt phải đòi mã lại' });
+steps.push({ label: '⑧ ẩn & khoá lại → mở Cài đặt phải đòi mã lại' });
 steps.push({ eval: (s) => eval('(' + s + ')')(), args: [mởCàiĐặt.toString()] });
 steps.push({ clickEval: (s, k) => { const p = eval('(' + s + ')')(k); return p ? [p] : []; }, args: [tâm.toString(), '[data-a="devLock"]'], gap: 400 });
 steps.push({ eval: () => ({ lộMenuNgay: !!document.querySelector('[data-a="devRun"]'), chữ: (document.querySelector('#modal .body')?.innerText || '').slice(0, 70) }), max: 300 });

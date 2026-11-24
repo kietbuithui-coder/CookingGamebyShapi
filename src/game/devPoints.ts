@@ -12,8 +12,6 @@ import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
 import { advice, destOpen, nowText } from '../sim/advice';
 import { LANDMARK_BY_ID } from '../data/landmarks';
-import { SHOPS } from '../data/shops';
-import { PLACE_HOURS } from '../data/hours';
 import { CHANGELOG } from '../data/changelog';
 import { money } from '../core/util';
 const PUIphone = () => PUI;
@@ -97,30 +95,18 @@ function tpTo(x: number, z: number, yaw = 0, msg?: string) {
 }
 
 /**
- * Nếu chỗ sắp tới đang đóng cửa thì tua đồng hồ tới giờ mở (giờ lấy từ `PLACE_HOURS`, sạp chợ lấy từ
- * `SHOPS[id].open`). Nhờ vậy bấm “Chạy” lúc 3 giờ sáng vẫn gặp được người bán, không phải ngồi đợi.
- * Nơi mở cả ngày (không ghi giờ) thì không đụng tới đồng hồ.
- */
-function openNow(id: string) {
-  const g = ctx.g, h = PLACE_HOURS[id] ?? SHOPS[id]?.open;
-  if (!h) return;
-  const cur = g.min % 1440;
-  if (cur >= h[0] * 60 && cur < h[1] * 60) return;
-  // +30 phút cho chắc đã qua giờ mở; nơi mở ít hơn 1 tiếng thì lùi lại 30 phút cho khỏi rơi ra ngoài.
-  const at = Math.min(h[0] * 60 + 30, h[1] * 60 - 30);
-  g.min = g.min - cur + Math.max(0, at);
-}
-
-/**
  * Đứng CẠNH một cái neo rồi quay mặt vào đó (mặc định cách 1,7 m).
  * Toạ độ cứng rất dễ rơi vào cột cầu, quầy, kệ hay vách kính — đã gặp ở Chú Ba và ở sạp chợ — nên thử năm
  * khoảng cách × mười hướng, chỗ nào đi được thì đứng. Neo lấy từ `world.anchors` thật, nên dời nhân vật ngoài
  * phố là menu đi theo.
+ *
+ * **Không đụng tới đồng hồ.** Bản lượt 67 có tua giờ tới giờ mở cửa của chỗ sắp tới; người chơi yêu cầu bỏ
+ * hẳn (lượt 68) — đi nhanh mà nhảy cả giờ trong ngày là sửa cả luật chơi. Nơi đóng cửa thì tới đúng lúc nó
+ * đóng, đúng như khi tự đi bộ ra đó.
  */
-function tpNear(anchor: string, label: string, opt: { d?: number; msg?: string; hour?: boolean } = {}) {
+function tpNear(anchor: string, label: string, opt: { d?: number; msg?: string } = {}) {
   const a = ctx.world.anchors[anchor];
   if (!a) { toast(`Không thấy chỗ ${label} ngoài phố.`, 'warn'); return; }
-  if (opt.hour !== false) openNow(anchor.replace(/^v_/, ''));
   const base = opt.d ?? 1.7, msg = opt.msg ?? `Đã tới ${label}.`;
   for (const d of [base, base + 0.4, base - 0.3, base + 0.9, base + 1.5]) {
     for (const ang of [0, 0.5, -0.5, 1.0, -1.0, Math.PI, Math.PI / 2, -Math.PI / 2, 2.2, -2.2]) {
@@ -199,21 +185,17 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 }
 
 export function getDevSections(): DevSection[] {
-  // Mọi mục đi nhanh đều đứng CẠNH một cái neo thật (`tpNear`), tự tua đồng hồ tới giờ mở cửa, và khai
-  // `anchor` để test canh neo còn tồn tại. Thêm nhân vật ngoài phố chỉ cần thêm một dòng ở đây.
-  const di = (id: string, anchor: string, label: string, sub: string, opt: { d?: number; hour?: boolean } = {}) =>
+  // Mọi mục đi nhanh đều đứng CẠNH một cái neo thật (`tpNear`) và khai `anchor` để test canh neo còn tồn tại.
+  // Không mục nào được đụng tới `g.min` — đi nhanh chỉ đổi chỗ đứng, không đổi giờ trong ngày.
+  // Thêm nhân vật ngoài phố chỉ cần thêm một dòng ở đây.
+  const di = (id: string, anchor: string, label: string, sub: string, opt: { d?: number } = {}) =>
     ({ id, anchor, label, sub, run: () => tpNear(anchor, label, opt) });
   return [
     {
       title: 'Địa điểm — tele nhanh',
       items: [
         // ── mua bán, đồ nghề ──
-        { id: 'tp_equip', anchor: 'v_equip', label: 'Tiệm Đồ Nghề Ba Tài', sub: 'Mở giờ 10h00 rồi tới quầy mua đồ nghề & nâng cấp', run: () => {
-          const g = ctx.g;
-          g.min = Math.max(g.min, 10 * 60);
-          if (g.min >= 19 * 60) g.min = 10 * 60;
-          tpNear('v_equip', 'tiệm Đồ Nghề Ba Tài', { hour: false });
-        } },
+        di('tp_equip', 'v_equip', 'Tiệm Đồ Nghề Ba Tài', 'Quầy mua đồ nghề & nâng cấp — mở 7h–20h'),
         di('tp_mart', 'v_mart', 'MiniMart 24h', 'Chỗ mua đồ ăn/nguyên liệu lúc khuya mà quán khác đóng'),
         di('tp_wholesale', 'v_wholesale', 'Vựa đầu mối Tám Lúa', 'Mua sỉ — giá rẻ hơn chợ, mở từ 3 giờ sáng'),
         di('tp_kiosk', 'v_kiosk', 'Tạp hoá Cô Ba', 'Gạo, mắm muối, than, gas, nước đá — ngay Xóm Lao Động'),

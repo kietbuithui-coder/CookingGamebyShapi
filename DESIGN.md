@@ -1402,7 +1402,7 @@ gọi 1900 1234 mất 15.000₫ và `scamTrip` trỏ đúng điểm hẹn; quay 
 vẫn giữ số; điểm hẹn đúng `SCAM_SPOT` và câu mời không còn nhắc "dây dưa". Probe `tools/probe/steps/hotline.mjs`
 (390×844) chạy 8 bước trên bằng cú bấm thật — bấm *"Thôi, quay về"* thì hộp thoại đóng hẳn, `fee: 0` — console sạch.
 
-### 4.49 Menu ẩn theo kịp game — 34 chỗ đi nhanh, tự tua giờ mở cửa (lượt 67)
+### 4.49 Menu ẩn theo kịp game — 34 chỗ đi nhanh (lượt 67; bỏ cơ chế tua giờ ở lượt 68)
 
 Người chơi: *“um bạn chưa cập nhật menu ẩn và các tính năng đc sửa”* — đúng. Sau lượt 66, menu ẩn có ba chỗ lệch:
 
@@ -1421,7 +1421,7 @@ trong `world.anchors`) và dùng chung `tpNear(anchor, label)`:
 |---|---|---|
 | Chỗ đứng | toạ độ cứng, dễ lọt vào cột/quầy/kệ | `tpNear`: thử **5 khoảng cách × 10 hướng**, bỏ qua chỗ `world.blocked(x, z, 0.34)`, rồi **quay mặt vào neo** |
 | Danh sách | 13 mục viết tay | 34 mục; thêm nhân vật ngoài phố chỉ cần `di('tp_x', 'v_x', …)` một dòng |
-| Giờ mở cửa | bấm lúc 3 giờ sáng ⇒ tới nơi không có ai | `openNow()` tua đồng hồ tới `PLACE_HOURS[id]` (sạp chợ: `SHOPS[id].open`) +30 phút |
+| Giờ trong ngày | — | **menu không đụng tới đồng hồ.** Lượt 67 có tua giờ tới giờ mở cửa; lượt 68 người chơi yêu cầu bỏ hẳn — xem khối dưới |
 | Neo | không ai canh | `DevAction.anchor` + test đối chiếu `b.anchor('v_…')` trong `src/world/{city,places,side}.ts` |
 | Nhãn nút khoá | viết cứng “7 lần” trong khi mã đòi 8 | đọc `${DEV_TAPS}` |
 
@@ -1441,12 +1441,18 @@ cách tới neo):
 | `tp_rap` / `tp_dua` / `tp_net` | `v_rap` / `v_dua` / `v_net` | 1,70 m | không |
 | các mục còn lại (28 mục có neo) | neo của người đó | 1,70 m | không |
 
-Tua giờ cũng đo được: `tp_hobo` bấm lúc 8h54 vẫn tới đúng chỗ (Ông Bảy ở 24/24); `tp_hat_rong` **tua 8h54 → 9h30**
-(cô hát rong mở 9h) và `tp_rap`/`tp_dua`/`tp_net` tua tới **15h00** (Bin 14h30, nhóm đua 14h30, quán net 6h–23h nhưng
-mục đứng cạnh người nên chờ đủ giờ). Bấm `tp_lavabo` khi chưa dựng nhà hàng ⇒ toast *“Cần dựng nhà hàng trước.”*
-(đúng ý). Bấm “Ẩn & khoá lại” rồi mở Cài đặt ⇒ **không** lộ menu, phải gõ mã lại. `errors: none`.
-Test: `tests/devpoints.test.ts` **17 bài** (thêm 5 bài: tag = `CHANGELOG[0].tag` và không viết tay, mọi `anchor` có thật,
-phủ đủ 27 neo nhân vật, `openNow` chạy trước `tpTo` + chống kẹt, nhãn nút đọc `DEV_TAPS`), cả bộ **684 bài / 57 tệp**.
+**Đồng hồ đứng yên (lượt 68).** Bản lượt 67 tua đồng hồ tới giờ mở cửa của chỗ sắp tới; người chơi đọc dòng nhật ký
+đó và yêu cầu **bỏ hẳn cơ chế**, không chỉ xoá câu chữ. Đúng là nên bỏ: menu dành cho người làm game, mà việc “đi nhanh”
+mà nhảy cả giờ trong ngày là **sửa luật chơi** — bỏ đói, bỏ mất khách, đổi cả thời tiết và lịch sinh hoạt của NPC.
+Nay `tpNear()` chỉ đặt chỗ đứng, **không** đọc/ghi `g.min`; `tp_equip` cũng thôi tự đẩy giờ lên 10h. Tới lúc nào thì
+gặp đúng chuyện lúc đó, y như tự đi bộ ra. Đã xoá `openNow()`, tuỳ chọn `hour`, hai import `PLACE_HOURS`/`SHOPS`, và
+`tests/devpoints.test.ts` canh bằng bài *“đi nhanh KHÔNG đụng tới đồng hồ”* (không `openNow`, không `hour?`, và
+phần `getDevSections` không được có `g.min =`).
+
+Bấm `tp_lavabo` khi chưa dựng nhà hàng ⇒ toast *“Cần dựng nhà hàng trước.”* (đúng ý). Bấm “Ẩn & khoá lại” rồi mở
+Cài đặt ⇒ **không** lộ menu, phải gõ mã lại. `errors: none`.
+Test: `tests/devpoints.test.ts` **17 bài** (tag = `CHANGELOG[0].tag` và không viết tay; mọi `anchor` có thật trong
+`src/world`; phủ đủ 27 neo nhân vật; chống kẹt + quay mặt vào neo; nhãn nút đọc `DEV_TAPS`), cả bộ **684 bài / 57 tệp**.
 
 **Cạm bẫy probe (ghi lại để lần sau khỏi mất thời gian):** `page.mouse.click()` của puppeteer chỉ nhận **số nguyên** —
 toạ độ lẻ (`770.375`) làm click chết với *“Failed to deserialize params.x”* mà **không** báo lỗi ở bước đó; và `clickEval`

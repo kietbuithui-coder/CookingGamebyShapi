@@ -15,13 +15,12 @@ export interface LogEntry {
 export const CHANGELOG: LogEntry[] = [
   {
     v: 'Lượt 67',
-    tag: 'Menu ẩn theo kịp game: 34 chỗ đi nhanh tới đúng người, tự tua tới giờ họ có mặt, dòng “bản mới nhất” đọc từ nhật ký',
+    tag: 'Menu ẩn theo kịp game: 34 chỗ đi nhanh tới đúng người, đứng sát bên họ, dòng “bản mới nhất” đọc từ nhật ký',
     items: [
-      'Trước bản này bấm “Chạy” ở menu ẩn mà nơi đó đóng cửa thì tới nơi chẳng có ai — 3 giờ sáng tới tiệm đồ nghề là đứng nhìn cửa khoá. Nay menu tự tua đồng hồ tới giờ mở cửa của chỗ đó (giờ lấy đúng từ dữ liệu của game), nên bấm là gặp người bán.',
+      'Bấm “Chạy” là đứng sát bên người đó (1,7 m) và quay mặt vào họ. Menu tự tìm chỗ trống quanh đó nên không đặt bạn vào trong cột cầu, quầy hay kệ như trước.',
       'Thêm 21 chỗ đi nhanh còn thiếu: vựa đầu mối Tám Lúa, tạp hoá Cô Ba, quán cơm Bà Tư, nhà thuốc, ngân hàng, cầm đồ, tiệm hớt tóc, tiệm quần áo, nhà trọ, khách sạn, nhà nghỉ, bệnh viện, công an, quán trà đá, chú vá xe, cô hát rong, bé đánh giày, góc nhảy của Bin, chỗ đua xe đạp, quán net, quán cà phê.',
-      'Mục “Bàn cờ Ông Tư” đổi thành “Bàn cờ Ông Tư” đứng đúng cạnh ông; Chú Ba xe ôm thì đứng sát bên ổng (1,7 m) thay vì lệch 2,4 m như trước.',
-      'Menu tự tìm chỗ đứng trống quanh người đó, không đặt bạn vào trong cột cầu, quầy hay kệ — trước đây vài mục đặt người chơi lọt thỏm trong đồ vật.',
-      'Dòng “bản mới nhất” trong menu ẩn nay đọc thẳng từ nhật ký phát triển, nên nó không còn đứng nguyên ở bản cũ bốn lượt liền; nút khoá cũng ghi đúng “8 lần” thay vì “7 lần”.',
+      'Đi nhanh chỉ đổi chỗ đứng, không đổi giờ trong ngày: tới lúc nào thì gặp đúng chuyện lúc đó, y như tự đi bộ ra đó.',
+      'Dòng “bản mới nhất” trong menu ẩn đọc thẳng từ nhật ký phát triển, nên nó không còn đứng nguyên ở bản cũ bốn lượt liền; nút khoá cũng ghi đúng “8 lần” thay vì “7 lần”.',
     ],
   },
   {

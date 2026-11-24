@@ -243,17 +243,27 @@ describe('menu ẩn — mục đi nhanh khớp dữ liệu thật (lượt 67)',
     expect(new Set(anchors).size).toBe(anchors.length);
   });
 
-  it('mục nào cũng tự tua đồng hồ tới giờ mở cửa (bấm lúc 3 giờ sáng vẫn gặp người bán)', () => {
+  /**
+   * Lượt 68: người chơi yêu cầu **bỏ hẳn** cơ chế tua đồng hồ của lượt 67 — “đi nhanh” không được phép
+   * nhảy cả giờ trong ngày, vì như thế là menu sửa luật chơi chứ không còn là chỗ đi nhanh.
+   * Bài này canh cả ba chỗ từng tua giờ: `openNow()`, tuỳ chọn `hour` của `tpNear`, và mục `tp_equip`
+   * tự đẩy `g.min` lên 10 giờ.
+   */
+  it('đi nhanh KHÔNG đụng tới đồng hồ (không tua giờ, không đẩy giờ lên)', () => {
     const src = readFileSync('src/game/devPoints.ts', 'utf8');
-    // Có hàm tua giờ, đọc giờ thật từ PLACE_HOURS / SHOPS chứ không viết cứng.
-    expect(src).toContain('function openNow(');
-    expect(src).toContain('PLACE_HOURS[id] ?? SHOPS[id]?.open');
-    // tpNear gọi openNow trước khi đặt chỗ đứng.
+    expect(src).not.toContain('function openNow(');
+    expect(src).not.toContain('openNow(');
+    expect(src).not.toContain('hour?: boolean');
+    expect(src).not.toContain("import { PLACE_HOURS }");
+    expect(src).not.toContain("import { SHOPS }");
+    // Không mục nào được gán `g.min`.
+    const sections = src.slice(src.indexOf('export function getDevSections'));
+    expect(sections).not.toMatch(/g\.min\s*=/);
+    // Vẫn giữ phần chống kẹt + quay mặt vào người đó (thứ duy nhất menu được làm với người chơi).
     const near = src.slice(src.indexOf('function tpNear('), src.indexOf('/** Đi tới điểm đặt quầy'));
-    expect(near.indexOf('openNow(')).toBeLessThan(near.indexOf('tpTo('));
-    // Chống kẹt: phải thử nhiều hướng trước khi đặt người chơi.
     expect(near).toContain('ctx.world.blocked');
     expect(near).toContain('Math.atan2(a.x - x, a.z - z)');       // quay mặt VÀO người đó
+    expect(near).not.toContain('ctx.g.min');
   });
 
   it('nhãn nút khoá đọc DEV_TAPS, không viết cứng “7 lần”', () => {

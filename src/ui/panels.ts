@@ -495,7 +495,7 @@ export function openPanel(ui: UI, name: string) {
           }
         };
         // “Chạy” một mục là bảng đóng lại; menu nhớ mã trong phiên nên mở lại Cài đặt là thấy danh sách ngay.
-        const body = `<p class="muted"><b>Bản mới nhất:</b> ${DEV_BUILD_TAG}. Mục thử tính năng đã dọn hết — chỉ còn ${sections[0].items.length} chỗ dịch chuyển nhanh; bấm là đứng cạnh người đó, đồng hồ tự tua tới giờ họ có mặt.</p>` +
+        const body = `<p class="muted"><b>Bản mới nhất:</b> ${DEV_BUILD_TAG}. Mục thử tính năng đã dọn hết — chỉ còn ${sections[0].items.length} chỗ dịch chuyển nhanh; bấm là đứng cạnh người đó, đồng hồ trong game không đổi.</p>` +
           sections.map((sec) => `<h4>${sec.title}</h4><div class="list">${sec.items.map((it) => `<div class="item"><div class="grow"><b>${it.label}</b><small>${it.sub}</small></div><button class="btn small${it.tone ? ' ' + it.tone : ''}" data-a="devRun" data-k="${it.id}">Chạy</button></div>`).join('')}</div>`).join('');
         draw(`${ic('bolt')} Menu ẩn — Dịch chuyển nhanh`, [], body, `<button class="btn" data-a="devBack">Quay lại Cài đặt</button><button class="btn" data-a="devLock">Ẩn & khoá lại (${DEV_TAPS} lần + mã PIN)</button>`);
         return;
