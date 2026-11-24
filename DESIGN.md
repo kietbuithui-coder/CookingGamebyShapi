@@ -595,10 +595,9 @@ nút mở sổ; menu nói chuyện với Ba Tài có mục *Nói chuyện mở c
 dữ liệu đọc lên: `rent` vô lý về 0, bỏ phần `ready` sai hình dạng hoặc quá trần, cắt `hist` còn 8 dòng, mọi số trong
 `led`/`tot` bị NaN thì về 0.
 
-**Menu ẩn để thử.** Nhóm “Mới nhất — Bậc 7” trong menu Test & Dịch chuyển (Cài đặt, bấm 7 lần chữ “Cài đặt”) có 9 mục:
-dựng chuỗi + chi nhánh ở từng chỗ (`setup_chuoi`, `_vp`, `_cv`), tới quầy chi nhánh, đổ đầy món sang chi nhánh, tua 3
-tiếng cho người trông coi bán, mở sổ, đổi người trông coi, trả mặt bằng. Nhóm “Địa điểm — tele nhanh” chỉ giữ các mục
-dịch chuyển. Mục test của các lượt cũ đã bị xoá; `tests/devpoints.test.ts` khoá lại quy tắc này.
+**Menu ẩn.** Nhóm “Mới nhất — Bậc 7” của lượt 18 **đã bị xoá** ở lượt 63 cùng toàn bộ mục thử khác; từ đó menu ẩn chỉ
+còn một nhóm **“Địa điểm — tele nhanh”** (lượt 67 phủ đủ 34 chỗ, xem §4.35 và §4.49). `tests/devpoints.test.ts` khoá
+lại quy tắc “không có mục test nào trong menu”.
 
 **Kiểm thử.** `tests/chuoi.test.ts` (25 bài): dữ liệu `TIERS[7]`/`GEAR.chuoi`/`BRANCH_SITES`/`KEEPER_POOL`, chặn mở
 chi nhánh khi chưa bậc 7 hoặc thiếu tiền, mở/đóng và hoàn tiền, thuê/đuổi người trông coi, chuyển món hai chiều và
@@ -799,28 +798,26 @@ chỉ ra đúng món, và chi nhánh hiện đúng số phần sau khi chuyển 
 app hiện mục **Bán lỗ so với giá vốn** ("đang bán 2.000₫ · vốn 25.426₫ — lỗ 23.426₫/phần"), và máy cục gạch cũng có
 dòng "Cửa hàng" trong danh sách; **console sạch**.
 
-### 4.35 Menu ẩn: bấm nhiều lần + mã PIN (lượt 52; mã đổi ở lượt 64 — xem §4.47)
+### 4.35 Menu ẩn: bấm nhiều lần + mã PIN (lượt 52; mã & nội dung đổi ở lượt 64, 67 — xem §4.47, §4.49)
 
-Trước đây bấm 7 lần chữ “Cài đặt” là menu test mở luôn — người chơi lỡ tay bấm nhiều lần là thấy một bảng toàn nút
-“Chạy” không thuộc về game. Nay có thêm **một bước nhập mã**: bấm lần thứ 7 hiện **bàn phím số 0–9** với bốn chấm
-tròn báo số đã nhập; gõ đúng **`7777`** (`DEV_PIN` trong `src/game/devPoints.ts`) mới vào menu test.
+Bấm **8 lần** (`DEV_TAPS`) chữ “Cài đặt” mới hiện **bàn phím số 0–9** với sáu chấm tròn báo số đã nhập; gõ đúng
+**`438291`** (`DEV_PIN`) mới vào menu ẩn. Bảy lần đầu không có gì xảy ra — đủ khó để không bấm nhầm khi đang chỉnh
+đồ hoạ.
 
-- `devPinInput(entered, digit)` là hàm thuần: nhập tới đâu đã lệch tới đó thì báo sai ngay (không bắt gõ đủ 4 số),
-  sai là **xoá sạch** và không đoán gần đúng; số thứ 5 không được nhận. `tests/devpoints.test.ts` canh cả bốn điều.
+- `devKey(entered, digit)` là hàm thuần dùng chung cho UI và test: chỉ phán đúng/sai khi đã gõ **đủ 6 số**, sai thì
+  xoá sạch và **không nói sai ở số nào**; có `del` (bỏ một số) và `clear` (xoá hết).
+- Sai **5 lần** liên tiếp ⇒ bàn phím **khoá 30 giây** (`DEV_PIN_TRIES`, `DEV_PIN_LOCK_MS`) — hết dò mã bằng cách bấm lần lượt.
 - Mở đúng một lần là **nhớ trong phiên chơi** (`DEV_UNLOCKED` trong `ui/panels.ts`): đóng Cài đặt rồi mở lại vẫn vào
-  thẳng menu cho tiện làm việc; nút **“Ẩn & khoá lại”** xoá cờ đó để lần sau phải bấm 7 lần + nhập mã như mới.
-- Mã **không phải bảo mật** (nằm trong gói JS) — mục đích chỉ là để người chơi không vô tình mở bảng test; đã ghi rõ
-  trong README để người chơi tò mò cũng hiểu đó là bảng của người làm game.
+  thẳng danh sách; nút **“Ẩn & khoá lại (8 lần + mã PIN)”** xoá cờ đó. Nhãn nút đọc chính `DEV_TAPS` nên không
+  lệch số lần như trước (đã từng ghi 7 trong khi mã đòi 8).
+- Mã **không phải bảo mật** (nằm trong gói JS) — mục đích chỉ là để người chơi không vô tình mở bảng của người làm game.
 
-**Nội dung menu được làm mới theo lượt 52** (đúng luật “mỗi lượt thay mục test cũ, chỉ giữ nhóm tele”):
-
-| Nút | Làm gì |
-|---|---|
-| *Ông Bảy đang khuyên gì lúc này?* | Tính lại toàn bộ lời khuyên từ trạng thái thật (máu, bụng, túi, giờ, quầy, nợ, thời tiết) và in ra hộp thoại kèm mức cấp thiết |
-| *Tele tới gầm cầu, hỏi Ông Bảy ngay* | Dịch chuyển tới `v_hobo` rồi tự mở hộp thoại để thử câu khuyên trong game thật |
-| *Soát 96 lần trong ngày* | Quét 96 mốc giờ (0h→23h45), gọi `advice()` ở mỗi mốc, báo to nếu có câu nào trỏ đích đã đóng cửa — đo được **316 câu, 0 câu sai** |
-
-Nhóm “Địa điểm — tele nhanh” thêm hai chỗ mới: **Gầm cầu — Ông Bảy** và **MiniMart 24h**.
+**Nội dung menu (lượt 63 → 67).** Lượt 63 xoá **hết** mục thử: menu chỉ còn một nhóm **“Địa điểm — tele nhanh”**.
+Lượt 67 phủ nhóm đó cho đủ **34 chỗ**: mọi nhân vật cố định ngoài phố (Chú Ba xe ôm, Ông Bảy, Cô Thắm, chú vá xe,
+cô hát rong, Ông Tư, bé đánh giày, Bin, nhóm đua xe đạp, quán net, quán cà phê…), các sạp/tiệm mua bán (tiệm đồ nghề,
+MiniMart, vựa sỉ Tám Lúa, tạp hoá Cô Ba, quán cơm Bà Tư, nhà thuốc, ngân hàng, cầm đồ, hớt tóc, quần áo), chỗ ở
+(trọ, khách sạn, nhà nghỉ, căn hộ), bệnh viện, công an, bốn chỗ đặt quầy/mặt bằng, và bồn rửa tay trong nhà hàng.
+Chi tiết cơ chế + số đo ở **§4.49**.
 
 ### 4.36 Thanh thể lực hồi theo máu và pin (lượt 53)
 
@@ -1142,7 +1139,7 @@ công thức có `boil` đều đi qua lớp đã sửa.
 ### 4.44 Menu ẩn dựng sẵn bếp trà — vì sao “Chạy” trên ván mới không mở được nồi (lượt 61)
 
 Người chơi bấm mục test cũ (“Mở thẳng bước *Cho nguyên liệu* của nồi”) trên **ván mới** và vẫn thấy nồi trống.
-Đo bằng probe `tools/probe/steps/dev60.mjs` (mở menu ẩn thật: 7 lần chữ Cài đặt › `7777` › bấm nút *Chạy*):
+Đo bằng probe `tools/probe/steps/dev60.mjs` (mở menu ẩn thật: **8 lần** chữ Cài đặt › `438291` › bấm nút *Chạy* — mã và số lần bấm hiện nay; lúc đo năm đó là 7 lần › `7777`):
 
 | Thứ tự kiểm tra trong `Cook.prep()` | Ván mới có gì | Kết quả |
 |---|---|---|
@@ -1240,8 +1237,35 @@ gõ `4,3,8` rồi **Xoá** rồi `8,2,9,1` ⇒ menu mở (`đãMở: true`); gõ
 Test `tests/devpoints.test.ts`: gõ được **mọi** chữ số, `del`/`clear`, đủ 6 số sai thì xoá sạch và không lộ vị trí sai,
 và bài canh **nguồn** (không còn `startsWith` trong `devKey`) để lỗi này không quay lại.
 
+### 4.48 Xe ôm Chú Ba — ổng chở, hoặc gọi là ổng tới rước (lượt 66)
+
+Người chơi: *“làm xe ôm Chú Ba — gọi là ổng đến rước đi hoặc kêu khi gặp ổng”*. Trước lượt này `chu_ba` **chỉ** là một
+khách quen ăn trưa trong `REGULARS` (`src/game/stall.ts` thỉnh thoảng cho ghé), không có xe, không có chỗ đứng; tin bịa
+“đứng đầu hẻm” đã bị xoá từ lượt 52 vì nói về một người **không tồn tại ngoài phố**.
+
+**Nguyên tắc:** hai đường dùng, cùng một người, cùng một bảng giá —
+(a) **gặp ổng** dưới gầm cầu rồi nhờ chở; (b) **gọi điện** (số trong danh bạ) rồi 3 phút sau ổng chạy tới chỗ mình đứng.
+
+| Việc | Chỗ sửa | Ghi chú |
+|---|---|---|
+| Người thật | `data/people.ts` `FIXED.chu_ba` + `FIXED_ROLE.chu_ba` | da ngăm `0xb8804f`, nón bảo hiểm `hat: 3`; `npc.ts` tự dựng vì có neo `v_chu_ba` |
+| Chỗ đứng + xe | `world/side.ts` khối 7 | `b.bike()` + bạt che + biển **XE ÔM CHÚ BA** + ghế nhựa; neo ở (65,5; 98,4) — **giữa hai trụ cầu** (trụ ở x = 55 / 77), tránh bị cột che khi nhìn từ lều |
+| Giờ đứng | `data/hours.ts` `chu_ba: [5, 22.5]` | `npc.updFixed` ẩn ổng ngoài giờ; `sim/xeom.onDuty` dùng cùng mốc |
+| Luật giá | `sim/xeom.ts` (mới) | 3.000 / 5.000 / 8.000₫ theo quãng (<45 m / <95 m / xa hơn), +2.000 mưa, +2.000 chở gánh/xe đẩy, −1.000 (thân ≥ 25) / −2.000 (thân ≥ 60), sàn 2.000₫ |
+| Thời gian | `sim/xeom.rideMinutes` | 13 m/phút so với đi bộ 4,4 m/phút ⇒ nhanh ~3 lần; mỗi chuyến ít nhất 1 phút |
+| Gọi điện | `sim/phone.ts` `Contact.hot = 'xeom'` | Chú Ba vào danh bạ **một dòng** khi `g.met.chu_ba` hoặc đã bán cho ổng; xếp sau 2 tổng đài. 2 cuộc/ngày, cước `CALL_FEE`, còn `rel.owe` thì từ chối |
+| Hộp thoại | `game/acts.ts` `xeomMenu/xeomRide/xeomSmallTalk/phoneXeom/xeomTick/xeomReturn` | danh sách đích = `acts.places()` (cùng nguồn với Bản đồ), cách > 22 m; mỗi nút ghi giá + mét + phút xe/phút đi bộ |
+| Tới rước | `xeomTick` (gọi từ `Acts.update`) | đúng hẹn ⇒ dời `n.home` của ổng tới cạnh người chơi rồi mở bảng chỗ đi; người chơi đi khỏi > 7 m ⇒ `xeomReturn` trả ổng về gầm cầu |
+| Bản tin | `sim/news.ts` mục 9c | chỉ hiện khi `onDuty(g)`, nói đúng giá đang áp (mưa có phụ phí) — cùng nguyên tắc “tin phải thật” của lượt 30 |
+| Dịch chuyển thử | `game/devPoints.ts` `tp_chu_ba` | menu ẩn vẫn chỉ có nhóm `tp_…` (luật lượt 63) |
+
+**Đo:** `tsc` sạch · **679/679 test (57 tệp)** · probe `steps/xeom.mjs` (ảnh `out/xeom/01…04`): ổng ở `(65,5; 98,4)` `state='fixed'`,
+nói chuyện ⇒ 12 nút, giá 3.000/5.000/8.000₫; chọn “Vựa đầu mối Tám Lúa — 5.000₫ (52 m, xe 4 phút, đi bộ 12 phút)” ⇒ tiền 18.000 → 13.000,
+giờ 546 → 550, người chơi ở `(37,2; 55,1)`; gọi điện ⇒ hẹn +3 phút; +4 phút ⇒ ổng tới cách 2,3 m, mở bảng chỗ đi. `errors: none`.
+
 ## 7. Kiểm thử
 
+- `tests/xeom.test.ts` — lượt 66: Chú Ba là người thật (neo + xe + biển ở đúng gầm cầu, giờ 5–22h30), giá theo quãng/mưa/chở nặng, ơn thân quen + sàn 2.000₫, xe nhanh hơn đi bộ ~3 lần, gọi điện (cước, 2 lần/ngày, hết pin/ngoài giờ/nợ tiền cơm thì từ chối, hẹn 3 phút, hẹn quá 4 tiếng tự bỏ), danh bạ một dòng, tin radio chỉ hiện đúng giờ + đúng giá.
 - `tests/nau59.test.ts` — lượt 60: tia chạm của bàn nấu ăn cắt ở nhiều độ cao (sửa lỗi không cho được nguyên liệu vào nồi).
 - `tests/jobs59.test.ts` — lượt 59: trần việc làm thêm mỗi ngày (bốc cá 2 ca, chạy bàn 3 ca, vác 20 bao), đếm số còn lại không âm, reset qua ngày, và quét mã nguồn canh số chép tay + bảng việc làm đủ 7 dòng.
 - `tests/tron58.test.ts` — lượt 58: bánh tráng trộn có mini game riêng — 5 topping rải ngẫu nhiên mỗi ván, thứ tự do máy gọi, chấm điểm theo số lần chạm nhầm/chậm.
@@ -1377,6 +1401,63 @@ gọi 1900 1234 mất 15.000₫ và `scamTrip` trỏ đúng điểm hẹn; quay 
 **chỉ một lần**; `scamLoss` đúng khoảng 20k–200k và không bao giờ âm tiền; gọi xong thì hộp thư sạch tin lừa mà danh bạ
 vẫn giữ số; điểm hẹn đúng `SCAM_SPOT` và câu mời không còn nhắc "dây dưa". Probe `tools/probe/steps/hotline.mjs`
 (390×844) chạy 8 bước trên bằng cú bấm thật — bấm *"Thôi, quay về"* thì hộp thoại đóng hẳn, `fee: 0` — console sạch.
+
+### 4.49 Menu ẩn theo kịp game — 34 chỗ đi nhanh (lượt 67; bỏ cơ chế tua giờ ở lượt 68)
+
+Người chơi: *“um bạn chưa cập nhật menu ẩn và các tính năng đc sửa”* — đúng. Sau lượt 66, menu ẩn có ba chỗ lệch:
+
+**① Dòng “Phiên bản mới nhất” đứng nguyên ở bản lượt 62.** Câu đó là một chuỗi viết tay trong `devPoints.ts`
+(`Đá viên tan chậm 3 lần…`) nên suốt bốn lượt nó không nhắc gì tới đồ nghề mới. Nay `DEV_BUILD_TAG` lấy thẳng
+`CHANGELOG[0].tag`: thêm bản mới vào nhật ký là menu tự đúng, **không còn gì để quên**. Test canh cả giá trị lẫn
+nguồn (dòng khai phải chứa `CHANGELOG[0]`).
+
+**② Thiếu chỗ tới và đứng lệch.** Lượt 63 dọn menu còn 13 mục; nhiều nhân vật ngoài phố (vựa sỉ Tám Lúa, tạp hoá Cô Ba,
+quán cơm Bà Tư, nhà thuốc, ngân hàng, cầm đồ, hớt tóc, quần áo, trọ/khách sạn/nhà nghỉ, bệnh viện, công an, trà đá,
+vá xe, cô hát rong, bé đánh giày, Bin, nhóm đua xe đạp, quán net, quán cà phê) **không có mục nào**. Mục Chú Ba thì
+đặt `(a.x − 1,6; a.z + 1,8)` — lệch 2,4 m và quay mặt sai hướng. Nay có **34 mục**, mỗi mục khai `anchor` (neo thật
+trong `world.anchors`) và dùng chung `tpNear(anchor, label)`:
+
+| Việc | Trước | Sau |
+|---|---|---|
+| Chỗ đứng | toạ độ cứng, dễ lọt vào cột/quầy/kệ | `tpNear`: thử **5 khoảng cách × 10 hướng**, bỏ qua chỗ `world.blocked(x, z, 0.34)`, rồi **quay mặt vào neo** |
+| Danh sách | 13 mục viết tay | 34 mục; thêm nhân vật ngoài phố chỉ cần `di('tp_x', 'v_x', …)` một dòng |
+| Giờ trong ngày | — | **menu không đụng tới đồng hồ.** Lượt 67 có tua giờ tới giờ mở cửa; lượt 68 người chơi yêu cầu bỏ hẳn — xem khối dưới |
+| Neo | không ai canh | `DevAction.anchor` + test đối chiếu `b.anchor('v_…')` trong `src/world/{city,places,side}.ts` |
+| Nhãn nút khoá | viết cứng “7 lần” trong khi mã đòi 8 | đọc `${DEV_TAPS}` |
+
+**③ Nút khoá ghi sai số lần bấm** (“7 lần” trong khi `DEV_TAPS = 8`): nay nhãn lấy từ hằng số.
+
+**Đo** (probe `tools/probe/steps/dev67.mjs`, bấm **chuột thật**: 7 lần → chưa có bàn phím; lần 8 → bàn phím `1…9, del, 0, clear`
+với 6 chấm; gõ `438291` → menu mở, `nhóm: ["Địa điểm — tele nhanh"]`, `sốMục: 34`; bấm lần lượt **28 mục** có neo riêng và đo khoảng
+cách tới neo):
+
+| Mục | Neo đo | Cách | Kẹt? |
+|---|---|---|---|
+| `tp_equip` | `v_equip` | 1,70 m | không |
+| `tp_chu_ba` | `v_chu_ba` | **1,70 m** (trước 2,4 m) | không |
+| `tp_hobo` | `v_hobo` | 2,20 m | không |
+| `tp_canho` | `bell_canho` | 1,70 m | không |
+| `tp_bank` / `tp_hotel` / `tp_net` / `tp_cafe` | neo tương ứng | 1,70 m | không |
+| `tp_rap` / `tp_dua` / `tp_net` | `v_rap` / `v_dua` / `v_net` | 1,70 m | không |
+| các mục còn lại (28 mục có neo) | neo của người đó | 1,70 m | không |
+
+**Đồng hồ đứng yên (lượt 68).** Bản lượt 67 tua đồng hồ tới giờ mở cửa của chỗ sắp tới; người chơi đọc dòng nhật ký
+đó và yêu cầu **bỏ hẳn cơ chế**, không chỉ xoá câu chữ. Đúng là nên bỏ: menu dành cho người làm game, mà việc “đi nhanh”
+mà nhảy cả giờ trong ngày là **sửa luật chơi** — bỏ đói, bỏ mất khách, đổi cả thời tiết và lịch sinh hoạt của NPC.
+Nay `tpNear()` chỉ đặt chỗ đứng, **không** đọc/ghi `g.min`; `tp_equip` cũng thôi tự đẩy giờ lên 10h. Tới lúc nào thì
+gặp đúng chuyện lúc đó, y như tự đi bộ ra. Đã xoá `openNow()`, tuỳ chọn `hour`, hai import `PLACE_HOURS`/`SHOPS`, và
+`tests/devpoints.test.ts` canh bằng bài *“đi nhanh KHÔNG đụng tới đồng hồ”* (không `openNow`, không `hour?`, và
+phần `getDevSections` không được có `g.min =`).
+
+Bấm `tp_lavabo` khi chưa dựng nhà hàng ⇒ toast *“Cần dựng nhà hàng trước.”* (đúng ý). Bấm “Ẩn & khoá lại” rồi mở
+Cài đặt ⇒ **không** lộ menu, phải gõ mã lại. `errors: none`.
+Test: `tests/devpoints.test.ts` **17 bài** (tag = `CHANGELOG[0].tag` và không viết tay; mọi `anchor` có thật trong
+`src/world`; phủ đủ 27 neo nhân vật; chống kẹt + quay mặt vào neo; nhãn nút đọc `DEV_TAPS`), cả bộ **684 bài / 57 tệp**.
+
+**Cạm bẫy probe (ghi lại để lần sau khỏi mất thời gian):** `page.mouse.click()` của puppeteer chỉ nhận **số nguyên** —
+toạ độ lẻ (`770.375`) làm click chết với *“Failed to deserialize params.x”* mà **không** báo lỗi ở bước đó; và `clickEval`
+phải trả **mảng các điểm** `[[x, y]]` chứ không phải một điểm trần. Ngoài ra `ui.panel('settings')` gọi khi bảng **đang
+mở** là bấm-tắt nó (panel tự toggle) — muốn chắc thì kiểm `ui.modalName` trước.
 
 **Tiệm quần áo Cô Ngọc (lượt 28).** Sạp vải dựng giữa chợ (khối `1c` trong `side.ts`) **đã bỏ**; Cô Ngọc dọn vào một căn
 nhà có sẵn ở **mặt tiền tây Phố Trung Tâm** (`LOTS` 11W, cạnh Đồ Nghề Ba Tài) — nay là `kind: 'thoitrang'` dựng trong

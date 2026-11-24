@@ -1633,3 +1633,49 @@ Test: 8 bài mới trong `tests/devpoints.test.ts` (11 bài cho phần PIN) + b�
 **Đo:** `tsc` sạch · **666/666 test (56 tệp)** · probe `steps/devpin64.mjs` (bấm chuột thật): gõ `4,3,8` → **Xoá** → `8,2,9,1`
 ⇒ `đãMở: true`; sai 30 lần ⇒ “Sai quá 5 lần — chờ 30 giây rồi gõ lại.”; `errors: none`.
 
+## Lượt 66 — xe ôm Chú Ba ✅ đã xong
+
+Người chơi: “làm xe ôm Chú Ba — gọi là ổng đến rước đi, hoặc kêu khi gặp ổng”.
+
+**Sửa:** `sim/xeom.ts` (mới, luật thuần: giá theo quãng 3.000/5.000/8.000₫ + mưa 2.000 + chở nặng 2.000, ơn thân quen −1.000/−2.000,
+sàn 2.000₫, `rideMinutes` ≈ 13 m/phút so với đi bộ 4,4 m/phút, giờ đứng 5–22h30, mỗi ngày 2 cuộc gọi, hẹn 3 phút, tự bỏ hẹn quá 4 tiếng).
+`data/people.ts`: `FIXED.chu_ba` (da ngăm 0xb8804f, nón bảo hiểm) + `FIXED_ROLE.chu_ba` = “Chú xe ôm” + câu riêng trong `LINES.own`.
+`world/side.ts`: khối 7 dựng xe số (`b.bike`), bạt che, biển “XE ÔM CHÚ BA”, ghế nhựa, neo `v_chu_ba` ở (65,5; 98,4) — giữa hai trụ cầu
+để không bị cột che. `data/hours.ts` `chu_ba: [5, 22.5]`; `data/landmarks.ts` đích `xeom`.
+`game/acts.ts`: `case 'chu_ba'` → `xeomMenu()` (bảng chỗ đi, giá, phút lái/đi bộ), `xeomRide()`, `xeomSmallTalk()`, `phoneXeom()`,
+`xeomTick()` (đúng hẹn thì ổng chạy tới cạnh người chơi rồi mở bảng chỗ đi) + `xeomReturn()` (đi khỏi là ổng về gầm cầu).
+`sim/phone.ts`: `Contact.hot = 'xeom'`, Chú Ba vào danh bạ khi đã biết mặt (hoặc đã bán cho ổng) — **một dòng duy nhất**, xếp sau 2 tổng đài.
+`ui/phoneUI.ts`: dòng danh bạ riêng (còn mấy lần gọi, đang trên đường tới, mưa phụ phí). `sim/news.ts`: tin “Xe ôm dưới gầm cầu”
+chỉ hiện đúng giờ + đúng giá. `game/devPoints.ts`: thêm `tp_chu_ba`.
+
+**Đo:** `tsc` sạch · **679/679 test (57 tệp)** · probe `steps/xeom.mjs`: Chú Ba ở `(65,5; 98,4)` `state='fixed'`, đứng cạnh ổng hiện
+“Nói chuyện với chú xe ôm”, hộp thoại 12 nút (bảng giá 3.000/5.000/8.000₫), chọn “Vựa đầu mối Tám Lúa — 5.000₫” ⇒ tiền 18.000 → 13.000,
+giờ 546,0 → 550,0, người chơi ở `(37,2; 55,1)`; gọi điện ⇒ hẹn +3 phút; +4 phút ⇒ ổng tới cách 2,3 m và mở bảng chỗ đi. `errors: none`.
+
+## Lượt 67 — menu ẩn theo kịp game ✅ đã xong
+
+Người chơi: *“um bạn chưa cập nhật menu ẩn và các tính năng đc sửa”* — đúng, menu ẩn tụt lại sau lượt 66.
+
+**Sửa:** `game/devPoints.ts` — `DEV_BUILD_TAG` nay = `CHANGELOG[0].tag` (hết cảnh câu “Đá viên tan chậm…” đứng nguyên bốn lượt);
+`DevAction.anchor` để test canh neo; hàm mới `tpNear(anchor, label)` (5 khoảng cách × 10 hướng, bỏ chỗ `world.blocked`,
+quay mặt vào neo); nhóm tele từ **13 → 34 mục**
+(phủ mọi nhân vật cố định ngoài phố, mọi sạp/tiệm, chỗ ở, bệnh viện, công an, 4 chỗ đặt quầy, bồn rửa tay).
+`ui/panels.ts`: nhãn nút khoá đọc `${DEV_TAPS}` (trước ghi cứng “7 lần” trong khi mã đòi 8), dòng mô tả menu ghi số mục thật.
+`data/changelog.ts`: thêm bản **Lượt 67**, bỏ bản cũ nhất (Lượt 58). `tests/devpoints.test.ts`: 12 → **17 bài**;
+`tests/changelog.test.ts` cập nhật theo bản mới. `DESIGN.md`: viết lại §4.35, thêm **§4.49**; sửa §4.28 (nhóm “Mới nhất — Bậc 7”
+đã xoá từ lượt 63) và §4.44 (mã 7777 → 438291). `README.md`: mô tả menu ẩn mới.
+
+**Đo:** `tsc` sạch · **684/684 test (57 tệp)** · probe `steps/dev67.mjs` (bấm chuột thật): 7 lần → chưa có bàn phím, lần 8 → 12 phím
++ 6 chấm, gõ `438291` → menu mở `sốMục: 34`; 28 mục đều đứng **1,70 m** từ neo (Chú Ba trước 2,4 m), không mục nào `kẹt`;
+`tp_lavabo` báo “Cần dựng nhà hàng trước.”; “Ẩn & khoá lại” xong mở Cài đặt **không** lộ menu. `errors: none`.
+
+**Lượt 68 — bỏ cơ chế tua đồng hồ (người chơi yêu cầu).** Bản lượt 67 có `openNow()` tua giờ tới giờ mở cửa của chỗ
+sắp tới, và mục `tp_equip` tự đẩy `g.min` lên 10h. Người chơi đọc dòng nhật ký *“3 giờ sáng tới tiệm đồ nghề…”* và
+yêu cầu **bỏ hẳn cơ chế**, không chỉ xoá câu chữ. Đúng: “đi nhanh” mà nhảy cả giờ trong ngày là **sửa luật chơi**
+(bỏ đói, mất khách, đổi thời tiết, lệch lịch sinh hoạt NPC). Nay `tpNear()` chỉ đặt chỗ đứng, không đọc/ghi `g.min`;
+xoá `openNow()`, tuỳ chọn `hour`, hai import `PLACE_HOURS`/`SHOPS`; `tp_equip` về lại một dòng `di(...)`.
+`tests/devpoints.test.ts` thay bài “tự tua đồng hồ” bằng bài **“đi nhanh KHÔNG đụng tới đồng hồ”** (không `openNow`,
+không `hour?`, `getDevSections` không có `g.min =`, vẫn giữ chống kẹt + quay mặt vào neo). `tests/changelog.test.ts`
+canh bản mới nhất **không** còn chữ “tua”, và có câu “không đổi giờ”. Nhật ký Lượt 67 viết lại: bỏ dòng tua giờ, thêm
+dòng *“Đi nhanh chỉ đổi chỗ đứng, không đổi giờ trong ngày”*. `DESIGN.md` §4.49 + `README.md` sửa theo. `tsc` sạch,
+**684 bài / 57 tệp** xanh.

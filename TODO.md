@@ -1,12 +1,12 @@
 # Việc còn lại
 
-Danh sách những gì **chưa làm**, rà theo mã ngày 2026-11-21 (`main` = `a152a6f`, sau lượt 51). Đã xong: 60/60 món · 8/8 kiểu chỗ ở ·
-7/7 bậc kinh doanh · 8 thời tiết · 22 sự kiện · 75 nguyên liệu · 12 nơi bán · 37 món đồ nghề · 16 nhóm người ·
-11 khách quen · 44 nhân vật cố định · chuỗi 11 mục tiêu hướng dẫn · điện thoại · quán net · công an · bệnh viện ·
+Danh sách những gì **chưa làm**, rà lại theo mã ngày 2026-11-22 (`main` = `aa03236`, sau lượt 66). Đã xong: 60/60 món · 8/8 kiểu chỗ ở ·
+7/7 bậc kinh doanh · 8 thời tiết · 22 sự kiện · 81 nguyên liệu · 12 nơi bán · 37 món đồ nghề · 16 nhóm người ·
+11 khách quen · **45 nhân vật cố định** · xe ôm Chú Ba · chuỗi 11 mục tiêu hướng dẫn · điện thoại · quán net · công an · bệnh viện ·
 đua xe đạp · NPC sinh hoạt theo giờ · giao diện dễ đọc · 16 biểu cảm · 8 kiểu tóc · người phụ việc ·
 ngoại hình người chơi (góc nhìn thứ ba, cắt tóc, thời trang) · quán có chỗ ngồi (sáu ghế bàn gỗ, thực đơn theo buổi, gọi thêm) ·
 nhà hàng bình dân (8 ghế trong nhà kín, đặt bàn trước, phụ bếp, khách đoàn) ·
-chuỗi cửa hàng (chi nhánh thứ hai, người trông coi, sổ từng điểm) · giao người làm đi chợ mua nguyên liệu · báo cáo sắp hết đồ của người làm · bếp trưởng tự duyệt đặt bàn · vựa ve chai thứ hai (Bà Chín) · bấm chuông thì cửa mở · ba giao diện điện thoại · app Quản lý cửa hàng (bật/tắt bán từ xa, cảnh báo bán lỗ, công tắc khớp trạng thái thật, ân hạn 20 giây) · cảnh báo thiếu nguyên liệu nói rõ thiếu gì + mua ở đâu (chip HUD, bảng Quầy, nút Sơ chế) · giao diện điện thoại Android soát bằng probe 4 khổ (không còn tràn/cắt, vùng chạm ≥ 30 px) · hai tổng đài trong danh bạ: gọi 1080 nghe dự báo thời tiết ngày mai (2.000₫/lượt, 3 lượt/ngày), gọi 1900 1234 thì bị lừa — số chỉ hiện trong danh bạ sau khi nhận tin mời gọi, và chỉ dính một lần (quay về được) · sửa nút ở điểm hẹn (hộp thoại bị dựng lại mỗi khung hình), dời chỗ hẹn vào ngõ cụt sau chợ có thùng bỏ “lệ phí”, dọn sạp quần áo giữa chợ vào tiệm QUẦN ÁO CÔ NGỌC ở mặt tiền Phố Trung Tâm · màn hình điện thoại chạy hoạt ảnh ngay trên khung máy: cuộc gọi (chuông lan, nút Tắt máy), radio/nhạc (kim dò đài, cột sóng, chữ chạy), WAP (trang tự cuộn, thanh tải), tin nhắn (bong bóng đang gõ, bàn phím nhấp nháy) · ba bài nhạc riêng của máy đổi được nhạc nền (Bài khác / Tắt) · radio và WAP đọc tin thật trong ván (thời tiết, giá chợ đúng giá sạp, sự kiện, nợ, pin), WAP mỗi trang 5 tin + bảng giá · bỏ tin bịa “xe ôm Chú Ba đứng đầu hẻm”, tin khách quen chỉ hiện khi đã bán cho họ · dáng người – râu – nón mua được thật · câu thoại riêng cho 15 nhân vật cố định · ca sáng/chiều cho hai người phụ quầy · khách lựa hàng thật ở tạp hoá & MiniMart · người đi đường nhận ra người chơi giàu/túng/bị để ý · quán thường (bậc 3–5) có tab Nhân sự và giao được người đi chợ · bánh mì trong quầy để được 2 ngày (tăng 100%) · cảnh báo đồ cần lạnh để ở quầy không có tủ đá (bảng Kho quầy + app điện thoại) · dọn đồ hỏng thì báo đích danh món · lấy đồ trong kho quầy ra ở bất cứ đâu (tab Kho quầy trong Túi đồ, không cần đặt quầy ở chỗ bán) · nhật ký phát triển xem trong Cài đặt (6 bản gần nhất, có nhãn "mới") · bánh phở/bún/đồ nguội tăng gấp đôi hạn dùng (thịt cá tươi giữ nguyên) · tối ưu FPS cho điện thoại (mức “Vừa” nay 1 điểm ảnh, không bóng đổ: đo thật 5,5 → 14,1 FPS; tự hạ đồ hoạ thông minh hơn) · chơi offline bằng service worker + nút “Lưu để chơi offline” trong Cài đặt · rau củ ở chợ tăng hạn dùng 300–350 % (giữ nguyên khoai tây/khoai lang/hành tây) · ăn uống ở quán no lâu 250 % · bệnh đau bụng (đồ mua sẵn, nước vòi công cộng, nước quán cà phê) + thuốc đau bụng ở nhà thuốc, món tự nấu ≥ 2 sao gần như không bị · thịt cá hải sản tươi để được 2 ngày trong quầy không tủ (trước 3,5–5 giờ) · mức “Cao” trên điện thoại giữ nguyên 2 điểm ảnh + bóng 2048 (chỉ các mức dưới 1,5 pixel bị hạ trần) · mini game bánh tráng trộn (5 topping rải ngẫu nhiên mỗi ván, máy gọi tên thứ nào thì chạm đúng đĩa đó) · trần việc làm thêm mỗi ngày (2 ca bốc cá, 3 ca chạy bàn, 20 bao vác) + bảng việc làm đọc đúng số thật · sửa lỗi chạm chén không vào được nồi ở mọi món nấu/ninh/luộc/pha (tia chạm nhiều độ cao) · menu ẩn dựng sẵn bếp + nồi + than cho trà đá và trà chanh (ván mới 18.000₫ trước đây không mở nổi nồi) · đá viên tan chậm 3 lần + hiện “độ lạnh” thay vì “hỏng” · sửa bàn phím mã PIN của menu ẩn (gõ được mọi số, có nút xoá, mã 6 số, khoá khi sai nhiều) · **666 bài kiểm thử / 56 tệp**.
+chuỗi cửa hàng (chi nhánh thứ hai, người trông coi, sổ từng điểm) · giao người làm đi chợ mua nguyên liệu · báo cáo sắp hết đồ của người làm · bếp trưởng tự duyệt đặt bàn · vựa ve chai thứ hai (Bà Chín) · bấm chuông thì cửa mở · ba giao diện điện thoại · app Quản lý cửa hàng (bật/tắt bán từ xa, cảnh báo bán lỗ, công tắc khớp trạng thái thật, ân hạn 20 giây) · cảnh báo thiếu nguyên liệu nói rõ thiếu gì + mua ở đâu (chip HUD, bảng Quầy, nút Sơ chế) · giao diện điện thoại Android soát bằng probe 4 khổ (không còn tràn/cắt, vùng chạm ≥ 30 px) · hai tổng đài trong danh bạ: gọi 1080 nghe dự báo thời tiết ngày mai (2.000₫/lượt, 3 lượt/ngày), gọi 1900 1234 thì bị lừa — số chỉ hiện trong danh bạ sau khi nhận tin mời gọi, và chỉ dính một lần (quay về được) · sửa nút ở điểm hẹn (hộp thoại bị dựng lại mỗi khung hình), dời chỗ hẹn vào ngõ cụt sau chợ có thùng bỏ “lệ phí”, dọn sạp quần áo giữa chợ vào tiệm QUẦN ÁO CÔ NGỌC ở mặt tiền Phố Trung Tâm · màn hình điện thoại chạy hoạt ảnh ngay trên khung máy: cuộc gọi (chuông lan, nút Tắt máy), radio/nhạc (kim dò đài, cột sóng, chữ chạy), WAP (trang tự cuộn, thanh tải), tin nhắn (bong bóng đang gõ, bàn phím nhấp nháy) · ba bài nhạc riêng của máy đổi được nhạc nền (Bài khác / Tắt) · radio và WAP đọc tin thật trong ván (thời tiết, giá chợ đúng giá sạp, sự kiện, nợ, pin), WAP mỗi trang 5 tin + bảng giá · bỏ tin bịa “xe ôm Chú Ba đứng đầu hẻm”, tin khách quen chỉ hiện khi đã bán cho họ · dáng người – râu – nón mua được thật · câu thoại riêng cho 15 nhân vật cố định · ca sáng/chiều cho hai người phụ quầy · khách lựa hàng thật ở tạp hoá & MiniMart · người đi đường nhận ra người chơi giàu/túng/bị để ý · quán thường (bậc 3–5) có tab Nhân sự và giao được người đi chợ · bánh mì trong quầy để được 2 ngày (tăng 100%) · cảnh báo đồ cần lạnh để ở quầy không có tủ đá (bảng Kho quầy + app điện thoại) · dọn đồ hỏng thì báo đích danh món · lấy đồ trong kho quầy ra ở bất cứ đâu (tab Kho quầy trong Túi đồ, không cần đặt quầy ở chỗ bán) · nhật ký phát triển xem trong Cài đặt (6 bản gần nhất, có nhãn "mới") · bánh phở/bún/đồ nguội tăng gấp đôi hạn dùng (thịt cá tươi giữ nguyên) · tối ưu FPS cho điện thoại (mức “Vừa” nay 1 điểm ảnh, không bóng đổ: đo thật 5,5 → 14,1 FPS; tự hạ đồ hoạ thông minh hơn) · chơi offline bằng service worker + nút “Lưu để chơi offline” trong Cài đặt · rau củ ở chợ tăng hạn dùng 300–350 % (giữ nguyên khoai tây/khoai lang/hành tây) · ăn uống ở quán no lâu 250 % · bệnh đau bụng (đồ mua sẵn, nước vòi công cộng, nước quán cà phê) + thuốc đau bụng ở nhà thuốc, món tự nấu ≥ 2 sao gần như không bị · thịt cá hải sản tươi để được 2 ngày trong quầy không tủ (trước 3,5–5 giờ) · mức “Cao” trên điện thoại giữ nguyên 2 điểm ảnh + bóng 2048 (chỉ các mức dưới 1,5 pixel bị hạ trần) · mini game bánh tráng trộn (5 topping rải ngẫu nhiên mỗi ván, máy gọi tên thứ nào thì chạm đúng đĩa đó) · trần việc làm thêm mỗi ngày (2 ca bốc cá, 3 ca chạy bàn, 20 bao vác) + bảng việc làm đọc đúng số thật · sửa lỗi chạm chén không vào được nồi ở mọi món nấu/ninh/luộc/pha (tia chạm nhiều độ cao) · menu ẩn dựng sẵn bếp + nồi + than cho trà đá và trà chanh (ván mới 18.000₫ trước đây không mở nổi nồi) · đá viên tan chậm 3 lần + hiện “độ lạnh” thay vì “hỏng” · sửa bàn phím mã PIN của menu ẩn (gõ được mọi số, có nút xoá, mã 6 số, khoá khi sai nhiều) · **menu ẩn theo kịp game (lượt 67): 34 chỗ đi nhanh tới đúng người, đứng sát 1,7 m, dòng “bản mới nhất” đọc từ nhật ký** · **684 bài kiểm thử / 57 tệp**.
 
 ---
 
@@ -20,28 +20,25 @@ chuỗi cửa hàng (chi nhánh thứ hai, người trông coi, sổ từng đi�
 
 `FUTURE_TIERS` trong `src/data/gear.ts` nay là mảng rỗng — nhánh kinh doanh hết bậc. Còn thiếu của bậc 7: **nhiều chi nhánh cùng lúc** (hiện đúng 1), nâng cấp riêng cho chi nhánh (máy tính tiền, tủ lạnh, bảng menu), và **quản lý qua điện thoại** thay vì phải chạy tới quầy.
 
-## 2. Xe ôm Chú Ba — chưa làm, mới là ý tưởng
+## 2. Xe ôm Chú Ba — ✅ đã xong (lượt 66)
 
-Hiện **Chú Ba xe ôm** chỉ là khách quen ăn trưa (`REGULARS.chu_ba`, giờ 11,5, thích `com`/`nuoc`), do `src/game/stall.ts`
-thỉnh thoảng cho spawn. **Không có** xe, không có chỗ đứng, không có dịch vụ chở khách, và `src/sim/news.ts` đã bỏ câu bịa
-“đứng đầu hẻm từ 5 giờ”. Muốn thành tính năng thật thì:
+**Chú Ba nay là người thật** dưới gầm cầu (neo `v_chu_ba`, giờ 5–22h30), có xe số dựng nghiêng, biển **XE ÔM CHÚ BA**,
+ghế nhựa chờ khách. Hai đường dùng, cùng một bảng giá: **gặp ổng** rồi nhờ chở, hoặc **gọi điện** (số trong danh bạ) thì
+3 phút sau ổng chạy tới chỗ mình đứng.
 
-- [ ] **Dựng xe & chỗ đứng**: thêm `xe_om` vào `FIXED` (`src/data/people.ts`) + anchor `v_xe_om` trong `src/world/places.ts`
-      (đầu hẻm lô `02E`, tránh spot `hem` của Hùng Sẹo) — `src/game/npc.ts:80` chỉ tạo NPC cố định khi có anchor.
-      Cần thêm mô hình xe số + nón bảo hiểm (2 nón) cạnh NPC.
-- [ ] **Bấm vào xe/Chú Ba để đi nhờ**: bảng giá theo khoảng cách (ví dụ 3.000₫ trong xóm, 5.000₫ sang phố bên, 8.000₫ ra chợ,
-      +2.000₫ nếu trời mưa), trả tiền qua `R.spend`, tốn thời gian theo quãng đường (nhanh hơn đi bộ ~3 lần).
-- [ ] **Chọn điểm đến**: dùng lại danh sách của Bản đồ (`ctx.acts.places()`) hoặc chỉ cho tới các điểm đã ghim (`acts.way`).
-      Đi nhờ xe thì đặt vị trí người chơi tại cửa địa điểm, không cắt cảnh.
-- [ ] **Gọi bằng điện thoại**: thêm mục riêng trong danh bạ (`src/sim/phone.ts`, chỗ `out.unshift` hai tổng đài) — “Chú Ba xe ôm”,
-      gọi thì Chú Ba chạy tới điểm hẹn gần nhất sau ~2–4 phút trong game; nếu đang mưa/khuya thì phụ phí hoặc từ chối.
-      Tôn trọng giới hạn một cuộc/ngày như `call()` hiện có, hoặc cho gọi lại nhưng tính thêm cước.
-- [ ] **Quan hệ & giá**: khách quen thân (`g.rel.chu_ba.v` cao) thì bớt 1.000–2.000₫, thỉnh thoảng chở miễn phí; uy tín thấp thì
-      đòi trả trước. Ăn chịu (`owe`) chưa trả thì Chú Ba từ chối chở.
-- [ ] **Nói đúng sự thật vào bản tin**: khi đã có NPC thật thì mới thêm lại tin radio/WAP về xe ôm, và tin phải lấy giờ/giá thật
-      từ dữ liệu NPC (cùng nguyên tắc với `news.ts` hiện nay).
-- [ ] Test: `tests/xeom.test.ts` — giá theo quãng/tình trạng mưa, trừ tiền đúng, không cho đi khi thiếu tiền, gọi điện giới hạn
-      ngày, thân thiết thì giảm giá, tin radio chỉ xuất hiện khi NPC tồn tại. Probe ảnh NPC + xe ở đầu hẻm, bảng chọn điểm đến.
+- [x] Dựng xe & chỗ đứng: `FIXED.chu_ba` + neo `v_chu_ba` (giữa hai trụ cầu để cột không che), xe máy + bạt + biển + ghế.
+- [x] Bấm vào Chú Ba để đi nhờ: bảng giá 3.000 / 5.000 / 8.000₫ theo quãng, +2.000₫ mưa, +2.000₫ chở gánh/xe đẩy; trả qua `R.spend`; xe nhanh hơn đi bộ ~3 lần (13 m/phút vs 4,4 m/phút).
+- [x] Chọn điểm đến: dùng `ctx.acts.places()` (cùng nguồn với Bản đồ), chỉ hiện chỗ cách > 22 m; đặt người chơi ở cửa đích, không cắt cảnh.
+- [x] Gọi bằng điện thoại: `Contact.hot = 'xeom'` trong `sim/phone.ts`, 2 cuộc/ngày, có cước, còn nợ tiền cơm thì từ chối, khuya thì ổng về nhà.
+- [x] Quan hệ & giá: thân ≥ 25 bớt 1.000₫, ≥ 60 bớt 2.000₫ (sàn 2.000₫).
+- [x] Bản tin: mục 9c trong `sim/news.ts` — chỉ nói khi ổng đang đứng đó, đúng giá đang áp.
+- [x] Test `tests/xeom.test.ts` (13 bài) + probe `tools/probe/steps/xeom.mjs` (ảnh `out/xeom/`).
+
+Còn để lượt sau (chưa làm, không nằm trong yêu cầu lượt 66):
+
+- [ ] Chở **khách của quán** đi giùm (giao hàng tận nơi bằng xe ôm) — hiện xe chỉ dùng để đi lại.
+- [ ] Ổng **nhớ** mình đi đâu nhiều nhất và tự gợi ý chỗ đó ("lại ra chợ hả con?").
+- [ ] Trời mưa to thì ổng có thể **từ chối** chạy tuyến xa (hiện chỉ phụ phí).
 
 ## 3. Ông Bảy gợi ý đúng lúc — ✅ đã xong (lượt 52)
 
@@ -76,7 +73,7 @@ Còn thiếu (để lượt sau, chưa làm):
 
 - **Chưa đo trên máy yếu thật**: người chơi báo máy chạy trên 50 khung hình/giây nhưng chưa rõ máy nào.
 - Khi cần tối ưu: gộp các khối cơ thể NPC thành một lưới, dùng instancing cho đồ vật lặp lại (ghế, cây, xe), bỏ sương mù theo điểm ảnh ở mức đồ hoạ thấp, thêm LOD cho khu ở xa.
-- **Tách gói JavaScript**: hiện một tệp khoảng 1.335 kB (nén còn 420 kB — đo 2026-11-21). Nên tách phần dựng thành phố ra khỏi phần giao diện.
+- **Tách gói JavaScript**: hiện một tệp khoảng 1.379 kB (nén còn 436 kB — đo 2026-11-22 sau lượt 68, `docs/assets/index-y1_Qt9dS.js`). Nên tách phần dựng thành phố ra khỏi phần giao diện.
 - **Báo cáo của người làm**: ✅ đã báo sắp hết nguyên liệu + gợi ý đi chợ + tự duyệt đặt bàn; ✅ app điện thoại đã báo **giá bán lỗ** so với giá vốn và bật/tắt bán từ xa. Còn thiếu: báo **bàn đặt trước bị trùng giờ / quá chỗ** và tuỳ chọn **chỉ nhận bàn ≤ N người**.
 - **Đi chợ thuê người**: mới có một kiểu chuyến (mua theo món cần, giá tốt nhất trong giờ). Còn thiếu: **mặc cả hộ** (người làm có thể trả giá theo độ thân với người bán), **mua theo danh sách tự soạn** (tự chọn từng nguyên liệu + số lượng), **đi chợ bị mưa/ kẹt xe nên về muộn**, và **mua hộ cho chi nhánh** (hiện người trông coi vẫn chất hàng về kho quầy chính).
 - ✅ **Chơi ngoại tuyến** (lượt 40): service worker `public/sw.js` + nút “Lưu để chơi offline” trong Cài đặt; mất mạng vẫn mở được (đã chạy thử, xem `core/offline.ts`).
@@ -102,3 +99,15 @@ Còn thiếu (để lượt sau, chưa làm):
 - Bảng "Nợ & khách quen" chưa có nút nhắc nợ qua điện thoại (chỉ nhắc khi gặp mặt).
 - Đã xoá `HANDOFF.md` (bàn giao lượt cờ vua, số liệu 292 bài đã lỗi thời), 13 ảnh lẻ ở `anh_ket_qua/` không tài liệu nào dùng, và 2 probe chưa từng được gọi (`hatrong.mjs`, `staff_anim.mjs`) — đừng tìm lại.
 - Chưa có bảng thành tích / thống kê sau khi chơi xong (mới có tổng kết cuối ngày).
+
+## 9. Việc còn lại sau các lượt gần đây (58–64)
+
+- **Chạm trên máy cảm ứng thật chưa kiểm**: lỗi “chén không vào nồi” (lượt 60) đã sửa và đo bằng probe + chuột thật,
+  nhưng chưa ai thử bằng **ngón tay thật** trên điện thoại/tablet. Máy ảo chỉ giả lập cảm ứng được.
+- **Menu ẩn chỉ còn dịch chuyển nhanh** (lượt 63): không còn mục thử tính năng nào, nên muốn thử nhanh một tính năng mới
+  thì phải viết probe trong `tools/probe/steps/` (xem `PLAYBOOK.md` §6.2). Nếu sau này cần mục thử thì thêm lại có chủ đích.
+- **Mã PIN menu ẩn `438291`** (lượt 64) là mã chọn ngẫu nhiên, **không mang ý nghĩa gì**. Muốn mã riêng (ngày kỷ niệm,
+  số nhà…) thì chỉ cần đổi `DEV_PIN` trong `src/game/devPoints.ts` + câu trong `README.md`; test canh theo hằng số đó.
+- **Đá viên tan chậm 3 lần** (lượt 62) mới áp cho `da`. Nếu thấy hợp lý thì có thể áp tương tự cho các món đông lạnh khác
+  (hiện chỉ có đá), nhưng chưa có món nào khác trong bảng cần.
+

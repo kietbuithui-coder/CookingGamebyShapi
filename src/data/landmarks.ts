@@ -54,6 +54,8 @@ export const LANDMARK_LIST: Landmark[] = [
   { id: 'wash_park', name: 'Nhà tắm công viên', anchor: 'wash_park', always: true },
   { id: 'shark', name: 'Hùng Sẹo (vay nóng)', anchor: 'v_shark' },
   { id: 'camp', name: 'Gầm cầu (lều của bạn)', anchor: 'bed_gamcau', always: true },
+  // Chú Ba xe ôm đứng suốt ngày dưới gầm cầu — neo riêng để Bản đồ ghim đúng chỗ ổng đứng.
+  { id: 'xeom', name: 'Chú Ba xe ôm', anchor: 'v_chu_ba' },
   { id: 'board', name: 'Bảng việc làm', anchor: 'board', always: true },
   { id: 'dock', name: 'Bến bốc hàng', anchor: 'v_dock' },
   // Chỗ dựng quầy: dùng toạ độ của `SPOTS`, không có neo riêng.

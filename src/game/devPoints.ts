@@ -1,4 +1,4 @@
-// MENU ẨN (mở bằng cách bấm 7 lần vào chữ "Cài đặt", rồi nhập mã PIN của dev).
+// MENU ẨN (mở bằng cách bấm DEV_TAPS = 8 lần vào chữ "Cài đặt", rồi nhập mã PIN của dev).
 // Lưu ý bảo trì (lượt 63): người chơi yêu cầu XOÁ HẾT mục test, menu chỉ còn nhóm "Địa điểm — tele nhanh".
 // Đừng thêm mục thử tính năng vào đây nữa — muốn thử thì viết probe trong tools/probe/steps/.
 import { ctx, QUALITY, saveSettings } from './ctx';
@@ -12,14 +12,21 @@ import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
 import { advice, destOpen, nowText } from '../sim/advice';
 import { LANDMARK_BY_ID } from '../data/landmarks';
-import { SHOPS } from '../data/shops';
+import { CHANGELOG } from '../data/changelog';
 import { money } from '../core/util';
 const PUIphone = () => PUI;
 
-export const DEV_BUILD_TAG = 'Đá viên tan chậm 3 lần và hiển thị theo độ lạnh thay vì “hỏng”; menu ẩn đã dọn, chỉ còn dịch chuyển nhanh'
+/**
+ * Dòng “Phiên bản mới nhất” trong menu ẩn.
+ * Lượt 66 người chơi báo *“chưa cập nhật menu ẩn”*: câu này là một chuỗi viết tay nên nó đứng
+ * nguyên ở bản lượt 62 (đá viên tan chậm) suốt bốn lượt, trong khi menu đã thêm Chú Ba xe ôm.
+ * Nay lấy thẳng `CHANGELOG[0].tag` — thêm bản mới vào nhật ký là menu ẩn tự đúng, không có gì để quên.
+ * `tests/devpoints.test.ts` canh đúng điều đó.
+ */
+export const DEV_BUILD_TAG = CHANGELOG[0]?.tag ?? '';
 
 /**
- * MÃ PIN CỦA MENU ẨN. Bấm 7 lần chữ "Cài đặt" chỉ mở bàn phím số; nhập đúng mã này mới thấy menu.
+ * MÃ PIN CỦA MENU ẨN. Bấm 8 lần chữ "Cài đặt" (`DEV_TAPS`) chỉ mở bàn phím số; nhập đúng mã này mới thấy menu.
  * Đây KHÔNG phải bảo mật (mã nằm trong gói JavaScript, ai mở DevTools cũng thấy) — chỉ để người chơi
  * không vô tình mở trúng bảng dành cho người làm game rồi tưởng là tính năng của game.
  *
@@ -64,6 +71,12 @@ export interface DevAction {
   id: string;
   label: string;
   sub: string;
+  /**
+   * Neo trong `world.anchors` mà mục này đưa người chơi tới (chỉ mục đi nhanh mới có).
+   * `tests/devpoints.test.ts` canh trường này: mọi mục `tp_…` phải khai một cái neo có thật trong `src/world`,
+   * để lần sau ai dời/xoá nhân vật ngoài phố là test đỏ ngay chứ không đợi người chơi bấm hụt.
+   */
+  anchor?: string;
   tone?: 'green' | 'yellow' | 'red';
   /** Đóng bảng Cài đặt sau khi bấm (mặc định true cho dịch chuyển / test trực tiếp ngoài phố). */
   closePanel?: boolean;
@@ -79,6 +92,31 @@ function tpTo(x: number, z: number, yaw = 0, msg?: string) {
   ctx.player.place(x, z, yaw);
   ctx.acts.way = null;
   if (msg) toast(msg, 'info', 'pin');
+}
+
+/**
+ * Đứng CẠNH một cái neo rồi quay mặt vào đó (mặc định cách 1,7 m).
+ * Toạ độ cứng rất dễ rơi vào cột cầu, quầy, kệ hay vách kính — đã gặp ở Chú Ba và ở sạp chợ — nên thử năm
+ * khoảng cách × mười hướng, chỗ nào đi được thì đứng. Neo lấy từ `world.anchors` thật, nên dời nhân vật ngoài
+ * phố là menu đi theo.
+ *
+ * **Không đụng tới đồng hồ.** Bản lượt 67 có tua giờ tới giờ mở cửa của chỗ sắp tới; người chơi yêu cầu bỏ
+ * hẳn (lượt 68) — đi nhanh mà nhảy cả giờ trong ngày là sửa cả luật chơi. Nơi đóng cửa thì tới đúng lúc nó
+ * đóng, đúng như khi tự đi bộ ra đó.
+ */
+function tpNear(anchor: string, label: string, opt: { d?: number; msg?: string } = {}) {
+  const a = ctx.world.anchors[anchor];
+  if (!a) { toast(`Không thấy chỗ ${label} ngoài phố.`, 'warn'); return; }
+  const base = opt.d ?? 1.7, msg = opt.msg ?? `Đã tới ${label}.`;
+  for (const d of [base, base + 0.4, base - 0.3, base + 0.9, base + 1.5]) {
+    for (const ang of [0, 0.5, -0.5, 1.0, -1.0, Math.PI, Math.PI / 2, -Math.PI / 2, 2.2, -2.2]) {
+      const x = a.x + Math.sin(ang) * d, z = a.z + Math.cos(ang) * d;
+      if (ctx.world.blocked(x, z, 0.34)) continue;
+      tpTo(x, z, Math.atan2(a.x - x, a.z - z), msg);
+      return;
+    }
+  }
+  toast(`Chỗ ${label} chật quá, không tìm được chỗ đứng cạnh.`, 'warn');
 }
 
 /** Đi tới điểm đặt quầy/mặt bằng theo id trong SPOTS (đứng lùi ra một chút, quay vào quầy). */
@@ -147,43 +185,53 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
 }
 
 export function getDevSections(): DevSection[] {
+  // Mọi mục đi nhanh đều đứng CẠNH một cái neo thật (`tpNear`) và khai `anchor` để test canh neo còn tồn tại.
+  // Không mục nào được đụng tới `g.min` — đi nhanh chỉ đổi chỗ đứng, không đổi giờ trong ngày.
+  // Thêm nhân vật ngoài phố chỉ cần thêm một dòng ở đây.
+  const di = (id: string, anchor: string, label: string, sub: string, opt: { d?: number } = {}) =>
+    ({ id, anchor, label, sub, run: () => tpNear(anchor, label, opt) });
   return [
     {
       title: 'Địa điểm — tele nhanh',
       items: [
-        { id: 'tp_equip', label: 'Tiệm Đồ Nghề Ba Tài', sub: 'Mở giờ 10h00 rồi tới quầy mua đồ nghề & nâng cấp', run: () => {
-          const g = ctx.g;
-          g.min = Math.max(g.min, 10 * 60);
-          if (g.min >= 19 * 60) g.min = 10 * 60;
-          const a = ctx.world.anchors.v_equip;
-          if (a) tpTo(a.x, a.z + 1.4, Math.PI, 'Đã tới tiệm Đồ Nghề Ba Tài.');
-        } },
+        // ── mua bán, đồ nghề ──
+        di('tp_equip', 'v_equip', 'Tiệm Đồ Nghề Ba Tài', 'Quầy mua đồ nghề & nâng cấp — mở 7h–20h'),
+        di('tp_mart', 'v_mart', 'MiniMart 24h', 'Chỗ mua đồ ăn/nguyên liệu lúc khuya mà quán khác đóng'),
+        di('tp_wholesale', 'v_wholesale', 'Vựa đầu mối Tám Lúa', 'Mua sỉ — giá rẻ hơn chợ, mở từ 3 giờ sáng'),
+        di('tp_kiosk', 'v_kiosk', 'Tạp hoá Cô Ba', 'Gạo, mắm muối, than, gas, nước đá — ngay Xóm Lao Động'),
+        di('tp_eatery', 'v_eatery', 'Quán cơm Bà Tư', 'Ăn cho no, nghe chuyện trong xóm'),
+        di('tp_pharmacy', 'v_pharmacy', 'Nhà thuốc An Tâm', 'Thuốc đau bụng, bông băng'),
+        di('tp_bank', 'v_bank', 'Ngân hàng', 'Vay vốn, trả nợ, gửi tiền'),
+        di('tp_pawn', 'v_pawn', 'Cầm đồ Chú Lâm', 'Cắm đồ lúc túng, chuộc lại sau'),
+        di('tp_hot_toc', 'v_hot_toc', 'Tiệm hớt tóc', 'Cắt tóc, đổi kiểu đầu'),
+        di('tp_thoi_trang', 'v_thoi_trang', 'Tiệm quần áo Cô Ngọc', 'Mua đồ mặc cho góc nhìn thứ ba'),
+        // ── chỗ đặt quầy / mặt bằng ──
         { id: 'tp_matbang_tb', label: 'Mặt bằng Phố Văn Phòng', sub: 'Chỗ dựng quán ăn nhỏ / quán có chỗ ngồi / nhà hàng', run: () => tpSpot('matbang_tb', 'Mặt bằng Phố Văn Phòng') },
         { id: 'tp_matbang_dc', label: 'Mặt bằng Khu Căn Hộ', sub: 'Chỗ dựng quán ăn nhỏ / quán có chỗ ngồi / nhà hàng', run: () => tpSpot('matbang_dc', 'Mặt bằng Khu Căn Hộ') },
-        { id: 'tp_scrap2', label: 'Vựa ve chai Bà Chín', sub: 'Khu Dân Cư — bán ve chai cho tiện, khỏi chạy về Xóm Lao Động', run: () => {
-          const g = ctx.g; g.min = Math.max(g.min, 7 * 60);
-          const a = ctx.world.anchors.v_scrap2;
-          if (a) tpTo(a.x, a.z + 1.6, Math.PI, 'Đã tới vựa ve chai Bà Chín.');
-        } },
-        { id: 'tp_canho', label: 'Cửa căn hộ An Bình', sub: 'Bấm chuông gọi Cô Hạnh ra nói chuyện thuê / mua căn hộ', run: () => {
-          const a = ctx.world.anchors.bell_canho;
-          if (a) tpTo(a.x + Math.sin(a.yaw) * 1.9, a.z + Math.cos(a.yaw) * 1.9, a.yaw + Math.PI, 'Đã tới cửa căn hộ An Bình.');
-        } },
         { id: 'tp_cho', label: 'Cổng Chợ', sub: 'Chỗ đặt sạp / quán ăn nhỏ, và là một chỗ mở chi nhánh', run: () => tpSpot('cho', 'Cổng Chợ') },
         { id: 'tp_cv', label: 'Cổng Công Viên', sub: 'Chỗ đặt quầy thường ngày, cũng mở được chi nhánh', run: () => tpSpot('cv', 'Cổng Công Viên') },
         { id: 'tp_road', label: 'Giữa đường lớn', sub: 'Làn xe chạy ở ngã tư Phố Văn Phòng — coi chừng xe tông', run: () => tpTo(CORR[1], CORR[0] + 12, 0, 'Đang đứng giữa lòng đường — coi chừng xe tông!') },
-        { id: 'tp_ongtu', label: 'Bàn cờ Ông Tư', sub: 'Ghế đánh cờ cạnh hồ công viên', run: () => {
-          const a = ctx.world.anchors.v_danh_co;
-          if (a) tpTo(a.x, a.z - 0.9, 0, 'Đã tới bàn cờ của Ông Tư.');
-        } },
-        { id: 'tp_hobo', label: 'Gầm cầu — Ông Bảy', sub: 'Chỗ hỏi lời khuyên; ban đêm có thùng lửa sưởi', run: () => {
-          const a = ctx.world.anchors.v_hobo;
-          if (a) tpTo(a.x, a.z + 2.2, Math.PI, 'Đã tới gầm cầu — chỗ Ông Bảy ngồi.');
-        } },
-        { id: 'tp_mart', label: 'MiniMart 24h', sub: 'Chỗ mua đồ ăn/nguyên liệu lúc khuya mà quán khác đóng', run: () => {
-          const a = ctx.world.anchors.v_mart;
-          if (a) tpTo(a.x, a.z + 1.5, Math.PI, 'Đã tới MiniMart 24h.');
-        } },
+        // ── chỗ ở, giấy tờ ──
+        di('tp_canho', 'bell_canho', 'Cửa căn hộ An Bình', 'Bấm chuông gọi Cô Hạnh ra nói chuyện thuê / mua căn hộ'),
+        di('tp_tro', 'v_tro', 'Nhà trọ', 'Phòng trọ rẻ, có tủ lạnh'),
+        di('tp_hotel', 'v_hotel', 'Khách sạn', 'Ngủ một đêm cho lại sức, có buồng tắm'),
+        di('tp_motel', 'v_motel', 'Nhà nghỉ', 'Nghỉ vài tiếng cho đỡ mệt'),
+        di('tp_hospital', 'v_hospital', 'Bệnh viện', 'Khám bệnh, mua thuốc, nằm giường'),
+        di('tp_police', 'v_police', 'Công an khu vực', 'Bị để ý thì tới đây'),
+        // ── người quen ngoài phố ──
+        di('tp_hobo', 'v_hobo', 'Gầm cầu — Ông Bảy', 'Chỗ hỏi lời khuyên; ban đêm có thùng lửa sưởi', { d: 2.2 }),
+        di('tp_chu_ba', 'v_chu_ba', 'Chú Ba xe ôm', 'Gầm cầu — nhờ chở đi, hoặc nói chuyện để lấy số trong danh bạ'),
+        di('tp_tra_da', 'v_tra_da', 'Quán trà đá Cô Thắm', 'Ngồi nghỉ, nghe chuyện trong xóm'),
+        di('tp_sua_xe', 'v_sua_xe', 'Chú Hậu vá xe', 'Vá xe, bơm hơi ngoài lề đường'),
+        di('tp_hat_rong', 'v_hat_rong', 'Cô Hồng hát rong', 'Nghe hát, bỏ tiền vào thùng ủng hộ'),
+        di('tp_danh_co', 'v_danh_co', 'Bàn cờ Ông Tư', 'Ghế đánh cờ cạnh hồ công viên'),
+        di('tp_danh_giay', 'v_danh_giay', 'Bé Bo đánh giày', 'Đánh giày 5.000₫ ở vỉa hè phố bến xe'),
+        di('tp_rap', 'v_rap', 'Góc nhảy của Bin', 'Sàn các-tông dưới gầm cầu, cạnh tường vẽ'),
+        di('tp_dua', 'v_dua', 'Chỗ đua xe đạp', 'Ba tay đua tập ở công viên, 14h30–18h'),
+        di('tp_net', 'v_net', 'Quán net', 'Chơi game, lướt web, sạc nhờ'),
+        di('tp_cafe', 'v_cafe', 'Quán cà phê', 'Uống cà phê, nghe tin trong xóm'),
+        di('tp_scrap2', 'v_scrap2', 'Vựa ve chai Bà Chín', 'Khu Dân Cư — bán ve chai cho tiện, khỏi chạy về Xóm Lao Động'),
+        // ── trong nhà hàng ──
         { id: 'tp_lavabo', label: 'Bồn rửa tay trong nhà hàng', sub: 'Lắp bồn rửa (nếu chưa có) rồi đứng cạnh để thử rửa tay', run: () => {
           const g = ctx.g;
           if (!R.isRestaurant(g) || g.stall.where !== 'placed') { toast('Cần dựng nhà hàng trước.', 'warn'); return; }

@@ -51,7 +51,7 @@ src/
 │   ├── impact.ts    va chạm xe                        net.ts     quán net
 │   └── race.ts      đua xe đạp
 ├── data/       1.456 dòng (12 tệp) — dữ liệu tĩnh: ingredients(75), recipes(60), shops(12),
-│               gear(37 món + 8 mục TIERS + 8 chỗ ở), people(44 nhân vật + 11 khách quen),
+│               gear(37 món + 8 mục TIERS + 8 chỗ ở), people(45 nhân vật + 11 khách quen),
 │               world(8 thời tiết, 22 sự kiện), phone, looks, fun, expr, cars, changelog
 ├── world/      2.593 dòng — layout.ts (lô đất, SPOTS, NAV), city.ts, build.ts, places.ts(895), side.ts, env.ts, birds.ts
 ├── gfx/          942 dòng — mb.ts (gộp lưới), tex.ts (hoạ tiết canvas), props.ts, people.ts
@@ -109,7 +109,7 @@ xác định luật + dữ liệu (sim/data)
 | `staminaAfter(now, cap, amount)` | cộng `amount` (thang 0–1) vào thanh thể lực, kẹp theo trần — dùng cho lon Shapi (`eat.st = 0,3`) | `sim/rules.ts` |
 
 ### Số liệu nội dung (kiểm bằng `tests/data.test.ts`)
-60 công thức · 75 nguyên liệu · 12 nơi bán · 37 món đồ nghề (7 bậc quầy + 5 dụng cụ + 3 bếp + 2 kho + 14 tiện nghi + 2 đồ mang + 1 đồ nhà + 3 điện thoại) · 8 kiểu chỗ ở · 8 bậc quầy (`TIERS[0..7]`, `FUTURE_TIERS = []`) · 6 chỗ bán (`SPOTS`) · 3 chỗ mở chi nhánh (`BRANCH_SITES`) · 16 nhóm người · 44 nhân vật cố định · 11 khách quen · 5 người phụ việc · 3 phụ bếp · 3 người trông coi chi nhánh (`KEEPER_POOL`) · 22 sự kiện · 8 thời tiết.
+60 công thức · 75 nguyên liệu · 12 nơi bán · 37 món đồ nghề (7 bậc quầy + 5 dụng cụ + 3 bếp + 2 kho + 14 tiện nghi + 2 đồ mang + 1 đồ nhà + 3 điện thoại) · 8 kiểu chỗ ở · 8 bậc quầy (`TIERS[0..7]`, `FUTURE_TIERS = []`) · 6 chỗ bán (`SPOTS`) · 3 chỗ mở chi nhánh (`BRANCH_SITES`) · 16 nhóm người · 45 nhân vật cố định · 11 khách quen · 5 người phụ việc · 3 phụ bếp · 3 người trông coi chi nhánh (`KEEPER_POOL`) · 22 sự kiện · 8 thời tiết.
 
 **Bậc quầy hiện có** (giá → `TIERS`): Gánh 120.000₫ → Xe đẩy 2.400.000₫ → Sạp cố định 9.000.000₫ → Quán ăn nhỏ 24.000.000₫ → Quán có chỗ ngồi 58.000.000₫ → Nhà hàng bình dân 145.000.000₫ → **Chuỗi cửa hàng 320.000.000₫** (mở chi nhánh thứ hai ở `BRANCH_SITES`, thuê người trông coi). Nhánh kinh doanh đã đủ 7/7 bậc, `FUTURE_TIERS` rỗng.
 
@@ -303,7 +303,7 @@ xem mục 9b — khi đó đã sửa lại 9 chỗ lệch mới phát sinh):
 2. `README.md` – số bài kiểm thử luôn theo mã: nay **666 bài / 56 tệp** (thêm `tests/quality.test.ts` canh 4 mức đồ hoạ, `tests/rau41.test.ts` canh rau củ/đau bụng) (thêm `tests/quality.test.ts` canh 4 mức đồ hoạ) (kèm 17 bài `tests/nhahang.test.ts`, 25 bài `tests/chuoi.test.ts`, 17 bài `tests/dicho.test.ts`, 17 bài `tests/baocao.test.ts`, 11 bài `tests/vua2.test.ts`, 5 bài `tests/phone3.test.ts`, 8 bài `tests/shopapp.test.ts`, 8 bài `tests/phone4.test.ts`, 15 bài `tests/look.test.ts`).
 3. `README.md` – **43** nhân vật cố định (trước ghi 34 và 38 ở hai chỗ).
 4. `README.md` – số món đồ nghề / chỗ bán luôn theo mã: nay **37** món, **6** chỗ bán (4 chỗ thường + 2 mặt bằng) và **3** chỗ mở chi nhánh.
-5. `TODO.md` – đầu tệp cập nhật theo mã: 7/7 bậc · 75 nguyên liệu · 12 nơi bán · 37 đồ nghề · 44 nhân vật · 422/32; thêm mục
+5. `TODO.md` – đầu tệp cập nhật theo mã: 7/7 bậc · 75 nguyên liệu · 12 nơi bán · 37 đồ nghề · 45 nhân vật · 422/32; thêm mục
    "bậc 6 chưa có probe giao diện"; tách khỏi mâu thuẫn "bậc 6 đã xong" ở bảng bên dưới.
 6. `DESIGN.md` – 666 bài; `SAVE_VERSION = 16` kèm nhánh v12–v16; 144 lô đất / 268 nút đường đi; 6 chỗ bán;
    `FUTURE_TIERS` rỗng.

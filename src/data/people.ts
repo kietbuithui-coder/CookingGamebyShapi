@@ -105,6 +105,7 @@ export const FIXED_ROLE: Record<string, string> = {
   dua: 'Nhóm đua xe đạp', dua_mai: 'Nhóm đua xe đạp', dua_thao: 'Nhóm đua xe đạp',
   tra_da: 'Cô bán trà đá', rap: 'Cậu nhóc nhảy đường phố', sua_xe: 'Thợ sửa xe vỉa hè',
   hat_rong: 'Người hát rong', danh_co: 'Ông già đánh cờ', danh_giay: 'Cậu bé đánh giày',
+  chu_ba: 'Chú xe ôm',
 };
 
 /** Khách quen có tên, có sở thích riêng — quan hệ được lưu trong save. */
@@ -291,6 +292,7 @@ export const LINES = {
     danh_giay: ['Đôi giày sạch làm người ta nhìn mình khác liền.'],
     net_bi: ['Vô đây chơi chút rồi về lo làm ăn nghen em.'],
     cafe: ['Cà phê ở đây rang tại chỗ, thơm lắm.'],
+    chu_ba: ['Xe ôm Chú Ba đây, đi đâu chú chở cho — rẻ hơn xe thồ.', 'Ngồi sau giữ nón cho chắc nghen con.', 'Chạy ngoài đường riết quen mặt hết cả xóm.'],
   } as Record<string, string[]>,
   // lời vu vơ khi đi ngang
   bark: {
@@ -435,4 +437,6 @@ export const FIXED: Record<string, FixedNpcDef> = {
   dua_thao: { id: 'dua_thao', name: 'Con Thảo', face: 1, fem: true, shirt: 0xf5c531, pants: 0x3a5a8a, hair: 0x1e1a18, hat: 0, hairStyle: 5, fat: 0.92, h: 0.89 },
   hobo: { id: 'hobo', name: 'Ông Bảy Lang Thang', face: 3, fem: false, shirt: 0x6a6258, pants: 0x4a4a42, hair: 0xbfbfbc, hat: 4, hairStyle: 1, fat: 0.9, h: 0.96 },
   cafe: { id: 'cafe', name: 'Anh Phong', face: 0, fem: false, shirt: 0x3a2416, pants: 0x2a2e3a, hair: 0x1e1a18, hat: 0, hairStyle: 0, fat: 0.98, h: 1.01 },
+  // Chú Ba xe ôm: đứng dưới gầm cầu cạnh lều người chơi, áo sơ mi sờn + nón bảo hiểm, da ngăm vì chạy nắng cả ngày.
+  chu_ba: { id: 'chu_ba', name: 'Chú Ba xe ôm', face: 3, fem: false, shirt: 0x8a7a4a, pants: 0x3a3d42, hair: 0x55504a, hat: 3, hairStyle: 0, fat: 1.12, h: 0.99, skin: 0xb8804f },
 };

@@ -164,4 +164,25 @@ export function buildSide(b: Builder) {
     b.collide(x - 0.2, z - 0.2, x + 0.46, z + 0.46);
     b.anchor('v_danh_giay', x, 0.13, z, -Math.PI / 2);                     // ngồi trên thùng gỗ (hạ theo tư thế ngồi)
   }
+
+  // ───────── 7. Chú Ba xe ôm — dưới gầm cầu, cạnh lều của người chơi ─────────
+  // Đứng ngay đầu dốc xuống gầm cầu (phía đông lều), xe số dựng nghiêng bên cạnh, hai nón bảo hiểm
+  // treo trên ghi-đông. Chỗ này người chơi mới vào ván là thấy ổng ngay, khỏi phải đi tìm.
+  b.chunk('south', 0, 100).frame({ tx: 0, tz: 0, yaw: 0 });
+  {
+    // Đứng giữa hai trụ cầu (trụ ở x = 55 và 77) để không bị cột che mất khi nhìn từ lều.
+    const x = 65.5, z = 98.4, d = D(), L3 = L();
+    // xe số dựng nghiêng, đầu xe quay ra đường
+    b.bike(x + 0.75, z, Math.PI * 0.52, 0x2f3a52);
+    // tấm bạt nhỏ che nắng cho chỗ đứng + bảng giá dán trên cây sào
+    for (const s of [-0.85, 0.85]) L3.cyl(x + s, 0.12, z - 0.6, 0.035, 2.0, 0x8a8f96, 5);
+    L3.quad(x + 0.95, 2.0, z - 0.75, x - 0.95, 2.0, z - 0.75, x - 0.95, 2.28, z + 0.55, x + 0.95, 2.28, z + 0.55, 0x6a7a8a);
+    // biển quay mặt về phía tây (phía lều người chơi) để từ ngoài đã đọc được
+    b.signAt(x - 0.9, 1.12, z + 0.02, 1.0, 0.4, 'XE ÔM CHÚ BA', { bg: '#fff7d6', fg: '#7a0f1e', border: '#c8102e' }, -1, 0, 44);
+    // ghế nhựa để ngồi chờ khách + thùng đồ nghề vá xe
+    plasticStool(d, x - 0.55, 0.13, z + 0.55, 0x2f8fd5, 0.38);
+    d.box(x + 0.7, 0.13, z - 0.95, 0.36, 0.3, 0.3, 0x2a2c30, 0x3a3c42, 0.06, true);
+    b.collide(x + 0.36, z - 1.18, x + 1.14, z - 0.66, 0.45);      // xe + thùng đồ nghề thấp, nhảy qua được
+    b.anchor('v_chu_ba', x, 0.12, z, Math.PI);                     // ổng đứng quay mặt ra đường
+  }
 }

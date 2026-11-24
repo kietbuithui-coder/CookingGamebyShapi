@@ -22,6 +22,7 @@ import { Game, STAT_MAX, addStack, hourOf, absMin, Stack, weightOf } from '../si
 import * as R from '../sim/rules';
 import * as P from '../sim/police';
 import * as PH from '../sim/phone';
+import * as XE from '../sim/xeom';
 import * as PUI from '../ui/phoneUI';
 import * as NEWS from '../sim/news';
 import { SONGS } from '../audio/songs';
@@ -261,6 +262,8 @@ export class Acts {
         this.D(who(n), n, (first ? 'Lính mới hả? Tui là Bảy, "trưởng khu" gầm cầu này hai chục năm rồi. Nè, cầm ổ bánh mì ăn đỡ đi. ' : 'Sao, bữa nay tính làm gì? ') + main.text, [...opts, bye]);
         if (first) { addStack(g.bag, { id: 'banhmi', n: 1, fresh: 80, q: 0.8, cost: 0 }); toast('Ông Bảy cho bạn một ổ bánh mì.', 'good', 'heart'); } break;
       }
+      // Chú Ba xe ôm: đứng dưới gầm cầu, có xe thật, chở người chơi tới đích theo bảng giá quãng đường.
+      case 'chu_ba': this.xeomMenu(n); break;
       default: this.D(who(n), n, '…', [bye]);
     }
   }
@@ -1437,11 +1440,125 @@ export class Acts {
       if (!j && dist2(w.x, w.z, p.x, p.z) < 9) this.way = null;
     }
     if (!ctx.ui.isDialogOpen() && !ctx.ui.modalName && this.scamHere()) this.scamBust();
+    // Chú Ba hẹn tới rước: đúng giờ thì ổng chạy tới, mở luôn bảng chọn chỗ đi.
+    if (!ctx.ui.isDialogOpen() && !ctx.ui.modalName && XE.pickupAt(this.g) >= 0) this.xeomTick();
+    this.xeomReturn();
     // mục tiêu hướng dẫn
     this.qT -= dt; if (this.qT <= 0) { this.qT = 1; const q = g.quest, s = g.stall, sellable = RECIPE_LIST.filter((r) => R.canSell(g, r));
       const ok = [R.has(g, 'ganh') || s.tier > 0, sellable.length > 0, sellable.some((r) => (R.hasPrep(r) ? R.prepPossible(g, r) > 0 || s.preps.some((x) => x.rid === r.id) : R.finishPossible(g, r) > 0)) || s.ready.length > 0, s.where === 'placed',
         R.menuOf(g).some((r) => R.available(g, r)), g.tot.served >= 1, g.led.sold >= 10 || g.hist.some((d) => d.sold >= 10), STABLE_HOME.includes(g.housing), s.tier >= 2, g.rep >= 50 && g.debts.length === 0][q];
       if (ok && q < QUESTS.length - 1) { g.quest++; sfx('quest'); toast('Xong mục tiêu! Tiếp theo: ' + QUESTS[g.quest], 'good', 'star', true); bus.emit('ui', 'quest'); } }
+  }
+  // ───────────────────────── Xe ôm Chú Ba ─────────────────────────
+  /** Ba mức giá dán ở đầu hẻm — để người chơi biết trước khi leo lên xe. */
+  xeomFareText(): string {
+    const g = this.g, km = (m: number) => money(m + (XE.raining(g) ? XE.RAIN_FEE : 0) + (this.carrying().heavy ? XE.HEAVY_FEE : 0));
+    return `Trong xóm ${km(XE.FARE_IN)} · sang phố bên ${km(XE.FARE_MID)} · ra chợ, ra bến ${km(XE.FARE_FAR)}`;
+  }
+  /** Đang mang theo gánh / xe đẩy hay không (chở nặng thì ổng lấy thêm). */
+  private carrying(): { heavy: boolean; note: string } {
+    const c = ctx.player.carry;
+    return c === 'ganh' ? { heavy: true, note: 'gánh hàng' } : c === 'xeday' ? { heavy: true, note: 'xe đẩy' } : { heavy: false, note: '' };
+  }
+  /** Một chuyến xe ôm từ chỗ đang đứng tới đích: trả tiền, tốn thời gian, đặt người chơi ở cửa đích. */
+  xeomRide(to: Way): boolean {
+    const g = this.g, p = ctx.player, d = Math.hypot(to.x - p.x, to.z - p.z);
+    const carry = this.carrying();
+    const fee = XE.fare(g, d, carry.heavy), mins = XE.rideMinutes(d);
+    if (g.cash < fee) { toast(`Chú Ba lắc đầu: “${money(fee)} lận con, mà con còn ${money(g.cash)} — chú không chở thiếu được.”`, 'warn', 'cash'); return false; }
+    R.spend(g, fee, 'fees');
+    R.advance(g, mins, { ...this.act(), moving: false, running: false, working: false, load: 0 });
+    // Đứng ở cửa đích, quay mặt ra đường — không cắt cảnh, chỉ đặt chỗ đứng (giống lúc tỉnh dậy).
+    const dx = to.x - p.x, dz = to.z - p.z;
+    // Neo của người bán đôi khi nằm sát quầy/kệ, nên chỗ đáp chật thì lùi ra một chút cho khỏi kẹt trong đồ.
+    let lx = to.x, lz = to.z;
+    if (ctx.world.blocked(lx, lz, 0.34)) {
+      for (const [ox, oz] of [[0, 1.4], [1.4, 0], [0, -1.4], [-1.4, 0], [1.2, 1.2], [-1.2, 1.2], [1.2, -1.2], [-1.2, -1.2], [0, 2.4], [2.4, 0], [-2.4, 0], [0, -2.4]]) {
+        if (!ctx.world.blocked(to.x + ox, to.z + oz, 0.34)) { lx = to.x + ox; lz = to.z + oz; break; }
+      }
+    }
+    p.place(lx, lz, Math.atan2(dx, dz), 0);
+    sfx('ok');
+    toast(`Chú Ba chở tới ${to.name} — ${money(fee)}, ${hhmmMin(mins)} (đi bộ mất ${hhmmMin(XE.walkMinutes(d))}).` + (carry.heavy ? ` Chở thêm ${carry.note} nên có phụ phí.` : ''), 'good', 'way', true);
+    return true;
+  }
+  /** Hỏi đi đâu: danh sách đích y như Bản đồ, kèm giá và số phút của từng chỗ. */
+  xeomMenu(n?: Npc) {
+    const g = this.g, p = ctx.player, carry = this.carrying();
+    // Chỉ nhận chuyến xa hơn ~22 m: đi vài bước chân thì ổng không chở, mà cũng khỏi rối danh sách.
+    const near = this.places().map((w) => ({ w, d: Math.hypot(w.x - p.x, w.z - p.z) })).filter((o) => o.d > 22).sort((a, b) => a.d - b.d);
+    const rel = g.rel[XE.XEOM_ID]?.v ?? 0;
+    const wait = XE.waitingLeft(g);
+    const opts: Opt[] = near.slice(0, 10).map(({ w, d }) => ({
+      t: `${w.name} — ${money(XE.fare(g, d, carry.heavy))}`,
+      sub: `${Math.round(d)} m · xe ${hhmmMin(XE.rideMinutes(d))} (đi bộ ${hhmmMin(XE.walkMinutes(d))})`,
+      off: g.cash < XE.fare(g, d, carry.heavy),
+      fn: () => { this.xeomRide(w); },
+    }));
+    // Một lời mời tử tế: thân thì bớt tiền, có chuyến hẹn sẵn thì nhắc, đang mưa thì ổng nói thẳng.
+    const hello = !g.flags.xeomMet
+      ? 'Hả, nhỏ này ở đâu ra dưới gầm cầu vậy? Chú Ba đây, chạy xe ôm hai chục năm rồi. Đi đâu thì kêu chú chở — ngồi đi, chú tính rẻ.'
+      : wait > 0 ? `Chú đang trên đường tới chỗ con hẹn, còn ${wait} phút nữa.` + (n ? ' Đứng đó chờ nghen.' : '')
+      : XE.raining(g) ? 'Trời mưa thế này chạy hơi cực, con chịu phụ chú thêm ít ngàn nghen — ướt hết cả áo.'
+      : rel >= 60 ? `Con đi hoài chú nhớ mặt rồi đó. Lên xe đi, chú tính rẻ cho.`
+      : 'Đi đâu con? Chú chở tới tận cửa, khỏi đi bộ mỏi chân.';
+    const spare: Opt[] = [];
+    if (wait > 0) spare.push({ t: 'Thôi, con tự đi.', sub: 'Huỷ chuyến chú Ba đang chạy tới', fn: () => { XE.cancelPickup(g); toast('Bạn gọi lại cho Chú Ba: “Thôi chú ơi, con tự đi được.”', 'info', 'phone'); } });
+    if (n) spare.push({ t: 'Hỏi chuyện chú Ba', fn: () => this.D(who(n), n, this.xeomSmallTalk(), [{ t: 'Vậy chú chở con đi.', fn: () => this.xeomMenu(n) }, { t: 'Thôi, con chào chú.' }]) });
+    g.flags.xeomMet = 1;
+    // Đứng sát ổng mà chọn đích gần quá (không có chỗ nào xa hơn 22 m) thì nói thẳng là không chở.
+    const tooClose = near.length === 0;
+    if (tooClose) opts.push({ t: 'Con đi bộ được rồi.', sub: 'Gần quá, chú không chở mấy bước chân', off: true });
+    this.D(n ? who(n) : 'Chú Ba xe ôm', n, hello + `\n${this.xeomFareText()}`, [...opts, ...spare, { t: 'Thôi, con chào chú.' }]);
+  }
+  /** Câu chuyện vặt của Chú Ba — đúng chuyện đang xảy ra trong ván (mưa, giờ, quan hệ). */
+  xeomSmallTalk(): string {
+    const g = this.g, rel = g.rel[XE.XEOM_ID]?.v ?? 0;
+    if (XE.raining(g)) return 'Mưa vầy chạy một chuyến bằng ba chuyến nắng. Con thấy ngoài đường có ai chạy đâu — chú cũng tính về, mà thấy con kêu thì chú ráng.';
+    if (rel >= 60) return 'Chú coi con như con trong nhà rồi đó. Bữa nào quán ế quá thì kêu chú, chú chở đồ đi bán dùm — lấy tiền xăng thôi.';
+    return 'Hồi trước chú chạy xe tải, sau bị tai nạn nên đổi qua xe ôm. Ngồi đây cả ngày, chuyện trong xóm chú biết hết. Ai giàu ai nghèo, ai nợ ai, chú đều rành.';
+  }
+  /** Gọi Chú Ba bằng điện thoại: ổng hẹn tới rước ở chỗ người chơi đang đứng. */
+  phoneXeom(): boolean {
+    const g = this.g, r = XE.callXeom(g);
+    if (!r.ok) { toast(r.line, 'info', 'phone'); PUI.setPhoneAct('call', 7, r.line, 'Chú Ba xe ôm'); return false; }
+    sfx('ok');
+    toast(r.line, 'good', 'phone', true);
+    toast(`Chú Ba sẽ tới chỗ bạn đứng sau ${XE.PICKUP_MIN} phút — chờ ở đó nghen.`, 'info', 'way', true);
+    PUI.setPhoneAct('call', 9, r.line, 'Chú Ba xe ôm');
+    return true;
+  }
+  /** Chuyến hẹn đã tới giờ: Chú Ba chạy tới, hỏi đi đâu. Gọi mỗi khung hình từ `update()`. */
+  xeomTick() {
+    const g = this.g;
+    if (!XE.shouldArrive(g)) {
+      // Hẹn quá cũ (đã qua hơn 4 tiếng) thì bỏ, kẻo ổng “tới” vào nửa đêm hôm sau.
+      const at = XE.pickupAt(g);
+      if (at >= 0 && absMin(g) - at > 240) { XE.cancelPickup(g); toast('Chú Ba chờ hoài không thấy bạn nên chạy về rồi.', 'info', 'phone'); }
+      return;
+    }
+    XE.cancelPickup(g);
+    const n = ctx.npcs.fixed.get(XE.XEOM_ID);
+    if (n) {
+      // Dựng ổng ngay cạnh người chơi (xe máy chạy tới rồi tấp lề) — chỉ đổi chỗ đứng, không cắt cảnh.
+      // Nhớ chỗ đứng cũ để người chơi đi khỏi là ổng tự chạy về gầm cầu.
+      this.xeomHome ??= n.home ? { ...n.home } : null;
+      const p = ctx.player, dx = Math.cos(p.yaw), dz = -Math.sin(p.yaw);
+      const o = { x: p.x + dx * 1.6, z: p.z + dz * 1.6 };
+      ctx.world.resolve(o.x, o.z, 0.34, o);
+      n.home = { x: o.x, z: o.z, yaw: Math.atan2(p.x - o.x, p.z - o.z) }; n.hidden = false;
+      ctx.npcs.say(n, 'Tới rồi nè con! Lên xe đi, đi đâu?', 3, EXPR.smile);
+    }
+    sfx('ok');
+    this.xeomMenu(n);
+  }
+  /** Chỗ đứng thật của Chú Ba (gầm cầu) — nhớ lại lúc ổng chạy tới rước để trả ổng về chỗ cũ. */
+  private xeomHome: { x: number; z: number; yaw: number } | null = null;
+  /** Người chơi đi khỏi chỗ hẹn thì Chú Ba chạy về gầm cầu, không đứng đó cả ngày. */
+  private xeomReturn() {
+    const n = ctx.npcs.fixed.get(XE.XEOM_ID); if (!n || !this.xeomHome) return;
+    if (dist2(n.x, n.z, ctx.player.x, ctx.player.z) < 7 * 7) return;
+    n.home = this.xeomHome; this.xeomHome = null;
   }
   /**
    * Điểm tới của mọi đích đến (dùng cho Bản đồ và cho nút “Ghim đường đi” trong lời khuyên của Ông Bảy).
