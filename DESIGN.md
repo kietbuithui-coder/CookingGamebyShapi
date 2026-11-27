@@ -1509,7 +1509,8 @@ trong `switch` của `talkTo`. Nhánh `case 'mia_xe' | 'mia_quan' | 'site'` tron
 (truy hồi: `sideMenu` đã `return` trước đó).
 
 **⑤ Nghề phụ hồ.** Chỗ “công trình thi công” (`site '02N'`) trước chỉ có tấm biển. Nay trong `places.ts` dựng thêm chòi
-công trình: bàn ghi tên + sổ chấm công, ghế, bạt xanh, biển **“TUYỂN PHỤ HỒ”**, neo `site_phu` + `v_site`; phụ đề của
+công trình: bàn ghi tên + sổ chấm công, ghế chờ, biển **“TUYỂN PHỤ HỒ”** dán trên vách rào xanh (**đã bỏ mái bạt** —
+người chơi chỉ ảnh bảo bỏ, nên không còn bạt sọc xanh–trắng lẫn bốn cọc chống giữa công trường), neo `site_phu` + `v_site`; phụ đề của
 biển đổi thành *“… · Cần người phụ hồ”*. `rules.ts`: `SITE_SHIFT_MIN = 90`, `SITE_SHIFTS_DAY = 3`, `SITE_HOURS = [7, 16]`,
 `SITE_WAGE_MIN = 38000`, `SITE_WAGE_MAX = 52000`, `siteWage(roll)`, `siteOpenAt`, `siteShiftsLeft`. Một ca: tiên 90 phút,
 công 38–52k, hao `e-24 h-7 t-8 hy-7`, cần energy ≥ 30, `wd.siteShifts++`. Anh Sáu Lực (`FIXED.site`, vai *“Cai công trình”*)
@@ -1661,7 +1662,7 @@ và người bán, nên không phải đoán toạ độ nữa.
 `site_phu` đặt ở `y = 0,9` — đúng độ cao mặt bàn — thay vì dưới đất. Nay neo dời ra **sau bàn** (`cx; cz − 0,55; y = 0,13`)
 với `yaw = 0`, tức cùng quy ước “neo = chỗ người đứng, `yaw` = hướng nhìn ra phía khách” như neo xe mía/quán mía. Người chơi
 đứng trước bàn 1,15 m (quay mặt vào bàn, tay chống xẻng); camera lùi sâu vào trong sân 0,75 m sau neo, lệch hông 2,9 m, cao
-1,85 m — **thấp hơn mái bạt 2,2 m** (đứng cao hơn là nhìn lên nóc bạt xanh trơn). Trục cột giàn giáo ở `cx − 0,6` lại đúng
+1,85 m — thấp hơn tầm mắt người đứng nói chuyện (bản trước còn mái bạt 2,2 m, nay mái đã dỡ nên chỉ cần tránh cột). Trục cột giàn giáo ở `cx − 0,6` lại đúng
 đường nối camera–chủ thể nếu đứng thẳng phía trước, nên phải lệch hẳn sang hông: khung hình mới thấy cả người xúc lẫn bàn ghi tên.
 
 Bài học dùng lại được: với mọi cảnh quay trong nhà/hàng quán, **kiểm tra ba thứ theo thứ tự** — (1) độ cao camera so với mái
@@ -1672,5 +1673,5 @@ Cả ba lỗi trên đều lọt qua vì trước đó chỉ chỉnh `side`/`fro
 ý, mã, cắt chữ, sửa/xoá, trần 40, hỏng dữ liệu không làm sập game, xuất khối chữ; và hai bài canh độ dài ca phụ hồ);
 `npm run build:pages` OK. Probe `tools/probe/steps/fix70.mjs` (bấm chuột thật, 13 bước): nút góp ý đứng **ngay trước** Túi đồ,
 gửi được góp ý `L001-1` kèm bối cảnh, khối chữ xuất đúng, phím G mở / Esc đóng; xe mía cách cổng trái chợ **5 m**, người
-bán đứng ở `y = 0,13` (dưới đất); quán mía khách–chủ cách nhau **1,5 m**; chòi công trường nhìn từ dưới vẫn thấy bạt; mini-game
+bán đứng ở `y = 0,13` (dưới đất); quán mía khách–chủ cách nhau **1,5 m**; chòi công trường không còn mái bạt nên không vướng tầm nhìn; mini-game
 ép mía chạy đủ 6 ly, mini-game xúc đất chạy đủ 3 xe và trả thưởng. `errors: none`.

@@ -261,11 +261,11 @@ function latestSteps(): DevStep[] {
     },
     {
       since: 'Lượt 70', id: 'mx_mai_cong_truong', anchor: 'v_site', tone: 'yellow',
-      label: '④ Công trường — mái bạt còn khi đứng dưới',
-      sub: 'Chòi tuyển thợ dời ra khoảng trống sát lối vào; đứng dưới ngẩng lên vẫn thấy mặt dưới tấm bạt',
+      label: '④ Công trường — chòi tuyển thợ không còn mái bạt',
+      sub: 'Bạt sọc xanh–trắng đã dỡ; bàn ghi tên + ghế chờ đứng trơ dưới nắng, bảng “TUYỂN PHỤ HỒ” dán trên vách rào',
       run: () => {
-        if (!standAt('v_site', 1.5, 'Chòi tuyển phụ hồ — mái bạt có cả mặt dưới, nhìn từ đâu cũng thấy.')) return toast('Không thấy chòi công trình.', 'warn');
-        ctx.player.pitch = -0.45;
+        if (!standAt('v_site', 1.5, 'Chòi tuyển phụ hồ — hết mái bạt, bảng dán thẳng lên vách rào xanh.')) return toast('Không thấy chòi công trình.', 'warn');
+        ctx.player.pitch = -0.2;
       },
     },
     {
