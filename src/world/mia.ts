@@ -183,8 +183,12 @@ export function buildMiaShop(b: Builder, w: number, d: number) {
   // mặt tiền: KHÔNG kê gì — chỉ biển + mái hiên + cửa cuốn
   b.signAt(w / 2, 3.0, -0.03, Math.min(w - 0.6, 5.2), 0.78, 'NƯỚC MÍA 3K', { bg: '#f5c531', fg: '#7a0f1e', border: '#c8102e', sub: 'Ép mía tươi tại chỗ · Ly 3.000₫', subFg: '#1e5a2e' }, 0, -1, 128);
   b.awning(0.25, w - 0.25, 2.7, 1.2, 0xf5c531, 0xf7f3e6);
-  // bảng giá treo trên vách bên trong, cạnh quầy (nhìn từ ngoài vẫn đọc được)
-  b.signAt(0.9, 2.1, qz - 0.9, 1.12, 0.55, 'BẢNG GIÁ', { bg: '#ffffff', fg: '#7a0f1e', border: '#c8102e', sub: 'Mía đá 3.000₫ · Ly lớn 5.000₫', subFg: '#55585e' }, 0, -1, 56);
+  // BẢNG GIÁ **áp lên vách trái của quán**, ngay trên tầm mắt người mua (sửa theo ảnh người chơi gửi
+  // thêm, vẫn trong lượt 70).
+  // Bản lượt 70 đặt nó ở (x 0,9; z = quầy − 0,9) — cách vách trái 0,75 m nên nhìn vào thấy tấm biển
+  // **lơ lửng giữa quán** (đúng như ảnh người chơi gửi). Nay dán sát vách (x = 0,3; quay mặt vào trong),
+  // cao 1,75–2,37 m: vừa trên mặt quầy 0,97 m, vừa dưới mái hiên nên đứng ngoài đường vẫn đọc được.
+  b.signAt(0.3, 1.75, qz - 0.15, 2.15, 0.62, 'BẢNG GIÁ', { bg: '#ffffff', fg: '#7a0f1e', border: '#c8102e', sub: 'Mía đá 3.000₫ · Ly lớn 5.000₫', subFg: '#55585e' }, 1, 0, 72);
   // ── QUẦY + MÁY ÉP, lùi sâu: máy ép quay hẳn mặt ra đường ──
   const qw = w - 1.0;
   L.box(w / 2, 0.13, qz, qw, 0.84, 0.7, 0x8a6a4a, 0xb99a72, 0.12);
@@ -200,13 +204,19 @@ export function buildMiaShop(b: Builder, w: number, d: number) {
   D.cyl(w - 1.0, 0.63, d - 1.15, 0.24, 0.06, ICE, 12, 0.24, false);
   caneBundle(b, 0.95, d - 1.05, 0.3);
   b.collide(0.55, d - 1.4, 1.35, d - 0.7, 1.2);
-  // ── bàn nhựa + ghế dồn hai bên, CHỪA lối đi giữa từ cửa vào tới quầy ──
-  for (const [bx, bz] of [[0.95, qz + 1.15], [w - 0.95, qz + 1.35]] as const) {
-    plasticTable(D, bx, 0.13, bz, bz > qz + 1.2 ? BLUE : RED);
-    plasticStool(D, bx - 0.55, 0.13, bz + 0.62, bx > w / 2 ? RED : BLUE, 0.4);
-    plasticStool(D, bx + 0.1, 0.13, bz - 0.66, bx > w / 2 ? BLUE : RED, 0.4);
-    for (let i = 0; i < 2; i++) D.cyl(bx - 0.16 + i * 0.3, 0.72, bz - 0.1, 0.04, 0.12, 0xd0ecf7, 8, 0.045);
-    b.collide(bx - 0.36, bz - 0.36, bx + 0.36, bz + 0.36, 0.72);
+  // ── bàn nhựa + ghế ở PHÍA TRƯỚC quầy ──
+  // Lỗi người chơi báo: đứng mua nước thì "ở trong chưa có bàn ghế". Đúng vậy — bản lượt 70 kê hai bàn
+  // ở `qz + 1,15` và `qz + 1,35`, tức **sau lưng chủ quán**, sâu trong quán, khách đứng ở mặt tiền không
+  // thấy cũng không tới được. Nay hai bàn dạt hai bên, **trước quầy** (z ≈ 1,25 m), chừa lối đi rộng
+  // ~1,6 m ở giữa cho khách bước vào tới quầy; ghế xếp quanh bàn đúng kiểu quán vỉa hè.
+  const tz = Math.min(qz - 1.75, 1.35);
+  for (const [bx, col] of [[0.98, RED], [w - 0.98, BLUE]] as const) {
+    plasticTable(D, bx, 0.13, tz, col);
+    plasticStool(D, bx - 0.52, 0.13, tz + 0.58, col === RED ? BLUE : RED, 0.4);
+    plasticStool(D, bx + 0.48, 0.13, tz + 0.62, col === RED ? BLUE : RED, 0.4);
+    plasticStool(D, bx - 0.5, 0.13, tz - 0.6, col === RED ? RED : BLUE, 0.4);
+    for (let i = 0; i < 2; i++) D.cyl(bx - 0.16 + i * 0.3, 0.70, tz - 0.1, 0.042, 0.13, 0xd0ecf7, 8, 0.045);   // ly đặt đúng mặt bàn
+    b.collide(bx - 0.36, tz - 0.36, bx + 0.36, tz + 0.36, 0.72);
   }
   // quạt treo tường + đèn trần
   D.cyl(w - 0.36, 2.1, qz + 1.5, 0.28, 0.06, 0xdfe6ea, 12, 0.28, false);

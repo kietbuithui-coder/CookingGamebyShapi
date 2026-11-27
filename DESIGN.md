@@ -1602,10 +1602,24 @@ Lỗi nặng hơn nằm ở **thứ tự lấy tham chiếu**: `buildMiaCart()` 
 đi xa, thành ra nhìn quanh xe chỉ còn vài món lặt vặt. Nay đổi mảnh **trước**, lấy tham chiếu **sau**; `b.world.litter` cũng
 tính lại theo `s.x/s.z` thay vì toạ độ viết cứng.
 
-**3. Quán Nước Mía 3K — quầy lùi sâu.** Bản cũ kê quầy + máy ép sát mặt tiền (z ≈ 1,35 m) nên đứng ngoài đường chỉ thấy bức
-vách sau quầy. Nay `qz = min(d − 1,55; 3,1)`: mặt tiền để **trống** (chỉ cửa cuốn, mái hiên, biển), máy ép quay mặt ra đường,
-bàn nhựa dạt hai bên, neo đổi theo — `v_mia_quan` phía trước quầy, `mia_quan` sau quầy (cách nhau 1,5 m, đúng tầm một người
-đứng bán).
+**3. Quán Nước Mía 3K — quầy lùi sâu, bàn ghế ra trước quầy, bảng giá áp vách.** Bản cũ kê quầy + máy ép sát mặt tiền
+(z ≈ 1,35 m) nên đứng ngoài đường chỉ thấy bức vách sau quầy. Nay `qz = min(d − 1,55; 3,1)`: mặt tiền để **trống** (chỉ cửa
+cuốn, mái hiên, biển), máy ép quay mặt ra đường, neo đổi theo — `v_mia_quan` phía trước quầy, `mia_quan` sau quầy (cách nhau
+1,5 m, đúng tầm một người đứng bán).
+
+Người chơi gửi thêm một ảnh ngay trong lượt này (“tấm bảng … ở trong chưa có bàn ghế”) ⇒ sửa hai chỗ:
+
+- **Bàn ghế phải ở TRƯỚC quầy.** Bản lượt 70 đặt hai bàn ở `qz + 1,15` và `qz + 1,35` — tức **sau lưng chủ quán**, sâu hun
+  hút trong quán; khách đứng ở mặt tiền vừa không thấy vừa không tới được. Nay `tz = min(qz − 1,75; 1,35)`, hai bàn dạt hai
+  bên (đỏ trái, xanh phải), mỗi bàn ba ghế, ly đặt đúng mặt bàn (y = 0,70 chứ không phải 0,86 như bản nháp đầu — ly lơ lửng
+  trên không), chừa lối đi ~1,6 m ở giữa cho khách bước vào tới quầy.
+- **Bảng giá phải dính vào vách.** Bản lượt 70 đặt `signAt(0,9; 2,1; qz − 0,9)` mà vách trái nằm tận `x = 0,15` ⇒ tấm biển
+  **cách tường 0,75 m, lơ lửng giữa quán**. Nay `signAt(0,3; 1,75; qz − 0,15; …; nx = 1)` — áp sát vách, quay mặt vào trong,
+  cao 1,75–2,37 m: trên mặt quầy 0,97 m nên không bị máy ép/két nước che.
+
+Ba phương án đã thử và loại, ghi lại để khỏi đi lại: (a) treo bảng trên cao 2,02 m thì mái hiên (2,33 m ở mép ngoài) cắt
+ngang đúng chữ; (b) treo bằng hai dây thép từ trần thì vẫn lơ lửng, chỉ đổi kiểu lơ lửng; (c) cắm bảng **đứng trên mặt quầy**
+(bệ nhôm + hai chân) thì bị két nước `U.box(w/2 + 0,95; …)` che mất nửa bên phải. Chỉ có áp vách là đọc được từ cả hai phía.
 
 **4. Công trường: mái về, chòi ra chỗ thoáng.** Nguyên nhân mất mái: bản lượt 69 vẽ mái bằng **một** `L.quad`, mà quad chỉ có
 một mặt ⇒ đứng phía dưới (đúng chỗ nói chuyện) là trần trơn. Nay dùng `b.awning()` (mặt trên + mặt dưới + diềm) **và** thêm

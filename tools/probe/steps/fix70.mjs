@@ -80,9 +80,22 @@ export default [boot, fresh(9 * 60),
   { eval: () => { const g0 = window.__game, a = g0.world.anchors.v_mia_quan;
     g0.player.place(a.x, a.z + 3.4, Math.PI, 0); window.__cam(a.x, 1.6, a.z + 6.4, a.x, 1.1, a.z - 1.4); return 1; }, quiet: true, wait: 2800 },
   { shot: OUT + '05_quan_mia_lui_sau' },
+  // Góc chếch hông này phải đứng NGOÀI lô (trước mặt tiền), không thì camera lọt vào vách nhà bên cạnh.
   { eval: () => { const g0 = window.__game, a = g0.world.anchors.v_mia_quan;
-    window.__cam(a.x + 3.2, 2.6, a.z + 1.0, a.x, 1.0, a.z - 2.2); return 1; }, quiet: true, wait: 2400 },
+    window.__cam(a.x + 1.9, 2.1, a.z + 4.6, a.x - 0.2, 1.05, a.z + 0.4); return 1; }, quiet: true, wait: 2400 },
   { shot: OUT + '06_quan_mia_nhin_ngang' },
+  { label: '⑦b quán mía: bàn ghế ở TRƯỚC quầy (không nằm sau lưng chủ quán), bảng giá dính vách' },
+  { eval: () => { const g0 = window.__game, a = g0.world.anchors.v_mia_quan, c = g0.world.anchors.mia_quan;
+    // Quét mặt cắt ngang khoảng giữa mặt tiền và quầy: phải CÓ vật cản hai bên (bàn ghế) và TRỐNG ở giữa.
+    // Quét đúng hàng bàn (bàn đặt ở tz = min(qz − 1,75; 1,35) ⇒ cách neo khách 0,8 m về phía mặt tiền),
+    // KHÔNG quét giữa hai neo: khoảng giữa đó rơi vào mặt quầy nên luôn đặc.
+    const zq = a.z - 0.8;
+    const scan = [];
+    for (let dx = -2.4; dx <= 2.41; dx += 0.3) scan.push(g0.world.blocked(a.x + dx, zq, 0.08) ? 1 : 0);
+    const midIdx = Math.round(scan.length / 2) - 1;
+    return { cắtNgang: scan.join(''), haiBênCóBàn: scan.slice(0, 4).includes(1) && scan.slice(-4).includes(1),
+      lốiGiữaTrống: scan[midIdx] === 0 && scan[midIdx + 1] === 0, quầySau: +(c.z - a.z).toFixed(2) };
+  } },
   { label: '⑧ công trường: chòi tuyển thợ ở khoảng trống, mái bạt còn khi đứng dưới nhìn lên' },
   { eval: () => { const g0 = window.__game, v = g0.world.anchors.v_site;
     g0.player.place(v.x, v.z + 1.2, Math.PI, 0); window.__cam(v.x, 1.7, v.z + 3.0, v.x, 1.6, v.z - 0.6); return { chòi: { x: +v.x.toFixed(2), z: +v.z.toFixed(2) } }; }, quiet: true, wait: 2800 },
