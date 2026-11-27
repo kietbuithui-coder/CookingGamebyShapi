@@ -1540,3 +1540,36 @@ còn ở, không mất ngày đã trả. Bảng “Túi đồ” hiện `Gói th
 **Đo.** `npx tsc --noEmit` sạch. `npx vitest run` **686 bài / 57 tệp, xanh hết** (thêm 2 bài ở `tests/housing.test.ts`:
 giá tháng = 4 tuần − 20 % và chỉ bốn chỗ có gói tháng; gói tuần vẫn là mặc định, đổi sang tháng khi đang trễ hạn thì tính
 từ hôm nay). `tests/mat56.test.ts` + `tests/changelog.test.ts` + `tests/fun.test.ts` được cập nhật theo luật mới.
+
+### 4.51 Nhóm “Vừa thay đổi” ở đầu menu ẩn — người làm game bấm là thử được cái vừa sửa (lượt 69)
+
+Người chơi: *“um menu ẩn nên có 1 mục vừa thay đổi để khi ấn ng dev sẽ test được á bạn”*. Đúng chỗ đau: menu ẩn sau lượt 63
+chỉ còn 34 chỗ đi nhanh, nên sau mỗi lượt người làm game muốn thử cái vừa sửa phải **tự nhớ** nó ở đâu, tự đi tới, tự mở
+đúng bảng — và hay quên mất một mục.
+
+**Cách làm.** `devPoints.ts` thêm `interface DevStep extends DevAction { since: string }` và hàng `latestSteps()`:
+mỗi việc vừa làm khai một mục với `since` = nhãn bản lúc viết; `latestSteps()` lọc `x.since === CHANGELOG[0].v`.
+`getDevSections()` chèn nhóm đó **lên đầu**, tiêu đề `Vừa thay đổi — <bản> (bấm là tới đúng chỗ, mở sẵn bảng)`.
+
+Ba tính chất quan trọng:
+
+| Tính chất | Vì sao |
+|---|---|
+| **Tự dọn** | Sang bản sau, `since` cũ không còn khớp `CHANGELOG[0].v` ⇒ mục tự rơi ra. Không ai phải nhớ xoá, đúng bài học của `DEV_BUILD_TAG` (lượt 67). |
+| **Không sửa luật chơi** | Mục chỉ **đổi chỗ đứng** (`standAt()` — đứng cách neo 1,5–1,7 m, quay mặt vào neo, bỏ qua ô bị chặn) và **mở sẵn hộp thoại** y như người chơi tự bấm. Không cho tiền, không mở khoá, **không đụng `g.min`** (luật lượt 68). Test canh riêng phần `latestSteps()` không có `g.min =`. |
+| **Có neo thật** | Mục nào đi tới đâu thì khai `anchor`, và test đối chiếu với neo dựng trong `src/world` — dời nhân vật là test đỏ. |
+
+**Sáu mục của lượt 69** (`mx_…`): ① xe nước mía trong chợ ② quán Nước Mía 3K trên phố ③ chòi công trình (xin ca phụ hồ)
+④ tủ lạnh nhà trọ (đại diện bốn chỗ dựng sẵn vừa nối) ⑤ **con số của bản** — đọc giá vốn một ly nước mía, giá tháng của
+bốn chỗ thuê, số ly/số ca đã làm hôm nay ⑥ mở thẳng nhật ký phát triển.
+
+**Đo** (probe `tools/probe/steps/menu69.mjs`, bấm chuột thật): 8 lần “Cài đặt” → gõ `438291` → `nhóm: ["Vừa thay đổi —
+Lượt 69 (bấm là tới đúng chỗ, mở sẵn bảng)", "Địa điểm — tele nhanh"]`, 6 mục `mx_*` + 34 mục `tp_*`. Bấm từng mục:
+xe mía → đứng `(-46; -4,2)` không kẹt, hộp thoại Cô Hai Mía **8 nút**; quán mía → `(-2,3; -19,3)`, Chú Tư Mía 8 nút;
+công trường → `(-43,6; 39,3)`, Anh Sáu Lực 5 nút; “con số” đọc *“giá vốn 1.950₫/ly, bán 3.000₫ … trọ 896.000₫/tháng …”*;
+nhật ký mở đúng bảng `changelog`. Đồng hồ 540 → 545 phút (chỉ nhích do hộp thoại tự trôi thời gian như mọi cuộc nói
+chuyện, **không** phải menu tua). `errors: none`.
+
+`tests/devpoints.test.ts` **18 bài** (thêm bài “nhóm Vừa thay đổi tự dọn”): nhóm đầu phải mang đúng nhãn `CHANGELOG[0].v`,
+mọi mục `mx_` phải có `run`/`label`/`sub`, ít nhất 3 mục ở bản mới nhất, `latestSteps()` không đụng `g.min`, và danh sách
+neo phải quét cả tệp mới `src/world/mia.ts`. Cả bộ **687 bài / 57 tệp**.

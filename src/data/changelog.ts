@@ -24,6 +24,7 @@ export const CHANGELOG: LogEntry[] = [
       'Xin phụ bán một ca 45 phút ở cả hai chỗ: công 14.000₫ cộng thêm theo uy tín, mỗi ngày tối đa 2 ca chia chung cho xe và quán.',
       'Nghề mới: phụ hồ ở công trường Phố Trung Tâm. Cai công trình Anh Sáu Lực đứng ngay chỗ cái biển “công trình thi công” trước đây, có bàn ghi tên, sổ chấm công, ghế và bạt xanh. Một ca 90 phút trả 38.000–52.000₫, ngày nhận 3 ca, làm từ 7 giờ tới 16 giờ và khá hao sức.',
       'Bốn chỗ dựng sẵn mà trước chỉ để ngắm nay đều chạm được: cái tủ lạnh trong nhà trọ (đặt tủ, mở kho lạnh), bàn trà ngoài hè (ngồi nghỉ, nghe chuyện xóm), sàn nhảy của Bin (vô nhảy một bài) và tiệm quần áo (vào lựa đồ, nghe Cô Ngọc kể giá).',
+      'Menu ẩn (bấm 8 lần “Cài đặt” rồi gõ mã) nay có nhóm đầu tên “Vừa thay đổi — Lượt 69”: bấm một mục là đứng đúng chỗ và mở sẵn bảng tương tác (xe mía, quán nước mía, chòi công trình, tủ lạnh nhà trọ), kèm một mục đọc con số thật của bản và một mục mở thẳng nhật ký này. Sang bản sau nhóm đó tự đổi theo bản mới, không phải dọn tay.',
       'Thuê nhà theo tháng: bốn chỗ trọ, căn hộ, nhà riêng và cửa hàng có thêm gói tháng 28 ngày, rẻ hơn đóng 4 tuần lẻ đúng 20 % — trọ 896.000₫, căn hộ 2.880.000₫, nhà riêng 4.480.000₫, cửa hàng 5.760.000₫. Đang ở gói tuần vẫn đổi sang gói tháng được, ngày đã trả không mất.',
     ],
   },

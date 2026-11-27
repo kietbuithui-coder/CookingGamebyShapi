@@ -5,12 +5,23 @@ import { DEV_BUILD_TAG, DEV_PIN, DEV_PIN_LEN, DEV_PIN_LOCK_MS, DEV_PIN_TRIES, DE
 import { CHANGELOG } from '../src/data/changelog';
 
 describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
-  it('chỉ còn nhóm “Địa điểm — tele nhanh”: mọi mục test đã được xoá (lượt 63)', () => {
+  it('nhóm đầu là “Vừa thay đổi” của bản mới nhất; nhóm sau là “Địa điểm — tele nhanh” (lượt 63 + 69)', () => {
     const sections = getDevSections();
-    expect(sections.length).toBe(1);
-    expect(sections[0].title).toContain('Địa điểm');
-    // Không còn mục test nào: mọi mã đều phải là `tp_…`.
-    const ids = sections[0].items.map((i) => i.id);
+    // Lượt 69: người chơi yêu cầu menu có MỘT mục “vừa thay đổi” để người làm game bấm là thử được ngay.
+    // Nhóm đó tự dựng từ `latestSteps()` và chỉ giữ mục của CHANGELOG[0] ⇒ sang lượt sau nó tự đổi/gọn lại.
+    expect(sections.length).toBe(2);
+    expect(sections[0].title).toContain('Vừa thay đổi');
+    expect(sections[0].title).toContain(CHANGELOG[0].v);
+    expect(sections[0].items.length).toBeGreaterThanOrEqual(3);
+    for (const it of sections[0].items) {
+      expect(it.id.startsWith('mx_')).toBe(true);
+      expect(typeof it.run).toBe('function');
+      expect(it.label.length).toBeGreaterThan(5);
+      expect(it.sub.length).toBeGreaterThan(10);
+    }
+    expect(sections[1].title).toContain('Địa điểm');
+    // Không còn mục test cũ nào trong nhóm đi nhanh: mọi mã đều phải là `tp_…`.
+    const ids = sections[1].items.map((i) => i.id);
     expect(ids.length).toBeGreaterThan(5);
     for (const id of ids) expect(id.startsWith('tp_')).toBe(true);
     // Lượt 67: các mục cũ đổi tên theo đúng người/chỗ (tp_ongtu → tp_danh_co), và thêm mục cho mọi
@@ -19,13 +30,31 @@ describe('menu Test & Dịch chuyển ẩn trong Cài đặt', () => {
       'tp_chu_ba', 'tp_wholesale', 'tp_kiosk', 'tp_tro', 'tp_hotel', 'tp_motel', 'tp_hospital', 'tp_police',
       'tp_tra_da', 'tp_sua_xe', 'tp_hat_rong', 'tp_danh_giay', 'tp_rap', 'tp_dua', 'tp_net', 'tp_cafe']) expect(ids).toContain(id);
     expect(new Set(ids).size).toBe(ids.length);
-    for (const item of sections[0].items) {
+    for (const item of sections[1].items) {
       expect(typeof item.run).toBe('function');
       expect(item.label.length).toBeGreaterThan(3);
       expect(item.sub.length).toBeGreaterThan(3);
     }
     // Dòng mô tả bản dựng vẫn còn (để biết đang chơi bản nào).
     expect(DEV_BUILD_TAG.length).toBeGreaterThan(10);
+  });
+
+  it('nhóm “Vừa thay đổi” tự dọn: chỉ giữ mục của CHANGELOG[0], sang bản sau là mục cũ rơi ra', () => {
+    const src = readFileSync('src/game/devPoints.ts', 'utf8');
+    // Nguồn: danh sách mục khai `since`, và `latestSteps()` lọc đúng theo `CHANGELOG[0].v` — không có mảng viết tay
+    // nào phải nhớ dọn mỗi lượt.
+    expect(src).toContain('interface DevStep');
+    expect(src).toContain('x.since === v');
+    expect(src).toContain('const v = CHANGELOG[0]?.v');
+    const src69 = readFileSync('src/game/devPoints.ts', 'utf8').match(/since: 'Lượt (\d+)'/g) ?? [];
+    expect(src69.length).toBeGreaterThanOrEqual(3);
+    // Mánh: nếu ai đó khai `since` của bản cũ mà quên xoá thì nhóm sẽ rỗng dần — test đòi ít nhất 3 mục ở bản mới nhất.
+    expect(getDevSections()[0].items.length).toBeGreaterThanOrEqual(3);
+    // Mục “vừa thay đổi” KHÔNG đụng đồng hồ (cùng luật với đi nhanh từ lượt 68). Chỉ soát phần `latestSteps()` —
+    // trong tệp còn `setupChain()` của các lượt trước vẫn đặt `g.min` khi dựng sẵn chuỗi cửa hàng.
+    const block = src.slice(src.indexOf('function latestSteps'), src.indexOf('export function getDevSections'));
+    expect(block.length).toBeGreaterThan(500);
+    expect(block).not.toMatch(/g\.min\s*=/);
   });
 
   it('không còn sót mục test của các lượt cũ', () => {
@@ -204,7 +233,8 @@ describe('menu ẩn — mục đi nhanh khớp dữ liệu thật (lượt 67)',
   const items = () => getDevSections().flatMap((s) => s.items);
   /** Gom neo khai trong `src/world`: `b.anchor('v_xxx', …)`. */
   const anchorsInCode = () => {
-    const src = ['city', 'places', 'side'].map((f) => readFileSync(`src/world/${f}.ts`, 'utf8')).join('\n');
+    // Lượt 69: thêm `mia` — xe nước mía và quán Nước Mía 3K dựng trong tệp riêng `src/world/mia.ts`.
+    const src = ['city', 'places', 'side', 'mia'].map((f) => readFileSync(`src/world/${f}.ts`, 'utf8')).join('\n');
     const out = new Set<string>();
     for (const m of src.matchAll(/anchor\(\s*'([^']+)'/g)) out.add(m[1]);
     // Neo dựng qua biến: `b.anchor('v_' + shop, …)` và `'v_' + (l.id ?? 'scrap')` ⇒ khai tường minh.
