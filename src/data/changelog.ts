@@ -14,6 +14,36 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 70',
+    tag: 'Nút Góp ý & báo lỗi có chỗ lưu riêng, xe nước mía dời ra sát cổng chợ, quán mía lùi quầy cho thấy máy ép, công trường có lại mái che và ca phụ hồ dài hơn một phút',
+    items: [
+      'Hàng nút góc phải có thêm nút “Góp ý & báo lỗi”. Bấm vào là một bảng riêng: chọn Báo lỗi / Góp ý / Chuyện khác, gõ điều muốn nói rồi bấm Gửi — góp ý nằm lại trên máy, mở ra đọc lại, sửa, xoá từng cái hoặc xoá hết. Phím G cũng mở bảng này.',
+      'Mỗi góp ý tự ghi kèm mã riêng, ngày giờ, chỗ đang đứng, khu phố và bản dựng đang chơi, nên người làm game dựng lại được đúng cảnh mà không phải hỏi lại. Nút “Sao chép hết” gom mọi góp ý thành một khối chữ để dán vào tin nhắn gửi đi.',
+      'Xe nước mía dời ra sát cổng trái của Chợ Xóm Chiều, quay mặt vào trong chợ: lối đi chính giữa chợ trống trở lại, không còn tấm biển to chắn ngang tầm mắt dãy sạp. Bảng giá thu về một tấm nhỏ gắn hẳn trên nóc xe bằng hai cọc, nên không còn cảnh biển treo lơ lửng hay thân xe biến mất khi đi xa.',
+      'Quán Nước Mía 3K: quầy và máy ép lùi sâu vào trong, mặt tiền để trống nên đứng ngoài đường nhìn thẳng vào là thấy trục ép quay, thấy xô nước. Bàn nhựa kê ngay phía trước quầy, hai bên chừa lối đi ở giữa, ghế xếp quanh bàn và ly đặt sẵn trên mặt bàn — khách mua xong là có chỗ ngồi uống tại chỗ.',
+      'Công trường lấy lại mái che: tấm bạt nay có cả mặt trên lẫn mặt dưới, đứng ngay dưới nhìn lên vẫn thấy mái chứ không còn trần trơn. Chòi tuyển thợ dời ra khoảng trống sát lối vào, có bàn ghi tên, sổ điểm danh, ghế chờ và bảng “TUYỂN PHỤ HỒ”.',
+      'Ca phụ bán nước mía giờ là một cái máy ép thật: canh con chạy trên thanh rồi bấm quay cần đúng vùng xanh mới ra nước, bấm lệch là nước tràn ra ngoài. Rót đủ 6 ly thì hết ca, số ly chuẩn quyết định tiền thưởng.',
+      'Ca phụ hồ cũng thành việc thật và dài hơn một phút: ba xe cút kít, mỗi xe năm xẻng. Giữ nút cho kim dâng rồi buông đúng vùng vàng mới được xẻng đất, xúc đủ năm xẻng thì đẩy xe ra chân công trình rồi quay lại xe mới — cả ca khoảng 1 phút 10 giây thời gian thực.',
+      'Tấm bảng giá trong quán mía hết lơ lửng giữa quán: trước nó đứng cách vách gần cả mét, nhìn vào cứ tưởng tấm biển treo trên không. Nay bảng áp sát vách, ngang tầm mắt người mua nên vừa đọc rõ, vừa không che máy ép.',
+      'Góc máy trong hai ca làm được chỉnh lại: trước là camera đứng sau lưng hoặc lọt hẳn vào trong thùng xe, màn hình chỉ còn mặt kệ. Nay ca ép mía nhìn chéo qua vai thấy rõ trục ép, xô nước và tay mình; ca phụ hồ đứng lùi trong sân, thấy cả bàn ghi tên lẫn người đang xúc đất. Anh Sáu Lực cũng hết đứng chênh lên mặt bàn — chân đặt xuống đất sau quầy.',
+    ],
+  },
+  {
+    v: 'Lượt 69',
+    tag: 'Xe nước mía ở Chợ Xóm Chiều và quán Nước Mía 3K trên phố: ép tại chỗ, bán từng ly, học nghề, phụ một ca — thêm nghề phụ hồ, thuê nhà theo tháng',
+    items: [
+      'Xe nước mía dựng trong Chợ Xóm Chiều: thùng xanh, máy ép có trục và tay quay, xô nước, thùng đá, ly xếp sẵn, bó mía dựng góc, dù đỏ, tấm biển “NƯỚC MÍA 3.000₫”, hai ghế nhựa và bao bã mía. Cô Hai Mía đứng bán từ 6 giờ sáng tới 18 giờ 30.',
+      'Quán Nước Mía 3K mở ở mặt tiền Phố Trung Tâm, ngay cạnh quán cơm Bà Tư: máy ép quay hẳn ra phía khách, két nước, thùng đá, bó mía, hai bàn nhựa, quạt, đèn, cửa cuốn. Chú Tư Mía bán từ 7 giờ tới 21 giờ — đúng cái tên “Nước Mía 3K” vẫn nằm trong danh sách tiệm từ lâu.',
+      'Chạm vào xe hay quán đều mở cùng một thực đơn: ly 3.000₫, ly lớn 5.000₫ — uống tại chỗ thì có động tác khà một hơi, giải khát thật, và tính vào lượng nước mía bán được trong ngày.',
+      'Học được cách làm nước mía ở quán với 20.000₫: 1/8 cây mía và một chút đá ra một ly, sơ chế được 8 ly một mẻ. Món này không tự mở theo tay nghề — phải ra quán học mới biết, đúng ý “nghề ở ngoài đời”.',
+      'Xin phụ bán một ca 45 phút ở cả hai chỗ: công 14.000₫ cộng thêm theo uy tín, mỗi ngày tối đa 2 ca chia chung cho xe và quán.',
+      'Nghề mới: phụ hồ ở công trường Phố Trung Tâm. Cai công trình Anh Sáu Lực đứng ngay chỗ cái biển “công trình thi công” trước đây, có bàn ghi tên, sổ chấm công, ghế và bạt xanh. Một ca 90 phút trả 38.000–52.000₫, ngày nhận 3 ca, làm từ 7 giờ tới 16 giờ và khá hao sức.',
+      'Bốn chỗ dựng sẵn mà trước chỉ để ngắm nay đều chạm được: cái tủ lạnh trong nhà trọ (đặt tủ, mở kho lạnh), bàn trà ngoài hè (ngồi nghỉ, nghe chuyện xóm), sàn nhảy của Bin (vô nhảy một bài) và tiệm quần áo (vào lựa đồ, nghe Cô Ngọc kể giá).',
+      'Menu ẩn (bấm 8 lần “Cài đặt” rồi gõ mã) nay có nhóm đầu tên “Vừa thay đổi — Lượt 69”: bấm một mục là đứng đúng chỗ và mở sẵn bảng tương tác (xe mía, quán nước mía, chòi công trình, tủ lạnh nhà trọ), kèm một mục đọc con số thật của bản và một mục mở thẳng nhật ký này. Sang bản sau nhóm đó tự đổi theo bản mới, không phải dọn tay.',
+      'Thuê nhà theo tháng: bốn chỗ trọ, căn hộ, nhà riêng và cửa hàng có thêm gói tháng 28 ngày, rẻ hơn đóng 4 tuần lẻ đúng 20 % — trọ 896.000₫, căn hộ 2.880.000₫, nhà riêng 4.480.000₫, cửa hàng 5.760.000₫. Đang ở gói tuần vẫn đổi sang gói tháng được, ngày đã trả không mất.',
+    ],
+  },
+  {
     v: 'Lượt 67',
     tag: 'Menu ẩn theo kịp game: 34 chỗ đi nhanh tới đúng người, đứng sát bên họ, dòng “bản mới nhất” đọc từ nhật ký',
     items: [
@@ -75,31 +105,6 @@ export const CHANGELOG: LogEntry[] = [
       'Thêm hai mục gọi thẳng “Vào thẳng nồi TRÀ ĐÁ” và “Vào thẳng nồi TRÀ CHANH”: một cú bấm là đứng ngay ở bước cho nguyên liệu, không hỏi gì thêm.',
       'Lý do: bấm mục cũ trên ván mới thì nồi không mở — ván mới chỉ có 18.000₫ nên chưa mua được gánh, quầy chưa đặt được chỗ, và thiếu bếp, nồi, than. Nay các mục này tự lo đủ, chỉ còn việc chạm chén.',
       'Chạm chén là chén bay vào nồi, nồi chuyển sang bước giữ lửa và hiện nút “Quạt lửa” / “Lọc ra” như chơi bình thường.',
-    ],
-  },
-  {
-    v: 'Lượt 60',
-    tag: 'Sửa lỗi không cho được nguyên liệu vào nồi: trà đá và mọi món nấu, ninh, luộc, pha giờ chạm là ăn',
-    items: [
-      'Trước bản này, món nào có bước nấu/ninh/luộc/pha (trà đá, nước sâm, kho thịt, nồi cá…) đều bị kẹt ở bước “Cho nguyên liệu”: chạm đúng chén “Trà khô” mà nồi vẫn trống, bấm mãi không qua được.',
-      'Nguyên nhân: bàn nấu nhận tay theo một mặt phẳng duy nhất đặt ở MẶT NƯỚC nồi, trong khi chén nguyên liệu nằm trên MẶT BÀN. Điểm chạm vì thế bị kéo lệch khoảng 20 cm — xa hơn bán kính chạm của chén, nên không chén nào ăn được.',
-      'Nay bàn nấu nhận tay ở cả hai độ cao: chạm chén thì lấy đúng mặt bàn, chạm để vớt bọt thì lấy mặt nước. Đo lại: chạm đúng chén thì lệch chỉ còn 4 mm (trước là 208 mm).',
-      'Rà cả 7 bàn thao tác còn lại: thái/băm, chiên/xào, nướng, trình bày ra đĩa – ly, trộn topping, rửa chén — đều chạm đúng (lệch 1–19 mm, đều dưới ngưỡng ăn).',
-      'Bảng test của người làm game có thêm mục mở thẳng bước nấu trà đá để thử lại nhanh.',
-    ],
-  },
-  {
-    v: 'Lượt 59',
-    tag: 'Mỗi ngày chỉ nhận được vài ca bốc cá, vài ca chạy bàn; vác bao tăng lên 20 bao/ngày, và bảng việc làm liệt kê đủ mọi việc kèm số còn lại thật',
-    items: [
-      'Ca bốc cá bến cảng giờ chỉ nhận 2 ca một ngày (mỗi ca 110 phút, 4h30–10h). Làm hết ca thứ hai là anh Sáu Lực từ chối, kèm câu nhắc “mai ra sớm nha” — không còn chuyện đứng bấm cả buổi sáng ra tiền.',
-      'Ca chạy bàn / phụ quán cà phê chỉ nhận 3 ca một ngày, tính chung cho cả quán Bóng Đá lẫn quán Sân Vườn. Hết 3 ca thì cả hai quán cùng từ chối và nói rõ là hết ca hôm nay.',
-      'Lượt ca còn lại hiện ngay trên dòng chọn việc (“còn 2/3 ca hôm nay”), và sau mỗi ca có thông báo còn mấy ca — không phải đoán.',
-      'Vác bao ở bến chợ tăng từ 12 lên 20 bao một ngày (6.000₫/bao, tối đa 120.000₫). Đã vác đủ thì dòng chọn việc biến mất, và lỡ đang vác dở bao trên vai cũng phải trả lại chứ không được tính tiền.',
-      'Bảng việc làm viết lại: mỗi việc một dòng, đủ 7 việc (vác bao, bốc cá, chạy bàn, rửa chén, giao hàng, ve chai, việc khác), ghi đúng số của ngày hôm nay — còn mấy bao, mấy ca, mấy lượt rửa chén, mấy đơn giao — và ghi rõ giờ mở cửa của từng chỗ.',
-      'Việc nào hết thì bảng không im lặng bỏ đi mà ghi thẳng “đã vác đủ 20 bao hôm nay”, để người chơi biết là do hết hạn mức chứ không phải mình tìm sai chỗ.',
-      'Qua ngày mới mọi hạn mức tự mở lại; bản lưu cũ vẫn đọc được bình thường, không phải chơi lại từ đầu.',
-      'Bảng test của người làm game có mục đo trần: bốc cá tới ca 3, chạy bàn tới ca 4, vác tới bao thứ 21 — cả ba đều bị chặn và sổ ngày không nhích.',
     ],
   },
 ];

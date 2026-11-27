@@ -29,7 +29,7 @@ import { applyLayout, editLayout } from './layout';
 import * as PUI from './phoneUI';
 
 /** Các bảng người chơi mở bằng phím tắt — bấm lại đúng phím đó thì đóng (không áp cho bảng tự mở như tổng kết ngày). */
-const TABS_CLOSE = ['bag', 'book', 'map', 'phone', 'settings'];
+const TABS_CLOSE = ['bag', 'book', 'map', 'phone', 'settings', 'feedback'];
 
 const IC: Record<string, string> = {
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/>',
@@ -51,7 +51,7 @@ const IC: Record<string, string> = {
   pin: '<path d="M12 21s7-6 7-12a7 7 0 00-14 0c0 6 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/>', arrow: '<path d="M12 3l7 9h-4v9H9v-9H5z" fill="currentColor"/>', check: '<path d="M5 12l5 5 9-10"/>',
   fist: '<path d="M5.2 12.4V9.6a1.5 1.5 0 013 0v1.6V6.8a1.5 1.5 0 013 0v4.4V7.4a1.5 1.5 0 013 0v6.4"/><path d="M14.2 8.2a1.5 1.5 0 013 0v5.2a6 6 0 01-6 6h-1.2a5.2 5.2 0 01-5.2-5.2v-1.6"/>', jump: '<path d="M12 20V6M6.5 11.5L12 5l5.5 6.5"/><path d="M5 21h14"/>',
   phone: '<rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M10.5 5.5h3M11 18.5h2"/>',
-  x: '<path d="M6 6l12 12M18 6L6 18"/>', info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v.5"/>', chat: '<path d="M4 5h16v11H10l-5 4v-4H4z"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>', note: '<path d="M4 4h16v12H9l-5 4z"/><path d="M8 8h8M8 12h5"/>', info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v.5"/>', chat: '<path d="M4 5h16v11H10l-5 4v-4H4z"/>',
 };
 export const ic = (n: string) => `<svg class="ic" viewBox="0 0 24 24">${IC[n] ?? IC.info}</svg>`;
 /** k sao đặc + (5−k) sao rỗng, vẽ bằng SVG để máy nào cũng hiện đúng. */
@@ -87,7 +87,7 @@ export class UI {
     this.world = add('world');
     // ba chip giờ – thời tiết – chỗ đang đứng nằm chung một hàng cho gọn (hẹp quá thì tự xuống dòng)
     add('hud-tl', `<div class="row"><span class="chip" id="clock" data-tip="Giờ trong ngày — một ngày trong game dài khoảng 24 phút thật"></span><span class="chip" id="wx" data-tip="Thời tiết hôm nay"></span><span class="chip" id="place" data-tip="Bạn đang đứng ở khu nào"></span></div><div class="row"><span class="chip danger hide" id="jailclock" data-tip="Thời gian còn lại trong buồng tạm giữ"></span></div><div id="stats"></div>`);
-    add('hud-tr', `<div class="row"><span class="chip" id="rep"></span><span class="chip" id="money"></span></div><div class="row" id="menub"><button class="ib hide" id="stowb" title="Cất gánh vào ba lô">${ic('box')}</button><button class="ib" data-p="bag" data-tip="Túi đồ — nguyên liệu, món ăn, đồ nghề đang mang (Tab)">${ic('bag')}<span class="dot hide" id="bagdot"></span></button><button class="ib" data-p="book" data-tip="Sổ tay — công thức, sổ sách, nợ và khách quen (B)">${ic('book')}</button><button class="ib hide" id="phoneb" data-p="phone" data-tip="Điện thoại — pin, danh bạ, tin nhắn, radio (P)">${ic('phone')}<span class="dot hide" id="phonedot"></span></button><button class="ib" data-p="map" data-tip="Bản đồ thành phố — chạm một chỗ để ghim đường đi (M)">${ic('map')}</button><button class="ib" data-p="settings" data-tip="Cài đặt — đồ hoạ, cỡ chữ, âm thanh, sắp xếp nút">${ic('gear')}</button></div><div class="row"><span class="chip hide" id="wanted" data-tip="Mức bị để ý — càng cao công an càng hay gọi lại hỏi giấy tờ"></span><span class="chip hide" id="debt" data-tip="Tổng nợ và hạn trả gần nhất"></span><span class="chip" id="fps" data-tip="Khung hình mỗi giây và số lệnh vẽ"></span></div>`);
+    add('hud-tr', `<div class="row"><span class="chip" id="rep"></span><span class="chip" id="money"></span></div><div class="row" id="menub"><button class="ib hide" id="stowb" title="Cất gánh vào ba lô">${ic('box')}</button><button class="ib" data-p="feedback" data-tip="Góp ý / báo lỗi — gửi cho người làm game, xem lại các góp ý đã gửi (G)">${ic('note')}<span class="dot hide" id="fbdot"></span></button><button class="ib" data-p="bag" data-tip="Túi đồ — nguyên liệu, món ăn, đồ nghề đang mang (Tab)">${ic('bag')}<span class="dot hide" id="bagdot"></span></button><button class="ib" data-p="book" data-tip="Sổ tay — công thức, sổ sách, nợ và khách quen (B)">${ic('book')}</button><button class="ib hide" id="phoneb" data-p="phone" data-tip="Điện thoại — pin, danh bạ, tin nhắn, radio (P)">${ic('phone')}<span class="dot hide" id="phonedot"></span></button><button class="ib" data-p="map" data-tip="Bản đồ thành phố — chạm một chỗ để ghim đường đi (M)">${ic('map')}</button><button class="ib" data-p="settings" data-tip="Cài đặt — đồ hoạ, cỡ chữ, âm thanh, sắp xếp nút">${ic('gear')}</button></div><div class="row"><span class="chip hide" id="wanted" data-tip="Mức bị để ý — càng cao công an càng hay gọi lại hỏi giấy tờ"></span><span class="chip hide" id="debt" data-tip="Tổng nợ và hạn trả gần nhất"></span><span class="chip" id="fps" data-tip="Khung hình mỗi giây và số lệnh vẽ"></span></div>`);
     add('quest', '<div class="qh"><small>MỤC TIÊU</small><button class="qmin" id="qmin" data-tip="Thu gọn / mở lại ô mục tiêu">–</button></div><span></span>'); add('way', '', 'chip hide'); add('events'); add('cross'); add('focus'); add('stam', '<b></b>', 'hide');
     add('act', `<button class="alt hide"></button><button class="main dim">${ic('hand')}</button>`); add('runb', `<button class="run" data-tip="Chạy nhanh / đi bộ — chạm để bật tắt, hoặc giữ Shift trên máy tính"><i class="rl">ĐI</i>${ic('run')}</button>`);
     add('act2', `<button class="hit" data-tip="Đấm — phím F">${ic('fist')}</button><button class="jump" data-tip="Nhảy — phím Space">${ic('jump')}</button>`);
@@ -206,6 +206,8 @@ export class UI {
       else if (ctx.mode === 'play' && (k === 'tab' || k === 'i')) this.panel('bag');
       else if (ctx.mode === 'play' && k === 'm') this.panel('map');
       else if (ctx.mode === 'play' && k === 'b') this.panel('book');
+      // Lượt 70: G mở bảng Góp ý / báo lỗi (nút cũng nằm trên HUD, cạnh Túi đồ).
+      else if (ctx.mode === 'play' && k === 'g') this.panel('feedback');
       else if (ctx.mode === 'play' && k === 'p') this.panel('phone');
       else if (ctx.mode === 'play' && k === 'v') this.switchView();
       else if (k === 'escape') { if (this.modalName) this.closePanel(); else if (ctx.mode === 'play') this.panel('settings'); }

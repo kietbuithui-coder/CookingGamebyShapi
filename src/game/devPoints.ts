@@ -13,6 +13,8 @@ import { REGULARS } from '../data/people';
 import { advice, destOpen, nowText } from '../sim/advice';
 import { LANDMARK_BY_ID } from '../data/landmarks';
 import { CHANGELOG } from '../data/changelog';
+import { DAYS_PER_MONTH } from '../data/gear';
+import { RECIPES } from '../data/recipes';
 import { money } from '../core/util';
 const PUIphone = () => PUI;
 
@@ -184,13 +186,181 @@ function setupChain(site: 'cho' | 'vp' | 'cv' = 'cho') {
   toast(`Đã dựng Chuỗi cửa hàng + chi nhánh ${siteName} có người trông coi. Chạm quầy chi nhánh để xem sổ.`, 'good', 'shop', true);
 }
 
+/**
+ * MỐC “VỪA THAY ĐỔI” — BẢN MỚI NHẤT Ở ĐẦU MENU (người chơi yêu cầu, lượt 69).
+ *
+ * Người chơi nói: *“menu ẩn nên có 1 mục vừa thay đổi để khi ấn ng dev sẽ test được”*. Đúng vấn đề: sau mỗi lượt,
+ * menu chỉ có 34 chỗ đi nhanh, nên người làm game muốn thử cái vừa sửa thì phải tự nhớ nó nằm ở đâu, tự đi tới,
+ * tự mở đúng bảng. Nay nhóm này **tự dựng từ nội dung của lượt đang làm**:
+ *
+ * - Khai một `DevStep` cho mỗi việc vừa làm, gắn `since` = nhãn bản (`CHANGELOG[0].v`) lúc làm nó.
+ * - `since` khác bản mới nhất ⇒ mục tự ẩn khỏi menu (không ai phải nhớ dọn; xem `latestSteps`).
+ *   Riêng mục `log` (đọc lại nhật ký) thì luôn còn, vì nó là mục “kiểm tra bản này đã lên chưa”.
+ * - NHÓM NÀY **KHÔNG** đụng tới đồng hồ, không cho tiền, không mở khoá gì: bấm là **đứng đúng chỗ** và **mở sẵn
+ *   bảng tương tác** y như người chơi tự bấm, để người làm game thấy đúng cái người chơi sẽ thấy.
+ *   Chỉ hai việc nó làm hộ: dựng quán/nhà hàng nếu chưa có (mục có ghi rõ “dựng hộ”), và **đổi CHỖ ĐỨNG**.
+ *
+ * `tests/devpoints.test.ts` canh: mọi mục ở nhóm đầu phải `since === CHANGELOG[0].v` (không có mục mốc cũ nằm lại),
+ * `run` phải là hàm, và mục nào đi tới neo thì `anchor` phải có thật trong `src/world`.
+ */
+export interface DevStep extends DevAction {
+  /** Nhãn bản mà mục này thuộc về (`CHANGELOG[0].v` tại lúc viết). Khác bản mới nhất thì tự ẩn. */
+  since: string;
+}
+
+/** Đứng đúng `d` mét từ neo rồi QUAY MẶT vào nó — dùng cho mục “vừa thay đổi” (không cần đứng chéo như `tpNear`). */
+function standAt(anchor: string, d = 1.6, msg?: string) {
+  const a = ctx.world.anchors[anchor];
+  if (!a) return false;
+  for (const dd of [d, d + 0.4, d - 0.3, d + 0.9]) {
+    for (const ang of [0, 0.5, -0.5, 1.0, -1.0, Math.PI, Math.PI / 2, -Math.PI / 2]) {
+      const x = a.x + Math.sin(ang) * dd, z = a.z + Math.cos(ang) * dd;
+      if (ctx.world.blocked(x, z, 0.34)) continue;
+      ctx.player.place(x, z, Math.atan2(a.x - x, a.z - z));
+      ctx.acts.way = null;
+      if (msg) toast(msg, 'info', 'pin');
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Dựng lại các mục “vừa thay đổi” của **bản mới nhất**. Gọi từ `getDevSections()` mỗi lần mở menu nên danh sách
+ * luôn khớp `CHANGELOG[0]`: sang lượt sau, các mục dưới đây tự rơi ra, chỉ cần khai mục mới cho lượt đó.
+ */
+function latestSteps(): DevStep[] {
+  const v = CHANGELOG[0]?.v ?? '';
+  const g = () => ctx.g;
+  const all: DevStep[] = [
+    {
+      since: 'Lượt 70', id: 'mx_gop_y', tone: 'green',
+      label: '① Nút Góp ý & báo lỗi — gửi và đọc lại',
+      sub: 'Mở thẳng bảng góp ý: chọn loại, gõ, bấm Gửi rồi xem mục “Đã gửi” bên dưới (cũng mở bằng phím G)',
+      run: () => ctx.ui.panel('feedback'),
+    },
+    {
+      since: 'Lượt 70', id: 'mx_mia_xe_moi', anchor: 'v_mia_xe', tone: 'green',
+      label: '② Xe nước mía — chỗ mới sát cổng trái chợ',
+      sub: 'Xe dời ra cạnh cổng phụ phía nam, quay vào chợ; đứng đây nhìn thẳng vào xe, biển gắn trên nóc chứ không lơ lửng',
+      run: () => {
+        if (!standAt('v_mia_xe', 1.7, 'Xe nước mía — chỗ mới sát cổng trái chợ.')) return toast('Không thấy xe nước mía trong chợ.', 'warn');
+        const n = ctx.npcs.fixed.get('mia_xe');
+        if (n) setTimeout(() => ctx.acts.talk(n), 120);
+      },
+    },
+    {
+      since: 'Lượt 70', id: 'mx_mia_quan_lui', anchor: 'v_mia_quan', tone: 'green',
+      label: '③ Quán Nước Mía 3K — quầy đã lùi sâu',
+      sub: 'Đứng ngoài đường nhìn vào: thấy máy ép quay ra, thấy bàn khách, không còn quầy chắn ngang mặt tiền',
+      run: () => {
+        if (!standAt('v_mia_quan', 1.8, 'Quán Nước Mía 3K — quầy lùi sâu, mặt tiền trống.')) return toast('Không thấy quán nước mía ngoài phố.', 'warn');
+        const n = ctx.npcs.fixed.get('mia_quan');
+        if (n) setTimeout(() => ctx.acts.talk(n), 120);
+      },
+    },
+    {
+      since: 'Lượt 70', id: 'mx_mai_cong_truong', anchor: 'v_site', tone: 'yellow',
+      label: '④ Công trường — mái bạt còn khi đứng dưới',
+      sub: 'Chòi tuyển thợ dời ra khoảng trống sát lối vào; đứng dưới ngẩng lên vẫn thấy mặt dưới tấm bạt',
+      run: () => {
+        if (!standAt('v_site', 1.5, 'Chòi tuyển phụ hồ — mái bạt có cả mặt dưới, nhìn từ đâu cũng thấy.')) return toast('Không thấy chòi công trình.', 'warn');
+        ctx.player.pitch = -0.45;
+      },
+    },
+    {
+      since: 'Lượt 70', id: 'mx_ca_phu_ho_dai', anchor: 'site_phu', tone: 'yellow',
+      label: '⑤ Ca phụ hồ dài hơn một phút — thử ngay',
+      sub: 'Ba xe cút kít × năm xẻng, giữa các xe có nhịp đẩy xe; cả ca khoảng 1 phút 10 giây thời gian thực',
+      run: () => {
+        if (!standAt('site_phu', 1.7, 'Chòi công trình — xin ca phụ hồ để chơi mini-game xúc đất.')) return toast('Không thấy chòi công trình ngoài phố.', 'warn');
+        const n = ctx.npcs.fixed.get('site');
+        if (n) setTimeout(() => ctx.acts.talk(n), 120);
+      },
+    },
+    {
+      since: 'Lượt 70', id: 'mx_nhat_ky70', tone: 'green',
+      label: '⑥ Đọc lại nhật ký bản này',
+      sub: 'Mở đúng trang Nhật ký phát triển (cũng là cách kiểm bản dựng đã lên chưa)',
+      run: () => ctx.ui.panel('changelog'),
+    },
+    {
+      since: 'Lượt 69', id: 'mx_mia_xe', anchor: 'v_mia_xe', tone: 'green',
+      label: '① Xe nước mía trong chợ — bán/mua tại chỗ',
+      sub: 'Đứng cạnh xe rồi MỞ SẴN bảng của Cô Hai Mía: mua ly 3.000₫ / ly lớn 5.000₫, xin phụ bán một ca',
+      run: () => {
+        if (!standAt('v_mia_xe', 1.5, 'Xe nước mía — bấm nói chuyện với Cô Hai Mía.')) return toast('Không thấy xe nước mía ngoài phố.', 'warn');
+        const n = ctx.npcs.fixed.get('mia_xe');
+        if (n) setTimeout(() => ctx.acts.talk(n), 120);
+      },
+    },
+    {
+      since: 'Lượt 69', id: 'mx_mia_quan', anchor: 'v_mia_quan', tone: 'green',
+      label: '② Quán Nước Mía 3K trên phố — học nghề, mua ly',
+      sub: 'Quán ở mặt tiền bắc Phố Trung Tâm (cạnh quán cơm Bà Tư) — mở sẵn bảng của Chú Tư Mía',
+      run: () => {
+        if (!standAt('v_mia_quan', 1.6, 'Quán Nước Mía 3K — bấm nói chuyện với Chú Tư Mía.')) return toast('Không thấy quán nước mía ngoài phố.', 'warn');
+        const n = ctx.npcs.fixed.get('mia_quan');
+        if (n) setTimeout(() => ctx.acts.talk(n), 120);
+      },
+    },
+    {
+      since: 'Lượt 69', id: 'mx_phu_ho', anchor: 'site_phu', tone: 'yellow',
+      label: '③ Công trường — xin một ca phụ hồ',
+      sub: '90 phút, 38.000–52.000₫/ca, 3 ca/ngày, chỉ 7h–16h — mở sẵn bảng của Anh Sáu Lực',
+      run: () => {
+        if (!standAt('site_phu', 1.7, 'Chòi công trình — bấm nói chuyện với Anh Sáu Lực.')) return toast('Không thấy chòi công trình ngoài phố.', 'warn');
+        const n = ctx.npcs.fixed.get('site');
+        if (n) setTimeout(() => ctx.acts.talk(n), 120);
+      },
+    },
+    {
+      since: 'Lượt 69', id: 'mx_bon_cho', anchor: 'fridge_tro', tone: 'green',
+      label: '④ Bốn chỗ dựng sẵn nay chạm được',
+      sub: 'Tủ lạnh trong nhà trọ (đang đứng đây) · rồi bàn trà đá Cô Thắm, sàn nhảy của Bin, tiệm quần áo Cô Ngọc',
+      run: () => {
+        if (!standAt('fridge_tro', 1.5, 'Tủ lạnh nhà trọ — chạm để đặt tủ / mở kho lạnh. Ba chỗ kia nằm trong nhóm Địa điểm.')) toast('Không thấy tủ lạnh nhà trọ.', 'warn');
+      },
+    },
+    {
+      since: 'Lượt 69', id: 'mx_mua_mon', tone: 'green',
+      label: '⑤ Món nước mía + giá tháng vừa đổi',
+      sub: 'Đọc con số thật: giá vốn một ly nước mía, và tiền thuê tháng của bốn chỗ (28 ngày, −20 %)',
+      run: () => {
+        const gg = g(), r = RECIPES.nuoc_mia;
+        const cost = r ? R.recipeCost(gg, r).total : 0;
+        const rent = ['tro', 'canho', 'nharieng', 'cuahang'].map((id) => {
+          const h = HOUSING[id];
+          return `${h.name}: ${money(h.month ?? 0)}/tháng`;
+        }).join(' · ');
+        const biet = gg.rec.nuoc_mia?.known ? 'đã biết' : 'CHƯA biết (học ở quán 20.000₫)';
+        ctx.ui.dialog({ who: 'Con số của bản này', text:
+          `Nước mía: giá vốn ${money(cost)}/ly, bán ${money(r?.ref ?? 3000)} — ${biet}.\n`
+          + `Thuê theo tháng (${DAYS_PER_MONTH} ngày, rẻ hơn 4 tuần lẻ 20 %): ${rent}.\n`
+          + `Hôm nay: bán ${gg.wd.miaSold} ly · phụ bán ${gg.wd.miaShifts} ca nước mía · ${gg.wd.siteShifts} ca phụ hồ.`,
+          opts: [{ t: 'Rõ rồi.' }, { t: 'Mở sổ tay xem món', fn: () => ctx.ui.panel('book', 'rec') }] });
+      },
+    },
+    {
+      since: 'Lượt 69', id: 'mx_nhat_ky', tone: 'green',
+      label: '⑥ Đọc lại nhật ký bản này',
+      sub: 'Mở đúng trang Nhật ký phát triển (cũng là cách kiểm bản dựng đã lên chưa)',
+      run: () => ctx.ui.panel('changelog'),
+    },
+  ];
+  return all.filter((x) => x.since === v);
+}
+
 export function getDevSections(): DevSection[] {
   // Mọi mục đi nhanh đều đứng CẠNH một cái neo thật (`tpNear`) và khai `anchor` để test canh neo còn tồn tại.
   // Không mục nào được đụng tới `g.min` — đi nhanh chỉ đổi chỗ đứng, không đổi giờ trong ngày.
   // Thêm nhân vật ngoài phố chỉ cần thêm một dòng ở đây.
   const di = (id: string, anchor: string, label: string, sub: string, opt: { d?: number } = {}) =>
     ({ id, anchor, label, sub, run: () => tpNear(anchor, label, opt) });
+  const moi = latestSteps();
   return [
+    // Nhóm đầu tiên: đúng những gì VỪA ĐỔI ở bản đang chơi (`CHANGELOG[0]`). Sang lượt sau các mục này tự rơi ra.
+    ...(moi.length ? [{ title: `Vừa thay đổi — ${CHANGELOG[0]?.v ?? ''} (bấm là tới đúng chỗ, mở sẵn bảng)`, items: moi as DevAction[] }] : []),
     {
       title: 'Địa điểm — tele nhanh',
       items: [

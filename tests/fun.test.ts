@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { FUN_LIST, FUNS, funAt, funOpenAt, funHoursText, fmtHour } from '../src/data/fun';
 import { RECIPE_LIST, RECIPES } from '../src/data/recipes';
-import { unlockRecipes, addXp, level, cafeWage, dockWage } from '../src/sim/rules';
+import { unlockRecipes, addXp, level, cafeWage, dockWage, autoUnlockable } from '../src/sim/rules';
 import { fresh } from './helpers';
 
 describe('chỗ vui chơi', () => {
@@ -51,7 +51,8 @@ describe('thang mở công thức', () => {
       const got = unlockRecipes(g, lv <= 1 ? 1 : 2);
       for (const r of got) {
         expect(!r.learn || r.learn.skill <= lv, `${r.id} vượt tay nghề ${lv}`).toBe(true);
-        const cheaper = RECIPE_LIST.filter((o) => !g.rec[o.id].known && o.ref < r.ref && (!o.learn || o.learn.skill <= lv));
+        // Lượt 69: món KHÔNG tự mở (nước mía — phải học ở quán) không tính là "bị nhảy cóc".
+        const cheaper = RECIPE_LIST.filter((o) => !g.rec[o.id].known && o.ref < r.ref && (!o.learn || o.learn.skill <= lv) && autoUnlockable(o));
         expect(cheaper.length, `${r.id} bị nhảy cóc ở cấp ${lv}`).toBe(0);
       }
     }
@@ -68,7 +69,11 @@ describe('thang mở công thức', () => {
     }
     atLevel(g, 10);
     unlockRecipes(g, RECIPE_LIST.length);
-    expect(Object.values(g.rec).filter((r) => r.known).length).toBe(RECIPE_LIST.length);
+    // Lượt 69: có món KHÔNG tự mở (nước mía — phải học ở quán Nước Mía 3K), nên thang mở tự động không phủ
+    // hết bảng; phần còn lại vẫn đúng là 60 món tự mở.
+    const auto = RECIPE_LIST.filter((r) => autoUnlockable(r));
+    expect(auto.length).toBe(60);
+    expect(Object.values(g.rec).filter((r) => r.known).length).toBe(auto.length);
   });
 
   it('lên cấp qua addXp thì tự mở món và báo cho người chơi', () => {

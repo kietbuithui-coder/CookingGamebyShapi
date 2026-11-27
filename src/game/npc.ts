@@ -67,7 +67,9 @@ function paperGeo(): THREE.BufferGeometry {
   if (!_paperGeo) { const m = new MB(); m.sph(0, 0, 0, 0.1, 0.09, 0.1, 0xfbf8ef, 6); m.sph(0.042, 0.03, 0.014, 0.07, 0.062, 0.07, 0xeee7d4, 5); m.sph(-0.036, -0.028, 0.026, 0.068, 0.06, 0.068, 0xe6dfcb, 5); _paperGeo = m.build(); }
   return _paperGeo;
 }
-const APRON: Record<string, number> = { m_thit: 0xf3f0e8, m_haisan: 0x2f6fa8, bakery: 0xf3f0e8, eatery: 0xd9463c, mart: 0x1f9d55, m_trung: 0xf3ead2, cafe: 0xf3e8d2 };
+const APRON: Record<string, number> = { m_thit: 0xf3f0e8, m_haisan: 0x2f6fa8, bakery: 0xf3f0e8, eatery: 0xd9463c, mart: 0x1f9d55, m_trung: 0xf3ead2, cafe: 0xf3e8d2,
+  // Lượt 69: hai chủ quán nước mía đeo tạp dề xanh lá (mía) — nhìn từ xa đã nhận ra người bán.
+  mia_xe: 0x7fb84a, mia_quan: 0x7fb84a };
 
 export class Npcs {
   list: Npc[] = []; fixed = new Map<string, Npc>(); private seq = 1; private spawnT = 0; private R = new RNG((Math.random() * 1e9) | 0); private barkCd = 4;

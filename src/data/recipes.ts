@@ -72,6 +72,16 @@ export const RECIPE_LIST: RecipeDef[] = [
     ings: { tra: 0.04, da: 0.12 }, fin: ['da'],
     prep: [boil(['tra'], 14, 'pha', TEA, 0, 'Pha trà')], finish: [asm(L('da', 'ice'), L('@tra', 'liquid', TEA, 'Trà'))],
     hot: -1, meal: [0.6, 1, 0.8, 0.8], fill: 0, desc: 'Ly trà mát lạnh giá bình dân.' },
+  // Lượt 69: NƯỚC MÍA. Ly 3.000₫ đúng như biển "Nước Mía 3K" trên phố và như giá ở xe mía Chợ Xóm Chiều.
+  // Không cần nấu: cắt mía rồi trình bày với đá — chỉ cần dao thớt, nên người mới cũng bán được.
+  // Bán chạy nhất giữa trưa và chiều (trời nóng), đêm thì gần như không ai mua.
+  // Giá vốn: 1/8 cây mía (2.250₫) + một chút đá + ly giấy 300₫ ⇒ khoảng 2.000₫/ly, lãi gộp ~33 % ở giá 3.000₫
+  // (đúng kiểu hàng rong: lời mỏng, bán nhiều). Đừng nâng `pack` lên — bài "món nào cũng phải có lãi gộp" của
+  // `tests/economy.test.ts` canh đúng chỗ này.
+  { id: 'nuoc_mia', name: 'Nước mía', short: 'Nước mía', cat: 'nuoc', vessel: 'glass', ref: 3000, elastic: 2.0, batch: 8, serve: 1, hold: 300, pack: 300,
+    ings: { mia: 0.125, da: 0.03 }, fin: ['mia', 'da'],
+    prep: [cut('mia', 'khúc', 5)], finish: [asm(L('da', 'ice'), L('@mia', 'liquid', 0xc8d96a, 'Nước mía'), L('mia', 'sticks', 0x9fb84a, 'Mía cắt khúc'))],
+    hot: -1, meal: [0.5, 1, 0.95, 0.35], fill: 2, learn: { from: 'mia_quan', cost: 20000, skill: 0 }, desc: 'Ép tại chỗ, ngọt thanh, mát tới ruột.' },
   // ───────── Bánh mì ─────────
   { id: 'banh_mi_trung', name: 'Bánh mì trứng ốp la', short: 'B.mì trứng', cat: 'banhmi', vessel: 'bread', ref: 17000, elastic: 1.4, batch: 8, serve: 1, hold: 360, pack: 500,
     ings: { banhmi: 1, trung: 1, dualeo: 0.2, rauthom: 0.08, tuongot: 0.02, dauan: 0.02, nuoctuong: 0.01 }, fin: ['banhmi', 'trung', 'tuongot', 'dauan', 'nuoctuong'],

@@ -1,7 +1,7 @@
 // Chỗ ở thuê: giá, sức chứa, uy tín đòi hỏi, và chuyện bị đuổi khi nợ tiền nhà.
 import { describe, it, expect } from 'vitest';
-import { HOUSING, HOUSING_LIST } from '../src/data/gear';
-import { payHousing, canRent, rentNeed, advance, has, PLUGGABLE } from '../src/sim/rules';
+import { HOUSING, HOUSING_LIST, DAYS_PER_MONTH } from '../src/data/gear';
+import { payHousing, renewHousing, canRent, rentNeed, advance, has, PLUGGABLE, hasMonthPlan, rentPlanOf, planRent, nextRent } from '../src/sim/rules';
 import { LOTS } from '../src/world/layout';
 import { fresh, give, IDLE } from './helpers';
 
@@ -73,6 +73,47 @@ describe('chỗ ở', () => {
     expect(payHousing(g, 'bietthu')).toBe(false);
     expect(canRent(g, 'bietthu')).toBe(true); // không đòi uy tín thì coi như mở
     expect(g.housing).toBe('gamcau');
+  });
+
+  it('thuê theo tháng: 28 ngày, rẻ hơn 4 tuần lẻ đúng 20 %, chỉ bốn chỗ thuê tuần mới có', () => {
+    expect(DAYS_PER_MONTH).toBe(28);
+    for (const id of ['tro', 'canho', 'nharieng', 'cuahang']) {
+      const h = HOUSING[id];
+      expect(hasMonthPlan(id), id).toBe(true);
+      expect(h.month).toBeLessThan(h.rent * 4);
+      expect(1 - h.month! / (h.rent * 4)).toBeCloseTo(0.2, 2);
+    }
+    // Gầm cầu, ghế đá, nhà nghỉ (thuê đêm) không có gói tháng.
+    for (const id of Object.keys(HOUSING)) expect(hasMonthPlan(id), id).toBe(['tro', 'canho', 'nharieng', 'cuahang'].includes(id));
+    expect(planRent('hotel', 'tháng')).toBe(0);
+    const g = fresh();
+    g.cash = 5000000; g.rep = 60;
+    expect(payHousing(g, 'tro', 'tháng')).toBe(true);
+    expect(g.paidUntil).toBe(g.day + DAYS_PER_MONTH);
+    expect(g.cash).toBe(5000000 - HOUSING.tro.month!);
+    expect(rentPlanOf(g)).toBe('tháng');
+    expect(nextRent(g)).toBe(HOUSING.tro.month);
+    // Đóng sớm gói tháng nữa thì cộng dồn, không mất ngày đã trả.
+    const until = g.paidUntil;
+    expect(renewHousing(g)).toBe(true);
+    expect(g.paidUntil).toBe(until + DAYS_PER_MONTH);
+  });
+
+  it('gói tuần vẫn là mặc định: chuyển sang tháng thì hạn đóng tính theo tháng', () => {
+    const g = fresh();
+    g.cash = 5000000; g.rep = 60;
+    expect(payHousing(g, 'canho')).toBe(true);
+    expect(g.paidUntil).toBe(g.day + 7);
+    expect(rentPlanOf(g)).toBe('tuần');
+    g.paidUntil = g.day - 1;
+    expect(renewHousing(g, 'tháng')).toBe(true);
+    // Đang trễ hạn ⇒ tính từ hôm nay, không cộng dồn vào cái hạn đã qua.
+    expect(g.paidUntil).toBe(g.day + DAYS_PER_MONTH);
+    expect(rentPlanOf(g)).toBe('tháng');
+    // Nhà đã mua thì không đóng gì nữa.
+    g.cash = 50000000;
+    expect(payHousing(g, 'nharieng', 'tháng')).toBe(true);
+    g.paidUntil = g.day + DAYS_PER_MONTH;
   });
 
   it('nợ tiền nhà hai ngày thì mất chỗ, đồ trong nhà bị giữ, tủ lạnh cũng mất', () => {

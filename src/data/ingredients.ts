@@ -104,6 +104,9 @@ const RAW: Row[] = [
   // nên uống được nhiều, và vẫn đỡ khát như nước ngọt. Muốn chạy dai thì phải trả tiền.
   ['shapi', 'Nước tăng lực Shapi', 'drink', 'lon', 9000, 0.35, F, 0, 'can', 0xf5c531, 0xd9261e, { t: 30, m: 4, st: 0.3 }],
   ['cam', 'Cam', 'drink', 'quả', 6000, 0.2, 200, 0, 'round', 0xf59a2a, 0xe07f1a, { t: 15, h: 6, m: 1 }],
+  // Lượt 69: cây mía — bán theo cây ở sạp củ quả và ở vựa đầu mối. Ép một ly cần khoảng 1/4 cây.
+  // Để được lâu như củ quả nên không cần tủ lạnh; ăn sống thì chỉ đỡ khát chứ không no.
+  ['mia', 'Cây mía', 'drink', 'cây', 12000, 1.2, 480, 0, 'long', 0x9fb84a, 0x7a9a2f, { t: 8 }],
   ['da', 'Đá viên', 'drink', 'bịch', 5000, 1, 9, 1, 'cubes', 0xd0ecf7, 0xffffff],
   // ── Đặc biệt
   ['phomai', 'Phô mai', 'special', 'gói', 60000, 0.2, 300, 1, 'block', 0xf7c83a, 0xf0a92e],

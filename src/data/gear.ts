@@ -77,17 +77,29 @@ export const BRANCH_WAGE = 90000;
 export interface HousingDef {
   id: string; name: string; rent: number; per: 'đêm' | 'tuần' | ''; buy?: number; safety: number; sleep: number; storage: number; cold: boolean; shower: boolean;
   anchor: string; desc: string; mood: number; needRep?: number;
+  /**
+   * Lượt 69 — người chơi xin **thuê theo tháng** ở những chỗ đang cho thuê theo tuần.
+   * Giá tháng = 4 tuần × 0,8 (chiết khấu 20 % cho người thuê dài), làm tròn nghìn.
+   * Chỉ chỗ `per: 'tuần'` mới có trường này; `sim/rules.ts` đọc số ở đây, không chép tay.
+   */
+  month?: number;
 }
+/** Một tháng thuê = 4 tuần. */
+export const DAYS_PER_MONTH = 28;
+/** Chiết khấu thuê theo tháng so với 4 tuần lẻ (20 %). */
+export const MONTH_DISCOUNT = 0.2;
+/** Giá thuê một tháng của một chỗ: 4 tuần × (1 − chiết khấu), làm tròn nghìn. */
+export const monthRent = (weekRent: number) => Math.round((weekRent * 4 * (1 - MONTH_DISCOUNT)) / 1000) * 1000;
 /** sleep: chất lượng giấc ngủ (hệ số hồi năng lượng) · storage: kg cất được · safety: 0–1 (thấp dễ mất trộm) */
 export const HOUSING_LIST: HousingDef[] = [
   { id: 'gamcau', name: 'Gầm cầu', rent: 0, per: '', safety: 0.35, sleep: 0.6, storage: 12, cold: false, shower: false, anchor: 'bed_gamcau', mood: -6, desc: 'Tấm bìa các-tông, miễn phí, hay mất đồ.' },
   { id: 'ghe', name: 'Ghế đá công viên', rent: 0, per: '', safety: 0.25, sleep: 0.5, storage: 0, cold: false, shower: false, anchor: 'bed_ghe', mood: -8, desc: 'Thoáng mát nhưng mưa là ướt, có khi bị đuổi.' },
   { id: 'nhanghi', name: 'Nhà nghỉ Bình Dân', rent: 80000, per: 'đêm', safety: 0.9, sleep: 0.9, storage: 20, cold: false, shower: true, anchor: 'bed_nhanghi', mood: 4, desc: 'Có giường, có vòi sen. Trả theo đêm.' },
-  { id: 'tro', name: 'Phòng trọ', rent: 280000, per: 'tuần', safety: 0.95, sleep: 1, storage: 60, cold: false, shower: true, anchor: 'bed_tro', mood: 8, desc: 'Chỗ ở ổn định, cất được nhiều đồ, đặt được tủ lạnh.' },
+  { id: 'tro', name: 'Phòng trọ', rent: 280000, per: 'tuần', month: 896000, safety: 0.95, sleep: 1, storage: 60, cold: false, shower: true, anchor: 'bed_tro', mood: 8, desc: 'Chỗ ở ổn định, cất được nhiều đồ, đặt được tủ lạnh.' },
   { id: 'khachsan', name: 'Khách sạn Hoa Sen', rent: 350000, per: 'đêm', safety: 1, sleep: 1.25, storage: 20, cold: true, shower: true, anchor: 'bed_khachsan', mood: 20, desc: 'Nệm êm, máy lạnh — ngủ một đêm khoẻ cả ngày.' },
-  { id: 'canho', name: 'Căn hộ An Bình', rent: 900000, per: 'tuần', buy: 95000000, safety: 0.98, sleep: 1.1, storage: 80, cold: true, shower: true, anchor: 'bed_canho', mood: 12, needRep: 12, desc: 'Căn hộ một phòng ở khu cao tầng: bếp riêng, cửa sổ nhìn phố, có tủ lạnh.' },
-  { id: 'nharieng', name: 'Nhà riêng', rent: 1400000, per: 'tuần', buy: 180000000, safety: 1, sleep: 1.15, storage: 120, cold: true, shower: true, anchor: 'bed_nharieng', mood: 16, needRep: 30, desc: 'Nhà một trệt có sân, phòng khách, hai buồng ngủ — chỗ ở đàng hoàng.' },
-  { id: 'cuahang', name: 'Cửa hàng kiêm nhà ở', rent: 1800000, per: 'tuần', buy: 240000000, safety: 1, sleep: 1.05, storage: 140, cold: true, shower: true, anchor: 'bed_cuahang', mood: 14, needRep: 45, desc: 'Mặt tiền bán hàng, buồng ngủ phía sau. Rộng nhất trong các chỗ thuê.' },
+  { id: 'canho', name: 'Căn hộ An Bình', rent: 900000, per: 'tuần', month: 2880000, buy: 95000000, safety: 0.98, sleep: 1.1, storage: 80, cold: true, shower: true, anchor: 'bed_canho', mood: 12, needRep: 12, desc: 'Căn hộ một phòng ở khu cao tầng: bếp riêng, cửa sổ nhìn phố, có tủ lạnh.' },
+  { id: 'nharieng', name: 'Nhà riêng', rent: 1400000, per: 'tuần', month: 4480000, buy: 180000000, safety: 1, sleep: 1.15, storage: 120, cold: true, shower: true, anchor: 'bed_nharieng', mood: 16, needRep: 30, desc: 'Nhà một trệt có sân, phòng khách, hai buồng ngủ — chỗ ở đàng hoàng.' },
+  { id: 'cuahang', name: 'Cửa hàng kiêm nhà ở', rent: 1800000, per: 'tuần', month: 5760000, buy: 240000000, safety: 1, sleep: 1.05, storage: 140, cold: true, shower: true, anchor: 'bed_cuahang', mood: 14, needRep: 45, desc: 'Mặt tiền bán hàng, buồng ngủ phía sau. Rộng nhất trong các chỗ thuê.' },
 ];
 export const HOUSING: Record<string, HousingDef> = Object.fromEntries(HOUSING_LIST.map((h) => [h.id, h]));
 /** Các loại chỗ ở sẽ thêm sau. */

@@ -106,6 +106,9 @@ export const FIXED_ROLE: Record<string, string> = {
   tra_da: 'Cô bán trà đá', rap: 'Cậu nhóc nhảy đường phố', sua_xe: 'Thợ sửa xe vỉa hè',
   hat_rong: 'Người hát rong', danh_co: 'Ông già đánh cờ', danh_giay: 'Cậu bé đánh giày',
   chu_ba: 'Chú xe ôm',
+  // Lượt 69 — hai chỗ bán nước mía người chơi mới tương tác được.
+  mia_xe: 'Chủ xe nước mía', mia_quan: 'Chủ quán nước mía',
+  site: 'Cai công trình',
 };
 
 /** Khách quen có tên, có sở thích riêng — quan hệ được lưu trong save. */
@@ -227,6 +230,35 @@ export const SIDE: Record<string, SideDef> = {
       { q: 'Ai dạy con đánh giày?', a: 'Ông Năm chứ ai. Ông nói làm nghề gì cũng phải sạch tay, khách mới tin. Con nhớ hoài câu đó, nên đánh xong là rửa tay liền.' },
     ],
   },
+  // ── Lượt 69: chuyện của hai chủ quán nước mía ──
+  mia_xe: {
+    intro: 'Cô Hai vừa quay cần ép vừa hất hàm chào: “Ngồi ghế nhựa đi con, đợi cô ép cho ly mía đá. Bã cô để dành cho người ta chở về nấu đường.”',
+    again: '“Lại khát hả? Cô ép liền. Nắng chợ này mà không có ly mía là chết người ta.”',
+    topics: [
+      { q: 'Cô mua mía ở đâu vậy?', a: 'Mía Củ Chi, bó mười cây chở lên chợ sớm. Bữa nào mía non quá thì nước nhạt, phải ép thêm cây nữa mới đủ ngọt. Cô coi mía bằng mắt chứ không cân — cây nào vỏ bóng, đốt dài là mía đủ tuổi, nước mới thanh.' },
+      { q: 'Cái xe mía này cô sửa đâu?', a: 'Ba cái đời rồi con. Cần ép cũ mòn bánh răng, Cô Ba chỉ chỗ cho thợ ngoài Xóm Lao Động tiện lại. Bây giờ có cái động cơ gắn sau xe, đạp đỡ mệt mà tiếng nó ồn cả góc chợ. Khách quen nghe tiếng là biết cô tới rồi.' },
+      { q: 'Bán một ngày được bao nhiêu ly?', a: 'Ngày thường trăm ly, ngày nắng thì gấp rưỡi. Ba ngàn một ly, tiền mía với tiền đá trừ ra cũng đủ chợ búa. Mà nghề này vui ở chỗ ngồi coi thiên hạ đi chợ — ai mua gì, nhà nào có chuyện, cô biết hết.' },
+    ],
+  },
+  mia_quan: {
+    intro: 'Chú Tư kéo cửa cuốn lên vừa đủ một lối vào, tay cầm vòi nước xịt rửa cái máy ép: “Vô đi con, quán mở rồi. Ba ngàn một ly, uống tại chỗ hay mang đi đều được.”',
+    again: '“Ghé nữa hả? Cứ ngồi đó, chú ép ly nữa cho mát.”',
+    topics: [
+      { q: 'Sao chú mở quán ở đây?', a: 'Cái mặt tiền này trước là tiệm sửa đồng hồ, ế quá nên trả lại. Chú mướn, kê đúng cái máy ép với bộ bàn nhựa là bán được. Phố này đông người văn phòng, trưa nóng thì họ đứng xếp hàng mua cả chục ly một lượt.' },
+      { q: 'Mía ép khác mía ăn sống chỗ nào?', a: 'Ép là phải chọn cây đủ nước, ép rồi uống liền trong buổi, để lâu là nó lên men chua. Chú không pha đường, không pha nước lọc — khách sành họ nếm là biết liền. Ba ngàn là giá chú treo từ ngày mở quán, chưa lên một đồng.' },
+    ],
+  },
+
+  // ── Lượt 69: cai công trình (chỗ nhận việc phụ hồ) ──
+  site: {
+    intro: 'Anh Sáu Lực đứng ở chòi công trình, tay cầm sổ điểm danh, mắt vẫn dõi lên giàn giáo: “Vô đây. Cần người phụ hồ, làm được thì làm, không thì đừng có đứng đây choán chỗ.”',
+    again: '“Lại xin việc hả? Hôm nay nắng, ai chịu được thì làm, tui trả đủ.”',
+    topics: [
+      { q: 'Công trình này xây gì vậy anh?', a: 'Chung cư bốn tầng, của bà con trong xóm góp vốn. Đổ sàn xong là tới phần tô trát với đi đường ống. Mấy tháng nữa xong, mà xong rồi thì cái chòi này dẹp, tui đi công trình khác.' },
+      { q: 'Làm phụ hồ cực không anh?', a: 'Cực chớ. Khuân gạch, trộn hồ, xách nước — nắng thì cháy da, mưa thì ướt. Mà ngày nào cũng có người xin vô, vì tiền công trả liền trong ngày, không nợ ai. Con mà chịu khó thì cứ tới, 7 giờ tui mở sổ.' },
+    ],
+  },
+
 };
 
 // ───────────────────────── Lời thoại ─────────────────────────
@@ -439,4 +471,12 @@ export const FIXED: Record<string, FixedNpcDef> = {
   cafe: { id: 'cafe', name: 'Anh Phong', face: 0, fem: false, shirt: 0x3a2416, pants: 0x2a2e3a, hair: 0x1e1a18, hat: 0, hairStyle: 0, fat: 0.98, h: 1.01 },
   // Chú Ba xe ôm: đứng dưới gầm cầu cạnh lều người chơi, áo sơ mi sờn + nón bảo hiểm, da ngăm vì chạy nắng cả ngày.
   chu_ba: { id: 'chu_ba', name: 'Chú Ba xe ôm', face: 3, fem: false, shirt: 0x8a7a4a, pants: 0x3a3d42, hair: 0x55504a, hat: 3, hairStyle: 0, fat: 1.12, h: 0.99, skin: 0xb8804f },
+  // ── Lượt 69: hai chỗ bán nước mía ──
+  // Cô Hai đứng sau xe mía ở Chợ Xóm Chiều: tạp dề xanh, khăn rằn quấn cổ, da sạm vì nắng chợ.
+  mia_xe: { id: 'mia_xe', name: 'Cô Hai Mía', face: 4, fem: true, shirt: 0xd9a05a, pants: 0x2a2e3a, hair: 0x2a2420, hat: 1, hairStyle: 2, fat: 1.08, h: 0.95 },
+  // Chú Tư mở quán Nước Mía 3K ở Phố Trung Tâm: áo thun bạc màu, nón lưỡi trai, tay lúc nào cũng dính nước mía.
+  mia_quan: { id: 'mia_quan', name: 'Chú Tư Mía', face: 3, fem: false, shirt: 0xf3f0e8, pants: 0x2f3a52, hair: 0x55504a, hat: 2, hairStyle: 0, fat: 1.1, h: 1.0 },
+  // Anh Sáu Lực — cai công trình ở Xóm Lao Động, người nhận phụ hồ (khác "anh Sáu" ở bến cá trong câu thoại).
+  // Anh Sáu Lực ở công trường: cũng ngoài nắng cả ngày ⇒ có màu da riêng (bài canh `mat56.test.ts` đòi khai đủ).
+  site: { id: 'site', name: 'Anh Sáu Lực', face: 3, fem: false, shirt: 0xf5c531, pants: 0x4a4a42, hair: 0x1e1a18, hat: 4, hairStyle: 0, fat: 1.15, h: 1.03, skin: 0xb8804f },
 };
