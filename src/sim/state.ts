@@ -135,7 +135,7 @@ export interface Game {
   rentPlan: Record<string, 'tuần' | 'tháng'>;
   weather: { now: WeatherId; until: number; next: WeatherId; flood: number; wet: number };
   ev: { active: ActiveEvent[]; last: Record<string, number>; check: number; lastStart: number };
-  wd: { litterDay: number; picked: number[]; bins: Record<number, number>; sacks: number; plates: number; deliveries: number; cargoShifts: number; cafeShifts: number; miaShifts: number; miaSold: number; siteShifts: number; begTired: number; outOf: string[]; haggled: Record<string, number>; job: any; };
+  wd: { litterDay: number; picked: number[]; bins: Record<number, number>; sacks: number; plates: number; deliveries: number; cargoShifts: number; cafeShifts: number; miaShifts: number; miaSold: number; miaCups: number; siteShifts: number; siteCups: number; begTired: number; outOf: string[]; haggled: Record<string, number>; job: any; };
   tot: { served: number; earned: number; begged: number; scrap: number; best: number; bankrupt: number };
   quest: number;
 }
@@ -161,7 +161,7 @@ export function newGame(seed = (Math.random() * 1e9) | 0, ac: 'anh' | 'chị' = 
     led: newLedger(0), hist: [], rel: {}, met: {}, flags: {}, rentPlan: {},
     weather: { now: 'nang', until: 6 * 60 + 10 + 420, next: 'nang', flood: 0, wet: 0 },
     ev: { active: [], last: {}, check: 9 * 60, lastStart: -999 },
-    wd: { litterDay: -1, picked: [], bins: {}, sacks: 0, plates: 0, deliveries: 0, cargoShifts: 0, cafeShifts: 0, miaShifts: 0, miaSold: 0, siteShifts: 0, begTired: 0, outOf: [], haggled: {}, job: null },
+    wd: { litterDay: -1, picked: [], bins: {}, sacks: 0, plates: 0, deliveries: 0, cargoShifts: 0, cafeShifts: 0, miaShifts: 0, miaSold: 0, miaCups: 0, siteShifts: 0, siteCups: 0, begTired: 0, outOf: [], haggled: {}, job: null },
     tot: { served: 0, earned: 0, begged: 0, scrap: 0, best: 0, bankrupt: 0 }, quest: 0,
   };
 }

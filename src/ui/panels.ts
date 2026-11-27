@@ -20,9 +20,10 @@ import * as PH from '../sim/phone';
 import * as PUI from './phoneUI';
 import { FEAT_LABEL } from '../data/phone';
 import { money, qty, clamp, round1k, dist2, hhmm } from '../core/util';
+import { FB_KINDS, FB_MAX, FB_TEXT_MAX, type FbKind, loadFeedback, addFeedback, editFeedback, removeFeedback, clearFeedback, exportFeedback, checkText } from '../game/feedback';
 import { canOffline, downloadForOffline, offlineState, offlineBytes } from '../core/offline';
 import { toast, sfx, bus } from '../core/bus';
-import { BX, CORR, SPOTS, LOTS, lotPoint, DISTRICT, MAP } from '../world/layout';
+import { BX, CORR, SPOTS, LOTS, lotPoint, DISTRICT, MAP, districtAt } from '../world/layout';
 
 let tab = '';
 /** Cài đặt: nút "Xoá bản lưu" đã hỏi lại chưa (bấm hai lần mới xoá). */
@@ -66,6 +67,9 @@ function errandBlock(g: Game): string {
 let DEV_UNLOCKED = false;
 /** Chỉ dùng cho test: khoá lại menu ẩn như vừa tải trang. */
 export function resetDevUnlock() { DEV_UNLOCKED = false; }
+
+/** Bảng Góp ý đang mở khối chữ để sao chép hay không (bảng vẽ lại sau mỗi thao tác nên phải nhớ ở cấp tệp). */
+let fbExportOpen = false;
 
 export function openPanel(ui: UI, name: string) {
   const M = ui.$('modal'), g = ctx.g;
@@ -556,6 +560,66 @@ export function openPanel(ui: UI, name: string) {
       const due = g.debts.map((d) => `${LENDERS[d.lender].name}: ${money(d.owed)} (${g.day > d.due ? 'QUÁ HẠN' : 'hạn ngày ' + (d.due + 1)})`).join(' · ');
       draw(`${ic('book')} Tổng kết ngày ${L.day + 1}`, [], `<div class="grid2"><div>${kv('Doanh thu bán hàng', L.revenue)}${kv('Tiền boa', L.tips)}${kv('Thu nhập khác', L.side)}${kv('Giá vốn hàng bán', L.cogs, true)}${kv('Phí, phạt', L.fees, true)}${kv('Tiền nhà', L.rent, true)}${kv('Dụng cụ', L.gear, true)}${kv('Hao hụt', L.loss, true)}${kv('Lãi vay', L.interest, true)}${kv('Ăn uống', L.food, true)}${kv('Chi khác', L.other, true)}<div class="kv sum"><span>${pf >= 0 ? 'Lãi' : 'Lỗ'}</span><b class="${pf < 0 ? 'neg' : 'pos'}">${money(pf)}</b></div></div>
         <div><p>Bán ${L.sold} phần cho ${L.customers} khách, để mất ${L.lost} khách.${L.rated ? ` Điểm trung bình ${(L.stars / L.rated).toFixed(1).replace('.', ',')} ${ic('starf')}.` : ''}</p><p>Uy tín: <b>${Math.round(g.rep)}</b> · Tay nghề cấp <b>${R.level(g)}</b> · Tiền mặt <b>${money(g.cash)}</b></p>${due ? `<p class="neg">Nợ: ${due}</p>` : ''}<p class="muted">Thời tiết sáng nay: ${WEATHER[g.weather.now].name.toLowerCase()}. ${WEATHER[g.weather.now].say}</p></div></div>`, `<button class="btn green" data-a="close">Sang ngày mới</button>`);
+    } else if (name === 'feedback') {
+      // ── GÓP Ý & BÁO LỖI (lượt 70) ────────────────────────────────────────────────────────
+      // Người chơi dặn: “thêm 1 nút góp ý/báo lỗi và 1 chỗ lưu các góp ý”. Đây là chỗ lưu đó:
+      // gõ trong ô, chọn loại, bấm Gửi — góp ý nằm lại trên máy, đọc lại/sửa/xoá được, và có nút
+      // “Sao chép hết” để dán gửi cho người làm game. Tự đính kèm ngày/giờ/toạ độ/khu/bản dựng để
+      // người làm game dựng lại được lỗi mà không phải hỏi lại.
+      const list = loadFeedback();
+      let kind: FbKind = (ui.modalArg as FbKind) ?? 'loi';
+      // Giữ chữ đang gõ khi bảng vẽ lại (đổi loại góp ý, sửa một mục…): đọc thẳng từ ô nhập.
+      const draftEl = document.getElementById('fbdraft') as HTMLTextAreaElement | null;
+      const draft = draftEl ? draftEl.value : '';
+      acts.fbKind = (i) => { const d = (document.getElementById('fbdraft') as HTMLTextAreaElement | null)?.value ?? ''; ui.modalArg = FB_KINDS[i].id; ui.reopenPanel('feedback'); setTimeout(() => { const e = document.getElementById('fbdraft') as HTMLTextAreaElement | null; if (e) { e.value = d; e.focus(); e.setSelectionRange(d.length, d.length); } }, 30); };
+      acts.fbSend = () => {
+        const t = (document.getElementById('fbdraft') as HTMLTextAreaElement | null)?.value ?? '';
+        const bad = checkText(t);
+        if (bad) { toast(bad, 'warn', 'pen'); return; }
+        const d = districtAt(ctx.player.x, ctx.player.z);
+        const f = addFeedback(loadFeedback(), kind, t, { day: g.day + 1, min: Math.floor(g.min), x: ctx.player.x, z: ctx.player.z, district: DISTRICT[d]?.name ?? d });
+        sfx('good');
+        toast(f ? `Đã lưu góp ý ${f.id}. Người làm game đọc được ở bảng này — nhớ bấm “Sao chép hết” khi gửi nhé.` : 'Chưa lưu được góp ý.', f ? 'good' : 'warn', 'note', true);
+        ui.modalArg = kind; ui.reopenPanel('feedback');
+      };
+      acts.fbCopy = () => {
+        const txt = exportFeedback(loadFeedback());
+        if (!txt) { toast('Chưa có góp ý nào để sao chép.', 'info'); return; }
+        const done = () => toast(`Đã sao chép ${loadFeedback().length} góp ý — dán vào tin nhắn cho người làm game nhé.`, 'good', 'note', true);
+        // `navigator.clipboard` cần https (GitHub Pages có) — không có thì lùi về cách chọn chữ trong ô.
+        navigator.clipboard?.writeText(txt).then(done).catch(() => {
+          const ta = document.getElementById('fbexport') as HTMLTextAreaElement | null;
+          if (ta) { ta.classList.remove('hide'); ta.focus(); ta.select(); try { document.execCommand('copy'); done(); } catch { toast('Chọn hết chữ trong ô rồi bấm Ctrl/Cmd + C.', 'info'); } }
+        });
+      };
+      acts.fbEdit = (i) => {
+        const f = list[i]; if (!f) return;
+        const next = prompt('Sửa góp ý ' + f.id + ':', f.text);
+        if (next === null) return;
+        if (checkText(next)) { toast(checkText(next)!, 'warn'); return; }
+        ui.modalArg = kind; editFeedback(list, f.id, next); sfx('fix'); ui.reopenPanel('feedback');
+      };
+      acts.fbDel = (i) => { const f = list[i]; if (!f) return; ui.modalArg = kind; removeFeedback(list, f.id); sfx('nope'); ui.reopenPanel('feedback'); };
+      acts.fbClear = () => { ui.modalArg = kind; clearFeedback(); ui.reopenPanel('feedback'); toast('Đã xoá hết góp ý trên máy này.', 'info'); };
+      // Bảng vẽ lại sau MỖI thao tác, nên trạng thái “đang mở khối chữ” phải nhớ ngoài closure (biến tệp).
+      acts.fbShow = () => { fbExportOpen = !fbExportOpen; ui.modalArg = kind; ui.reopenPanel('feedback'); };
+      const kinds = FB_KINDS.map((k, i) => `<button class="btn small${k.id === kind ? ' green' : ''}" data-a="fbKind" data-i="${i}">${k.name}</button>`).join(' ');
+      const rows = list.map((f, i) => {
+        const k = FB_KINDS.find((x) => x.id === f.kind)?.name ?? 'Khác';
+        const d = new Date(f.at);
+        const when = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        return `<div class="item"><div class="grow"><b>${f.id} · ${k}${f.edited ? ' <span class="tag">đã sửa</span>' : ''}</b>`
+          + `<small>${when} · ngày ${f.ctx.day}, ${Math.floor(f.ctx.min / 60)}h · ${f.ctx.district}</small>`
+          + `<div style="margin-top:.25em;white-space:pre-wrap">${esc(f.text)}</div></div>`
+          + `<button class="btn small" data-a="fbEdit" data-i="${i}">Sửa</button><button class="btn small red" data-a="fbDel" data-i="${i}">Xoá</button></div>`;
+      }).join('');
+      const hint = FB_KINDS.find((x) => x.id === kind)?.hint ?? '';
+      draw(`${ic('note')} Góp ý & báo lỗi`, [], `<p class="muted">Góp ý được lưu <b>trên máy này</b> (game chạy tĩnh, không có máy chủ). Gõ xong bấm <b>Gửi</b>; khi nào rảnh thì bấm <b>Sao chép hết</b> rồi dán vào tin nhắn cho người làm game. Tự đính kèm ngày giờ, chỗ đang đứng và bản dựng để dựng lại lỗi cho nhanh.</p>`
+        + `<div class="row" style="flex-wrap:wrap;gap:.3em">${kinds}</div><p class="muted">${esc(hint)}</p>`
+        + `<textarea id="fbdraft" maxlength="${FB_TEXT_MAX}" rows="4" placeholder="Viết gì cũng được — lỗi gì, ở đâu, lúc nào…" style="width:100%;font:inherit;padding:.5em;border-radius:.5em">${esc(draft)}</textarea>`
+        + `<div class="row" style="margin-top:.4em;gap:.4em;flex-wrap:wrap"><button class="btn green" data-a="fbSend">${ic('check')} Gửi góp ý</button><button class="btn" data-a="fbCopy">${ic('download')} Sao chép hết</button><button class="btn" data-a="fbShow">Xem khối chữ</button>${list.length ? `<button class="btn red" data-a="fbClear">Xoá hết (${list.length})</button>` : ''}</div>`
+        + (fbExportOpen ? `<textarea id="fbexport" rows="6" style="width:100%;margin-top:.5em;font:inherit;padding:.5em;border-radius:.5em" readonly>${esc(exportFeedback(list))}</textarea>` : '')
+        + `<h4>Đã gửi (${list.length}/${FB_MAX})</h4>` + (list.length ? `<div class="list">${rows}</div>` : '<p class="muted">Chưa có góp ý nào. Góp ý đầu tiên của bạn sẽ nằm ở đây.</p>'), '');
     } else if (name === 'bankrupt') {
       acts.again = () => { R.goBankrupt(g); ctx.stall.reset(); const a = ctx.world.anchors.bed_gamcau; ctx.player.place(a.x, a.z - 1.2, Math.PI); ui.closePanel(); toast('Trắng tay. Nhưng bạn vẫn còn đôi bàn tay và những công thức đã học.', 'info', 'heart', true); };
       draw(`${ic('skull')} Phá sản`, [], `<p style="font-family:'Patrick Hand';font-size:1.25em">Nợ chồng nợ, quầy hàng bị siết, tiền nhà không còn. Chủ nợ lấy sạch những gì bạn có rồi mới chịu buông tha.</p><p>Bạn trở lại gầm cầu với vài đồng lẻ. Uy tín sụt giảm, ngân hàng từ chối cho vay một thời gian — nhưng các công thức đã học và tay nghề thì không ai lấy được.</p>`, `<button class="btn red" data-a="again">Làm lại từ đầu ở gầm cầu</button>`);

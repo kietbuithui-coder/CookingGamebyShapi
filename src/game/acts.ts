@@ -691,6 +691,26 @@ export class Acts {
   }
 
   /** Một ca phụ hồ: khuân gạch, trộn hồ, xách nước — trả theo ca, nặng hơn chạy bàn nhưng không đòi uy tín. */
+  /**
+   * Trả tiền thưởng khéo tay của ca ép mía (lượt 70). Mini-game chấm `good`/`cups`; luật tiền nằm ở
+   * `R.miaBonus` nên test được mà không cần dựng cảnh 3D.
+   */
+  miaBonusPay(good: number, cups: number) {
+    const g = this.g, bonus = R.miaBonus(good, cups);
+    if (bonus > 0) { R.earn(g, bonus, 'side'); toast(`Chủ quán thưởng thêm ${money(bonus)} vì rót khéo — ${good}/${cups} ly không tràn.`, 'good', 'cash', true); }
+    else if (bonus < 0) { R.spend(g, -bonus, 'other'); toast(`Ép tràn mất ${money(-bonus)} tiền mía, chủ trừ vào công. Lần sau bấm đúng vùng xanh nghen.`, 'warn', 'cash', true); }
+    g.wd.miaCups = 0;
+    ctx.ui.float(`${bonus >= 0 ? '+' : ''}${money(bonus)}`, { x: ctx.player.x, y: 1.4, z: ctx.player.z }, bonus >= 0 ? 'good' : 'bad');
+    sfx(bonus >= 0 ? 'coin' : 'nope');
+  }
+  /** Trả tiền thưởng/phạt của ca phụ hồ (lượt 70) — luật nằm ở `R.siteBonus`. */
+  siteBonusPay(good: number, loads: number) {
+    const g = this.g, bonus = R.siteBonus(good, loads);
+    if (bonus > 0) { R.earn(g, bonus, 'side'); toast(`Cai công trình thưởng ${money(bonus)}: ${good}/${loads} xe đầy vừa, không đổ vãi.`, 'good', 'cash', true); }
+    else if (bonus < 0) { R.spend(g, -bonus, 'other'); toast(`Đổ vãi mất ${money(-bonus)} tiền đất — bị trừ vào công. Canh tay lại nghen.`, 'warn', 'cash', true); }
+    g.wd.siteCups = 0;
+    ctx.ui.float(`${bonus >= 0 ? '+' : ''}${money(bonus)}`, { x: ctx.player.x, y: 1.4, z: ctx.player.z }, bonus >= 0 ? 'good' : 'bad');
+  }
   private siteShift(n: Npc) {
     const g = this.g;
     if (!R.siteOpenAt(hourOf(g))) { toast('Công trình chỉ nhận người 7h–16h.', 'info', 'clock'); return; }
@@ -707,6 +727,8 @@ export class Acts {
     sfx('fix');
     toast(`Phụ hồ một ca: nhận ${money(pay)}. Bụi đất bám đầy người nhưng có tiền cầm tay.` + (left > 0 ? ` Còn ${left} ca hôm nay.` : ` Hết ${R.SITE_SHIFTS_DAY} ca của ngày.`), 'good', 'cash', true);
     ctx.npcs.say(n, 'Được đó, làm không nghỉ tay. Cầm tiền đi, mai còn việc tui kêu.', 3, 1);
+    // Lượt 70: ca phụ hồ nay có mini-game xúc đất (1–2 phút thật). Điểm khéo tay cộng/trừ vào công ở `siteBonusPay`.
+    ctx.anim.startSiteShift(n);
   }
 
   /** Một ca phụ bán nước mía: rửa mía, ép, rót ly, lau bàn — có tiền công và hao sức. */

@@ -234,6 +234,57 @@ function latestSteps(): DevStep[] {
   const g = () => ctx.g;
   const all: DevStep[] = [
     {
+      since: 'Lượt 70', id: 'mx_gop_y', tone: 'green',
+      label: '① Nút Góp ý & báo lỗi — gửi và đọc lại',
+      sub: 'Mở thẳng bảng góp ý: chọn loại, gõ, bấm Gửi rồi xem mục “Đã gửi” bên dưới (cũng mở bằng phím G)',
+      run: () => ctx.ui.panel('feedback'),
+    },
+    {
+      since: 'Lượt 70', id: 'mx_mia_xe_moi', anchor: 'v_mia_xe', tone: 'green',
+      label: '② Xe nước mía — chỗ mới sát cổng trái chợ',
+      sub: 'Xe dời ra cạnh cổng phụ phía nam, quay vào chợ; đứng đây nhìn thẳng vào xe, biển gắn trên nóc chứ không lơ lửng',
+      run: () => {
+        if (!standAt('v_mia_xe', 1.7, 'Xe nước mía — chỗ mới sát cổng trái chợ.')) return toast('Không thấy xe nước mía trong chợ.', 'warn');
+        const n = ctx.npcs.fixed.get('mia_xe');
+        if (n) setTimeout(() => ctx.acts.talk(n), 120);
+      },
+    },
+    {
+      since: 'Lượt 70', id: 'mx_mia_quan_lui', anchor: 'v_mia_quan', tone: 'green',
+      label: '③ Quán Nước Mía 3K — quầy đã lùi sâu',
+      sub: 'Đứng ngoài đường nhìn vào: thấy máy ép quay ra, thấy bàn khách, không còn quầy chắn ngang mặt tiền',
+      run: () => {
+        if (!standAt('v_mia_quan', 1.8, 'Quán Nước Mía 3K — quầy lùi sâu, mặt tiền trống.')) return toast('Không thấy quán nước mía ngoài phố.', 'warn');
+        const n = ctx.npcs.fixed.get('mia_quan');
+        if (n) setTimeout(() => ctx.acts.talk(n), 120);
+      },
+    },
+    {
+      since: 'Lượt 70', id: 'mx_mai_cong_truong', anchor: 'v_site', tone: 'yellow',
+      label: '④ Công trường — mái bạt còn khi đứng dưới',
+      sub: 'Chòi tuyển thợ dời ra khoảng trống sát lối vào; đứng dưới ngẩng lên vẫn thấy mặt dưới tấm bạt',
+      run: () => {
+        if (!standAt('v_site', 1.5, 'Chòi tuyển phụ hồ — mái bạt có cả mặt dưới, nhìn từ đâu cũng thấy.')) return toast('Không thấy chòi công trình.', 'warn');
+        ctx.player.pitch = -0.45;
+      },
+    },
+    {
+      since: 'Lượt 70', id: 'mx_ca_phu_ho_dai', anchor: 'site_phu', tone: 'yellow',
+      label: '⑤ Ca phụ hồ dài hơn một phút — thử ngay',
+      sub: 'Ba xe cút kít × năm xẻng, giữa các xe có nhịp đẩy xe; cả ca khoảng 1 phút 10 giây thời gian thực',
+      run: () => {
+        if (!standAt('site_phu', 1.7, 'Chòi công trình — xin ca phụ hồ để chơi mini-game xúc đất.')) return toast('Không thấy chòi công trình ngoài phố.', 'warn');
+        const n = ctx.npcs.fixed.get('site');
+        if (n) setTimeout(() => ctx.acts.talk(n), 120);
+      },
+    },
+    {
+      since: 'Lượt 70', id: 'mx_nhat_ky70', tone: 'green',
+      label: '⑥ Đọc lại nhật ký bản này',
+      sub: 'Mở đúng trang Nhật ký phát triển (cũng là cách kiểm bản dựng đã lên chưa)',
+      run: () => ctx.ui.panel('changelog'),
+    },
+    {
       since: 'Lượt 69', id: 'mx_mia_xe', anchor: 'v_mia_xe', tone: 'green',
       label: '① Xe nước mía trong chợ — bán/mua tại chỗ',
       sub: 'Đứng cạnh xe rồi MỞ SẴN bảng của Cô Hai Mía: mua ly 3.000₫ / ly lớn 5.000₫, xin phụ bán một ca',

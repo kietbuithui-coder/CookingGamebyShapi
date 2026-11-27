@@ -180,7 +180,14 @@ export const spotById = (id: string) => SPOTS.find((s) => s.id === id);
  *   khu phố có biển hiệu "Nước Mía 3K" trong danh sách tên tiệm của `city.ts` trước đây.
  */
 export const MIA_SPOTS = {
-  cart: { x: -46, z: -1.8, yaw: Math.PI },
+  /**
+   * LƯỢT 70 — xe mía DỜI RA SÁT CỔNG TRÁI CHỢ.
+   * Bản lượt 69 đặt xe ở (-46; -1,8), ngay giữa lối đi chính: biển của xe quay lên đúng tầm mắt nên nó
+   * che cả dãy sạp phía sau, và người chơi đứng mua thì lọt vào giữa lối. Nay xe nằm ở góc tây-bắc của chợ,
+   * cạnh cổng trái (cổng phụ ở x = -60), quay mặt vào trong chợ: đường đi chính vẫn trống, khách đứng mua
+   * ở phía trong, không ai bị chắn mắt.
+   */
+  cart: { x: -63.6, z: 20.2, yaw: 0 },
   /** Mã lô của quán trên phố (bề rộng lô do `planLots()` quyết định — xem `lotById('mia_quan')`). */
   shop: { lotId: 'mia_quan', bx: 1, bz: 1, face: 'N' as Face, at: 18 },
 };

@@ -215,6 +215,30 @@ export const MIA_SHIFT_MIN = 45;
 export const MIA_SHIFTS_DAY = 2;
 /** Tiền công một ca phụ bán: nền 14.000₫ + thưởng theo uy tín (bán quen thì chủ cho thêm). */
 export const miaWage = (rep: number) => round1k(14000 + Math.max(0, rep) * 40);
+/**
+ * THƯỞNG KHÉO TAY (lượt 70) — mini-game ép mía chấm điểm theo số ly rót chuẩn trong ca (`MIA_CUPS` ly).
+ * Rót đúng vùng xanh từ 2/3 số ly trở lên được thưởng; dưới 1/3 thì bị trừ (làm phí mía của chủ).
+ * Trả về số tiền cộng/trừ (đã làm tròn 1.000₫) để hoà vào tiền công của ca.
+ */
+export const MIA_CUPS_SHIFT = 6;
+/**
+ * THƯỞNG CA PHỤ HỒ (lượt 70) — mini-game xúc đất chấm theo số xe đầy vừa trong `SITE_LOADS` lượt.
+ * Xe đầy vừa từ 3/5 trở lên thì chủ thầu thưởng; đổ vãi quá nửa thì trừ tiền đất.
+ */
+export function siteBonus(good: number, loads: number = 5): number {
+  if (loads <= 0) return 0;
+  const r = clamp(good / loads, 0, 1);
+  if (r >= 0.6) return round1k(8000 * (r - 0.5));
+  if (r < 0.4) return -round1k(4000 * (0.5 - r));
+  return 0;
+}
+export function miaBonus(good: number, cups: number = MIA_CUPS_SHIFT): number {
+  if (cups <= 0) return 0;
+  const r = clamp(good / cups, 0, 1);
+  if (r >= 2 / 3) return round1k(6000 * (r - 0.6));
+  if (r < 1 / 3) return -round1k(3000 * (0.4 - r));
+  return 0;
+}
 /** Còn mấy ca phụ bán nước mía trong ngày. */
 export const miaShiftsLeft = (g: Game) => Math.max(0, MIA_SHIFTS_DAY - (g.wd.miaShifts ?? 0));
 /** Mía đã bán được bao nhiêu cốc hôm nay (để câu chữ và thành tích). */
@@ -1870,7 +1894,7 @@ function newDay(g: Game, R: RNG) {
   g.tot.best = Math.max(g.tot.best, g.led.revenue);
   g.day++; g.min -= 1440; g.led = newLedger(g.day);
   if (waste > 500) toast(`Tổng thiệt hại đồ bỏ đi: ${money(waste)}.`, 'bad', 'box');
-  g.wd.picked = []; g.wd.sacks = 0; g.wd.plates = 0; g.wd.deliveries = 0; g.wd.cargoShifts = 0; g.wd.cafeShifts = 0; g.wd.miaShifts = 0; g.wd.miaSold = 0; g.wd.siteShifts = 0; g.wd.begTired = Math.max(0, g.wd.begTired - 60); g.wd.haggled = {}; g.wd.litterDay = g.day;
+  g.wd.picked = []; g.wd.sacks = 0; g.wd.plates = 0; g.wd.deliveries = 0; g.wd.cargoShifts = 0; g.wd.cafeShifts = 0; g.wd.miaShifts = 0; g.wd.miaSold = 0; g.wd.miaCups = 0; g.wd.siteShifts = 0; g.wd.siteCups = 0; g.wd.begTired = Math.max(0, g.wd.begTired - 60); g.wd.haggled = {}; g.wd.litterDay = g.day;
   s.dirt = clamp(s.dirt + 6, 0, 100); s.open = false;
   dailyDebts(g); dailyHousing(g);
   // sạp cố định: phí chỗ tính tự động mỗi ngày, thiếu tiền thì quầy phải đóng

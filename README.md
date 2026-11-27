@@ -17,6 +17,11 @@ Game 3D góc nhìn thứ nhất (bấm **V** để đổi sang góc nhìn thứ 
 
 Sổ tay (nút hình cuốn sổ) có công thức, sổ sách lời lỗ, nợ và khách quen. Bản đồ cho phép ghim đường tới từng địa điểm.
 
+**Góp ý & báo lỗi** (nút hình tờ giấy, ngay trước Túi đồ, hoặc phím `G`): chọn *Báo lỗi / Góp ý / Chuyện khác*, gõ điều
+muốn nói rồi bấm **Gửi** — góp ý nằm lại **trên máy này** (game chạy tĩnh, không có máy chủ), mở ra đọc lại, sửa, xoá từng
+cái hoặc xoá hết. Mỗi góp ý tự kèm mã, ngày giờ, chỗ đang đứng, khu phố và bản dựng đang chơi nên người làm game dựng lại
+được đúng cảnh. Nút **Sao chép hết** gom thành một khối chữ để dán vào tin nhắn gửi đi.
+
 ## Điều khiển
 
 | | Điện thoại | Máy tính |
@@ -27,7 +32,7 @@ Sổ tay (nút hình cuốn sổ) có công thức, sổ sách lời lỗ, nợ 
 | Đấm · Nhảy | Nút nắm tay và nút mũi tên cạnh nút vàng | F · Space |
 | Hành động phụ (×5…) | Nút nhỏ cạnh nút vàng | R |
 | Xoay trái · xoay phải | — | Q · Z |
-| Túi · Sổ tay · Bản đồ · Cài đặt | Bốn nút góc trên phải | Tab · B · M · Esc |
+| Góp ý · Túi · Sổ tay · Điện thoại · Bản đồ · Cài đặt | Sáu nút góc trên phải | G · Tab · B · P · M · Esc |
 
 **Thanh chạy** (thanh vàng hiện ra khi bạn chạy) hồi nhanh hay chậm tuỳ **máu** và **pin năng lượng**: đang mất máu hoặc
 thiếu ngủ thì hồi chậm, chạy được quãng ngắn hơn. Người khoẻ: 11 giây đứng chờ là đầy thanh và chạy liền được 10 giây;
@@ -140,7 +145,7 @@ GitHub Pages của kho này đang trỏ vào **thư mục gốc** của `main`, 
 
 ## Menu ẩn (dành cho người làm game)
 
-Bấm **8 lần** vào chữ *Cài đặt* ở đầu bảng Cài đặt, rồi nhập mã **`438291`** (bàn phím có nút *Xoá* và *C*; sai 5 lần thì khoá 30 giây). Menu ẩn hiện ra hai nhóm: nhóm đầu **“Vừa thay đổi”** (những gì vừa sửa ở bản đang chơi — bấm là **đứng đúng chỗ và mở sẵn bảng tương tác**, ví dụ xe nước mía, quán nước mía, chòi công trình, kèm một mục đọc con số thật của bản; sang bản sau nhóm này tự đổi theo nhật ký) và nhóm **34 chỗ đi nhanh**: — mọi nhân vật cố định ngoài phố (Chú Ba xe ôm, Ông Bảy, Cô Thắm, chú vá xe, cô hát rong, Ông Tư, bé đánh giày, Bin, nhóm đua xe đạp, quán net…) cùng các sạp/tiệm, chỗ ở, bệnh viện, công an và bốn chỗ đặt quầy. Bấm một mục là đứng **sát bên người đó** (menu tự tìm chỗ trống, không đặt bạn vào trong cột hay quầy). Đi nhanh **không đổi giờ trong ngày** — tới lúc nào thì gặp đúng chuyện lúc đó, y như tự đi bộ ra đó. Dòng đầu bảng ghi bản mới nhất, đọc thẳng từ nhật ký phát triển. Mở một lần là nhớ trong phiên chơi; nút *"Ẩn & khoá lại"* đưa về như cũ.
+Bấm **8 lần** vào chữ *Cài đặt* ở đầu bảng Cài đặt, rồi nhập mã **`438291`** (bàn phím có nút *Xoá* và *C*; sai 5 lần thì khoá 30 giây). Menu ẩn hiện ra hai nhóm: nhóm đầu **“Vừa thay đổi”** (những gì vừa sửa ở bản đang chơi — bấm là **đứng đúng chỗ và mở sẵn bảng tương tác**: bảng góp ý, xe nước mía ở chỗ mới, quán nước mía đã lùi quầy, chòi công trường có lại mái, ca phụ hồ dài hơn một phút; sang bản sau nhóm này tự đổi theo nhật ký) và nhóm **34 chỗ đi nhanh**: — mọi nhân vật cố định ngoài phố (Chú Ba xe ôm, Ông Bảy, Cô Thắm, chú vá xe, cô hát rong, Ông Tư, bé đánh giày, Bin, nhóm đua xe đạp, quán net…) cùng các sạp/tiệm, chỗ ở, bệnh viện, công an và bốn chỗ đặt quầy. Bấm một mục là đứng **sát bên người đó** (menu tự tìm chỗ trống, không đặt bạn vào trong cột hay quầy). Đi nhanh **không đổi giờ trong ngày** — tới lúc nào thì gặp đúng chuyện lúc đó, y như tự đi bộ ra đó. Dòng đầu bảng ghi bản mới nhất, đọc thẳng từ nhật ký phát triển. Mở một lần là nhớ trong phiên chơi; nút *"Ẩn & khoá lại"* đưa về như cũ.
 Mã nằm trong gói JavaScript nên **không phải bảo mật** — chỉ để người chơi không vô tình mở bảng test.
 
 ## Cấu trúc mã nguồn

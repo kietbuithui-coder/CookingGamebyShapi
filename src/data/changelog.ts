@@ -14,6 +14,20 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 70',
+    tag: 'Nút Góp ý & báo lỗi có chỗ lưu riêng, xe nước mía dời ra sát cổng chợ, quán mía lùi quầy cho thấy máy ép, công trường có lại mái che và ca phụ hồ dài hơn một phút',
+    items: [
+      'Hàng nút góc phải có thêm nút “Góp ý & báo lỗi”. Bấm vào là một bảng riêng: chọn Báo lỗi / Góp ý / Chuyện khác, gõ điều muốn nói rồi bấm Gửi — góp ý nằm lại trên máy, mở ra đọc lại, sửa, xoá từng cái hoặc xoá hết. Phím G cũng mở bảng này.',
+      'Mỗi góp ý tự ghi kèm mã riêng, ngày giờ, chỗ đang đứng, khu phố và bản dựng đang chơi, nên người làm game dựng lại được đúng cảnh mà không phải hỏi lại. Nút “Sao chép hết” gom mọi góp ý thành một khối chữ để dán vào tin nhắn gửi đi.',
+      'Xe nước mía dời ra sát cổng trái của Chợ Xóm Chiều, quay mặt vào trong chợ: lối đi chính giữa chợ trống trở lại, không còn tấm biển to chắn ngang tầm mắt dãy sạp. Bảng giá thu về một tấm nhỏ gắn hẳn trên nóc xe bằng hai cọc, nên không còn cảnh biển treo lơ lửng hay thân xe biến mất khi đi xa.',
+      'Quán Nước Mía 3K: quầy và máy ép lùi sâu vào trong, mặt tiền để trống nên đứng ngoài đường nhìn thẳng vào là thấy trục ép quay, thấy xô nước và bàn khách. Bàn nhựa dạt sang hai bên, khách đứng mua trước quầy chứ không kẹt ở cửa.',
+      'Công trường lấy lại mái che: tấm bạt nay có cả mặt trên lẫn mặt dưới, đứng ngay dưới nhìn lên vẫn thấy mái chứ không còn trần trơn. Chòi tuyển thợ dời ra khoảng trống sát lối vào, có bàn ghi tên, sổ điểm danh, ghế chờ và bảng “TUYỂN PHỤ HỒ”.',
+      'Ca phụ bán nước mía giờ là một cái máy ép thật: canh con chạy trên thanh rồi bấm quay cần đúng vùng xanh mới ra nước, bấm lệch là nước tràn ra ngoài. Rót đủ 6 ly thì hết ca, số ly chuẩn quyết định tiền thưởng.',
+      'Ca phụ hồ cũng thành việc thật và dài hơn một phút: ba xe cút kít, mỗi xe năm xẻng. Giữ nút cho kim dâng rồi buông đúng vùng vàng mới được xẻng đất, xúc đủ năm xẻng thì đẩy xe ra chân công trình rồi quay lại xe mới — cả ca khoảng 1 phút 10 giây thời gian thực.',
+      'Góc máy trong hai ca làm được chỉnh lại: trước là camera đứng sau lưng hoặc lọt hẳn vào trong thùng xe, màn hình chỉ còn mặt kệ. Nay ca ép mía nhìn chéo qua vai thấy rõ trục ép, xô nước và tay mình; ca phụ hồ đứng lùi trong sân, thấy cả bàn ghi tên lẫn người đang xúc đất. Anh Sáu Lực cũng hết đứng chênh lên mặt bàn — chân đặt xuống đất sau quầy.',
+    ],
+  },
+  {
     v: 'Lượt 69',
     tag: 'Xe nước mía ở Chợ Xóm Chiều và quán Nước Mía 3K trên phố: ép tại chỗ, bán từng ly, học nghề, phụ một ca — thêm nghề phụ hồ, thuê nhà theo tháng',
     items: [
@@ -90,17 +104,6 @@ export const CHANGELOG: LogEntry[] = [
       'Thêm hai mục gọi thẳng “Vào thẳng nồi TRÀ ĐÁ” và “Vào thẳng nồi TRÀ CHANH”: một cú bấm là đứng ngay ở bước cho nguyên liệu, không hỏi gì thêm.',
       'Lý do: bấm mục cũ trên ván mới thì nồi không mở — ván mới chỉ có 18.000₫ nên chưa mua được gánh, quầy chưa đặt được chỗ, và thiếu bếp, nồi, than. Nay các mục này tự lo đủ, chỉ còn việc chạm chén.',
       'Chạm chén là chén bay vào nồi, nồi chuyển sang bước giữ lửa và hiện nút “Quạt lửa” / “Lọc ra” như chơi bình thường.',
-    ],
-  },
-  {
-    v: 'Lượt 60',
-    tag: 'Sửa lỗi không cho được nguyên liệu vào nồi: trà đá và mọi món nấu, ninh, luộc, pha giờ chạm là ăn',
-    items: [
-      'Trước bản này, món nào có bước nấu/ninh/luộc/pha (trà đá, nước sâm, kho thịt, nồi cá…) đều bị kẹt ở bước “Cho nguyên liệu”: chạm đúng chén “Trà khô” mà nồi vẫn trống, bấm mãi không qua được.',
-      'Nguyên nhân: bàn nấu nhận tay theo một mặt phẳng duy nhất đặt ở MẶT NƯỚC nồi, trong khi chén nguyên liệu nằm trên MẶT BÀN. Điểm chạm vì thế bị kéo lệch khoảng 20 cm — xa hơn bán kính chạm của chén, nên không chén nào ăn được.',
-      'Nay bàn nấu nhận tay ở cả hai độ cao: chạm chén thì lấy đúng mặt bàn, chạm để vớt bọt thì lấy mặt nước. Đo lại: chạm đúng chén thì lệch chỉ còn 4 mm (trước là 208 mm).',
-      'Rà cả 7 bàn thao tác còn lại: thái/băm, chiên/xào, nướng, trình bày ra đĩa – ly, trộn topping, rửa chén — đều chạm đúng (lệch 1–19 mm, đều dưới ngưỡng ăn).',
-      'Bảng test của người làm game có thêm mục mở thẳng bước nấu trà đá để thử lại nhanh.',
     ],
   },
 ];

@@ -1573,3 +1573,90 @@ chuyện, **không** phải menu tua). `errors: none`.
 `tests/devpoints.test.ts` **18 bài** (thêm bài “nhóm Vừa thay đổi tự dọn”): nhóm đầu phải mang đúng nhãn `CHANGELOG[0].v`,
 mọi mục `mx_` phải có `run`/`label`/`sub`, ít nhất 3 mục ở bản mới nhất, `latestSteps()` không đụng `g.min`, và danh sách
 neo phải quét cả tệp mới `src/world/mia.ts`. Cả bộ **687 bài / 57 tệp**.
+
+### 4.52 Góp ý trong game, xe mía ra cổng chợ, quán mía lùi quầy, mái công trường và hai mini-game mới (lượt 70)
+
+Người chơi gửi mười tấm ảnh chụp trong lúc chơi và bốn yêu cầu. Bốn ảnh về bàn sơ chế là **bằng chứng lỗi**, không phải
+gợi ý; lỗi **mất mái che ở công trường** được xếp **nghiêm trọng**, sửa trước mọi thứ khác.
+
+**1. Nút Góp ý & báo lỗi + chỗ lưu góp ý.** Tệp mới `src/game/feedback.ts` lo toàn bộ phần lưu trữ (thuần dữ liệu, không
+Three.js): `FB_KEY = 'ganhhang.feedback.v1'`, trần `FB_MAX = 40` góp ý, chữ từ `FB_TEXT_MIN = 8` tới `FB_TEXT_MAX = 600`,
+ba loại `loi / gopy / khac` (mỗi loại có câu gợi ý riêng), `cleanText` gộp khoảng trắng rồi cắt trần, `checkText` trả **lý do**
+chứ không im lặng, `makeId` ra mã đọc được bằng mắt (`L001-1` = báo lỗi, ngày 1, cái thứ nhất), và `exportFeedback` gom thành
+một khối chữ để dán gửi đi. Mỗi góp ý tự đính **mã, ngày giờ, chỗ đang đứng, khu phố và nhãn bản dựng** (`CHANGELOG[0].v`)
+— đủ để người làm game dựng lại đúng cảnh mà không hỏi lại.
+
+Giao diện: `ui/ui.ts` thêm icon `note`, một nút `ib` `data-p="feedback"` **ngay trước nút Túi đồ**, phím **G**, và
+`'feedback'` vào `TABS_CLOSE` (bấm lại là đóng). `ui/panels.ts` thêm nhánh `name === 'feedback'`: ba nút chọn loại, ô nhập
+`#fbdraft`, hàng nút **Gửi góp ý · Sao chép hết · Xem khối chữ · Xoá hết (n)**, rồi danh sách “Đã gửi (n/40)” có nút Sửa/Xoá
+từng cái. Bảng vẽ lại sau **mỗi** thao tác nên chữ đang gõ và trạng thái “đang mở khối chữ” phải nhớ **ngoài closure** —
+đây là lỗi suýt xảy ra: `fbShow` đầu tiên bật/tắt một class trên DOM, mà DOM vừa bị vẽ lại thì class ấy mất ngay. Nay trạng
+thái nằm ở biến cấp tệp `fbExportOpen`, và khối chữ là `<textarea readonly>` chứa sẵn `exportFeedback(list)`.
+
+**2. Xe nước mía ra sát cổng trái chợ + sửa lỗi xe “biến mất”.** `MIA_SPOTS.cart` dời từ `(-46; −1,8)` (giữa lối đi, biển to
+chắn cả dãy sạp) về `(-63,6; 20,2)`, quay mặt vào trong chợ — sát cổng phụ phía nam (x = −60, z = 23), lối đi chính giữa chợ
+trống trở lại. Dù che hạ xuống 2,02 m phủ đúng cái xe, biển thu về **một tấm nhỏ gắn hai cọc trên nóc xe**.
+
+Lỗi nặng hơn nằm ở **thứ tự lấy tham chiếu**: `buildMiaCart()` gọi `const D = b.detail, L = b.lit, U = b.unlit` **trước**
+`b.chunk('b01', …)`, nên thân xe inox, mặt bàn và tấm biển rơi vào mảnh của khu vừa dựng xong — mảnh ấy bị ẩn khi người chơi
+đi xa, thành ra nhìn quanh xe chỉ còn vài món lặt vặt. Nay đổi mảnh **trước**, lấy tham chiếu **sau**; `b.world.litter` cũng
+tính lại theo `s.x/s.z` thay vì toạ độ viết cứng.
+
+**3. Quán Nước Mía 3K — quầy lùi sâu.** Bản cũ kê quầy + máy ép sát mặt tiền (z ≈ 1,35 m) nên đứng ngoài đường chỉ thấy bức
+vách sau quầy. Nay `qz = min(d − 1,55; 3,1)`: mặt tiền để **trống** (chỉ cửa cuốn, mái hiên, biển), máy ép quay mặt ra đường,
+bàn nhựa dạt hai bên, neo đổi theo — `v_mia_quan` phía trước quầy, `mia_quan` sau quầy (cách nhau 1,5 m, đúng tầm một người
+đứng bán).
+
+**4. Công trường: mái về, chòi ra chỗ thoáng.** Nguyên nhân mất mái: bản lượt 69 vẽ mái bằng **một** `L.quad`, mà quad chỉ có
+một mặt ⇒ đứng phía dưới (đúng chỗ nói chuyện) là trần trơn. Nay dùng `b.awning()` (mặt trên + mặt dưới + diềm) **và** thêm
+hai quad ngược chiều làm tấm phẳng, bốn cọc chống xuống đất. Chòi dời về `cx = 5,2; cz = 1,5` — khoảng trống sát lối vào,
+trước giàn giáo — kèm bàn ghi tên, sổ điểm danh, ca nước, hai ghế nhựa và bảng `TUYỂN PHỤ HỒ`.
+
+**5. Hai mini-game thật.**
+
+| | Ép mía (`mia_phu`) | Xúc đất (`site_phu`) |
+|---|---|---|
+| Nhịp | con chạy qua lại trên thanh, bấm khi vào **vùng xanh** `[0,34; 0,74]` | **giữ** nút cho kim dâng, **nhả** khi vào **vùng vàng** `[0,62; 0,86]` |
+| Sai thì sao | bấm lệch ⇒ nước tràn, vẫn tính một ly nhưng mất nước | nhả non ⇒ được nửa xe; giữ tràn ⇒ đất đổ ra ngoài, mất xẻng |
+| Độ dài | 6 ly (`MIA_CUPS`), con chạy **nhanh dần** theo số ly | **3 xe × 5 xẻng**, mỗi xẻng ~4 s, giữa hai xe có nhịp **đẩy xe** 3,4 s ⇒ **≈ 70 s thực** |
+| Thưởng | `R.miaBonus(good, 6)` | `R.siteBonus(good, 5)` (quy đổi từ số xe đầy vừa) |
+
+Người chơi dặn ca phụ hồ phải dài **1–2 phút thời gian thực** — nên bản đầu (5 lượt × 1,5 s ≈ 8 s) bị thay bằng vòng
+“3 xe × 5 xẻng + đẩy xe”, và `tests/feedback.test.ts` **canh bằng số**: `3×5×4 + 3×3,4 = 70,2 s`, phải nằm trong `[60, 120]`,
+mỗi thang không dưới 2 s để còn kịp canh bằng mắt. Đo bằng `ctx.dt` (giây thực), **không** phải phút trong game.
+
+**6. Luật tiền tách khỏi giao diện.** `sim/rules.ts` giữ `MIA_CUPS_SHIFT = 6`, `miaBonus()`, `siteBonus()`; `acts.ts` chỉ còn
+`miaBonusPay()` / `siteBonusPay()` (earn/spend + toast + chữ nổi). `sim/state.ts` thêm `wd.miaCups`, `wd.siteCups` (khai báo,
+khởi tạo, reset cuối ngày trong `rules.ts`).
+
+**7. Camera mini-game ép mía.** Camera của `startMiaShift`/`startMiaDrink` ghép bằng sin/cos theo một quy ước khác với
+quy ước dựng xe (`a` = chỗ người bán, `a.yaw` = hướng người bán nhìn) nên lần đầu dời xe xong là camera lọt vào trong thùng
+inox — màn hình chỉ còn mặt kệ. Nay mọi điểm đứng tính bằng `P(side, front) = a + (sin yaw · front − cos yaw · side,
+cos yaw · front + sin yaw · side)`: người chơi đứng sát mép thùng, camera chếch hông 2,9 m / cao 3,15 m nhìn chéo xuống
+máy ép. Tấm biển trên nóc xe dời về **nửa trái** (nâng lên 1,55 m) để nửa phải — chỗ đặt máy ép — nhìn từ phía khách vẫn
+thấy trục ép và xô nước.
+
+Camera **quán** thì không suy ra bằng công thức được: quán hẹp, có mái hiên ở mặt tiền nên lùi ra đường là chạm bạt, mà
+đứng sát quầy thì cái đầu người chơi che đúng chỗ máy ép. Cách chốt: lấy **trục khách–người bán** từ hai neo `v_mia_quan` →
+`mia_quan` làm hệ quy chiếu (đơn vị `u` = hướng từ người bán ra khách, `s` = pháp tuyến), rồi đặt camera ở `v + u·0,9 + s·1,5`
+cao 2,5 m — tức đứng **ngay chỗ khách đứng**, chỉ lệch hông, nhìn chéo xuống. Góc này đọc được cả máy ép, két nước, bàn nhựa
+và người bán, nên không phải đoán toạ độ nữa.
+
+**8. Camera mini-game phụ hồ + chỗ đứng của Anh Sáu Lực.** Ảnh chụp mini-game phụ hồ cho thấy hai lỗi cùng lúc: khung hình
+đầy mặt bàn ghi tên (camera đặt sau lưng người chơi, hướng vào bàn), và Anh Sáu Lực **đứng chênh trên mặt bàn** vì neo
+`site_phu` đặt ở `y = 0,9` — đúng độ cao mặt bàn — thay vì dưới đất. Nay neo dời ra **sau bàn** (`cx; cz − 0,55; y = 0,13`)
+với `yaw = 0`, tức cùng quy ước “neo = chỗ người đứng, `yaw` = hướng nhìn ra phía khách” như neo xe mía/quán mía. Người chơi
+đứng trước bàn 1,15 m (quay mặt vào bàn, tay chống xẻng); camera lùi sâu vào trong sân 0,75 m sau neo, lệch hông 2,9 m, cao
+1,85 m — **thấp hơn mái bạt 2,2 m** (đứng cao hơn là nhìn lên nóc bạt xanh trơn). Trục cột giàn giáo ở `cx − 0,6` lại đúng
+đường nối camera–chủ thể nếu đứng thẳng phía trước, nên phải lệch hẳn sang hông: khung hình mới thấy cả người xúc lẫn bàn ghi tên.
+
+Bài học dùng lại được: với mọi cảnh quay trong nhà/hàng quán, **kiểm tra ba thứ theo thứ tự** — (1) độ cao camera so với mái
+che gần nhất, (2) có cột/kệ nào nằm trên đường nối camera–chủ thể không, (3) đầu người chơi có che đúng vật đáng nhìn không.
+Cả ba lỗi trên đều lọt qua vì trước đó chỉ chỉnh `side`/`front` mà không nhìn ảnh chụp.
+
+**Đo.** `npx tsc --noEmit` sạch; `npx vitest run` **702 bài / 58 tệp xanh hết** (thêm `tests/feedback.test.ts` 15 bài: kho góp
+ý, mã, cắt chữ, sửa/xoá, trần 40, hỏng dữ liệu không làm sập game, xuất khối chữ; và hai bài canh độ dài ca phụ hồ);
+`npm run build:pages` OK. Probe `tools/probe/steps/fix70.mjs` (bấm chuột thật, 13 bước): nút góp ý đứng **ngay trước** Túi đồ,
+gửi được góp ý `L001-1` kèm bối cảnh, khối chữ xuất đúng, phím G mở / Esc đóng; xe mía cách cổng trái chợ **5 m**, người
+bán đứng ở `y = 0,13` (dưới đất); quán mía khách–chủ cách nhau **1,5 m**; chòi công trường nhìn từ dưới vẫn thấy bạt; mini-game
+ép mía chạy đủ 6 ly, mini-game xúc đất chạy đủ 3 xe và trả thưởng. `errors: none`.

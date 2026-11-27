@@ -12,30 +12,33 @@ describe('nhật ký phát triển trong Cài đặt', () => {
     expect(nums).toEqual(sorted);              // bản mới nhất ở trên cùng
     expect(new Set(nums).size).toBe(nums.length);
   });
-  it('bản mới nhất là bản vừa làm xong (lượt 69 — nước mía, phụ hồ, thuê tháng)', () => {
-    expect(CHANGELOG[0].v).toBe('Lượt 69');
-    expect(CHANGELOG[0].items.some((t) => /nước mía/i.test(t))).toBe(true);
-    expect(CHANGELOG[0].items.some((t) => /phụ hồ/i.test(t))).toBe(true);
-    expect(CHANGELOG[0].items.some((t) => /theo tháng/i.test(t))).toBe(true);
+  it('bản mới nhất là bản vừa làm xong (lượt 70 — góp ý, xe mía, mái công trường)', () => {
+    expect(CHANGELOG[0].v).toBe('Lượt 70');
+    expect(CHANGELOG[0].items.some((t) => /góp ý/i.test(t))).toBe(true);
+    expect(CHANGELOG[0].items.some((t) => /xe nước mía/i.test(t))).toBe(true);
+    expect(CHANGELOG[0].items.some((t) => /mái che|bạt/i.test(t))).toBe(true);
     // Lượt 68: người chơi yêu cầu BỎ cơ chế tua đồng hồ ⇒ nhật ký không được nhắc lại nó nữa.
     expect(CHANGELOG[0].items.some((t) => /tua/i.test(t))).toBe(false);
     expect(CHANGELOG[0].tag).not.toMatch(/tua/i);
-    // Bản ngay dưới là lượt 67 (menu ẩn theo kịp game) — lượt 68 chỉ bỏ cơ chế tua nên không có mục riêng.
-    expect(CHANGELOG[1].v).toBe('Lượt 67');
-    expect(CHANGELOG[1].items.some((t) => /menu ẩn|đi nhanh/i.test(t))).toBe(true);
-    expect(CHANGELOG[1].items.some((t) => /không đổi giờ/i.test(t))).toBe(true);
-    expect(CHANGELOG[2].v).toBe('Lượt 66');
-    expect(CHANGELOG[2].items.some((t) => /xe ôm/i.test(t))).toBe(true);
-    expect(CHANGELOG[2].items.some((t) => /danh bạ/i.test(t))).toBe(true);
-    expect(CHANGELOG[3].v).toBe('Lượt 64');
-    expect(CHANGELOG[3].items.some((t) => /bàn phím/i.test(t))).toBe(true);
-    expect(CHANGELOG[4].v).toBe('Lượt 63');
+    // Bản ngay dưới là lượt 69 (nước mía, phụ hồ, thuê tháng) — lượt 68 chỉ bỏ cơ chế tua nên không có mục riêng.
+    expect(CHANGELOG[1].v).toBe('Lượt 69');
+    expect(CHANGELOG[1].items.some((t) => /nước mía/i.test(t))).toBe(true);
+    expect(CHANGELOG[1].items.some((t) => /theo tháng/i.test(t))).toBe(true);
+    expect(CHANGELOG[2].v).toBe('Lượt 67');
+    expect(CHANGELOG[2].items.some((t) => /menu ẩn|đi nhanh/i.test(t))).toBe(true);
+    expect(CHANGELOG[2].items.some((t) => /không đổi giờ/i.test(t))).toBe(true);
+    expect(CHANGELOG[3].v).toBe('Lượt 66');
+    expect(CHANGELOG[3].items.some((t) => /xe ôm/i.test(t))).toBe(true);
+    expect(CHANGELOG[3].items.some((t) => /danh bạ/i.test(t))).toBe(true);
+    expect(CHANGELOG[4].v).toBe('Lượt 64');
+    expect(CHANGELOG[4].items.some((t) => /bàn phím/i.test(t))).toBe(true);
+    expect(CHANGELOG[5].v).toBe('Lượt 63');
     // 63 = dọn menu test ẩn, chỉ còn dịch chuyển nhanh.
-    expect(CHANGELOG[4].items.some((t) => /dịch chuyển nhanh/i.test(t))).toBe(true);
-    expect(CHANGELOG[5].v).toBe('Lượt 62');
+    expect(CHANGELOG[5].items.some((t) => /dịch chuyển nhanh/i.test(t))).toBe(true);
+    expect(CHANGELOG[6].v).toBe('Lượt 62');
     // 62 = ×3 thời gian tan của đá + nhãn “độ lạnh” thay cho “tươi/hỏng”.
-    expect(CHANGELOG[5].items.some((t) => /tan chậm|3 lần/.test(t))).toBe(true);
-    expect(CHANGELOG[5].items.some((t) => /lạnh/.test(t))).toBe(true);
+    expect(CHANGELOG[6].items.some((t) => /tan chậm|3 lần/.test(t))).toBe(true);
+    expect(CHANGELOG[6].items.some((t) => /lạnh/.test(t))).toBe(true);
     expect(CHANGELOG[0].tag.length).toBeGreaterThan(5);
   });
   it('mỗi bản có tóm tắt và ít nhất 2 việc đã làm, câu chữ đủ dài để đọc hiểu', () => {

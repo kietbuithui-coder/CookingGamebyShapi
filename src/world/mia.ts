@@ -71,10 +71,28 @@ function caneBundle(b: Builder, x: number, z: number, yaw: number, n = 7) {
  * Xe kiểu xe đẩy sắt: máy ép trên thùng xe, thùng đá bên cạnh, ly nhựa xếp sẵn, ghế nhựa quây quanh,
  * dù che nắng, biển hiệu "NƯỚC MÍA 3.000₫".
  */
+/**
+ * XE NƯỚC MÍA trong Chợ Xóm Chiều (lượt 69; DỜI CHỖ + dựng lại gọn ở lượt 70).
+ *
+ * Người chơi báo hai lỗi ở bản lượt 69: (1) xe đứng ngay lối đi chính của chợ, tấm biển "NƯỚC MÍA 3.000₫"
+ * to bằng cái chiếu dựng trước mặt nên **che cả dãy sạp** phía sau; (2) biển treo lơ lửng, nhìn như "bay".
+ *
+ * Nay:
+ * - Xe nằm ở góc tây-bắc của chợ, sát **cổng trái** (cổng phụ ở x = −60), quay mặt vào trong chợ ⇒ lối đi
+ *   chính ở giữa chợ vẫn trống, và khách đứng mua ở phía trong, không ai bị chắn mắt.
+ * - Toàn bộ tấm biển thu về **một tấm bảng nhỏ gắn hẳn trên nóc xe** (có hai cọc chống xuống mặt bàn), không
+ *   còn tấm nào lơ lửng giữa trời.
+ * - Mọi thứ cao quá 1,7 m đều bỏ: dù che nắng hạ xuống sát xe (2,0 m) và chỉ phủ đúng cái xe.
+ */
 export function buildMiaCart(b: Builder) {
-  const s = MIA_SPOTS.cart, D = b.detail, L = b.lit, U = b.unlit;
+  const s = MIA_SPOTS.cart;
+  // Lượt 70 (sửa lỗi): phải ĐỔI MẢNH trước rồi mới lấy tham chiếu `b.lit/b.detail/b.unlit` —
+  // bản trước lấy tham chiếu trước khi gọi `chunk()` nên phần inox/thùng xe/sign lại rơi vào mảnh
+  // của khu vừa dựng xong (mảnh đó bị ẩn khi đi xa) ⇒ nhìn quanh xe chỉ thấy vài món lặt vặt,
+  // còn thân xe, mặt bàn inox và tấm biển thì "biến mất". Giờ mọi thứ vào đúng mảnh `b01` của chợ.
   b.chunk('b01', s.x, s.z);
   b.frame({ tx: s.x, tz: s.z, yaw: s.yaw });
+  const D = b.detail, L = b.lit, U = b.unlit;
   // ── khung xe đẩy: thùng sắt sơn xanh, bốn bánh xe nhỏ, tay đẩy ──
   L.box(0, 0.12, 0, 2.0, 0.86, 1.0, 0x2f6fa8, 0x3a7fbc, 0.12);
   b.collide(-1.0, -0.5, 1.0, 0.5, 0.98);
@@ -100,90 +118,105 @@ export function buildMiaCart(b: Builder) {
   for (let i = 0; i < 3; i++) U.cyl(0.98 + i * 0.02, 1.24, -0.3 + i * 0.1, 0.048, 0.012, 0xf7f7f7, 8);
   D.cyl(0.86, 1.06, -0.06, 0.06, 0.14, 0x2a2c30, 8);
   for (let i = 0; i < 9; i++) D.rod(0.86 + (i % 3 - 1) * 0.014, 1.12, -0.06 + (Math.floor(i / 3) - 1) * 0.014, 0.006, 0.24, i % 2 ? 0xf5c531 : 0xd9463c, 0.16, 0, 4);
-  // ── lọ muối ớt + kệ ly trên thành xe ──
+  // ── lọ muối ớt ──
   U.cyl(0.72, 1.06, 0.34, 0.07, 0.14, 0xf7f7f2, 8, 0.07); D.cyl(0.72, 1.2, 0.34, 0.055, 0.02, 0xd9533a, 8);
   // ── bã mía trong bao tải bên dưới (dấu hiệu của quán mía thật) ──
   D.box(0.72, 0.12, -0.78, 0.52, 0.44, 0.44, 0xb9a878, 0xa89060, 0.14, true);
   for (let i = 0; i < 5; i++) D.rod(0.6 + (i % 3) * 0.1, 0.52, -0.9 + Math.floor(i / 3) * 0.12, 0.026, 0.22, CANE_D, 0.6 + i * 0.2, 0.3, 4);
-  // ── bó mía tươi dựng cạnh xe + giá để mía nằm ──
+  // ── bó mía tươi dựng cạnh xe + mía nằm trên giá ──
   caneBundle(b, -1.28, -0.12, 0);
   for (let i = 0; i < 4; i++) D.rod(-1.05 + i * 0.05, 1.12, -0.28 + i * 0.02, 0.04, 0.9, i % 2 ? CANE : CANE_D, 0.22, 1.35, 6);
-  // ── dù che nắng: cọc sắt + tán dù vải đỏ ──
-  D.cyl(-1.0, 0.12, 0.86, 0.035, 2.3, STEEL_D, 6);
-  L.cyl(-1.0, 2.42, 0.86, 1.18, 0.16, RED, 14, 0.5, false);
-  L.cyl(-1.0, 2.5, 0.86, 1.2, 0.1, 0xf7f3e6, 14, 0.6, false);
-  L.cyl(-1.0, 2.58, 0.86, 0.06, 0.1, RED, 8);
-  // ── biển hiệu treo trước xe ──
-  for (const sx of [-0.78, 0.78]) D.box(sx, 1.06, -0.52, 0.05, 0.7, 0.05, 0x6a4a32);
-  b.signAt(0, 1.62, -0.55, 1.84, 0.52, 'NƯỚC MÍA 3.000₫', { bg: '#fff7d6', fg: '#7a0f1e', border: '#c8102e', sub: 'Ép tại chỗ · Ly lớn 5.000₫', subFg: '#1e7a3c', font: 'hand' }, 0, -1, 80);
+  // ── DÙ CHE NẮNG hạ thấp, phủ đúng cái xe (bản cũ dựng cột 2,3 m + tán 1,2 m nên che cả dãy sạp) ──
+  for (const [dx, dz] of [[-0.98, 0.72], [0.98, 0.72]] as const) D.cyl(dx, 0.12, dz, 0.032, 1.92, STEEL_D, 6);
+  L.quad(-1.12, 2.02, 0.86, 1.12, 2.02, 0.86, 1.12, 2.16, -0.7, -1.12, 2.16, -0.7, RED);          // mặt trên dù
+  L.quad(-1.12, 1.99, 0.86, 1.12, 1.99, 0.86, 1.12, 2.13, -0.7, -1.12, 2.13, -0.7, 0xb03a32);      // mặt dưới
+  for (let i = 0; i < 4; i++) {                                                                      // diềm dù
+    const xa = -1.12 + i * 0.56, xb = xa + 0.56;
+    L.quad(xb, 1.78, 0.86, xa, 1.78, 0.86, xa, 2.02, 0.86, xb, 2.02, 0.86, i % 2 ? 0xf7f3e6 : RED);
+  }
+  // ── BẢNG HIỆU GẮN TRÊN NÓC XE: hai cọc chống xuống mặt bàn, không lơ lửng ──
+  // Lượt 70: bảng dời sang NỬA TRÁI của xe (chỗ có thùng đá) và nâng lên 1,55 m, để nửa phải — nơi đặt
+  // máy ép — nhìn từ phía khách vẫn thấy trục ép quay và nước chảy xuống xô.
+  for (const sx of [-1.35, -0.28]) D.box(sx, 1.06, -0.44, 0.045, 0.9, 0.045, 0x6a4a32);
+  D.box(-0.82, 1.9, -0.44, 1.16, 0.04, 0.06, 0x6a4a32);
+  b.signAt(-0.82, 1.5, -0.47, 1.06, 0.36, 'NƯỚC MÍA 3.000₫', { bg: '#fff7d6', fg: '#7a0f1e', border: '#c8102e', sub: 'Ép tại chỗ · Ly lớn 5.000₫', subFg: '#1e7a3c', font: 'hand' }, 0, -1, 72);
   // ── ghế nhựa quanh xe cho khách ngồi uống ──
   plasticStool(D, -0.9, 0.13, -1.5, RED, 0.4);
   plasticStool(D, 0.1, 0.13, -1.66, BLUE, 0.4);
   plasticStool(D, 1.15, 0.13, -1.5, RED, 0.38);
   plasticStool(D, 1.6, 0.13, -0.2, BLUE, 0.4);
   plasticTable(D, 0.1, 0.13, -2.3, BLUE);
-  for (let i = 0; i < 3; i++) D.cyl(-0.14 + i * 0.22, 0.72, -2.34, 0.04, 0.12, 0xd0ecf7, 8, 0.045);
-  // thùng rác nhỏ + bao nilon đựng ly
+  for (let i = 0; i < 3; i++) D.cyl(-0.14 + i * 0.22, 0.85, -2.34, 0.04, 0.12, 0xd0ecf7, 8, 0.045);
+  // thùng rác nhỏ
   D.cyl(1.85, 0.12, 0.3, 0.19, 0.46, 0x3f8a5a, 10, 0.1);
-  // ── neo cho người bán (Cô Hai) và cho chỗ khách đứng mua ──
-  b.anchor('v_mia_xe', 0, 0.13, 0.92, Math.PI);
-  b.anchor('mia_xe', 0, 1.06, -0.9, 0);
+  // ── neo cho chỗ khách đứng mua và cho người bán (Cô Hai đứng SAU xe, phía trong chợ) ──
+  b.anchor('v_mia_xe', 0, 0.13, -0.92, 0);
+  b.anchor('mia_xe', 0, 1.06, 0.9, Math.PI);
   b.world.litter.push([s.x + 1.6, s.z - 1.9], [s.x - 1.9, s.z + 1.4]);
 }
 
 /**
- * QUÁN NƯỚC MÍA 3K ở Phố Trung Tâm — mặt tiền có cửa cuốn (mở theo giờ như mọi tiệm khác), trong quán
- * kê máy ép, két nước mía ép sẵn, bàn nhựa cho khách ngồi, và biển hiệu to đúng tên "NƯỚC MÍA 3K".
+ * QUÁN NƯỚC MÍA 3K trên mặt tiền Phố Trung Tâm (lượt 69; sửa bố cục ở lượt 70).
+ *
+ * Lỗi người chơi báo: ở bản cũ quầy + máy ép kê **sát mặt tiền** (z ≈ 1,35 m tính từ vách trước), nên đứng
+ * ngoài đường nhìn vào là **bức tường sau quầy chắn hết**, không thấy máy ép, không thấy bàn khách, cũng không
+ * biết trong quán có gì. Quán thì hẹp mà quầy lại chiếm chỗ đẹp nhất.
+ *
+ * Nay bố cục đảo lại, đúng kiểu quán nước mía thật ngoài đời:
+ * - **Mặt tiền để trống**: chỉ còn cửa cuốn + mái hiên + biển, nhìn thẳng vào trong thấy ngay máy ép.
+ * - **Quầy lùi sâu vào giữa quán** (z ≈ 3,1 m), máy ép quay mặt ra đường ⇒ khách đứng phía trước quầy (z ≈ 2,2 m)
+ *   nhìn thấy trục ép quay, thấy nước mía chảy xuống xô.
+ * - Bàn nhựa + bó mía dồn về hai bên và phía sau quầy, không chen giữa lối vào.
+ * - Hai neo đổi theo: `v_mia_quan` = chỗ khách đứng mua (trước quầy), `mia_quan` = chỗ Chú Tư đứng (sau quầy).
  */
 export function buildMiaShop(b: Builder, w: number, d: number) {
-  const di = 4.6, D = b.detail, L = b.lit, U = b.unlit;
+  const D = b.detail, L = b.lit, U = b.unlit;
   const col = 0xe9f3d6;
-  // vỏ tiệm: tường, cửa cuốn, mái, sàn
+  const qz = Math.min(d - 1.55, 3.1);                 // quầy lùi sâu vào trong (cũ: 1,35)
+  // vỏ tiệm: vách hai bên, vách sau, mái, sàn
   L.box(w / 2, 0, 0.1, w, 0.24, 0.2, 0xd9d2c0, 0xc9c2b2, 0.06);
   for (const sx of [0.15, w - 0.15]) L.box(sx, 0, (d + 0.2) / 2, 0.3, 3.4, d, col, 0xcfc6b0, 0.1);
   L.box(w / 2, 0, d - 0.15, w, 3.4, 0.3, col, 0xcfc6b0, 0.1);
-  L.box(w / 2, 0, 0.12, w - 0.3, 3.1, 0.06, 0xdfe9d0);
   L.box(w / 2, 3.34, d / 2, w, 0.22, d, 0xbfb6a6, 0xa9a093, 0.1);
   b.ground.tile.floor(0.3, 0.3, w - 0.3, d - 0.3, 0.126, 0xffffff, 2.6);
   b.collide(0, d - 0.3, w, d);
-  // biển hiệu lớn phía trên + mái hiên
+  // mặt tiền: KHÔNG kê gì — chỉ biển + mái hiên + cửa cuốn
   b.signAt(w / 2, 3.0, -0.03, Math.min(w - 0.6, 5.2), 0.78, 'NƯỚC MÍA 3K', { bg: '#f5c531', fg: '#7a0f1e', border: '#c8102e', sub: 'Ép mía tươi tại chỗ · Ly 3.000₫', subFg: '#1e5a2e' }, 0, -1, 128);
-  b.awning(0.25, w - 0.25, 2.7, 1.2, 0xf5c531, 0xf7f3e6, -0.05);
-  // bảng giá treo cạnh cửa
-  b.signAt(0.9, 1.55, -0.02, 1.3, 0.62, 'BẢNG GIÁ', { bg: '#ffffff', fg: '#7a0f1e', border: '#c8102e', sub: 'Mía đá 3.000₫ · Ly lớn 5.000₫', subFg: '#55585e' }, 0, -1, 56);
-  // ── quầy bán + máy ép trong quán ──
-  L.box(w / 2, 0.13, 1.35, w - 1.0, 0.84, 0.7, 0x8a6a4a, 0xb99a72, 0.12);
-  b.collide(0.5, 1.0, w - 0.5, 1.7, 0.98);
-  canePress(b, w / 2 - 0.75, 0.98, 1.42, Math.PI);
-  // két nước mía ép sẵn + ly xếp + thùng đá
-  U.box(w / 2 + 0.95, 0.98, 1.35, 0.6, 0.34, 0.52, 0xc9ced4, 0xeef1f4, 0.04, true);
-  U.cyl(w / 2 + 0.95, 1.32, 1.35, 0.18, 0.24, 0x2f6fa8, 12, 0.18);
-  D.cyl(w / 2 + 0.95, 1.54, 1.35, 0.16, 0.02, JUICE, 12);
-  for (let i = 0; i < 3; i++) U.cyl(w / 2 + 1.5 - i * 0.08, 0.98, 1.2 + i * 0.12, 0.045, 0.16, 0xd0ecf7, 8, 0.045);
-  D.box(w - 1.0, 0.13, 2.5, 0.7, 0.5, 0.6, 0xf3f0e8, 0xdfe9f7, 0.08, true);
-  D.cyl(w - 1.0, 0.63, 2.5, 0.24, 0.06, ICE, 12, 0.24, false);
-  // bó mía tươi dựng ở góc quán (khách nhìn thấy mía thật)
-  caneBundle(b, 0.95, 3.1, 0.3);
-  b.collide(0.55, 2.75, 1.35, 3.45, 1.2);
-  // ── bàn nhựa + ghế cho khách ngồi uống tại chỗ ──
-  for (const [bx, bz] of [[w / 2 - 1.1, 3.15], [w / 2 + 1.25, 3.35]] as const) {
-    plasticTable(D, bx, 0.13, bz, bz > 3.2 ? BLUE : RED);
-    plasticStool(D, bx - 0.62, 0.13, bz, bx > w / 2 ? RED : BLUE, 0.4);
-    plasticStool(D, bx + 0.62, 0.13, bz + 0.05, bx > w / 2 ? BLUE : RED, 0.4);
+  b.awning(0.25, w - 0.25, 2.7, 1.2, 0xf5c531, 0xf7f3e6);
+  // bảng giá treo trên vách bên trong, cạnh quầy (nhìn từ ngoài vẫn đọc được)
+  b.signAt(0.9, 2.1, qz - 0.9, 1.12, 0.55, 'BẢNG GIÁ', { bg: '#ffffff', fg: '#7a0f1e', border: '#c8102e', sub: 'Mía đá 3.000₫ · Ly lớn 5.000₫', subFg: '#55585e' }, 0, -1, 56);
+  // ── QUẦY + MÁY ÉP, lùi sâu: máy ép quay hẳn mặt ra đường ──
+  const qw = w - 1.0;
+  L.box(w / 2, 0.13, qz, qw, 0.84, 0.7, 0x8a6a4a, 0xb99a72, 0.12);
+  b.collide(0.5, qz - 0.35, w - 0.5, qz + 0.35, 0.98);
+  canePress(b, w / 2 - 0.75, 0.98, qz + 0.07, Math.PI);         // máy ép trên quầy, trục ép hướng ra đường
+  // két nước mía ép sẵn + ly xếp + thùng đá sau quầy
+  U.box(w / 2 + 0.95, 0.98, qz, 0.6, 0.34, 0.52, 0xc9ced4, 0xeef1f4, 0.04, true);
+  U.cyl(w / 2 + 0.95, 1.32, qz, 0.18, 0.24, 0x2f6fa8, 12, 0.18);
+  D.cyl(w / 2 + 0.95, 1.54, qz, 0.16, 0.02, JUICE, 12);
+  for (let i = 0; i < 3; i++) U.cyl(w / 2 + 1.5 - i * 0.08, 0.98, qz - 0.12 + i * 0.12, 0.045, 0.16, 0xd0ecf7, 8, 0.045);
+  // thùng đá + bó mía dựa góc sau quầy (khách nhìn qua vẫn thấy mía thật)
+  D.box(w - 1.0, 0.13, d - 1.15, 0.7, 0.5, 0.6, 0xf3f0e8, 0xdfe9f7, 0.08, true);
+  D.cyl(w - 1.0, 0.63, d - 1.15, 0.24, 0.06, ICE, 12, 0.24, false);
+  caneBundle(b, 0.95, d - 1.05, 0.3);
+  b.collide(0.55, d - 1.4, 1.35, d - 0.7, 1.2);
+  // ── bàn nhựa + ghế dồn hai bên, CHỪA lối đi giữa từ cửa vào tới quầy ──
+  for (const [bx, bz] of [[0.95, qz + 1.15], [w - 0.95, qz + 1.35]] as const) {
+    plasticTable(D, bx, 0.13, bz, bz > qz + 1.2 ? BLUE : RED);
+    plasticStool(D, bx - 0.55, 0.13, bz + 0.62, bx > w / 2 ? RED : BLUE, 0.4);
+    plasticStool(D, bx + 0.1, 0.13, bz - 0.66, bx > w / 2 ? BLUE : RED, 0.4);
     for (let i = 0; i < 2; i++) D.cyl(bx - 0.16 + i * 0.3, 0.72, bz - 0.1, 0.04, 0.12, 0xd0ecf7, 8, 0.045);
     b.collide(bx - 0.36, bz - 0.36, bx + 0.36, bz + 0.36, 0.72);
   }
-  // quạt treo tường + đèn
-  D.cyl(w - 0.36, 2.1, 2.9, 0.28, 0.06, 0xdfe6ea, 12, 0.28, false);
-  D.rod(w - 0.36, 2.1, 2.9, 0.02, 0.3, STEEL_D, 0, 0, 5);
-  L.box(w / 2, 3.12, 2.6, 1.6, 0.06, 0.3, 0xfff2cf, 0xfff2cf, 0, true);
-  b.world.lamps.push([b.W(w / 2, 2.6)[0], 3.0, b.W(w / 2, 2.6)[1]]);
+  // quạt treo tường + đèn trần
+  D.cyl(w - 0.36, 2.1, qz + 1.5, 0.28, 0.06, 0xdfe6ea, 12, 0.28, false);
+  D.rod(w - 0.36, 2.1, qz + 1.5, 0.02, 0.3, STEEL_D, 0, 0, 5);
+  L.box(w / 2, 3.12, qz + 0.2, 1.6, 0.06, 0.3, 0xfff2cf, 0xfff2cf, 0, true);
+  b.world.lamps.push([b.W(w / 2, qz)[0], 3.0, b.W(w / 2, qz)[1]]);
   // cửa cuốn đóng/mở theo giờ như mọi tiệm (id = 'mia_quan')
   b.shutter('mia_quan', 0.4, w - 0.4, 0.1, 2.6);
-  // neo: chỗ khách đứng mua (trước quầy) và chỗ chủ quán đứng (sau quầy)
-  b.anchor('mia_quan', w / 2, 1.06, 0.55, Math.PI);
-  b.anchor('v_mia_quan', w / 2, 0.13, 2.15, Math.PI);
+  // ── neo: KHÁCH đứng trước quầy (nhìn thấy máy ép), CHỦ QUÁN đứng sau quầy ──
+  b.anchor('v_mia_quan', w / 2, 0.13, qz - 0.95, 0);
+  b.anchor('mia_quan', w / 2, 1.06, qz + 0.55, Math.PI);
 }
 
-/** Hai neo để `interact.ts` biết chạm vào đâu; giữ ở đây để khỏi chép tay chuỗi ở nhiều nơi. */
-export const MIA_ANCHORS = { cart: 'mia_xe', shop: 'mia_quan' } as const;

@@ -8,6 +8,33 @@ import { clamp } from '../core/util';
 import { toast } from '../core/bus';
 import { STAT_MAX } from '../sim/state';
 import { LOTS, groundY, toWorld } from '../world/layout';
+/**
+ * MINI-GAME ÉP MÍA (lượt 70) — hằng số để test và UI đọc chung một nguồn.
+ * `MIA_CUPS`: một ca phải rót đủ bao nhiêu ly. `MIA_ZONE`: vùng xanh trên thanh lực (0..1) — bấm trong
+ * vùng này mới ra nước. Vùng hẹp dần theo số ly đã rót là do tốc độ thanh chạy (xem `miaReflex`).
+ */
+export const MIA_CUPS = 6;
+export const MIA_ZONE: readonly [number, number] = [0.34, 0.74];
+
+/**
+ * MINI-GAME PHỤ HỒ (lượt 70) — người chơi dặn *“làm mini game cho việc này (thời gian thực 1–2 phút)”*.
+ *
+ * Một ca là **ba xe cút kít**, mỗi xe **năm xẻng**:
+ * - **Giữ** nút “XÚC ĐẤT” cho kim dâng lên, **nhả** khi kim vào VÙNG VÀNG. Giữ quá tay thì đất tràn (mất xẻng
+ *   đó), nhả non thì xe chưa đầy. Mỗi xẻng ~4 giây (kim dâng hết thang trong 4 giây).
+ * - Xúc đủ năm xẻng thì **đẩy xe** ra chân công trình (3,4 giây, thanh chạy tự động) rồi quay lại xe mới.
+ * - Hết ba xe là hết ca: xe nào đủ 4/5 xẻng chuẩn trở lên thì tính là “xe đầy vừa”, số xe ấy quyết định
+ *   tiền thưởng cuối ca (`R.siteBonus`).
+ *
+ * Tổng thời gian thực: 15 xẻng × ~4 giây + 3 lượt đẩy xe × 3,4 giây ≈ **1 phút 10** — đúng 1–2 phút như dặn.
+ * Đo bằng đồng hồ thực (`ctx.dt`), không phải phút trong game: ca 90 phút trong game mà người chơi chỉ
+ * ngồi hơn một phút thật.
+ */
+export const SITE_LOADS = 3;                               // ba xe cút kít cho một ca
+export const SITE_SHOVELS = 5;                              // mỗi xe năm xẻng đất
+export const SITE_FILL_MIN = 0.62, SITE_FILL_MAX = 0.86;   // vùng vàng trên thang đầy xe
+export const SITE_LOAD_SECS = 4.0;                          // giây để kim dâng hết một thang (canh tay cho đều)
+export const SITE_PUSH_SECS = 3.4;                          // giây đẩy xe ra chân công trình giữa hai xe
 import {
   Board, Piece, ChessMove, CHESS_PRESETS, pieceSvg,
   boardFromRows, cloneBoard, isWhite, findKing, inCheck,
@@ -190,7 +217,7 @@ export type AnimKind =
   | 'rap' | 'danh_co' | 'barber' | 'hat_rong' | 'danh_giay' | 'sua_xe'
   | 'tra_da' | 'phu_tra_da' | 'swing' | 'cafe_sua' | 'karaoke' | 'bong_da'
   | 'net' | 'temple_huong' | 'temple_com' | 'labour' | 'cafe_shift' | 'dock_shift'
-  | 'mia_uong' | 'mia_phu';
+  | 'mia_uong' | 'mia_phu' | 'site_phu';
 
 export class AnimSystem {
   active = false;
@@ -207,6 +234,15 @@ export class AnimSystem {
   private npcSaved: { x: number; y: number; z: number; yaw: number; pose: Pose; seated: boolean; held: THREE.Mesh | null } | null = null;
   private savedPos: { x: number; z: number; yaw: number; pitch: number } | null = null;
   private meshes: THREE.Object3D[] = [];
+  // ── Mini-game ép mía (lượt 70): số ly đã rót, số ly chuẩn, nhịp quay, chỗ đứng, chỗ đặt chữ nổi ──
+  miaCup = 0; miaGood = 0; miaPhase = 0; miaJob: 'xe' | 'quan' = 'xe';
+  // ── Mini-game phụ hồ (lượt 70): số lượt đã xúc, kim đầy xe (0..1), có đang giữ nút hay không ──
+  siteLoad = 0; siteFill = 0; siteGood = 0; siteHalf = 0; siteHolding = false; siteSaid = ''; private siteT = 0;
+  /** Xẻng thứ mấy trong xe hiện tại (0..SITE_SHOVELS-1), số xẻng chuẩn của xe này, và tiến trình đẩy xe. */
+  siteShovel = 0; siteCartGood = 0; siteCarts = 0; siteCartsGood = 0; sitePush = 0; sitePushing = false;
+  private sitePts: [number, number, number][] = [];
+  private siteAt: [number, number, number] = [0, 0, 0];
+  private miaLabel = ''; private miaPts: [number, number, number][] = []; private miaBarX: [number, number, number] = [0, 1, 0];
   // Trạng thái bàn cờ vua 8×8 với Ông Tư
   chessPresetIdx = 0;
   chessBoard: Board = boardFromRows(CHESS_PRESETS[0].rows);
@@ -977,6 +1013,129 @@ export class AnimSystem {
     ]);
   }
 
+  // ── 7e. Một ca phụ hồ ở công trường (lượt 69; MINI-GAME thật ở lượt 70) ────────────────
+  /**
+   * Xúc đất đổ vào xe cút kít: **giữ** nút để kim đầy dâng lên, **nhả** khi kim nằm trong vùng vàng.
+   * Giữ tới đầy tràn thì mất lượt (đất rơi ra ngoài), nhả non thì xe chưa đầy (được nửa phần).
+   * Đủ `SITE_LOADS` lượt là hết ca; số lượt chuẩn quyết định tiền thưởng cuối ca (`R.siteBonus`).
+   */
+  startSiteShift(n: Npc) {
+    const a = ctx.world.anchors.site_phu ?? { x: 5.2, y: 0.9, z: 1.5, yaw: Math.PI };
+    // `a` = chỗ đứng sau bàn ghi tên, `a.yaw` = hướng người phụ trách nhìn ra (về phía lối vào).
+    // Lượt 70: bản đầu đặt camera SAU LƯNG người chơi nên khung hình đầy mặt bàn ghi tên, không thấy
+    // việc mình đang làm. Nay camera lùi về phía lối vào, lệch hông để thấy cả người xúc lẫn xe cút kít.
+    const fx = Math.sin(a.yaw), fz = Math.cos(a.yaw), sx = -fz, sz = fx;
+    const steps = ['Xúc đất đầy xe', 'Đẩy xe ra chân công trình', 'Đổ vào cốp pha'];
+    this.begin(
+      'site_phu',
+      'CA PHỤ HỒ — CÔNG TRƯỜNG PHỐ TRUNG TÂM',
+      steps,
+      'Một ca ba xe, mỗi xe năm xẻng. GIỮ nút “XÚC ĐẤT” cho kim dâng, NHẢ khi kim vào VÙNG VÀNG — non quá thì xe chưa đầy, đầy quá thì đất tràn. Xúc đủ năm xẻng thì đẩy xe ra chân công trình.',
+      a.x + fx * 1.15 + sx * 0.15, 0.13, a.z + fz * 1.15 + sz * 0.15, a.yaw + Math.PI,
+      'work', false, null,
+      // Camera đứng LÙI VÀO TRONG sân (front −1,3) cao 1,85 m — thấp hơn mái bạt 2,2 m, nhìn chéo qua vai
+      // người chơi ra bàn ghi tên và tường rào; đứng phía trước thì luôn bị cột giàn giáo chắn giữa khung.
+      [a.x - fx * 0.75 - sx * 2.9, 1.85, a.z - fz * 0.75 - sz * 2.9], [a.x + fx * 0.55, 1.15, a.z + fz * 0.55],
+      8.0, n,
+    );
+    n.pose = 'work';
+    this.siteLoad = 0; this.siteFill = 0; this.siteHolding = false; this.siteT = 0; this.siteSaid = '';
+    this.siteShovel = 0; this.siteCartGood = 0; this.siteCarts = 0; this.siteCartsGood = 0; this.sitePush = 0; this.sitePushing = false;
+    this.sitePts = [
+      [a.x + fx * 1.15 + sx * 0.15, a.z + fz * 1.15 + sz * 0.15, a.yaw + Math.PI],
+      [a.x + fx * 1.3 + sx * 0.1, a.z + fz * 1.3 + sz * 0.1, a.yaw + Math.PI + 0.25],
+      [a.x + fx * 1.05 + sx * 0.35, a.z + fz * 1.05 + sz * 0.35, a.yaw + Math.PI - 0.2],
+    ];
+    this.siteAt = [a.x, a.y, a.z];
+    this.siteBtn();
+  }
+
+  /**
+   * Nút của mini-game phụ hồ: GIỮ để xúc, NHẢ để đổ. `setBtns` chỉ báo lúc bấm xuống nên nút này tự gắn
+   * `onCookBtn` (có cả nhánh nhả tay là bấm nút “BUÔNG XẺNG”).
+   */
+  private siteBtn() {
+    const xeng = this.sitePushing
+      ? 'ĐANG ĐẨY XE RA CÔNG TRÌNH…'
+      : `XÚC ĐẤT (giữ) — xe ${Math.min(this.siteCarts + 1, SITE_LOADS)}/${SITE_LOADS} · xẻng ${Math.min(this.siteShovel + 1, SITE_SHOVELS)}/${SITE_SHOVELS}`;
+    this.setBtns([
+      { label: xeng, hot: true, fn: () => this.siteGrip() },
+      { label: 'BUÔNG XẺNG (đổ đất)', hot: false, fn: () => this.siteDrop() },
+      { label: 'Nghỉ giữa ca', hot: false, fn: () => this.stop() },
+    ]);
+    ctx.ui.onCookBtn = (id, down) => {
+      if (!down) return;
+      if (id === 'quit') { this.stop(); return; }
+      if (id === 'b0') this.siteGrip();
+      else if (id === 'b1') this.siteDrop();
+      else if (id === 'b2') this.stop();
+    };
+  }
+
+  /** Bắt đầu một xẻng: kim về 0 rồi dâng đều trong `SITE_LOAD_SECS` giây. */
+  private siteGrip() {
+    if (this.kind !== 'site_phu' || this.sitePushing || this.siteHolding) return;
+    this.siteHolding = true; this.siteFill = 0; sfx('chop');
+  }
+
+  /**
+   * Buông xẻng: chấm điểm theo chỗ kim dừng lại, rồi tính chuyện sang xe mới / đẩy xe / hết ca.
+   * Một xe cần `SITE_SHOVELS` xẻng; xúc đủ thì tự chuyển sang nhịp ĐẨY XE (3,4 giây) trước khi xúc xe kế.
+   */
+  private siteDrop() {
+    if (this.kind !== 'site_phu' || !this.siteHolding || this.sitePushing) return;
+    this.siteHolding = false;
+    const f = this.siteFill, ok = f >= SITE_FILL_MIN && f <= SITE_FILL_MAX;
+    const pt = this.sitePts[(this.siteShovel + this.siteCarts) % this.sitePts.length];
+    if (ctx.player.actRigPos) { ctx.player.actRigPos.yaw = pt[2]; ctx.player.actPose = 'work'; }
+    sfx(ok ? 'thud' : 'nope');
+    if (ok) {
+      this.siteGood++; this.siteCartGood++;
+      this.flt(this.siteAt[0], 1.9, this.siteAt[2], `🪣 Xẻng ngon — xe ${Math.min(this.siteCarts + 1, SITE_LOADS)}: ${this.siteCartGood}/${SITE_SHOVELS}`, 'good');
+    } else if (f > SITE_FILL_MAX) {
+      this.flt(this.siteAt[0], 1.9, this.siteAt[2], 'Đất tràn ra ngoài — mất cả xẻng!', 'info');
+    } else {
+      this.flt(this.siteAt[0], 1.9, this.siteAt[2], 'Xẻng non, đất rơi vãi nửa đường.', 'info'); this.siteHalf++;
+    }
+    this.siteFill = 0;
+    this.siteShovel++;
+    if (this.siteShovel >= SITE_SHOVELS) {
+      // Xe đầy: đủ 4/5 xẻng chuẩn trở lên thì tính là “xe đầy vừa”.
+      const cartOk = this.siteCartGood >= SITE_SHOVELS - 1;
+      this.siteCarts++;
+      if (cartOk) this.siteCartsGood++;
+      this.siteLoad = this.siteCarts;
+      this.siteShovel = 0; this.siteCartGood = 0;
+      if (cartOk) this.flt(this.siteAt[0], 2.0, this.siteAt[2], `✅ Xe ${this.siteCarts}/${SITE_LOADS} đầy vừa!`, 'good');
+      else this.flt(this.siteAt[0], 2.0, this.siteAt[2], `Xe ${this.siteCarts}/${SITE_LOADS} chưa đầy — hụt tay.`, 'info');
+      if (this.siteCarts >= SITE_LOADS) { this.siteFinish(); return; }
+      // Còn xe nữa: nhịp đẩy xe ra chân công trình, xong mới quay lại xúc.
+      this.sitePushing = true; this.sitePush = 0;
+      sfx('place');
+      ctx.ui.cookShow('CA PHỤ HỒ — CÔNG TRƯỜNG PHỐ TRUNG TÂM', ['Xúc đất đầy xe', 'Đẩy xe ra chân công trình', 'Đổ vào cốp pha'], 1);
+      this.siteBtn();
+      return;
+    }
+    ctx.ui.cookShow('CA PHỤ HỒ — CÔNG TRƯỜNG PHỐ TRUNG TÂM', ['Xúc đất đầy xe', 'Đẩy xe ra chân công trình', 'Đổ vào cốp pha'], 0);
+    this.siteBtn();
+  }
+
+  /** Hết ba xe: khen/chê theo số xe đầy vừa rồi trả thưởng theo `R.siteBonus`. */
+  private siteFinish() {
+    // Điểm cuối ca quy đổi về thang 5 như cũ: xe đầy vừa × (5 / số xe).
+    const good = Math.round((this.siteCartsForBonus() * 5) / SITE_LOADS);
+    const ratio = this.siteCartsForBonus() / SITE_LOADS;
+    ctx.g.wd.siteCups = this.siteCartsForBonus();
+    if (this.npc) ctx.npcs.say(this.npc, ratio >= 0.6 ? 'Được, xúc gọn lắm. Mai ra sớm làm tiếp nghen.'
+      : 'Từ từ thôi, đất rơi vãi hết trơn. Cầm tiền, lần sau canh tay cho đều.', 3.2, 1);
+    this.flt(this.siteAt[0], 2.15, this.siteAt[2], `Hết ca — ${this.siteCartsForBonus()}/${SITE_LOADS} xe đầy vừa!`, ratio >= 0.6 ? 'good' : 'info');
+    ctx.acts.siteBonusPay(good, 5);
+    this.stop();
+  }
+
+  /** Số xe đầy vừa của ca — tính lại từ số xẻng chuẩn để không phải thêm biến đếm thứ ba. */
+  private siteCartsForBonus() { return Math.min(SITE_LOADS, this.siteCartsGood); }
+
   // ── 7a. Uống trà đá vỉa hè chỗ Cô Thắm ────────────────────────────────────────────
   startIcedTea(n: Npc) {
     this.begin(
@@ -1026,8 +1185,15 @@ export class AnimSystem {
   // ── 7c. Uống nước mía (lượt 69) — ở xe mía trong chợ và ở quán Nước Mía 3K ────────────────
   startMiaDrink(n: Npc) {
     const atCart = n.fixedId === 'mia_xe';
-    const a = ctx.world.anchors[atCart ? 'mia_xe' : 'mia_quan'] ?? { x: -46, y: 1.06, z: -1.8, yaw: 0 };
-    const s = Math.sin(a.yaw), c = Math.cos(a.yaw);
+    const a = ctx.world.anchors[atCart ? 'mia_xe' : 'mia_quan'] ?? { x: -63.6, y: 1.06, z: 21.1, yaw: 0 };
+    // Neo `mia_xe` / `mia_quan` là chỗ NGƯỜI BÁN đứng và `a.yaw` là hướng người bán nhìn (ra phía khách).
+    // Lượt 70: bản cũ ghép camera bằng sin/cos của yaw theo một quy ước khác nên nhiều lần camera lọt
+    // vào trong thùng xe (chỉ thấy mặt kệ). Nay mọi chỗ đứng tính thẳng theo hướng nhìn của người bán:
+    // đứng cách người bán 0,8 m về phía khách, camera lùi thêm 1,6 m nữa và nhìn về tấm biển trên xe.
+    const fx = Math.sin(a.yaw), fz = Math.cos(a.yaw);
+    const px = a.x + fx * 0.8, pz = a.z + fz * 0.8;
+    const cx = a.x + fx * 3.1 - fz * 1.5, cz = a.z + fz * 3.1 + fx * 1.5;
+    const lx2 = a.x - fx * 0.3, lz2 = a.z - fz * 0.3;
     this.begin(
       'mia_uong',
       atCart ? 'XE NƯỚC MÍA — CHỢ XÓM CHIỀU' : 'QUÁN NƯỚC MÍA 3K',
@@ -1035,9 +1201,9 @@ export class AnimSystem {
       atCart
         ? 'Tiếng máy ép ken két, nước mía vàng óng chảy xuống xô, mùi mía tươi thơm ngọt cả góc chợ…'
         : 'Quán nhỏ bên Phố Trung Tâm, quạt treo tường quay vù vù, ly nước mía đá lạnh toát trên bàn nhựa…',
-      a.x - s * 0.0 + c * 0.0, a.y - 0.9, a.z + 1.0, a.yaw + Math.PI,
+      px, a.y - 0.9, pz, a.yaw + Math.PI,
       'drink', false, cupProp(),
-      [a.x + c * 1.4 - s * 0.6, 1.42, a.z + s * 1.4 + c * 0.6], [a.x, a.y, a.z],
+      [cx, 2.05, cz], [lx2, a.y + 0.5, lz2],
       5.0, null,
     );
     this.setBtns([
@@ -1054,12 +1220,52 @@ export class AnimSystem {
     ]);
   }
 
-  // ── 7d. Phụ bán nước mía một ca (lượt 69) ──────────────────────────────────────────────
+  // ── 7d. Phụ bán nước mía một ca (lượt 69; nay là MINI-GAME thật ở lượt 70) ─────────────
+  /**
+   * Người chơi phàn nàn: *“sửa mini game cho phù hợp / cho chuẩn”* — bản lượt 69 chỉ có một nút “LÀM TIẾP”
+   * bấm ba lần là xong ca, chẳng có gì để chơi. Nay ca phụ bán là một cái máy ép thật:
+   *
+   * - Thanh chạy qua lại trên đầu máy ép; bấm **QUAY CẦN ÉP** khi nó nằm trong **vùng xanh** mới ra nước.
+   *   Bấm lệch thì nước bắn ra ngoài (mất một phần ly) — đúng cảm giác quay tay ép mía.
+   * - Rót đủ **6 ly** thì hết ca. Mỗi ly chuẩn +1 điểm; cuối ca điểm quyết định tiền công thưởng.
+   * - Máy ép quay theo nhịp bấm (cần quay xoay), nước mía trong xô dâng lên theo số ly đã rót.
+   */
   startMiaShift(n: Npc, where: 'xe' | 'quan') {
     const atCart = where === 'xe';
-    const a = ctx.world.anchors[atCart ? 'mia_xe' : 'mia_quan'] ?? { x: -46, y: 1.06, z: -1.8, yaw: 0 };
-    const s = Math.sin(a.yaw), c = Math.cos(a.yaw);
+    const a = ctx.world.anchors[atCart ? 'mia_xe' : 'mia_quan'] ?? { x: -63.6, y: 1.06, z: 21.1, yaw: 0 };
+    // `a` = chỗ người bán đứng, `a.yaw` = hướng người bán nhìn ra phía khách (xem `startMiaDrink`).
+    const fx = Math.sin(a.yaw), fz = Math.cos(a.yaw);
+    const P = (side: number, front: number): [number, number] => [a.x + fx * front - fz * side, a.z + fz * front + fx * side];
     const steps = ['Chặt mía, gọt vỏ', 'Ép mía, hứng nước', 'Rót ly & dọn bàn'];
+    // Camera đứng PHÍA KHÁCH (trước mặt người bán 2,3 m), hơi lệch sang hông cho thấy cả máy ép lẫn ly,
+    // nhìn vào tấm biển trên xe — không còn lọt vào thùng/kệ hai bên.
+    // Neo là chỗ Cô Hai/Chú Tư đứng (sau lưng xe 0,9 m), hướng nhìn ra phía khách. Người chơi đứng
+    // sát mép sau thùng xe (0,3 m trước neo), camera đứng hẳn PHÍA KHÁCH (2,4 m) hơi lệch hông,
+    // nhìn vào mặt bàn inox nên thấy cả máy ép lẫn tay mình — không lọt vào thùng, không bị người che.
+    // Camera đứng CHẾCH HÔNG xe, cao hơn mặt bàn — nhìn chéo xuống máy ép trên nóc thùng, không bị
+    // tấm biển hay người bán che. Người chơi đứng sát mép thùng, quay lưng về tấm biển.
+    // Xe mía để bảng hiệu ở nửa TÂY của xe, quán để bảng giá ở nửa ĐÔNG của quầy ⇒ camera đứng chếch
+    // sang phía CÒN LẠI để tấm biển không chắn ngang tầm nhìn vào máy ép.
+    // Góc máy riêng cho từng chỗ (đo bằng ảnh chụp ở `tools/probe/out/dbg/`):
+    // - xe mía: camera chếch sang nửa tây (phía có thùng đá), cao 3,15 m, nhìn chéo xuống máy ép ở nửa đông;
+    //   bảng hiệu nằm ở nửa tây nên không chắn.
+    // - quán: camera lùi ra phía đường, lệch sang trái quầy, nhìn vào máy ép kê ở nửa tây quầy; bảng giá treo
+    //   ở nửa đông vách nên cũng không chắn.
+    // Trong quán thì không đoán góc: lấy đúng trục khách–người bán. Khách đứng ở `v_mia_quan`, người bán ở
+    // `mia_quan`, nên camera lùi tiếp về phía khách 2,6 m, cao 2,4 m và nhìn vào khoảng giữa hai người —
+    // thấy nguyên quầy, máy ép và tay người làm, không lọt vào bàn ghế hai bên.
+    const v = ctx.world.anchors.v_mia_quan;
+    let cx: number, cz: number, lx2: number, lz2: number;
+    if (atCart) { [cx, cz] = P(-2.6, 3.0); [lx2, lz2] = P(0.42, 0.02); }
+    else if (v) {
+      const dx = v.x - a.x, dz = v.z - a.z, dl = Math.hypot(dx, dz) || 1, ux = dx / dl, uz = dz / dl;
+      // Quán hẹp và có mái hiên ở mặt tiền nên camera KHÔNG lùi ra ngoài được: đứng ngay chỗ khách
+      // (0,9 m trước quầy), lệch hông 1,5 m, cao 2,5 m — nhìn chéo xuống máy ép, đầu người chơi không che.
+      const sx = -uz, sz = ux;
+      cx = v.x + ux * 0.9 + sx * 1.5; cz = v.z + uz * 0.9 + sz * 1.5;
+      lx2 = a.x + ux * 0.5; lz2 = a.z + uz * 0.5;
+    } else { [cx, cz] = P(2.6, 2.9); [lx2, lz2] = P(-0.7, 0.15); }
+    const [mx, mz] = P(0.2, 0.25);
     this.begin(
       'mia_phu',
       atCart ? 'PHỤ BÁN NƯỚC MÍA — XE MÍA CHỢ XÓM CHIỀU' : 'PHỤ BÁN NƯỚC MÍA — QUÁN NƯỚC MÍA 3K',
@@ -1067,19 +1273,77 @@ export class AnimSystem {
       atCart
         ? 'Chặt từng khúc mía, đút vào cần ép, hứng nước vàng óng rồi rót ra ly đầy đá cho khách đi chợ…'
         : 'Rửa mía, ép lấy nước, rót ly cho khách văn phòng đang đứng chờ trước quầy…',
-      a.x + c * 0.5, a.y - 0.9, a.z + s * 0.5, a.yaw + Math.PI,
+      mx, a.y - 0.93, mz, a.yaw,
       'carry', false, trayProp(),
-      [a.x + c * 1.9 - s * 0.9, 1.5, a.z + s * 1.9 + c * 0.9], [a.x, a.y, a.z],
+      [cx, atCart ? 3.15 : 2.75, cz], [lx2, a.y + 0.35, lz2],
       8.0, n,
     );
     n.pose = 'work';
-    // Ba điểm đứng trong lúc làm: bên hông máy ép → chỗ hứng xô nước → bàn khách.
-    this.setupShiftBtn(atCart ? 'PHỤ BÁN NƯỚC MÍA — XE CHỢ' : 'PHỤ BÁN NƯỚC MÍA — QUÁN 3K', steps, 'LÀM TIẾP!', 'drink', [
-      [a.x + c * 1.1 - s * 1.3, a.z + s * 1.1 + c * 1.3, a.yaw + Math.PI],
-      [a.x + c * 0.9 + s * 1.1, a.z + s * 0.9 - c * 1.1, a.yaw + Math.PI],
-      [a.x + c * 1.9 - s * 0.4, a.z + s * 1.9 + c * 0.4, a.yaw + Math.PI],
+    // Ba điểm đứng trong lúc làm: bên hông máy ép → chỗ hứng xô nước → phía khách rót ly.
+    this.miaPts = [
+      [P(0.55, 0.45)[0], P(0.55, 0.45)[1], a.yaw + Math.PI],
+      [P(-0.5, 0.4)[0], P(-0.5, 0.4)[1], a.yaw + Math.PI + 0.5],
+      [P(0.05, 0.85)[0], P(0.05, 0.85)[1], a.yaw + Math.PI - 0.4],
+    ];
+    this.miaCup = 0; this.miaGood = 0; this.miaPhase = 0; this.miaJob = 'xe';
+    this.miaLabel = atCart ? 'XE NƯỚC MÍA — CHỢ XÓM CHIỀU' : 'QUÁN NƯỚC MÍA 3K';
+    this.miaBarX = [a.x + fx * 0.4, a.y + 0.55, a.z + fz * 0.4];
+    this.miaBtn();
+  }
+
+  /** Vẽ lại nút của mini-game ép mía (đổi chữ theo tình trạng: đang ép / đã đủ ly). */
+  private miaBtn() {
+    const need = MIA_CUPS;
+    const left = Math.max(0, need - this.miaCup);
+    this.setBtns([
+      {
+        label: left > 0 ? `QUAY CẦN ÉP! (còn ${left} ly)` : 'RÓT LY CUỐI!',
+        hot: true,
+        fn: () => this.miaPress(),
+      },
+      { label: 'Kết thúc ca', hot: false, fn: () => this.stop() },
     ]);
   }
+
+  private miaPress() {
+    if (this.kind !== 'mia_phu') return;
+    const v = this.miaReflex();                       // 0..1 vị trí con chạy trên thanh
+    const lo = MIA_ZONE[0], hi = MIA_ZONE[1];
+    const inZone = v >= lo && v <= hi;
+    const pt = this.miaPts[(this.miaCup + 1) % this.miaPts.length];
+    sfx(inZone ? 'drink' : 'thud');
+    if (ctx.player.actRigPos) { ctx.player.actRigPos.yaw = pt[2] + (inZone ? 0.24 : -0.3); ctx.player.actPose = 'work'; }
+    if (inZone) {
+      this.miaGood++; this.miaCup++;
+      this.flt(this.miaBarX[0], 1.85, this.miaBarX[2], `🥤 Ly ${this.miaCup}/${MIA_CUPS} — nước vàng óng!`, 'good');
+    } else {
+      this.miaCup++;                                  // vẫn tính là một ly nhưng bị tràn, mất nước
+      this.flt(this.miaBarX[0], 1.85, this.miaBarX[2], v < lo ? 'Chưa đủ lực — mía chưa ra nước!' : 'Ép quá tay — nước tràn ra ngoài!', 'info');
+    }
+    this.miaPhase += 1;
+    if (this.miaCup >= MIA_CUPS) {
+      // Cuối ca: 4/6 ly chuẩn trở lên là được khen, dưới 2 ly thì bị nhắc.
+      const ratio = this.miaGood / MIA_CUPS;
+      // Điểm khéo tay của ca được `acts.miaShift` đọc để tính tiền thưởng (`R.miaBonus`).
+      ctx.g.wd.miaCups = this.miaGood;
+      if (this.npc) {
+        ctx.npcs.say(this.npc, ratio >= 0.66 ? 'Khéo tay ghê, khách đứng chờ mà con rót gọn. Mai ghé nữa nghen!'
+          : ratio >= 0.33 ? 'Được rồi, mà ép hơi phí mía đó. Để cô chỉ lại cái tay quay.'
+          : 'Tràn hết cả xô rồi con ơi. Thôi lần sau bấm chậm lại một chút.', 3.2, 1);
+      }
+      this.flt(this.miaBarX[0], 2.1, this.miaBarX[2], `Hết ca — ${this.miaGood}/${MIA_CUPS} ly chuẩn!`, ratio >= 0.66 ? 'good' : 'info');
+      sfx('coin');
+      // Điểm của ca quyết định tiền thưởng/phạt — trả qua `acts` để luật tiền nằm một chỗ (`R.miaBonus`).
+      ctx.acts.miaBonusPay(this.miaGood, MIA_CUPS);
+      this.stop();
+      return;
+    }
+    ctx.ui.cookShow(this.miaLabel, ['Chặt mía, gọt vỏ', 'Ép mía, hứng nước', 'Rót ly & dọn bàn'], Math.min(2, this.miaCup < 2 ? 0 : this.miaCup < 4 ? 1 : 2));
+    this.miaBtn();
+  }
+
+  /** Vị trí con chạy trên thanh ép (0..1), chạy qua lại liên tục; nhanh dần khi đã rót nhiều ly. */
+  private miaReflex() { const sp = 1.15 + this.miaCup * 0.12; return (Math.sin(this.t * sp) + 1) / 2; }
 
   // ── 8. Đu xích đu ở sân chơi công viên ────────────────────────────────────────────
   startSwing() {
@@ -1519,6 +1783,42 @@ export class AnimSystem {
         this.chessAiTimer -= dt;
         if (this.chessAiTimer <= 0) this.execAiChessMove();
       }
+    } else if (this.kind === 'site_phu') {
+      // Kim thang đầy xe: dâng đều trong lúc giữ, tự tụt về 0 khi buông (đã chấm điểm ở `siteDrop`).
+      this.siteT += dt;
+      if (this.sitePushing) {
+        // Nhịp đẩy xe: chạy một vòng 3,4 giây rồi quay lại chỗ xúc xe mới.
+        this.sitePush += dt / SITE_PUSH_SECS;
+        if (this.sitePush >= 1) {
+          this.sitePush = 0; this.sitePushing = false;
+          sfx('thud');
+          this.flt(this.siteAt[0], 2.0, this.siteAt[2], `Xe ${this.siteCarts} đổ xong — quay lại xúc xe ${Math.min(this.siteCarts + 1, SITE_LOADS)}!`, 'good');
+          ctx.ui.cookShow('CA PHỤ HỒ — CÔNG TRƯỜNG PHỐ TRUNG TÂM', ['Xúc đất đầy xe', 'Đẩy xe ra chân công trình', 'Đổ vào cốp pha'], 0);
+          this.siteBtn();
+        }
+        ctx.ui.cookProg(this.sitePush, 0.55, 0.95, `đẩy xe ${this.siteCarts}/${SITE_LOADS} ra công trình`);
+        ctx.ui.cookHint('Cứ đẩy đều tay — xe nặng, tới chân công trình thì đổ vào cốp pha.');
+        if (rp) rp.pitch = -0.05 + 0.12 * Math.sin(this.sitePush * Math.PI * 2);
+      } else {
+        if (this.siteHolding) {
+          this.siteFill += dt / SITE_LOAD_SECS;
+          if (this.siteFill >= 1) {
+            // Đầy tràn: dừng ở 1 và tự đổ — coi như mất xẻng, không cho bấm lại nữa.
+            this.siteFill = 1; this.siteHolding = false;
+            this.siteDrop();
+          }
+        }
+        ctx.ui.cookProg(this.siteFill, SITE_FILL_MIN, SITE_FILL_MAX, `xe ${Math.min(this.siteCarts + 1, SITE_LOADS)}/${SITE_LOADS} · xẻng ${Math.min(this.siteShovel + 1, SITE_SHOVELS)}/${SITE_SHOVELS} · đầy ${Math.round(this.siteFill * 100)}%`);
+        ctx.ui.cookHint(this.siteHolding ? 'Đang xúc… NHẢ ra khi kim vào VÙNG VÀNG!' : 'GIỮ nút “XÚC ĐẤT” rồi canh kim, buông đúng vùng vàng — một xe năm xẻng.');
+        if (rp) rp.pitch = -0.1 + 0.3 * Math.sin(this.siteFill * Math.PI);
+      }
+    } else if (this.kind === 'mia_phu') {
+      // Mini-game ép mía: thanh lực chạy qua lại, người chơi bấm khi con chạy vào vùng xanh.
+      const v = this.miaReflex();
+      ctx.ui.cookProg(v, MIA_ZONE[0], MIA_ZONE[1], `ly ${this.miaCup}/${MIA_CUPS} · chuẩn ${this.miaGood}`);
+      ctx.ui.cookHint('Canh con chạy vào VÙNG XANH rồi bấm “QUAY CẦN ÉP!” — lệch là tràn nước, chủ trừ tiền mía.');
+      // cần quay của máy ép xoay theo nhịp: mượn chuyển động của người chơi + cánh tay
+      if (rp) rp.pitch = -0.18 + 0.24 * Math.sin(this.miaPhase * 1.6 + this.t * 2.2);
     } else if (this.kind === 'barber') {
       const prog = clamp(this.t / this.dur, 0, 1);
       ctx.ui.cookProg(prog, 0.2, 1.0, 'đang cắt tỉa');
