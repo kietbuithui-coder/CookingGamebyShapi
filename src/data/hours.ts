@@ -12,6 +12,9 @@ export const PLACE_HOURS: Record<string, [number, number]> = { equip: [7, 20], b
   tra_da: [5.5, 22], rap: [14.5, 23], sua_xe: [7, 19], hat_rong: [9, 21], danh_co: [6.5, 18.5], danh_giay: [6, 19.5],
   hot_toc: [7, 19], thoi_trang: [7.5, 20],
   // Chú Ba xe ôm: sáng sớm ra gầm cầu đứng, tối về nhà — trùng giờ trong `sim/xeom.ts`.
-  chu_ba: [5, 22.5] };
+  chu_ba: [5, 22.5],
+  // Lượt 69: hai chỗ bán nước mía. Giờ ở đây phải khớp `MIA_CART_HOURS`/`MIA_SHOP_HOURS` trong `sim/rules.ts`
+  // (test canh) — chợ họp sáng tới chiều tối, quán trên phố mở tới 21h.
+  mia_xe: [6, 18.5], mia_quan: [7, 21] };
 /** Nơi không ghi giờ thì coi như mở cả ngày (bảng tin việc làm, chùa, công viên…). */
 export const placeHours = (id: string): [number, number] | undefined => PLACE_HOURS[id];

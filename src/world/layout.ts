@@ -62,7 +62,8 @@ export const faceOutYaw = (fr: Frame) => fr.yaw + Math.PI;
 export type Style = 'office' | 'rich' | 'mid' | 'poor' | 'ware';
 export type LotKind = 'house' | 'alley' | 'minimart' | 'equip' | 'eatery' | 'bank' | 'hotel' | 'tro' | 'kiosk' | 'scrap' | 'site' | 'motel'
   | 'pawn' | 'cafe' | 'temple' | 'depot' | 'school' | 'spot' | 'pharmacy' | 'tower' | 'apartment'
-  | 'canho' | 'nharieng' | 'cuahang' | 'hospital' | 'police' | 'net' | 'barber' | 'thoitrang';
+  | 'canho' | 'nharieng' | 'cuahang' | 'hospital' | 'police' | 'net' | 'barber' | 'thoitrang'
+  | 'mia';
 export interface Lot { bx: number; bz: number; face: Face; at: number; w: number; d: number; kind: LotKind; style: Style; fr: Frame; seed: number; id?: string; district: District; }
 
 interface Special { at: number; w: number; kind: LotKind; id?: string; d?: number; }
@@ -136,6 +137,15 @@ export const LOTS: Lot[] = [];
   // (cạnh tiệm Đồ Nghề Ba Tài, hướng ra đường lớn) — có cửa cuốn, có biển hiệu, khách vào trong xem đồ.
   const boutique = LOTS.find((l) => l.bx === 1 && l.bz === 1 && l.face === 'W' && l.kind === 'house' && l.w > 6.5);
   if (boutique) { boutique.kind = 'thoitrang'; boutique.id = 'thoitrang'; }
+  // Lượt 69 — QUÁN NƯỚC MÍA 3K: nâng một căn nhà CÓ SẴN ở mặt tiền bắc Phố Trung Tâm (ngay cạnh quán cơm
+  // Bà Tư) thành quán nước mía, đúng chỗ biển "Nước Mía 3K" trong danh sách tên tiệm ngẫu nhiên của city.ts.
+  //
+  // Bài học (đã trả giá một lần): KHÔNG thêm lô vào bảng `SPECIALS` cho việc này. `planLots()` bốc số ngẫu
+  // nhiên cho từng lô theo thứ tự, thêm một lô là lệch cả chuỗi RNG phía sau — đổi luôn bề rộng các lô mặt
+  // tiền Tây của ô phố này, và lô "thoitrang" (đang đòi w > 6,5 m) biến mất. Chuyển hoá lô có sẵn thì mọi
+  // lô khác giữ nguyên đúng như trước.
+  const miaLot = LOTS.find((l) => l.bx === 1 && l.bz === 1 && l.face === 'N' && l.at === 18 && l.kind === 'house' && !l.id);
+  if (miaLot) { miaLot.kind = 'mia'; miaLot.id = 'mia_quan'; }
 })();
 export const lotById = (id: string) => LOTS.find((l) => l.id === id)!;
 /** Điểm thế giới của toạ độ cục bộ trong một lô (lx tính từ mép trái lô). */
@@ -158,6 +168,22 @@ export const SPOTS: Spot[] = [
   spotFromLot('matbang_dc', 'Mặt bằng Khu Căn Hộ', 120000, 1.3, 4, 'Cạnh quán cà phê và chung cư, khách ăn sáng – ăn trưa cả ngày. Cần quán ăn nhỏ trở lên.'),
 ];
 export const spotById = (id: string) => SPOTS.find((s) => s.id === id);
+
+// ───────── Nước mía (lượt 69) ─────────
+/**
+ * Hai chỗ bán nước mía — TOẠ ĐỘ CHỈ NẰM Ở ĐÂY (luật của dự án: `world/layout.ts` giữ toạ độ, tệp dựng cảnh
+ * chỉ đọc lại). `cart` là xe mía trong Chợ Xóm Chiều, `shop` là lô mặt tiền ở Phố Trung Tâm.
+ *
+ * - Xe mía đứng ở lối đi giữa chợ, ngay dưới mái tôn (x ≈ −46, z ≈ −1,8): khách đi chợ từ cổng vào là gặp
+ *   trước khi tới dãy sạp, mà vẫn chừa lối đi rộng 2 m ở giữa cho người qua lại và xe đẩy hàng.
+ * - Quán mía lấy lô nhà 18,0–23,5 m ở mặt tiền bắc Phố Trung Tâm (`'11N'`, cạnh quán cơm Bà Tư) — đúng
+ *   khu phố có biển hiệu "Nước Mía 3K" trong danh sách tên tiệm của `city.ts` trước đây.
+ */
+export const MIA_SPOTS = {
+  cart: { x: -46, z: -1.8, yaw: Math.PI },
+  /** Mã lô của quán trên phố (bề rộng lô do `planLots()` quyết định — xem `lotById('mia_quan')`). */
+  shop: { lotId: 'mia_quan', bx: 1, bz: 1, face: 'N' as Face, at: 18 },
+};
 
 // ───────── Điểm mốc cố định ─────────
 export const PLACES = {

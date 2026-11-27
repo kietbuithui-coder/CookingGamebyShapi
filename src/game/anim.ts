@@ -189,7 +189,8 @@ export function bottleProp(): THREE.Mesh {
 export type AnimKind =
   | 'rap' | 'danh_co' | 'barber' | 'hat_rong' | 'danh_giay' | 'sua_xe'
   | 'tra_da' | 'phu_tra_da' | 'swing' | 'cafe_sua' | 'karaoke' | 'bong_da'
-  | 'net' | 'temple_huong' | 'temple_com' | 'labour' | 'cafe_shift' | 'dock_shift';
+  | 'net' | 'temple_huong' | 'temple_com' | 'labour' | 'cafe_shift' | 'dock_shift'
+  | 'mia_uong' | 'mia_phu';
 
 export class AnimSystem {
   active = false;
@@ -1019,6 +1020,64 @@ export class AnimSystem {
       [-33.6, 53.05, -Math.PI / 2],
       [-33.6, 53.75, -Math.PI / 2],
       [-34.1, 53.4, -Math.PI / 2],
+    ]);
+  }
+
+  // ── 7c. Uống nước mía (lượt 69) — ở xe mía trong chợ và ở quán Nước Mía 3K ────────────────
+  startMiaDrink(n: Npc) {
+    const atCart = n.fixedId === 'mia_xe';
+    const a = ctx.world.anchors[atCart ? 'mia_xe' : 'mia_quan'] ?? { x: -46, y: 1.06, z: -1.8, yaw: 0 };
+    const s = Math.sin(a.yaw), c = Math.cos(a.yaw);
+    this.begin(
+      'mia_uong',
+      atCart ? 'XE NƯỚC MÍA — CHỢ XÓM CHIỀU' : 'QUÁN NƯỚC MÍA 3K',
+      ['Ép mía tại chỗ', 'Rót ly đầy đá', 'Nhấp ngụm mát lạnh'],
+      atCart
+        ? 'Tiếng máy ép ken két, nước mía vàng óng chảy xuống xô, mùi mía tươi thơm ngọt cả góc chợ…'
+        : 'Quán nhỏ bên Phố Trung Tâm, quạt treo tường quay vù vù, ly nước mía đá lạnh toát trên bàn nhựa…',
+      a.x - s * 0.0 + c * 0.0, a.y - 0.9, a.z + 1.0, a.yaw + Math.PI,
+      'drink', false, cupProp(),
+      [a.x + c * 1.4 - s * 0.6, 1.42, a.z + s * 1.4 + c * 0.6], [a.x, a.y, a.z],
+      5.0, null,
+    );
+    this.setBtns([
+      {
+        label: 'KHÀ MỘT HƠI MÁT TỚI RUỘT!',
+        hot: true,
+        fn: () => {
+          sfx('drink');
+          this.flt(a.x, 1.55, a.z, 'Nước mía ngọt thanh, mát rượi!', 'good');
+          this.stop();
+        },
+      },
+      { label: 'Đứng dậy', hot: false, fn: () => this.stop() },
+    ]);
+  }
+
+  // ── 7d. Phụ bán nước mía một ca (lượt 69) ──────────────────────────────────────────────
+  startMiaShift(n: Npc, where: 'xe' | 'quan') {
+    const atCart = where === 'xe';
+    const a = ctx.world.anchors[atCart ? 'mia_xe' : 'mia_quan'] ?? { x: -46, y: 1.06, z: -1.8, yaw: 0 };
+    const s = Math.sin(a.yaw), c = Math.cos(a.yaw);
+    const steps = ['Chặt mía, gọt vỏ', 'Ép mía, hứng nước', 'Rót ly & dọn bàn'];
+    this.begin(
+      'mia_phu',
+      atCart ? 'PHỤ BÁN NƯỚC MÍA — XE MÍA CHỢ XÓM CHIỀU' : 'PHỤ BÁN NƯỚC MÍA — QUÁN NƯỚC MÍA 3K',
+      steps,
+      atCart
+        ? 'Chặt từng khúc mía, đút vào cần ép, hứng nước vàng óng rồi rót ra ly đầy đá cho khách đi chợ…'
+        : 'Rửa mía, ép lấy nước, rót ly cho khách văn phòng đang đứng chờ trước quầy…',
+      a.x + c * 0.5, a.y - 0.9, a.z + s * 0.5, a.yaw + Math.PI,
+      'carry', false, trayProp(),
+      [a.x + c * 1.9 - s * 0.9, 1.5, a.z + s * 1.9 + c * 0.9], [a.x, a.y, a.z],
+      8.0, n,
+    );
+    n.pose = 'work';
+    // Ba điểm đứng trong lúc làm: bên hông máy ép → chỗ hứng xô nước → bàn khách.
+    this.setupShiftBtn(atCart ? 'PHỤ BÁN NƯỚC MÍA — XE CHỢ' : 'PHỤ BÁN NƯỚC MÍA — QUÁN 3K', steps, 'LÀM TIẾP!', 'drink', [
+      [a.x + c * 1.1 - s * 1.3, a.z + s * 1.1 + c * 1.3, a.yaw + Math.PI],
+      [a.x + c * 0.9 + s * 1.1, a.z + s * 0.9 - c * 1.1, a.yaw + Math.PI],
+      [a.x + c * 1.9 - s * 0.4, a.z + s * 1.9 + c * 0.4, a.yaw + Math.PI],
     ]);
   }
 

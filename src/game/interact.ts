@@ -11,7 +11,7 @@ import { GEAR_LIST, HOUSING, JUNK } from '../data/gear';
 import { RECIPES } from '../data/recipes';
 import { SPOTS, groundY } from '../world/layout';
 import * as R from '../sim/rules';
-import { STAT_MAX } from '../sim/state';
+import { STAT_MAX, hourOf } from '../sim/state';
 import { money, dist2, qty, damp, hhmm } from '../core/util';
 import { toast, sfx } from '../core/bus';
 import { MB, MAT, shade } from '../gfx/mb';
@@ -70,7 +70,9 @@ export class Interact {
     for (const t of W.taps) if (near(t.x, t.z, 2.2)) this.add('tap', t, t.x, t.y, t.z, 2.1);
     W.bins.forEach((b, i) => { if (near(b.x, b.z, 2.1)) this.add('bin', i, b.x, b.y, b.z, 2); });
     for (const l of ctx.acts.litter) if (near(l.x, l.z, 2.2)) this.add('litter', l, l.x, groundY(l.x, l.z) + 0.08, l.z, 2.2, 0.15);
-    for (const k of ['dock', 'board', 'sink', 'v_temple', 'tv_bongda', 'ban_cafe', 'fire_gamcau', 'seat_eatery', 'hot_toc_ghe', 'giuong_benhvien', 'quay_thuoc', 'giuong_giam', 'lao_dong', 'may_net', 'xich_du', 'bell_canho', 'bell_nharieng', 'bell_cuahang']) { const a = A[k]; if (a && near(a.x, a.z, 2.8)) this.add('anchor', k, a.x, a.y, a.z, 2.7, k === 'dock' ? 0.2 : k.startsWith('bell_') ? 0.45 : k === 'giuong_benhvien' || k === 'quay_thuoc' ? 0.05 : 0); }
+    // Lượt 69: hai quầy nước mía, chòi công trình, và bốn neo "dựng rồi mà chưa chạm được" (tủ lạnh nhà trọ,
+    // bàn trà đá Cô Thắm, sàn nhảy của Bin, chỗ lựa đồ tiệm Cô Ngọc) — chạm vào là ra hành động.
+    for (const k of ['dock', 'board', 'sink', 'v_temple', 'tv_bongda', 'ban_cafe', 'fire_gamcau', 'seat_eatery', 'hot_toc_ghe', 'giuong_benhvien', 'quay_thuoc', 'giuong_giam', 'lao_dong', 'may_net', 'xich_du', 'bell_canho', 'bell_nharieng', 'bell_cuahang', 'mia_xe', 'mia_quan', 'site_phu', 'fridge_tro', 'tra_ban', 'rap_floor', 'thoi_trang_gia']) { const a = A[k]; if (a && near(a.x, a.z, 2.8)) this.add('anchor', k, a.x, a.y, a.z, 2.7, k === 'dock' ? 0.2 : k.startsWith('bell_') ? 0.45 : k === 'giuong_benhvien' || k === 'quay_thuoc' ? 0.05 : 0); }
     const j = ctx.acts.job; if (j?.kind === 'dock' && j.carrying) { const a = A.v_m_kho; if (a && near(a.x, a.z, 4.2)) this.add('anchor', 'dockDrop', a.x, 0.9, a.z, 4.2, 0.4); }
   }
   private atHome() { const g = ctx.g, a = ctx.world.anchors['bed_' + g.housing]; return !!a && dist2(a.x, a.z, ctx.player.x, ctx.player.z) < 36; }
@@ -147,6 +149,45 @@ export class Interact {
         if (k === 'tv_bongda') return mk('Quán cà phê Bóng Đá', () => A.funMenu('tv_bongda'), 'Uống cà phê · hát karaoke · xin chạy bàn' + (R.eventOn(g, 'bong_da') ? ' · có trận bóng' : ''));
         if (k === 'ban_cafe') return mk('Cà phê Sân Vườn', () => A.gardenCafeMenu(), 'Ngồi bàn uống cà phê · trà đào · xin phụ quán');
         if (k === 'fire_gamcau') return R.isNight(g) ? mk('Sưởi bên thùng lửa', () => { g.weather.wet = Math.max(0, g.weather.wet - 40); g.st.mood = Math.min(STAT_MAX, g.st.mood + 3); R.advance(g, 10, A.act()); toast('Hơ tay bên đống lửa, ấm người hẳn.', 'info'); }) : null;
+        // ── Bốn chỗ dựng sẵn mà trước đây chạm vào không ra gì (lượt 69) ──
+        // Tủ lạnh trong nhà trọ: mua/đặt tủ, hoặc mở ra xem đồ đang giữ lạnh.
+        if (k === 'fridge_tro') {
+          if (g.housing !== 'tro') return mk('Tủ lạnh của phòng trọ', () => toast('Tủ lạnh này của phòng trọ — phải thuê phòng mới dùng được.', 'info', 'home'));
+          const cold = g.home.filter((s) => INGS[s.id]?.cold).length;
+          return R.has(g, 'tulanh')
+            ? mk('Mở tủ lạnh (đồ đang giữ lạnh)', () => ctx.ui.panel('home'), `${cold} loại đồ cần lạnh đang cất · ${R.homeChilled(g) ? 'tủ đang chạy' : 'tủ đang tắt'}`)
+            : mk(`Đặt tủ lạnh — ${money(GEAR_LIST.find((d) => d.id === 'tulanh')!.price)}`, () => A.buyGear('tulanh'), 'Giữ đồ tươi cả tuần, đỡ phải bán tháo');
+        }
+        // Bàn trà đá của Cô Thắm (neo `tra_ban` có sẵn nhưng chưa nối vào đâu).
+        if (k === 'tra_ban') return this.spotOf('v_tra_da', 'Bàn trà đá Cô Thắm', '3.000₫/ly · ngồi nghỉ, nghe chuyện trong xóm');
+        // Sàn nhảy của Bin dưới gầm cầu: đứng lên nhảy thử (chưa quen thì vẫn được, chỉ tốn sức).
+        if (k === 'rap_floor') {
+          const bin = ctx.npcs.fixed.get('rap');
+          return bin ? mk('Đứng lên sàn nhảy thử', () => { ctx.player.face(bin.x, bin.z); A.talk(bin); }, `Bin đứng ngay đó · ${Math.round(g.st.energy)}/${STAT_MAX} sức`)
+            : mk('Sàn nhảy (chưa có ai)', () => toast('Chiều tối Bin mới ra đây tập, 14h30–23h.', 'info'));
+        }
+        // Chỗ khách đứng lựa đồ trong tiệm quần áo Cô Ngọc.
+        if (k === 'thoi_trang_gia') return this.spotOf('v_thoi_trang', 'Lựa đồ ở tiệm Cô Ngọc', 'Áo · quần · giày · kính — 12.000₫ trở lên');
+        // Chòi công trình: xin một ca phụ hồ.
+        if (k === 'site_phu') {
+          const cai = ctx.npcs.fixed.get('site');
+          const open = R.siteOpenAt(hourOf(g));
+          return mk(open ? 'Chòi công trình — xin việc phụ hồ' : 'Chòi công trình (ngoài giờ)', () => {
+            if (!cai) { toast('Cai công trình chưa tới.', 'info', 'clock'); sfx('nope'); return; }
+            ctx.player.face(cai.x, cai.z); A.talk(cai);
+          }, open ? `${money(R.SITE_WAGE_MIN)}–${money(R.SITE_WAGE_MAX)}/ca · còn ${R.siteShiftsLeft(g)}/${R.SITE_SHIFTS_DAY} ca hôm nay` : 'Nhận người 7h–16h');
+        }
+        // ── Nước mía (lượt 69) ──
+        if (k === 'mia_xe' || k === 'mia_quan') {
+          const where = k === 'mia_xe' ? 'xe' : 'quan';
+          const id = where === 'xe' ? 'mia_xe' : 'mia_quan';
+          const open = R.miaOpenAt(hourOf(g), where);
+          const seller = ctx.npcs.fixed.get(id);
+          return mk(open ? 'Xe nước mía — gọi một ly' : 'Quầy nước mía (đã đóng)', () => {
+            if (!seller) { toast('Chưa tới giờ bán nước mía.', 'info', 'clock'); sfx('nope'); return; }
+            ctx.player.face(seller.x, seller.z); A.talk(seller);
+          }, open ? `Ly ${money(R.MIA_CUP_PRICE)} · ép tại chỗ · phụ bán một ca được ${money(R.miaWage(g.rep))}` : (where === 'xe' ? 'Xe mía mở 6h–18h30' : 'Quán mở 7h–21h'));
+        }
         if (k === 'bell_canho' || k === 'bell_nharieng' || k === 'bell_cuahang') {
           const hid = k.slice(5) as 'canho' | 'nharieng' | 'cuahang';
           const hrs = PLACE_HOURS[hid];
@@ -158,6 +199,19 @@ export class Interact {
       }
     }
     return null;
+  }
+  /**
+   * Neo "chỗ đứng" chỉ có nghĩa là một chỗ của người bán đứng gần đó: chạm vào thì quay sang nói chuyện
+   * với người ấy, thay vì chẳng ra gì. Dùng cho những neo dựng sẵn mà chưa nối (lượt 69).
+   */
+  private spotOf(anchor: string, label: string, sub?: string): Focus | null {
+    const a = ctx.world.anchors[anchor]; if (!a) return null;
+    return { label, sub, x: a.x, y: a.y, z: a.z, act: () => {
+      let best: Npc | null = null, bd = 4.2 * 4.2;
+      for (const n of ctx.npcs.list) { if (n.state !== 'fixed') continue; const d = dist2(n.x, n.z, a.x, a.z); if (d < bd) { bd = d; best = n; } }
+      if (best) { ctx.player.face(best.x, best.z); ctx.acts.talk(best); }
+      else { toast('Giờ này người bán không có ở đây.', 'info', 'clock'); sfx('nope'); }
+    } };
   }
   /** Cửa của một căn (canho/nharieng/cuahang…) biết chủ nhà qua `lock` của DoorDef. */
   private doorHome(d: { lock?: string }) { return d.lock; }

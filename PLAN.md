@@ -1679,3 +1679,46 @@ không `hour?`, `getDevSections` không có `g.min =`, vẫn giữ chống kẹt
 canh bản mới nhất **không** còn chữ “tua”, và có câu “không đổi giờ”. Nhật ký Lượt 67 viết lại: bỏ dòng tua giờ, thêm
 dòng *“Đi nhanh chỉ đổi chỗ đứng, không đổi giờ trong ngày”*. `DESIGN.md` §4.49 + `README.md` sửa theo. `tsc` sạch,
 **684 bài / 57 tệp** xanh.
+
+## Lượt 69 — xe nước mía, quán nước mía, nghề phụ hồ, bốn chỗ dựng sẵn thành chạm được, thuê nhà theo tháng ✅ đã xong
+
+Người chơi dặn năm việc: dựng **xe nước mía ở Chợ Xóm Chiều** cho tương tác được (bán và/hoặc mua) kèm nước mía thành
+món mới; *“cửa hàng có sẵn nước mía trên map”* cũng phải chạm được (**đã chốt: làm cả hai** — xe ở chợ **và** quán cố định
+trên phố); thêm **kiểu thuê theo tháng** (**đã chốt: tháng = 4 tuần × 0,8, giảm 20 %**); chọn **5 chỗ đã dựng nhưng chưa
+tương tác** mà làm cho chạm được; **mở rộng nghề / ca làm**.
+
+**Nước mía thật, không phải câu chữ.** `data/ingredients.ts` thêm `mia` (Cây mía 12.000₫, tươi 480 phút, dựng được thành bó).
+`data/recipes.ts` thêm `nuoc_mia`: 1/8 cây mía + chút đá, mẻ 8 ly, ly 3.000₫ (ly lớn 5.000₫), giá vốn ≈ 1.900₫ ⇒ lãi gộp
+~37 %. Món này **không** thuộc thang tự mở: `learn: { from: 'mia_quan', cost: 20000, skill: 1 }`, và `unlockRecipes` nay lọc
+qua `autoUnlockable(r)`; ba bài test liên quan (`fun.test.ts` ×2, `economy.test.ts`) cập nhật theo luật mới.
+
+**Hai chỗ bán dựng thật.** `world/mia.ts` (mới): `buildMiaCart(b)` — xe đẩy trong Chợ Xóm Chiều (thùng xanh, máy ép có trục +
+tay quay, xô nước, thùng đá, ly xếp, bó mía, dù đỏ, biển “NƯỚC MÍA 3.000₫”, ghế nhựa, bao bã; neo `v_mia_xe`); `buildMiaShop(b,w,d)`
+— quán **Nước Mía 3K** ở mặt tiền bắc Phố Trung Tâm cạnh quán cơm Bà Tư (máy ép quay ra khách, két nước, thùng đá, bó mía,
+hai bàn nhựa, quạt, đèn, cửa cuốn; neo `v_mia_quan`). `layout.ts`: `MIA_SPOTS`, `LotKind` thêm `'mia'`.
+
+**Cạm bẫy RNG (ghi lại):** đừng thêm lô vào `SPECIALS` cho việc này. `planLots()` bốc số ngẫu nhiên theo thứ tự lô, thêm một
+lô là lệch cả chuỗi phía sau ⇒ lô `thoitrang` (đòi `w > 6,5`) biến mất và `look.test.ts` đỏ. Cách đúng: **chuyển hoá một lô
+`house` có sẵn** (`bx 1, bz 1, face 'N', at 18`) thành `kind:'mia'`, `id:'mia_quan'`. Đo lại: quán rộng 5,47 m, `thoitrang`
+vẫn còn 6,91 m, 145 lô.
+
+**Một thực đơn cho hai chỗ.** `acts.miaOpts(n, 'xe'|'quan')`: mua ly 3.000₫ / ly lớn 5.000₫, học nghề ở quán, xin phụ bán
+một ca (45 phút, công 14.000₫ + uy tín×40, **2 ca/ngày** chia chung hai chỗ). Ba người mới (`mia_xe`, `mia_quan`, `site`)
+có mục trong `SIDE` nên đi qua `sideMenu` — thực đơn được `sideOpts` gắn vào cùng hộp thoại.
+
+**Nghề phụ hồ.** Chòi công trình dựng thêm trong `places.ts` (bàn ghi tên, sổ, ghế, bạt xanh, biển “TUYỂN PHỤ HỒ”, neo
+`site_phu` + `v_site`). `rules.ts`: `SITE_SHIFT_MIN=90`, `SITE_SHIFTS_DAY=3`, `SITE_WAGE_MIN/MAX=38000/52000`, `siteWage`,
+`SITE_HOURS=[7,16]`, `siteOpenAt`, `siteShiftsLeft`; `state.ts`: `wd.siteShifts`. Anh Sáu Lực (`FIXED.site`, “Cai công trình”,
+da rám) nhận ca; `mat56.test.ts` cập nhật danh sách da riêng.
+
+**Bốn chỗ dựng sẵn nữa thành chạm được:** `fridge_tro` (bán tủ lạnh / mở kho lạnh), `tra_ban` (ngồi nghỉ, nghe chuyện),
+`rap_floor` (vô nhảy với Bin), `thoi_trang_gia` (lựa đồ, hỏi giá) — cộng công trường ở trên là đủ 5. Neo mới phải đụng đủ
+ba nơi: dựng → mảng cứng `interact.ts` dòng 74 → nhánh trong `resolve()`.
+
+**Thuê theo tháng.** `data/gear.ts`: `DAYS_PER_MONTH=28`, `MONTH_DISCOUNT=0.2`, `monthRent()` ⇒ trọ 896k · căn hộ 2,88tr ·
+nhà riêng 4,48tr · cửa hàng 5,76tr. `sim/rules.ts`: `RentPlan`, `planDays`, `planRent`, `hasMonthPlan`, `rentPlanOf`,
+`nextRent`, `payHousing(g,id,plan)`, `renewHousing(g,plan)`; gói đang thuê lưu ở `g.rentPlan[id]` (ván cũ mặc định tuần).
+`acts.ts`: nút “Thuê theo tháng” (kèm số tiền tiết kiệm) và “Đổi sang gói tháng” (đóng sớm thì cộng dồn). `panels.ts`:
+bảng Túi đồ hiện gói + hạn + tiền tới hạn. Nhà nghỉ thuê theo **đêm** nên không có gói tháng.
+
+**Đo:** `tsc` sạch · **686/686 test (57 tệp)** · `build:pages` OK. Thêm 2 bài ở `tests/housing.test.ts`.

@@ -5,7 +5,7 @@ import { bus, toast } from '../core/bus';
 import { INGS } from '../data/ingredients';
 import { SHOPS, SHOP_LIST, ShopDef } from '../data/shops';
 import { RECIPES, RecipeDef, fuelPerPortion, toolsFor, RECIPE_LIST } from '../data/recipes';
-import { GEAR, HOUSING, LENDERS, TIERS, JUNK, junkAt, BRANCH_SITES, BRANCH_WAGE, BranchSite } from '../data/gear';
+import { GEAR, HOUSING, LENDERS, TIERS, JUNK, junkAt, BRANCH_SITES, BRANCH_WAGE, BranchSite, DAYS_PER_MONTH } from '../data/gear';
 import { ARCH, ArchDef, HELPER_POOL, HelperDef, SOUS_POOL, SousDef, KEEPER_POOL, LINES, FIXED, FIXED_ROLE, NAMES } from '../data/people';
 import { EVENTS, EVENT_LIST, EventDef, WEATHER, WeatherDef, WeatherId, floodZone, hourCurve } from '../data/world';
 import { EXPR } from '../data/expr';
@@ -201,6 +201,50 @@ export const sacksLeft = (g: Game) => Math.max(0, DOCK_SACKS_DAY - (g.wd.sacks ?
 export const dockShiftsLeft = (g: Game) => Math.max(0, DOCK_SHIFTS_DAY - (g.wd.cargoShifts ?? 0));
 /** Còn mấy ca chạy bàn trong ngày (hai quán dùng chung trần). */
 export const cafeShiftsLeft = (g: Game) => Math.max(0, CAFE_SHIFTS_DAY - (g.wd.cafeShifts ?? 0));
+
+// ── Nước mía (lượt 69) ────────────────────────────────────────────────
+/**
+ * XE NƯỚC MÍA Ở CHỢ XÓM CHIỀU và QUÁN NƯỚC MÍA 3K ở Phố Trung Tâm.
+ * Hai chỗ bán cùng một thứ: ly nước mía 3.000₫ (đúng như biển hiệu có sẵn trên phố). Người chơi **mua** để
+ * đỡ khát, hoặc **phụ bán một ca** để lấy tiền công. Con số nằm ở đây để câu chữ trong game và test đọc chung.
+ */
+export const MIA_CUP_PRICE = 3000;
+/** Một ca phụ bán nước mía dài bao nhiêu phút. */
+export const MIA_SHIFT_MIN = 45;
+/** Số ca phụ bán tối đa một ngày — tính chung cả xe ở chợ lẫn quán trên phố. */
+export const MIA_SHIFTS_DAY = 2;
+/** Tiền công một ca phụ bán: nền 14.000₫ + thưởng theo uy tín (bán quen thì chủ cho thêm). */
+export const miaWage = (rep: number) => round1k(14000 + Math.max(0, rep) * 40);
+/** Còn mấy ca phụ bán nước mía trong ngày. */
+export const miaShiftsLeft = (g: Game) => Math.max(0, MIA_SHIFTS_DAY - (g.wd.miaShifts ?? 0));
+/** Mía đã bán được bao nhiêu cốc hôm nay (để câu chữ và thành tích). */
+export const miaSold = (g: Game) => g.wd.miaSold ?? 0;
+/** Giờ mở của hai chỗ bán nước mía — chợ họp sáng tới chiều, quán trên phố mở tới tối. */
+export const MIA_CART_HOURS: readonly [number, number] = [6, 18.5];
+export const MIA_SHOP_HOURS: readonly [number, number] = [7, 21];
+// ── Phụ hồ công trình (lượt 69) ───────────────────────────────────────
+/**
+ * CÔNG TRÌNH ĐANG THI CÔNG ở Xóm Lao Động (`'02N'`) trước đây chỉ có tấm biển, chạm vào không ra gì.
+ * Nay là chỗ nhận **việc phụ hồ**: một ca 90 phút, trả 38.000–52.000₫, chỉ ban ngày (7h–16h),
+ * mỗi ngày tối đa 3 ca — nặng hơn chạy bàn, nhẹ hơn bốc cá.
+ */
+export const SITE_SHIFT_MIN = 90;
+export const SITE_SHIFTS_DAY = 3;
+export const SITE_WAGE_MIN = 38000, SITE_WAGE_MAX = 52000;
+/** Tiền công một ca phụ hồ theo số ngẫu nhiên 0–1 (càng trễ càng được thêm chút vì nắng). */
+export const siteWage = (roll: number) => round1k(SITE_WAGE_MIN + clamp(roll, 0, 1) * (SITE_WAGE_MAX - SITE_WAGE_MIN));
+/** Công trình nhận người từ 7h tới 16h. */
+export const SITE_HOURS: readonly [number, number] = [7, 16];
+export const siteOpenAt = (h: number) => h >= SITE_HOURS[0] && h < SITE_HOURS[1];
+/** Còn mấy ca phụ hồ trong ngày. */
+export const siteShiftsLeft = (g: Game) => Math.max(0, SITE_SHIFTS_DAY - (g.wd.siteShifts ?? 0));
+
+/** Chỗ bán nước mía có đang mở ở giờ `h` không. */
+export const miaOpenAt = (h: number, where: 'xe' | 'quan') => {
+  const [a, b] = where === 'xe' ? MIA_CART_HOURS : MIA_SHOP_HOURS;
+  return h >= a && h < b;
+};
+
 export const suggestPrice = (g: Game, r: RecipeDef) => Math.max(round1k(recipeCost(g, r).total * 1.9), r.ref);
 export const prepIngs = (r: RecipeDef) => Object.entries(r.ings).filter(([id]) => !r.fin.includes(id));
 export const finIngs = (r: RecipeDef) => Object.entries(r.ings).filter(([id]) => r.fin.includes(id));
@@ -870,7 +914,40 @@ export function goBankrupt(g: Game) {
 }
 
 // ───────────────────────── Chỗ ở ─────────────────────────
-export function rentDue(g: Game): number { const h = HOUSING[g.housing]; return h.per === 'tuần' && g.day >= g.paidUntil ? h.rent : 0; }
+/**
+ * LƯỢT 69 — THUÊ THEO THÁNG.
+ * Bốn chỗ trọ/căn hộ/nhà riêng/cửa hàng trước đây chỉ cho thuê theo tuần. Nay mỗi chỗ có thêm gói tháng:
+ * trả một lần cho `DAYS_PER_MONTH` = 28 ngày, giá `HOUSING[id].month` (đã chiết khấu 20 % so với 4 tuần lẻ).
+ * Gói đang thuê nằm ở `g.rentPlan[id]` để hạn đóng tiền (và câu nhắc của chủ nhà) tính đúng gói:
+ * - `'tuần'`  → hết hạn sau 7 ngày, đóng tiếp bằng giá tuần;
+ * - `'tháng'` → hết hạn sau 28 ngày, đóng tiếp bằng giá tháng.
+ * Không lưu vào `g.flags` vì đây là dữ liệu của **ván**, không phải cờ sự kiện.
+ */
+export type RentPlan = 'tuần' | 'tháng';
+/** Số ngày của một gói thuê. */
+export const planDays = (h: { per: string }, plan: RentPlan) => (h.per === 'đêm' ? 1 : plan === 'tháng' ? DAYS_PER_MONTH : 7);
+/** Giá của một gói thuê (đêm / tuần / tháng). Chỗ không có gói tháng thì trả về 0. */
+export function planRent(id: string, plan: RentPlan): number {
+  const h = HOUSING[id];
+  if (!h) return 0;
+  if (h.per === 'đêm') return h.rent;
+  if (plan === 'tháng') return h.month ?? 0;
+  return h.rent;
+}
+/** Chỗ này có bán gói tháng không (chỉ bốn chỗ `per: 'tuần'` có `month`). */
+export const hasMonthPlan = (id: string) => (HOUSING[id]?.month ?? 0) > 0;
+/** Gói đang thuê của chỗ ở hiện tại. Ván cũ (chưa có `rentPlan`) mặc định là tuần. */
+export const rentPlanOf = (g: Game, id: string = g.housing): RentPlan => g.rentPlan?.[id] ?? 'tuần';
+/** Tiền tới hạn phải đóng của chỗ đang ở (0 nếu chưa tới hạn hoặc nhà đã mua). */
+export function rentDue(g: Game): number {
+  const h = HOUSING[g.housing];
+  if (!h || h.per !== 'tuần' || g.day < g.paidUntil) return 0;
+  return planRent(g.housing, rentPlanOf(g)) || h.rent;
+}
+/** Số tiền phải trả để đóng tiếp một gói nữa ở chỗ đang ở. */
+export function nextRent(g: Game, id: string = g.housing): number {
+  return planRent(id, rentPlanOf(g, id)) || HOUSING[id]?.rent || 0;
+}
 /** Uy tín cần có để thuê chỗ này (0 nếu không đòi hỏi gì). */
 export function rentNeed(id: string): number { return HOUSING[id]?.needRep ?? 0; }
 export function canRent(g: Game, id: string): boolean { return g.rep >= rentNeed(id); }
@@ -889,23 +966,40 @@ export function buyHousing(g: Game, id: string): boolean {
   return true;
 }
 
-export function payHousing(g: Game, id: string): boolean {
+/** Dọn vào một chỗ ở. `plan` chỉ có nghĩa với chỗ thuê theo tuần (mặc định thuê tuần như trước). */
+export function payHousing(g: Game, id: string, plan: RentPlan = 'tuần'): boolean {
   const h = HOUSING[id];
   if (!h || !canRent(g, id)) return false;
   if (g.flags['owned_' + id]) { g.housing = id; g.paidUntil = 999999; bus.emit('save', 'cho o'); return true; }
-  if (h.rent > 0 && !spend(g, h.rent, 'rent')) return false;
+  const use: RentPlan = h.per === 'đêm' ? 'tuần' : plan === 'tháng' && hasMonthPlan(id) ? 'tháng' : 'tuần';
+  const fee = planRent(id, use);
+  if (fee > 0 && !spend(g, fee, 'rent')) return false;
   if (g.housing !== id) { // chuyển nhà: đồ ở chỗ cũ theo người chơi nếu là gầm cầu thì để lại
     g.flags['lived_' + id] = 1;
   }
-  g.housing = id; g.paidUntil = g.day + (h.per === 'tuần' ? 7 : h.per === 'đêm' ? 1 : 9999);
+  (g.rentPlan ??= {})[id] = use;
+  g.housing = id; g.paidUntil = g.day + planDays(h, use);
   bus.emit('save', 'cho o'); return true;
+}
+/** Đóng tiếp một gói nữa ở chỗ ĐANG ở, theo đúng gói đang thuê (tuần hay tháng). */
+export function renewHousing(g: Game, plan: RentPlan = rentPlanOf(g)): boolean {
+  const id = g.housing, h = HOUSING[id];
+  if (!h || h.per === 'đêm' || g.flags['owned_' + id]) return false;
+  const use: RentPlan = plan === 'tháng' && hasMonthPlan(id) ? 'tháng' : 'tuần';
+  const fee = planRent(id, use);
+  if (fee > 0 && !spend(g, fee, 'rent')) return false;
+  (g.rentPlan ??= {})[id] = use;
+  // Đóng sớm (chưa tới hạn) thì cộng dồn từ ngày đang còn ở, không mất những ngày đã trả.
+  g.paidUntil = Math.max(g.paidUntil, g.day) + planDays(h, use);
+  bus.emit('save', 'dong tien nha');
+  return true;
 }
 function dailyHousing(g: Game) {
   const h = HOUSING[g.housing];
   if (g.flags['owned_' + g.housing]) return;
   if (h.per === 'tuần' && g.day >= g.paidUntil) {
-    const late = g.day - g.paidUntil;
-    if (late === 0) toast(`Tới hạn đóng ${money(h.rent)} tiền nhà ${h.name} tuần này. Ghé chỗ thuê để đóng.`, 'warn', 'home', true);
+    const late = g.day - g.paidUntil, plan = rentPlanOf(g), fee = planRent(g.housing, plan) || h.rent;
+    if (late === 0) toast(`Tới hạn đóng ${money(fee)} tiền nhà ${h.name} ${plan === 'tháng' ? 'tháng' : 'tuần'} này. Ghé chỗ thuê để đóng.`, 'warn', 'home', true);
     else if (late >= 2) {
       const lost = g.home.reduce((a, s) => a + s.n * s.cost, 0); g.home = []; g.led.loss += lost; g.housing = 'gamcau'; g.paidUntil = 9999;
       if (has(g, 'tulanh')) delete g.gear.tulanh;
@@ -1776,7 +1870,7 @@ function newDay(g: Game, R: RNG) {
   g.tot.best = Math.max(g.tot.best, g.led.revenue);
   g.day++; g.min -= 1440; g.led = newLedger(g.day);
   if (waste > 500) toast(`Tổng thiệt hại đồ bỏ đi: ${money(waste)}.`, 'bad', 'box');
-  g.wd.picked = []; g.wd.sacks = 0; g.wd.plates = 0; g.wd.deliveries = 0; g.wd.cargoShifts = 0; g.wd.cafeShifts = 0; g.wd.begTired = Math.max(0, g.wd.begTired - 60); g.wd.haggled = {}; g.wd.litterDay = g.day;
+  g.wd.picked = []; g.wd.sacks = 0; g.wd.plates = 0; g.wd.deliveries = 0; g.wd.cargoShifts = 0; g.wd.cafeShifts = 0; g.wd.miaShifts = 0; g.wd.miaSold = 0; g.wd.siteShifts = 0; g.wd.begTired = Math.max(0, g.wd.begTired - 60); g.wd.haggled = {}; g.wd.litterDay = g.day;
   s.dirt = clamp(s.dirt + 6, 0, 100); s.open = false;
   dailyDebts(g); dailyHousing(g);
   // sạp cố định: phí chỗ tính tự động mỗi ngày, thiếu tiền thì quầy phải đóng
@@ -1865,9 +1959,18 @@ export function repairCost(g: Game): number { return round1k((100 - g.stall.cond
  * Món tự mở khi lên cấp: lấy những món chưa biết, tay nghề đã đủ, xếp theo giá tham chiếu tăng dần
  * — cấp càng cao thì món mở ra càng đắt lời. Mỗi cấp chỉ mở một hai món để người chơi kịp làm quen.
  */
+/**
+ * Món được tự mở khi lên cấp: chỉ những món **bán đại trà** (có nơi khác bán, giá thị trường ≥ 10.000₫).
+ * Lượt 69: nước mía là món đặc sản của hai chỗ bán nước mía (3.000₫/ly) — phải tới đó **học**, không tự mở,
+ * nếu không người chơi mới sẽ bán nước mía 3.000₫ mà chẳng ai dạy, và bài "món mở sau không rẻ hơn món
+ * mở trước" của `tests/fun.test.ts` sẽ gãy.
+ */
+export const autoUnlockable = (r: RecipeDef) => !r.learn || (r.learn.cost > 0 && r.ref >= 10000);
 export function unlockRecipes(g: Game, n = 2): RecipeDef[] {
   const lvl = level(g);
-  const pool = RECIPE_LIST.filter((r) => !g.rec[r.id].known && (!r.learn || r.learn.skill <= lvl)).sort((a, b) => a.ref - b.ref || a.id.localeCompare(b.id));
+  // Chỉ món CHƯA HỌC mới được tự mở — món đã học ở quán (vd nước mía ở quán Nước Mía 3K) thuộc về người
+  // chơi, không được lấy ra khỏi hàng chờ rồi đánh dấu là "vừa mở".
+  const pool = RECIPE_LIST.filter((r) => !g.rec[r.id].known && (!r.learn || (r.learn.skill <= lvl && autoUnlockable(r)))).sort((a, b) => a.ref - b.ref || a.id.localeCompare(b.id));
   const out: RecipeDef[] = [];
   for (let i = 0; i < n && i < pool.length; i++) { g.rec[pool[i].id].known = true; out.push(pool[i]); }
   return out;

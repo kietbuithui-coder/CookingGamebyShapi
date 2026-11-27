@@ -9,6 +9,7 @@ import { INGS } from '../data/ingredients';
 import { GEAR_LIST } from '../data/gear';
 import { ingModel, gearModel, potModel, plasticStool, plasticTable, fridgeModel, basketModel } from '../gfx/props';
 import type { SignStyle } from '../gfx/tex';
+import { buildMiaShop } from './mia';
 
 export interface Open { x0: number; x1: number; sill?: number; top?: number; }
 interface ShellOpt { w: number; d: number; di: number; h1: number; H: number; col: number; inner: number; floor: number | 'tile'; ceil?: number; opens: Open[]; roof?: number; }
@@ -760,7 +761,26 @@ export function buildPlace(b: Builder, l: Lot, R: RNG) {
       b.ground.dirt.floor(0, 0.2, w, d, 0.125, 0xffffff, 3);
       for (let i = 0; i < 8; i++) L.box(1 + i * 2, 0, 0.1, 1.96, 2.1, 0.06, i % 2 ? 0x3f8a6a : 0x4a9a7a, undefined, 0.12);
       b.collide(0, 0, w, 0.25); b.collide(0, 0.25, 0.3, d); b.collide(w - 0.3, 0.25, w, d);
-      b.signAt(8, 1.0, -0.02, 5, 0.8, 'CÔNG TRÌNH ĐANG THI CÔNG', { bg: '#ffd400', fg: '#1b1c1f', border: '#1b1c1f', sub: 'Nguy hiểm — Không phận sự miễn vào', subFg: '#c8102e' }, 0, -1, 80);
+      b.signAt(8, 1.0, -0.02, 5, 0.8, 'CÔNG TRÌNH ĐANG THI CÔNG', { bg: '#ffd400', fg: '#1b1c1f', border: '#1b1c1f', sub: 'Nguy hiểm — Không phận sự miễn vào · Cần người phụ hồ', subFg: '#c8102e' }, 0, -1, 80);
+      // Lượt 69: công trình nay là chỗ NHẬN VIỆC. Dựng thêm chòi công trình (bàn ghi tên + ghế chờ + bảng
+      // giờ làm) ngay trong cổng để người chơi có chỗ đứng nói chuyện với người phụ trách thay vì chạm
+      // vào tấm biển cấm vào rồi không ra gì.
+      {
+        const W = b.unlit, D2 = b.detail, cx = 12.4, cz = 1.4;
+        W.box(cx, 0.13, cz, 3.0, 0.74, 0.7, 0x8a6a4a, 0xb99a72, 0.1);            // bàn ghi tên
+        b.collide(cx - 1.5, cz - 0.35, cx + 1.5, cz + 0.35, 0.86);
+        W.box(cx - 1.1, 0.87, cz, 0.5, 0.03, 0.36, 0xf7f4ea, 0xc9c2b2, 0.02);   // sổ điểm danh
+        W.box(cx - 1.1, 0.895, cz + 0.02, 0.34, 0.004, 0.26, 0xffffff);
+        for (let i = 0; i < 4; i++) D2.box(cx - 1.24 + i * 0.09, 0.899, cz + 0.02, 0.05, 0.002, 0.22, 0x55585e);
+        D2.cyl(cx + 0.2, 0.87, cz - 0.12, 0.05, 0.14, 0xd9dde2, 8);              // ca nước
+        for (let i = 0; i < 2; i++) plasticStool(D2, cx + 1.85 + i * 0.55, 0.13, cz + 0.15, i ? 0x2f8fd5 : 0xd9463c, 0.4);
+        // tấm bạt xanh che nắng cho chòi
+        for (const sx of [-1.7, 1.7]) D2.cyl(cx + sx, 0.13, cz, 0.04, 2.1, 0x8a8f96, 6);
+        L.quad(cx + 1.9, 2.1, cz - 0.9, cx - 1.9, 2.1, cz - 0.9, cx - 1.9, 2.35, cz + 1.0, cx + 1.9, 2.35, cz + 1.0, 0x2f6fa8);
+        b.signAt(cx, 1.7, cz + 1.05, 2.2, 0.46, 'TUYỂN PHỤ HỒ', { bg: '#ffd400', fg: '#1b1c1f', border: '#1b1c1f', sub: '7h–16h · trả theo ca', subFg: '#7a0f1e' }, 0, 1, 56);
+        b.anchor('site_phu', cx, 0.9, cz + 0.15, Math.PI);
+        b.anchor('v_site', cx + 0.35, 0.13, cz + 1.15, Math.PI);
+      }
       for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) L.box(1.5 + i * 4.3, 0, 3 + j * 3.4, 0.4, 9.6, 0.4, 0xa9a6a0, undefined, 0.15);
       for (const y of [3.2, 6.4]) L.box(w / 2, y, 6.4, w - 2, 0.25, 7.6, 0xb9b6ae, 0xa9a6a0, 0, true);
       for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) for (let k = 0; k < 3; k++) D.box(1.4 + i * 4.3 + k * 0.1, 9.6, 3 + j * 3.4, 0.03, 0.8, 0.03, 0x8a4a2a);
@@ -934,6 +954,11 @@ export function buildPlace(b: Builder, l: Lot, R: RNG) {
       U.box(3.1, 0.13, 9.6, 0.5, 0.5, 0.5, 0xdfeef0, 0xffffff, 0.1);
       for (const [x, z] of [[4.6, 6.4], [4.6, 8.0], [8.4, 2.4]]) ceilLight(b, x, 3.66, z, 1.6);
       ceilLight(b, 2.0, 3.66, 2.4, 1.4);
+      break;
+    }
+    // ── Lượt 69: QUÁN NƯỚC MÍA 3K ở Phố Trung Tâm (biển "Nước Mía 3K" nay là chỗ thật, bán được) ──
+    case 'mia': {
+      buildMiaShop(b, w, d);
       break;
     }
     case 'spot': {

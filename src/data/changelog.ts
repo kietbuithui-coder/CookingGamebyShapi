@@ -14,6 +14,20 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 69',
+    tag: 'Xe nước mía ở Chợ Xóm Chiều và quán Nước Mía 3K trên phố: ép tại chỗ, bán từng ly, học nghề, phụ một ca — thêm nghề phụ hồ, thuê nhà theo tháng',
+    items: [
+      'Xe nước mía dựng trong Chợ Xóm Chiều: thùng xanh, máy ép có trục và tay quay, xô nước, thùng đá, ly xếp sẵn, bó mía dựng góc, dù đỏ, tấm biển “NƯỚC MÍA 3.000₫”, hai ghế nhựa và bao bã mía. Cô Hai Mía đứng bán từ 6 giờ sáng tới 18 giờ 30.',
+      'Quán Nước Mía 3K mở ở mặt tiền Phố Trung Tâm, ngay cạnh quán cơm Bà Tư: máy ép quay hẳn ra phía khách, két nước, thùng đá, bó mía, hai bàn nhựa, quạt, đèn, cửa cuốn. Chú Tư Mía bán từ 7 giờ tới 21 giờ — đúng cái tên “Nước Mía 3K” vẫn nằm trong danh sách tiệm từ lâu.',
+      'Chạm vào xe hay quán đều mở cùng một thực đơn: ly 3.000₫, ly lớn 5.000₫ — uống tại chỗ thì có động tác khà một hơi, giải khát thật, và tính vào lượng nước mía bán được trong ngày.',
+      'Học được cách làm nước mía ở quán với 20.000₫: 1/8 cây mía và một chút đá ra một ly, sơ chế được 8 ly một mẻ. Món này không tự mở theo tay nghề — phải ra quán học mới biết, đúng ý “nghề ở ngoài đời”.',
+      'Xin phụ bán một ca 45 phút ở cả hai chỗ: công 14.000₫ cộng thêm theo uy tín, mỗi ngày tối đa 2 ca chia chung cho xe và quán.',
+      'Nghề mới: phụ hồ ở công trường Phố Trung Tâm. Cai công trình Anh Sáu Lực đứng ngay chỗ cái biển “công trình thi công” trước đây, có bàn ghi tên, sổ chấm công, ghế và bạt xanh. Một ca 90 phút trả 38.000–52.000₫, ngày nhận 3 ca, làm từ 7 giờ tới 16 giờ và khá hao sức.',
+      'Bốn chỗ dựng sẵn mà trước chỉ để ngắm nay đều chạm được: cái tủ lạnh trong nhà trọ (đặt tủ, mở kho lạnh), bàn trà ngoài hè (ngồi nghỉ, nghe chuyện xóm), sàn nhảy của Bin (vô nhảy một bài) và tiệm quần áo (vào lựa đồ, nghe Cô Ngọc kể giá).',
+      'Thuê nhà theo tháng: bốn chỗ trọ, căn hộ, nhà riêng và cửa hàng có thêm gói tháng 28 ngày, rẻ hơn đóng 4 tuần lẻ đúng 20 % — trọ 896.000₫, căn hộ 2.880.000₫, nhà riêng 4.480.000₫, cửa hàng 5.760.000₫. Đang ở gói tuần vẫn đổi sang gói tháng được, ngày đã trả không mất.',
+    ],
+  },
+  {
     v: 'Lượt 67',
     tag: 'Menu ẩn theo kịp game: 34 chỗ đi nhanh tới đúng người, đứng sát bên họ, dòng “bản mới nhất” đọc từ nhật ký',
     items: [
@@ -86,20 +100,6 @@ export const CHANGELOG: LogEntry[] = [
       'Nay bàn nấu nhận tay ở cả hai độ cao: chạm chén thì lấy đúng mặt bàn, chạm để vớt bọt thì lấy mặt nước. Đo lại: chạm đúng chén thì lệch chỉ còn 4 mm (trước là 208 mm).',
       'Rà cả 7 bàn thao tác còn lại: thái/băm, chiên/xào, nướng, trình bày ra đĩa – ly, trộn topping, rửa chén — đều chạm đúng (lệch 1–19 mm, đều dưới ngưỡng ăn).',
       'Bảng test của người làm game có thêm mục mở thẳng bước nấu trà đá để thử lại nhanh.',
-    ],
-  },
-  {
-    v: 'Lượt 59',
-    tag: 'Mỗi ngày chỉ nhận được vài ca bốc cá, vài ca chạy bàn; vác bao tăng lên 20 bao/ngày, và bảng việc làm liệt kê đủ mọi việc kèm số còn lại thật',
-    items: [
-      'Ca bốc cá bến cảng giờ chỉ nhận 2 ca một ngày (mỗi ca 110 phút, 4h30–10h). Làm hết ca thứ hai là anh Sáu Lực từ chối, kèm câu nhắc “mai ra sớm nha” — không còn chuyện đứng bấm cả buổi sáng ra tiền.',
-      'Ca chạy bàn / phụ quán cà phê chỉ nhận 3 ca một ngày, tính chung cho cả quán Bóng Đá lẫn quán Sân Vườn. Hết 3 ca thì cả hai quán cùng từ chối và nói rõ là hết ca hôm nay.',
-      'Lượt ca còn lại hiện ngay trên dòng chọn việc (“còn 2/3 ca hôm nay”), và sau mỗi ca có thông báo còn mấy ca — không phải đoán.',
-      'Vác bao ở bến chợ tăng từ 12 lên 20 bao một ngày (6.000₫/bao, tối đa 120.000₫). Đã vác đủ thì dòng chọn việc biến mất, và lỡ đang vác dở bao trên vai cũng phải trả lại chứ không được tính tiền.',
-      'Bảng việc làm viết lại: mỗi việc một dòng, đủ 7 việc (vác bao, bốc cá, chạy bàn, rửa chén, giao hàng, ve chai, việc khác), ghi đúng số của ngày hôm nay — còn mấy bao, mấy ca, mấy lượt rửa chén, mấy đơn giao — và ghi rõ giờ mở cửa của từng chỗ.',
-      'Việc nào hết thì bảng không im lặng bỏ đi mà ghi thẳng “đã vác đủ 20 bao hôm nay”, để người chơi biết là do hết hạn mức chứ không phải mình tìm sai chỗ.',
-      'Qua ngày mới mọi hạn mức tự mở lại; bản lưu cũ vẫn đọc được bình thường, không phải chơi lại từ đầu.',
-      'Bảng test của người làm game có mục đo trần: bốc cá tới ca 3, chạy bàn tới ca 4, vác tới bao thứ 21 — cả ba đều bị chặn và sổ ngày không nhích.',
     ],
   },
 ];

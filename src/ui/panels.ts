@@ -162,7 +162,15 @@ export function openPanel(ui: UI, name: string) {
       } else {
         const ids = Object.keys(g.gear);
         body = ids.length ? `<div class="list">${ids.map((id) => `<div class="item"><div class="grow"><b>${GEAR[id].name}</b><small>${GEAR[id].desc}</small></div>${GEAR[id].wear ? `<span class="tag ${g.gear[id] < 25 ? 'bad' : ''}">còn ${Math.round(g.gear[id])}%</span>` : ''}</div>`).join('')}</div>` : '<p class="muted">Chưa có dụng cụ nào. Ghé tiệm Đồ Nghề Ba Tài ở Phố Trung Tâm.</p>';
-        body += `<h4>Chỗ ở</h4><p>${HOUSING[g.housing].name} — ${HOUSING[g.housing].desc}${HOUSING[g.housing].rent ? ` Đã trả tới hết ngày ${g.paidUntil}.` : ''}</p>`;
+        // Lượt 69: hiện rõ gói đang thuê (tuần / tháng) và tiền tới hạn, để người chơi biết mình đang ở
+        // gói nào trước khi ghé chủ nhà đóng tiếp.
+        {
+          const h = HOUSING[g.housing], owned = !!g.flags['owned_' + g.housing];
+          const plan = R.rentPlanOf(g, g.housing);
+          const info = !h.rent ? '' : owned ? ' Nhà đã mua, không phải đóng tiền.' :
+            ` Gói ${plan} · đã trả tới hết ngày ${g.paidUntil}${g.day >= g.paidUntil ? ` · tới hạn đóng ${money(R.nextRent(g))}` : ''}.`;
+          body += `<h4>Chỗ ở</h4><p>${h.name} — ${h.desc}${info}</p>`;
+        }
       }
       draw(`${ic('bag')} Túi đồ`, [['bag', 'Nguyên liệu'], ...(canTake ? [['store', 'Kho quầy'] as [string, string]] : []), ['gear', 'Dụng cụ']], body, `<span class="muted">Tiền mặt ${money(g.cash)}${g.bank ? ' · ngân hàng ' + money(g.bank) : ''}</span>`);
     } else if (name === 'stall') {

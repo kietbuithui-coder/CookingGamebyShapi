@@ -8,7 +8,7 @@ import { who } from './who';
 import type { SlotDef } from '../world/build';
 import { SHOPS, ShopDef } from '../data/shops';
 import { INGS } from '../data/ingredients';
-import { GEAR, GEAR_LIST, HOUSING, LENDERS, JUNK, JUNK_LIST, junkAt, TIERS, BRANCH_SITES } from '../data/gear';
+import { GEAR, GEAR_LIST, HOUSING, LENDERS, JUNK, JUNK_LIST, junkAt, TIERS, BRANCH_SITES, DAYS_PER_MONTH } from '../data/gear';
 import { RECIPE_LIST, RECIPES, toolsFor } from '../data/recipes';
 import { FIXED, LINES, SIDE, ownLine } from '../data/people';
 import { FunDef, funHoursText, funOpenAt } from '../data/fun';
@@ -146,6 +146,8 @@ export class Acts {
     // Người quen nói giọng của chính họ (mỗi người 2–3 câu riêng, xoay theo ngày) chứ không chỉ câu chung của nghề.
     ctx.npcs.say(n, ownLine(id, n, g.ac, n.id + g.day) ?? shop?.say ?? 'Sao đó?', 1.2);
     if (shop) return this.shopTalk(n, shop);
+    // Lượt 69: ba người mới (hai chủ quán nước mía, cai công trình) vừa có câu chuyện riêng trong `SIDE`
+    // vừa có thực đơn của chỗ họ bán — `sideMenu` đã gắn `sideOpts` (thực đơn) vào cùng hộp thoại.
     if (SIDE[id]) return this.sideMenu(n, id);
     switch (id) {
       case 'equip': {
@@ -203,14 +205,31 @@ export class Acts {
         if (!mine && need > 0 && !R.canRent(g, hid)) opts.push({ t: `Cần uy tín ${need} mới cho thuê / bán`, sub: `Uy tín của bạn hiện là ${Math.round(g.rep)} — bán hàng đều tay rồi hãy quay lại.`, off: true });
         else if (!mine && owned) opts.push({ t: 'Dọn về lại nhà đã mua (miễn phí)', sub: h.desc, fn: () => { this.moveOut(); R.payHousing(g, hid); sfx('coin'); toast(`Đã dọn về ${h.name} của bạn.`, 'good', 'home', true); ctx.stall.refresh(); } });
         else if (!mine) {
-          opts.push({ t: `Thuê — ${money(h.rent)}/${h.per}`, sub: h.desc, off: g.cash < h.rent, fn: () => { this.moveOut(); if (R.payHousing(g, hid)) { sfx('coin'); toast(`Đã thuê ${h.name}. ${HOME_TIP[hid] ?? ''}`, 'good', 'home', true); ctx.stall.refresh(); } } });
+          opts.push({ t: `Thuê — ${money(h.rent)}/${h.per}`, sub: h.desc, off: g.cash < h.rent, fn: () => { this.moveOut(); if (R.payHousing(g, hid, 'tuần')) { sfx('coin'); toast(`Đã thuê ${h.name}. ${HOME_TIP[hid] ?? ''}`, 'good', 'home', true); ctx.stall.refresh(); } } });
+          // Lượt 69 — THUÊ THEO THÁNG: chỉ chỗ thuê tuần mới có gói tháng, và giá tháng đã chiết khấu
+          // 20 % so với 4 tuần lẻ (`HOUSING[id].month`, xem `gear.monthRent`). Câu chữ tự tính phần tiết kiệm.
+          if (R.hasMonthPlan(hid)) opts.push({
+            t: `Thuê theo tháng — ${money(h.month!)}/tháng`,
+            sub: `Ở trọn ${DAYS_PER_MONTH} ngày, rẻ hơn đóng 4 tuần lẻ ${money(h.rent * 4 - h.month!)} (~20 %)`,
+            off: g.cash < h.month!,
+            fn: () => { this.moveOut(); if (R.payHousing(g, hid, 'tháng')) { sfx('coin'); toast(`Đã thuê ${h.name} theo tháng: ở tới hết ngày ${g.paidUntil}, tiết kiệm ${money(h.rent * 4 - h.month!)}.`, 'good', 'home', true); ctx.stall.refresh(); } },
+          });
           if (h.buy) opts.push({ t: `Mua đứt vĩnh viễn — ${money(h.buy)}`, sub: 'Sở hữu trọn đời, không bao giờ phải đóng tiền thuê hàng tuần nữa', off: g.cash < h.buy, fn: () => { this.moveOut(); if (R.buyHousing(g, hid)) { sfx('buy'); toast(`Chúc mừng! Bạn đã mua đứt ${h.name} làm nhà riêng vĩnh viễn!`, 'good', 'home', true); ctx.stall.refresh(); } } });
         } else {
-          if (!owned && (due || h.per === 'đêm')) opts.push({ t: `Đóng tiền ${h.per} tiếp — ${money(h.rent)}`, off: g.cash < h.rent, fn: () => { if (R.spend(g, h.rent, 'rent')) { g.paidUntil = Math.max(g.paidUntil, g.day) + (h.per === 'tuần' ? 7 : 1); sfx('coin'); toast(`Đã đóng tiền, ở được tới hết ngày ${g.paidUntil}.`, 'good', 'home'); } } });
+          // Đóng tiếp đúng gói đang thuê: tới hạn thì luôn có nút; đang ở gói tuần thì mời luôn đóng tháng
+          // (đổi gói được bất cứ lúc nào — đóng sớm thì ngày còn lại vẫn giữ nguyên, `R.renewHousing` cộng dồn).
+          const plan = R.rentPlanOf(g, hid), fee = R.nextRent(g, hid);
+          if (!owned && (due || h.per === 'đêm')) opts.push({ t: `Đóng tiền ${plan === 'tháng' ? 'tháng' : h.per} tiếp — ${money(fee)}`, off: g.cash < fee, fn: () => { if (R.renewHousing(g, plan === 'tháng' ? 'tháng' : 'tuần')) { sfx('coin'); toast(`Đã đóng tiền, ở được tới hết ngày ${g.paidUntil}.`, 'good', 'home'); } } });
+          if (!owned && R.hasMonthPlan(hid) && plan === 'tuần' && !due) opts.push({
+            t: `Đổi sang gói tháng — ${money(h.month!)}`,
+            sub: `Đóng thêm trọn ${DAYS_PER_MONTH} ngày tính từ hôm nay · tiết kiệm ${money(h.rent * 4 - h.month!)} so với 4 tuần`,
+            off: g.cash < h.month!,
+            fn: () => { if (R.renewHousing(g, 'tháng')) { sfx('coin'); toast(`Đã đổi sang gói tháng, ở tới hết ngày ${g.paidUntil}.`, 'good', 'home', true); } },
+          });
           if (!owned && h.buy) opts.push({ t: `Mua đứt căn này — ${money(h.buy)}`, sub: 'Trả một lần, sở hữu vĩnh viễn không tốn tiền thuê', off: g.cash < h.buy, fn: () => { if (R.buyHousing(g, hid)) { sfx('buy'); toast(`Chúc mừng! Bạn đã mua đứt ${h.name} làm tài sản riêng!`, 'good', 'home', true); } } });
         }
         if (mine) opts.push({ t: owned ? 'Tạm dọn đi chỗ khác' : 'Trả phòng', sub: 'Đồ đang cất trong phòng sẽ được dọn theo (phần xách nổi)', fn: () => { this.moveOut(); g.housing = 'gamcau'; g.paidUntil = 9999; toast(owned ? 'Đã dọn ra tạm ngoài phố (nhà đã mua vẫn giữ nguyên chủ quyền).' : 'Đã trả phòng. Về lại gầm cầu.', 'info', 'home'); ctx.stall.refresh(); } });
-        this.D(who(n), n, owned ? (mine ? `Nhà này của ${g.ac} rồi, cứ ở thoải mái nhé!` : `Căn ${h.name} này thuộc sở hữu của ${g.ac}, lúc nào muốn dọn về ở lại cứ nói.`) : mine ? (due ? `Tới hạn đóng ${money(h.rent)} rồi đó nghen.` : `Ở có thoải mái không? Đã đóng tới hết ngày ${g.paidUntil}.`) : !R.canRent(g, hid) ? `${h.name} thì phải quen biết mới nói chuyện thuê mua được. Uy tín ${need} trở lên hãy ghé lại.` : HOME_BLURB[hid] ?? `${h.name} ${money(h.rent)}/${h.per}.`, [...opts, bye]); break;
+        this.D(who(n), n, owned ? (mine ? `Nhà này của ${g.ac} rồi, cứ ở thoải mái nhé!` : `Căn ${h.name} này thuộc sở hữu của ${g.ac}, lúc nào muốn dọn về ở lại cứ nói.`) : mine ? (due ? `Tới hạn đóng ${money(R.nextRent(g, hid))} (gói ${R.rentPlanOf(g, hid)}) rồi đó nghen.` : `Ở có thoải mái không? ${R.rentPlanOf(g, hid) === 'tháng' ? 'Đang thuê gói tháng, ' : ''}Đã đóng tới hết ngày ${g.paidUntil}.`) : !R.canRent(g, hid) ? `${h.name} thì phải quen biết mới nói chuyện thuê mua được. Uy tín ${need} trở lên hãy ghé lại.` : HOME_BLURB[hid] ?? `${h.name} ${money(h.rent)}/${h.per}.`, [...opts, bye]); break;
       }
       case 'eatery': {
         const h = hourOf(g), wash = (h >= 10 && h < 14.5) || (h >= 17.5 && h < 21), opts: Opt[] = [
@@ -600,8 +619,113 @@ export class Acts {
         { t: 'Cho Bo 5.000₫ mua xi', off: g.cash < 5000, fn: () => { if (!R.spend(g, 5000, 'other')) return; g.rep = clamp(g.rep + 0.2, 0, 100); sfx('coin'); say('Thiệt hả anh/chị? Con để dành mua hộp xi mới. Con cảm ơn nhiều!'); } },
       ];
       case 'cafe': return this.gardenCafeOpts(n);
+      // Lượt 69: hai chỗ bán nước mía (ly 3.000₫ / ly lớn 5.000₫) và cai công trình nhận phụ hồ. Ba người này
+      // KHÔNG có nhánh riêng trong `switch` của `talkTo` (họ đi qua `sideMenu`), nên thực đơn của họ phải nằm ở đây.
+      case 'mia_xe': return this.miaOpts(n, 'xe');
+      case 'mia_quan': return this.miaOpts(n, 'quan');
+      case 'site': return this.siteOpts(n);
     }
     return [];
+  }
+
+  /**
+   * Thực đơn của một chỗ bán nước mía (lượt 69): mua một ly, mua ly lớn, học cách làm, xin phụ bán một ca.
+   * Chỗ `where === 'xe'` là xe mía trong Chợ Xóm Chiều, `'quan'` là quán Nước Mía 3K ở Phố Trung Tâm.
+   */
+  private miaOpts(n: Npc, where: 'xe' | 'quan'): Opt[] {
+    const g = this.g, h = hourOf(g), open = R.miaOpenAt(h, where);
+    const name = FIXED[where === 'xe' ? 'mia_xe' : 'mia_quan']?.name ?? 'chủ quán';
+    const say = (t: string) => ctx.npcs.say(n, t, 2.8, 1);
+    const buy = (price: number, label: string) => ({
+      t: `${label} — ${money(price)}`,
+      sub: `Khát ${Math.round(Math.max(0, (1 - g.st.thirst / STAT_MAX) * 100))}% · uống tại chỗ cho mát`,
+      off: g.cash < price,
+      fn: () => {
+        if (!R.spend(g, price, 'food')) return;
+        // Ly lớn nhiều đá và nhiều nước hơn nên đỡ khát gấp rưỡi, tinh thần cũng lên một chút.
+        R.consume(g, { t: price >= 5000 ? 42 : 30, m: 4 });
+        sfx('drink'); g.wd.miaSold = R.miaSold(g) + 1;
+        say(where === 'xe' ? 'Ly này cô ép thêm cây nữa cho ngọt. Uống đi con, nắng lắm.' : 'Chú ép liền cho nóng, đá đây rồi. Ngồi ghế kia uống cho mát.');
+        ctx.anim.startMiaDrink(n);
+      },
+    });
+    const opts: Opt[] = [];
+    if (!open) opts.push({ t: 'Chưa tới giờ bán', sub: where === 'xe' ? 'Xe mía mở 6h–18h30' : 'Quán mở 7h–21h', off: true });
+    else {
+      opts.push(buy(R.MIA_CUP_PRICE, 'Một ly nước mía'));
+      opts.push(buy(5000, 'Ly lớn'));
+    }
+    // Học nghề: chỉ chủ quán trên phố dạy (cần quen biết như mọi chỗ khác — `learnOpts` lo phần đó).
+    if (where === 'quan') opts.push(...this.learnOpts('mia_quan', n));
+    // Phụ bán một ca: chỉ khi quán đang mở, còn ca, và đủ sức.
+    const left = R.miaShiftsLeft(g), pay = R.miaWage(g.rep);
+    opts.push({
+      t: `Xin phụ bán một ca — ${money(pay)}`,
+      sub: !open ? 'Ngoài giờ bán' : left <= 0 ? `Hôm nay làm đủ ${R.MIA_SHIFTS_DAY} ca rồi` : `${R.MIA_SHIFT_MIN} phút · còn ${left}/${R.MIA_SHIFTS_DAY} ca hôm nay`,
+      off: !open || left <= 0 || g.st.energy < 22,
+      fn: () => this.miaShift(n, where),
+    });
+    // Chuyện nghề của hai người được kể trong `SIDE` (câu hỏi mở ra dần), ở đây chỉ một câu hỏi nhanh.
+    opts.push({ t: 'Nước mía ở đây ép bằng gì?', fn: () => this.D(who(n), n, where === 'xe'
+      ? 'Cô chỉ có cái máy ép quay tay này thôi. Cần ép cũ rồi, mà ép chậm nên nước không bị nóng, ngọt thanh hơn máy lớn ngoài tiệm.'
+      : 'Máy ép chú mua lại của cái tiệm nước mía ngoài chợ Bình Điền. Mía thì bữa nào cũng lấy một bó, ép hết trong ngày — để qua đêm là chua, chú không bán.', [{ t: 'Ra vậy.' }]) });
+    return opts;
+  }
+
+  /** Công trình thi công: xin một ca phụ hồ. Chỉ ban ngày, tối đa `R.SITE_SHIFTS_DAY` ca/ngày. */
+  private siteOpts(n: Npc): Opt[] {
+    const g = this.g, h = hourOf(g), open = R.siteOpenAt(h), left = R.siteShiftsLeft(g);
+    const pay = R.siteWage(0.6);
+    return [
+      {
+        t: 'Xin một ca phụ hồ — nặng nhưng trả liền',
+        sub: !open ? `Công trình nhận người 7h–16h (bây giờ ${Math.floor(h)}h)` : left <= 0 ? `Hôm nay nhận đủ ${R.SITE_SHIFTS_DAY} ca rồi` : `${R.SITE_SHIFT_MIN} phút · ${money(R.SITE_WAGE_MIN)}–${money(R.SITE_WAGE_MAX)} · còn ${left}/${R.SITE_SHIFTS_DAY} ca`,
+        off: !open || left <= 0 || g.st.energy < 30,
+        fn: () => this.siteShift(n),
+      },
+      {
+        t: 'Hỏi công trình còn mấy tầng',
+        fn: () => this.D(who(n), n, 'Anh Sáu chỉ tay lên giàn giáo: “Đổ xong sàn ba là tới mái. Coi vậy mà chậm, mưa một bữa là nghỉ cả buổi. Làm nghề này phải quen với chuyện trời cho làm mới được làm.”', [{ t: 'Vâng anh.' }]),
+      },
+    ];
+  }
+
+  /** Một ca phụ hồ: khuân gạch, trộn hồ, xách nước — trả theo ca, nặng hơn chạy bàn nhưng không đòi uy tín. */
+  private siteShift(n: Npc) {
+    const g = this.g;
+    if (!R.siteOpenAt(hourOf(g))) { toast('Công trình chỉ nhận người 7h–16h.', 'info', 'clock'); return; }
+    if (R.siteShiftsLeft(g) <= 0) { toast(`Hôm nay bạn đã làm đủ ${R.SITE_SHIFTS_DAY} ca phụ hồ rồi — mai ra sớm nha.`, 'info', 'clock'); return; }
+    if (g.st.energy < 30) { toast('Kiệt sức rồi, khuân gạch kiểu này thì ngã giữa công trình. Ăn ngủ rồi quay lại.', 'bad', 'bolt'); return; }
+    const pay = R.siteWage(Math.random());
+    R.advance(g, R.SITE_SHIFT_MIN, this.act());
+    R.earn(g, pay, 'side');
+    // Nặng nhất trong ba nghề phụ: tốn sức, bẩn người, nhưng đói nhanh nên cũng phải ăn.
+    R.consume(g, { e: -24, h: -7, t: -8, hy: -7, m: -2 });
+    g.wd.siteShifts = (g.wd.siteShifts ?? 0) + 1;
+    const left = R.siteShiftsLeft(g);
+    ctx.ui.float(`+${money(pay)}`, { x: ctx.player.x, y: 1.3, z: ctx.player.z }, 'good');
+    sfx('fix');
+    toast(`Phụ hồ một ca: nhận ${money(pay)}. Bụi đất bám đầy người nhưng có tiền cầm tay.` + (left > 0 ? ` Còn ${left} ca hôm nay.` : ` Hết ${R.SITE_SHIFTS_DAY} ca của ngày.`), 'good', 'cash', true);
+    ctx.npcs.say(n, 'Được đó, làm không nghỉ tay. Cầm tiền đi, mai còn việc tui kêu.', 3, 1);
+  }
+
+  /** Một ca phụ bán nước mía: rửa mía, ép, rót ly, lau bàn — có tiền công và hao sức. */
+  private miaShift(n: Npc, where: 'xe' | 'quan') {
+    const g = this.g;
+    if (R.miaShiftsLeft(g) <= 0) { toast(`Hôm nay bạn đã phụ bán đủ ${R.MIA_SHIFTS_DAY} ca nước mía rồi — mai quay lại nhé.`, 'info', 'clock'); return; }
+    if (!R.miaOpenAt(hourOf(g), where)) { toast('Ngoài giờ bán, chủ quán chưa cần người.', 'info', 'clock'); return; }
+    if (g.st.energy < 22) { toast('Mệt quá, đứng ép mía cả tiếng không nổi. Ăn ngủ rồi quay lại.', 'bad', 'bolt'); return; }
+    const pay = R.miaWage(g.rep);
+    R.advance(g, R.MIA_SHIFT_MIN, this.act());
+    R.earn(g, pay, 'side');
+    R.consume(g, { e: -14, t: -6, hy: -3, m: 1 });
+    g.wd.miaShifts = (g.wd.miaShifts ?? 0) + 1;
+    const left = R.miaShiftsLeft(g);
+    ctx.ui.float(`+${money(pay)}`, { x: ctx.player.x, y: 1.3, z: ctx.player.z }, 'good');
+    sfx('coin');
+    toast(`Phụ bán nước mía một ca: nhận ${money(pay)}. Tay mỏi nhừ nhưng có tiền.` + (left > 0 ? ` Còn ${left} ca hôm nay.` : ` Hết ${R.MIA_SHIFTS_DAY} ca của ngày rồi.`), 'good', 'cash', true);
+    ctx.npcs.say(n, 'Giỏi lắm, khách đông mà con làm gọn. Cầm lấy, mai ghé nữa nghen.', 3, 1);
+    ctx.anim.startMiaShift(n, where);
   }
   private gardenCafeOpts(n?: Npc): Opt[] {
     const g = this.g, h = hourOf(g), say = (t: string) => { if (n) ctx.npcs.say(n, t, 2.8, 1); };

@@ -128,9 +128,14 @@ export interface Game {
   /** Những người đã quen (id nhân vật cố định hoặc khách quen → ngày làm quen). Chưa quen thì chưa biết tên. */
   met: Record<string, number>;
   flags: Record<string, number>;
+  /**
+   * Lượt 69: gói thuê đang dùng của từng chỗ ở — `'tuần'` hoặc `'tháng'`.
+   * Ván cũ không có trường này thì `rules.rentPlanOf()` coi mọi chỗ là thuê tuần như trước.
+   */
+  rentPlan: Record<string, 'tuần' | 'tháng'>;
   weather: { now: WeatherId; until: number; next: WeatherId; flood: number; wet: number };
   ev: { active: ActiveEvent[]; last: Record<string, number>; check: number; lastStart: number };
-  wd: { litterDay: number; picked: number[]; bins: Record<number, number>; sacks: number; plates: number; deliveries: number; cargoShifts: number; cafeShifts: number; begTired: number; outOf: string[]; haggled: Record<string, number>; job: any; };
+  wd: { litterDay: number; picked: number[]; bins: Record<number, number>; sacks: number; plates: number; deliveries: number; cargoShifts: number; cafeShifts: number; miaShifts: number; miaSold: number; siteShifts: number; begTired: number; outOf: string[]; haggled: Record<string, number>; job: any; };
   tot: { served: number; earned: number; begged: number; scrap: number; best: number; bankrupt: number };
   quest: number;
 }
@@ -153,10 +158,10 @@ export function newGame(seed = (Math.random() * 1e9) | 0, ac: 'anh' | 'chị' = 
     pos: { x: PLACES.camp.x, z: PLACES.camp.z - 1.2, yaw: Math.PI, pitch: 0 },
     bag: [], junk: {}, meals: [], lostBag: [], lostDay: -1, wanted: 0, jailUntil: 0, gear: {}, phone: null, housing: 'gamcau', paidUntil: 0, home: [],
     stall: emptyStall(), helpShift: { 1: 'full', 2: 'sang' }, help: null, help2: null, sous: null, sous2: null, branch: null, errands: [], bookings: [], bookSeq: 1, rec, debts: [], debtSeq: 1, credit: 0,
-    led: newLedger(0), hist: [], rel: {}, met: {}, flags: {},
+    led: newLedger(0), hist: [], rel: {}, met: {}, flags: {}, rentPlan: {},
     weather: { now: 'nang', until: 6 * 60 + 10 + 420, next: 'nang', flood: 0, wet: 0 },
     ev: { active: [], last: {}, check: 9 * 60, lastStart: -999 },
-    wd: { litterDay: -1, picked: [], bins: {}, sacks: 0, plates: 0, deliveries: 0, cargoShifts: 0, cafeShifts: 0, begTired: 0, outOf: [], haggled: {}, job: null },
+    wd: { litterDay: -1, picked: [], bins: {}, sacks: 0, plates: 0, deliveries: 0, cargoShifts: 0, cafeShifts: 0, miaShifts: 0, miaSold: 0, siteShifts: 0, begTired: 0, outOf: [], haggled: {}, job: null },
     tot: { served: 0, earned: 0, begged: 0, scrap: 0, best: 0, bankrupt: 0 }, quest: 0,
   };
 }
@@ -205,7 +210,8 @@ export function migrate(raw: any): Game | null {
   if (!raw || typeof raw !== 'object' || typeof raw.day !== 'number') return null;
   const base = newGame(raw.seed ?? 1, raw.ac ?? 'anh');
   const g: Game = { ...base, ...raw, st: { ...base.st, ...raw.st }, stall: { ...base.stall, ...raw.stall }, weather: { ...base.weather, ...raw.weather },
-    ev: { ...base.ev, ...raw.ev }, wd: { ...base.wd, ...raw.wd }, tot: { ...base.tot, ...raw.tot }, led: { ...base.led, ...raw.led }, rec: { ...base.rec } };
+    ev: { ...base.ev, ...raw.ev }, wd: { ...base.wd, ...raw.wd }, tot: { ...base.tot, ...raw.tot }, led: { ...base.led, ...raw.led }, rec: { ...base.rec },
+    rentPlan: { ...base.rentPlan, ...(raw.rentPlan ?? {}) } };
   for (const r of RECIPE_LIST) if (raw.rec?.[r.id]) g.rec[r.id] = { ...base.rec[r.id], ...raw.rec[r.id] };
   const clean = (l: Stack[]) => (Array.isArray(l) ? l.filter((s) => s && INGS[s.id] && s.n > 0) : []);
   g.bag = clean(g.bag); g.home = clean(g.home); g.stall.store = clean(g.stall.store);
