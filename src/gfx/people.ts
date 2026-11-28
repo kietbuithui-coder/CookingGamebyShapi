@@ -13,7 +13,16 @@ export interface Look {
   beard?: number;
 }
 export const SKINS = [0xf2c9a4, 0xecbe94, 0xe0aa7c, 0xf6d6b6, 0xd49a6a];
-export type Pose = 'idle' | 'walk' | 'sit' | 'talk' | 'work' | 'carry' | 'wave' | 'lie' | 'angry' | 'dance' | 'ride' | 'read' | 'drink' | 'chat' | 'punch' | 'rummage' | 'serve' | 'wipe';
+/**
+ * Dáng người. Ba dáng mới của lượt 73 dùng cho cảnh đánh nhau & đe doạ (xem `Rig.update` bên dưới):
+ * - `block`: hai tay giơ lên che mặt, hơi cúi — đỡ đòn.
+ * - `stagger`: trúng đòn, người bật ngửa ra sau, tay vung — ăn đấm.
+ * - `threat`: chồm tới, một tay chỉ thẳng mặt người kia — đe doạ (không đánh).
+ */
+export type Pose = 'idle' | 'walk' | 'sit' | 'talk' | 'work' | 'carry' | 'wave' | 'lie' | 'angry' | 'dance' | 'ride' | 'read' | 'drink' | 'chat' | 'punch' | 'rummage' | 'serve' | 'wipe'
+  | 'block' | 'stagger' | 'threat'
+  /** Nhảy lên đấm (dùng cho cảnh đánh nhau: người chơi bật lên thúc cùi chỏ). */
+  | 'leap';
 
 export function lookFromArch(a: ArchDef, R: RNG, fem = R.chance(a.fem)): Look {
   let face = R.pick(a.faces);
@@ -133,6 +142,12 @@ export class Rig {
   root = new THREE.Group(); inner = new THREE.Group();
   body: THREE.Mesh; face: THREE.Mesh; armL: THREE.Mesh; armR: THREE.Mesh; legL: THREE.Mesh; legR: THREE.Mesh; blob: THREE.Mesh; held: THREE.Mesh | null = null;
   look!: Look; phase = Math.random() * 6; expr = 0; exprT = 0; blinkT = Math.random() * 4; pose: Pose = 'idle'; seated = false; t = Math.random() * 10;
+  /**
+   * Đang thuộc về cảnh 3D nào (lượt 73): `'' ` = ngoài phố, `'fight'` = đối thủ trong ván đánh.
+   * Chỉ để `Rig.release()` biết lúc nào được tái sử dụng từ hồ — nếu không, một người vừa bị hạ trong ván
+   * đánh có thể bị hồ lấy lại và xuất hiện ở chỗ khác giữa lúc cảnh còn đang chạy.
+   */
+  slot: '' | 'fight' = '';
   private sit = 0; private lie = 0;
   constructor() {
     this.body = new THREE.Mesh(EMPTY, MAT.lit); this.face = new THREE.Mesh(faceGeometry(), faceMaterial());
@@ -186,6 +201,11 @@ export class Rig {
     else if (p === 'drink') { aR = -1.05 + Math.sin(this.t * 1.6) * 0.07; aRz = 0.26; aL = -0.16; }   // cầm ly trước bụng, thỉnh thoảng nhấp một ngụm
     else if (p === 'chat') { aR = -1.15 + Math.sin(this.t * 3.1) * 0.42; aL = -0.55 + Math.cos(this.t * 2.3) * 0.22; aRz = 0.25; aLz = -0.18; }
     else if (p === 'punch') { aR = -1.78 + Math.sin(this.t * 16) * 0.22; aL = -0.78; aLz = 0.22; aRz = -0.16; }
+    // ── Lượt 73: ba dáng đánh nhau. Nhịp nhanh (t*11…t*15) để nhìn ra cú đấm, không phải khối đứng im.
+    else if (p === 'block') { aL = -2.55 + Math.sin(this.t * 11) * 0.1; aR = -2.5 + Math.cos(this.t * 11) * 0.1; aLz = -0.62; aRz = 0.62; }
+    else if (p === 'stagger') { const w = Math.sin(this.t * 13); aR = -2.15 + w * 0.35; aL = -1.95 - w * 0.35; aLz = -0.5; aRz = 0.5; lL = 0.32 + w * 0.12; lR = -0.22 - w * 0.1; }
+    else if (p === 'threat') { aR = -1.62 + Math.sin(this.t * 5.2) * 0.06; aRz = -0.5; aL = -0.42; aLz = 0.2; }
+    else if (p === 'leap') { const w = Math.sin(this.t * 12); aR = -2.5 + w * 0.5; aL = -1.05 - w * 0.2; lL = 0.55; lR = -0.3; }
     else if (p === 'rummage') { aL = -1.25 + Math.sin(this.t * 10) * 0.35; aR = -1.25 - Math.sin(this.t * 10) * 0.35; aLz = -0.18; aRz = 0.18; }
     else if (p === 'serve') { aL = -1.22; aR = -1.28; aLz = -0.2; aRz = 0.2; }
     else if (p === 'wipe') { aR = -1.1 + Math.sin(this.t * 8.5) * 0.26; aRz = 0.22 + Math.cos(this.t * 8.5) * 0.26; aL = -0.22; }
@@ -195,8 +215,12 @@ export class Rig {
     const h = this.look.h;
     this.inner.position.y = (walking ? Math.abs(Math.cos(this.phase)) * 0.028 : Math.sin(this.t * 1.6) * 0.004) * h - this.sit * 0.33 * h - this.lie * 0.62 * h
       + (p === 'dance' ? Math.abs(Math.sin(this.t * 6.4)) * 0.05 * h : 0);
-    this.inner.rotation.x = -this.lie * 1.5 + (walking ? 0.04 : 0) + (p === 'read' ? 0.16 : p === 'drink' ? -0.08 : p === 'rummage' ? 0.26 : p === 'punch' ? 0.14 : p === 'wipe' ? 0.14 : 0); this.inner.position.z = this.lie * 0.75 * h;
-    this.inner.rotation.y = p === 'punch' ? 0.26 : 0;
+    this.inner.rotation.x = -this.lie * 1.5 + (walking ? 0.04 : 0) + (p === 'read' ? 0.16 : p === 'drink' ? -0.08 : p === 'rummage' ? 0.26 : p === 'punch' ? 0.14 : p === 'wipe' ? 0.14
+      : p === 'block' ? 0.2 : p === 'stagger' ? -0.26 + Math.sin(this.t * 13) * 0.08 : p === 'threat' ? 0.1 : p === 'leap' ? 0.18 : 0);
+    this.inner.position.z = this.lie * 0.75 * h;
+    this.inner.rotation.y = p === 'punch' ? 0.26 : p === 'threat' ? -0.2 : p === 'block' ? 0.1 : 0;
+    // Thân nhún theo cú đấm: người ăn đòn thì bật ngửa, người đấm thì chồm tới.
+    this.inner.position.x = p === 'stagger' ? Math.sin(this.t * 13) * 0.02 : p === 'punch' || p === 'leap' ? -0.03 : 0;
     this.inner.rotation.z = walking ? Math.sin(this.phase) * 0.025 : 0;
     // biểu cảm: giữ tạm thời rồi về nền, thỉnh thoảng chớp mắt, mấp máy khi nói
     if (this.exprT > 0) { this.exprT -= dt; if (p === 'talk' && this.expr !== 4 && this.expr !== 3) this.setExpr(Math.sin(this.t * 11) > 0 ? 6 : base); }

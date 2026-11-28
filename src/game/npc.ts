@@ -96,6 +96,27 @@ export class Npcs {
     rig.root.position.set(x, n.y, z); rig.root.rotation.y = yaw;
     this.list.push(n); return n;
   }
+  /**
+   * Lấy một rig từ hồ để dựng cảnh (ván đánh nhau, lượt 73). Rig đánh dấu `slot` để `release()` biết trả về.
+   * Dùng hồ thay vì `new Rig()` để không cấp phát hình học mới cho mỗi ván — trên điện thoại yếu, mỗi lần
+   * cấp phát là một lần giật hình.
+   */
+  acquire(R: RNG): Rig {
+    const rig = this.pool.pop() ?? new Rig();
+    rig.slot = '';
+    this.group.add(rig.root);
+    rig.pose = 'idle'; rig.hold(null); rig.seated = false;
+    void R;
+    return rig;
+  }
+  /** Trả rig của cảnh về hồ. Chỉ nhận rig có `slot` — rig đang làm người đi đường thì không đụng tới. */
+  release(rig: Rig) {
+    if (!rig.slot) return;
+    rig.slot = '';
+    this.group.remove(rig.root);
+    rig.hold(null);
+    this.pool.push(rig);
+  }
   remove(n: Npc) {
     const i = this.list.indexOf(n); if (i >= 0) this.list.splice(i, 1);
     n.state = 'gone'; this.group.remove(n.rig.root); n.rig.hold(null); this.pool.push(n.rig); ctx.ui.unsay(n);

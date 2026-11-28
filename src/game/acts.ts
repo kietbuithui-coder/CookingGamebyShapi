@@ -33,6 +33,9 @@ import { rnd, RNG, clamp, money, dist2, round1k, round500, qty, hhmm } from '../
 import { NAV, groundY, districtAt, DISTRICT, SPOTS, spotById } from '../world/layout';
 import { LANDMARK_LIST } from '../data/landmarks';
 import { advice, pickAdvice, rememberAdvice } from '../sim/advice';
+import * as GANGTALK from './gangTalk';
+import * as GANGSIM from '../sim/gang';
+import { GANG_TROUBLE as GANGS2, THREAT_KINDS, FIGHTS } from '../data/gang';
 import { MB, MAT } from '../gfx/mb';
 import { ingModel } from '../gfx/props';
 
@@ -199,7 +202,9 @@ export class Acts {
       case 'hospital': this.hospitalMenu(n); break;
       case 'police': this.policeMenu(n); break;
       case 'bank': this.bankMenu(n); break;
+      // Hùng Sẹo kiêm đại ca băng Hẻm Công Nhân (lượt 71): vay nóng vẫn như cũ, thêm mục băng đảng.
       case 'shark': this.sharkMenu(n); break;
+      case 'ba_nam': GANGTALK.gangMenu(this as unknown as GANGTALK.TalkHost, 'cho', n); break;
       case 'motel': case 'hotel': case 'tro': case 'canho': case 'nharieng': case 'cuahang': {
         const hid = HOME_OF[id] ?? id, h = HOUSING[hid], mine = g.housing === hid, owned = !!g.flags['owned_' + hid], due = !owned && mine && g.day >= g.paidUntil, need = R.rentNeed(hid), opts: Opt[] = [];
         if (!mine && need > 0 && !R.canRent(g, hid)) opts.push({ t: `Cần uy tín ${need} mới cho thuê / bán`, sub: `Uy tín của bạn hiện là ${Math.round(g.rep)} — bán hàng đều tay rồi hãy quay lại.`, off: true });
@@ -402,7 +407,10 @@ export class Acts {
     const g = this.g, L = LENDERS.shark, lim = R.loanLimit(g, 'shark'), debt = g.debts.filter((d) => d.lender === 'shark'), opts: Opt[] = [];
     for (const a of L.amounts) if (a <= lim) opts.push({ t: `Vay nóng ${money(a)}`, sub: `Lãi 3%/ngày, ${L.term} ngày phải trả ~ ${money(a * (1 + L.rate * L.term))}. Trễ là bị siết đồ!`, fn: () => { R.borrow(g, 'shark', a); sfx('coin'); ctx.npcs.say(n, 'Tiền đây. Năm ngày. Nhớ mặt tao đó.', 3, 0); toast(`Đã vay nóng ${money(a)} của Hùng Sẹo.`, 'warn', 'skull', true); } });
     for (const d of debt) { opts.push({ t: `Trả ${money(Math.min(d.owed, g.cash))} / ${money(d.owed)}`, off: g.cash < 1000, fn: () => { R.repay(g, d.id, g.cash); sfx('coin'); this.sharkMenu(n); } }); opts.push({ t: 'Xin khất thêm 3 ngày', sub: 'Mất phí 8%', fn: () => { const r = R.extend(g, d.id); ctx.npcs.say(n, r.line, 3.5, r.ok ? 0 : 4); } }); }
-    this.D(who(n), n, debt.length ? `Mày còn nợ tao ${money(debt.reduce((a, d) => a + d.owed, 0))}. Hạn ngày ${debt[0].due}. Hôm nay là ngày ${g.day}.` : 'Cần tiền hả? Ở đây không cần giấy tờ. Chỉ cần mày nhớ trả đúng hẹn.', [...opts.slice(0, 7), { t: 'Dạ thôi, em đi.' }]);
+    // Băng đảng (lượt 71) đặt lên đầu: đã theo băng thì việc băng mới là chuyện chính, vay nóng là chuyện phụ.
+    // (Trước đây tôi `push` xuống cuối rồi `slice(0, 7)` — có nợ là mục băng bị cắt mất, không ai bấm được.)
+    const gang: Opt = { t: 'Nói chuyện băng đảng', sub: GANGTALK.gangLine(g), fn: () => GANGTALK.gangMenu(this as unknown as GANGTALK.TalkHost, 'hem', n) };
+    this.D(who(n), n, debt.length ? `Mày còn nợ tao ${money(debt.reduce((a, d) => a + d.owed, 0))}. Hạn ngày ${debt[0].due}. Hôm nay là ngày ${g.day}.` : 'Cần tiền hả? Ở đây không cần giấy tờ. Chỉ cần mày nhớ trả đúng hẹn.', [gang, ...opts.slice(0, 6), { t: 'Dạ thôi, em đi.' }]);
   }
   /** Dọn đồ khỏi chỗ ở cũ (mang theo phần xách nổi). */
   private moveOut() { const g = this.g; for (const s of g.home.slice()) { const room = R.carryCap(g) - R.bagWeight(g), k = INGS[s.id].kg > 0 ? Math.min(s.n, Math.floor(room / INGS[s.id].kg)) : s.n; if (k > 0) addStack(g.bag, { ...s, n: k }); } g.home = []; if (g.stall.where === 'home') g.stall.where = 'carried'; }
@@ -1041,6 +1049,88 @@ export class Acts {
     ctx.npcs.hit(best);
     P.addHeat(g, P.HEAT_PUNCH);
   }
+
+  // ───────────────────────── Đe doạ người lạ (lượt 73) ─────────────────────────
+  /** Bậc 4 trở lên mới có quyền “dọa người”: mở bảng chọn đe doạ người gần nhất. */
+  threat() {
+    const g = this.g, p = ctx.player;
+    if (ctx.mode !== 'play') return;
+    if (!GANGSIM.canThreat(g)) {
+      toast('Chưa đủ tầm để dọa người ta. Phải là thành viên băng từ bậc 4 trở lên.', 'warn', 'skull');
+      return;
+    }
+    // Người bị đe: người đi đường gần nhất trong tầm 4 m, không phải trẻ con, không phải công an.
+    let best: Npc | null = null, bd = 4 * 4;
+    for (const n of ctx.npcs.list) {
+      if (n.hidden || n.kind === 'kid' || n.arch.id === 'congan') continue;
+      const d = dist2(n.x, n.z, p.x, p.z); if (d < bd) { bd = d; best = n; }
+    }
+    if (!best) { toast('Không có ai gần đây để nói chuyện. Kiếm một người đứng gần (dưới 4 m).', 'info', 'chat'); return; }
+    const who = best, tier = GANGSIM.rankOf(g).tier;
+    const opts: Opt[] = THREAT_KINDS.filter((k) => k.minTier <= tier).map((k) => ({
+      t: `${k.name} — ${money(k.cash[0])}…${money(k.cash[1])}`,
+      sub: `${k.desc} · bị để ý +${k.heat} · ${Math.round(k.report * 100)}% bị báo công an`,
+      fn: () => this.doThreat(who, k.id),
+    }));
+    this.D(`Đe doạ ${who.name}`, who, `Bạn chặn ${who.name} lại giữa đường. Hắn nhìn quanh xem có ai không. Muốn nói gì?`, [...opts, { t: 'Thôi, bỏ qua.', fn: () => { ctx.npcs.say(who, '…Đi đâu vậy?', 2); } }]);
+  }
+  /** Thực hiện một lời đe doạ đã chọn: tính tiền/đồ, tăng mức bị để ý, và có thể bị báo công an. */
+  private doThreat(who: Npc, id: string) {
+    const g = this.g, k = THREAT_KINDS.find((x) => x.id === id)!;
+    ctx.npcs.say(who, k.say, 3.4, EXPR.pain);
+    const r = GANGSIM.threaten(g, id);
+    if (!r) return;
+    ctx.player.gesture('threat', 0.9); ctx.sound.play('shout'); ctx.ui.hitFlash(0.25);
+    ctx.ui.float(`+${money(r.cash)}`, who, 'good');
+    if (r.loot) ctx.ui.float('+ đồ quý', who, 'good');
+    toast(`Lấy được ${money(r.cash)}${r.loot ? ' và một món đồ quý' : ''} của ${who.name}. Bị để ý +${r.heat}, uy tín phố ${r.rep}.`, 'warn', 'skull', true);
+    ctx.npcs.leave(who);
+    if (r.reported) {
+      // Bị báo công an: phạt nặng theo mức bị để ý, và ngồi buồng. Đây là cái giá của nghề đe doạ.
+      const cop = ctx.npcs.sendPolice();
+      setTimeout(() => {
+        toast(`Người bị đe doạ chạy thẳng ra đồn. Phạt ${money(r.fine)} và ${r.jail} giờ tạm giữ.`, 'bad', 'badge', true);
+        this.sendToJail(cop ?? null, `Bị báo công an vì đe doạ ${who.name}.`, r.jail);
+      }, 900);
+    } else if (rnd.chance(0.5)) {
+      // Một người đi đường thấy cảnh đó: uy tín phố tụt thêm, và khách quanh đây nghe chuyện.
+      g.rep = clamp(g.rep - 1, 0, 100);
+      toast('Người đi đường nhìn thấy, xì xào. Xóm bắt đầu để ý bạn.', 'warn');
+    }
+    bus.emit('save', 'de doa');
+  }
+
+  // ───────────────────────── Đánh nhau (lượt 73) ─────────────────────────
+  /** Mở một ván đánh nhau có cảnh 3D. Bao gồm ba lựa chọn: đánh, chạy, dàn xếp. */
+  openFight(k: import('../data/gang').FightKind) {
+    const g = this.g, chance = GANGSIM.fightChance(g, k);
+    const opts: Opt[] = [
+      { t: `Đánh tới — cơ hội thắng ${Math.round(chance * 100)}%`, sub: `Thắng: +${Math.round((40000 + k.foes * 35000) / 1000)} nghìn, +${k.respectWin} uy tín băng · Thua: −${k.loseHp} máu, −6 uy tín phố`, hot: true, fn: () => this.startFightScene(k) } as Opt,
+      { t: 'Bỏ chạy', sub: 'Không mất máu, nhưng −8 uy tín trong băng và cả xóm thấy', fn: () => this.fightResult(k, 'chay') },
+    ];
+    if (k.settle > 0) opts.push({ t: `Dàn xếp — ${money(k.settle)}`, sub: g.cash >= k.settle ? 'Mất tiền, giữ được người; băng coi là hèn (−4 uy tín)' : `Còn thiếu ${money(k.settle - g.cash)}`, off: g.cash < k.settle, fn: () => this.fightResult(k, 'dan_xep') });
+    this.D(k.name, undefined, `${k.line}\n\n${k.note}`, opts);
+  }
+  /** Cảnh đánh 3D: người chơi tự đấm/đỡ/lùi trong `AnimSystem.startFight`. */
+  private startFightScene(k: import('../data/gang').FightKind) {
+    ctx.ui.closeDialog();
+    ctx.anim.startFight(k.id, (win) => this.fightResult(k, 'danh', win));
+  }
+  /** Áp kết quả ván đánh lên người chơi, kèm hậu quả (công an, ngất). */
+  private fightResult(k: import('../data/gang').FightKind, how: 'danh' | 'chay' | 'dan_xep', win = false) {
+    const g = this.g;
+    const r = GANGSIM.resolveFight(g, k, how, win);
+    ctx.ui.closeDialog();
+    sfx(win ? 'coin' : 'boo');
+    toast(r.line, win ? 'good' : how === 'dan_xep' ? 'info' : 'bad', 'skull', true);
+    if (r.cash > 0) ctx.ui.float(`+${money(r.cash)}`, ctx.player, 'good');
+    if (r.heat >= 9) toast(`Mức bị để ý giờ là ${Math.round(g.wanted)} — ra đường là công an để mắt.`, 'warn', 'badge');
+    if (g.st.health <= 0) this.checkFaint();
+    else if (r.hp <= -18) toast('Người ê ẩm, về nhà nằm nghỉ một chút đi.', 'warn', 'heart');
+    bus.emit('save', 'danh nhau');
+  }
+  /** Nhịp kiểm tra ván đánh ngẫu nhiên (mỗi 4 giây một lần, chỉ khi đang rảnh tay). */
+  private fightT = 4;
   // ───────────────────────── Bệnh viện Phước An ─────────────────────────
   /** Ngất vì sức khoẻ về 0: mất tiền, mất đồ, tỉnh dậy ở bệnh viện sáng hôm sau. */
   checkFaint() {
@@ -1117,6 +1207,10 @@ export class Acts {
     const g = this.g;
     if (P.inJail(g)) return;
     ctx.sound.play('siren');
+    // Lượt 71: đang giữ hàng cấm trong kho băng thì bị khám thêm — phạt theo bảng hàng cấm + tù cộng thêm,
+    // mất sạch hàng và tụt uy tín cả trong băng lẫn ngoài phố. Đây là “hình phạt nặng” người chơi xin.
+    const bustFine = GANGSIM.bustFine(g);
+    if (bustFine > 0) { this.bustedForContraband(n); return; }
     const f = P.fine(g), canPay = g.cash >= f;
     this.D(n.name, n, 'Chú là công an khu vực. Đánh người giữa đường là gây rối trật tự rồi nghen. Giấy tờ đâu, đưa chú xem.', [
       { t: `Nộp phạt hành chính — ${money(f)}`, sub: canPay ? 'Xong chuyện, đi tiếp' : 'Không đủ tiền nộp', off: !canPay, fn: () => {
@@ -1135,9 +1229,33 @@ export class Acts {
       { t: 'Đi theo chú về phường', fn: () => this.sendToJail(n) },
     ]);
   }
+  /**
+   * Bị khám vì hàng cấm (lượt 71): phạt theo bảng hàng cấm, mất hết hàng, tù cộng thêm theo món nặng nhất.
+   * Người chơi vẫn có lựa chọn như mọi lần bị gọi — nộp, cãi, chạy — nhưng mức phạt hiện rõ ngay trong câu thoại.
+   */
+  private bustedForContraband(n: Npc) {
+    const g = this.g, fine = GANGSIM.bustFine(g), jail = GANGSIM.bustJail(g), canPay = g.cash >= fine;
+    this.D(n.name, n, `Đứng lại. Trong sổ băng của mày có hàng không giấy tờ — ${Object.entries(GANGSIM.stockOf(g)).filter(([, k]) => k > 0).map(([id, k]) => `${k} ${GANGTALK.contraName(id)}`).join(', ')}. Đây là phạt ${money(fine)} cộng ${jail} giờ tạm giữ.`, [
+      { t: `Nộp phạt — ${money(fine)}`, sub: canPay ? 'Mất hàng, mất tiền, nhưng xong chuyện' : 'Không đủ tiền nộp', off: !canPay, fn: () => {
+        const r = GANGSIM.bust(g);
+        if (r.paid < r.fine) { toast('Không đủ tiền nộp phạt — theo chú về phường.', 'bad', 'badge'); }
+        toast(`Mất ${money(r.paid)}, mất hết hàng cấm, tụt ${r.respect} uy tín trong băng.`, 'bad', 'skull', true);
+        ctx.npcs.leave(n); bus.emit('save', 'nop phat hang cam');
+      } },
+      { t: 'Cãi: “Hàng đó của người ta gửi”', sub: 'Khoảng 25% chú tin — hàng cấm khó cãi hơn đánh nhau', fn: () => {
+        if (rnd.chance(0.25)) { P.letGo(g); toast('Chú công an ghi sổ rồi nhắc: “Lần này bỏ qua, đừng để tôi thấy nữa.”', 'info', 'badge'); ctx.npcs.leave(n); }
+        else { const r = GANGSIM.bust(g); this.sendToJail(n, `Cãi không được. Mất ${money(r.paid)} tiền phạt, mất hết hàng.`, P.sentenceHours(g) + r.jail); }
+      } },
+      { t: 'Bỏ chạy', sub: 'Khoảng 35% thoát — hàng cấm mà chạy là bị để ý nặng', fn: () => {
+        if (rnd.chance(0.35)) { P.addHeat(g, 20); toast('Bạn lách vào hẻm, chạy thoát — nhưng hàng vẫn nằm trong kho băng.', 'warn', 'badge'); ctx.npcs.leave(n); }
+        else { const r = GANGSIM.bust(g); P.addHeat(g, 15); this.sendToJail(n, `Chạy không thoát. Mất ${money(r.paid)}, mất hết hàng.`, P.sentenceHours(g) + r.jail); }
+      } },
+      { t: 'Đi theo chú về phường', fn: () => { const r = GANGSIM.bust(g); this.sendToJail(n, `Theo chú về phường. Mất ${money(r.paid)} tiền phạt, mất hết hàng.`, P.sentenceHours(g) + r.jail); } },
+    ]);
+  }
   /** Đưa người chơi vào buồng tạm giữ ở Công an phường. */
-  sendToJail(n: Npc | null, why = '') {
-    const g = this.g, hours = P.sentenceHours(g);
+  sendToJail(n: Npc | null, why = '', extraHours = 0) {
+    const g = this.g, hours = P.sentenceHours(g) + Math.max(0, Math.round(extraHours));
     ctx.ui.fade(true, 0.9); ctx.player.frozen = true;
     setTimeout(() => {
       P.jail(g, hours);
@@ -1546,6 +1664,10 @@ export class Acts {
   dropReceiver() { if (this.receiver) { ctx.npcs.remove(this.receiver); this.receiver = null; } }
   setWay(anchor: string, name: string) { const a = ctx.world.anchors[anchor]; if (a) this.way = { x: a.x, z: a.z, name }; }
 
+  /** Nhịp chờ trước khi mở hộp thoại tin xấu của băng (lượt 72). */
+  private troubleT = 6;
+  /** Nhịp kiểm tra đụng độ băng đối thủ (lượt 72). */
+  private clashT = 2.5;
   update(dt: number) {
     const g = this.g, p = ctx.player;
     this.sheltered = ctx.world.covered(p.x, p.z);
@@ -1556,9 +1678,53 @@ export class Acts {
     // mức bị để ý nguôi dần theo giờ trong game
     this.coolT += dt * MIN_PER_SEC; P.cool(g, this.coolT); this.coolT = 0;
     this.copT -= dt;
+    // Đụng độ băng đối thủ (lượt 72): bước vào địa bàn bên kia thì bị chặn. Chỉ hỏi mỗi 2,5 giây một lần và
+    // chỉ khi đang rảnh, để không chen ngang lúc người chơi đang nấu hay đang nói chuyện.
+    if (g.gang) {
+      this.clashT -= dt;
+      if (this.clashT <= 0) {
+        this.clashT = 2.5;
+        const d = districtAt(p.x, p.z);
+        const c = GANGSIM.clashAt(g, d);
+        // Lượt 73 (lỗi tự bắt bằng probe `danhnhau73`): thiếu `!ctx.anim?.active` nên hộp thoại đụng độ mở
+        // NGAY GIỮA ván đánh nhau — mà `UI.dialog` gọi `anim.stop()`, thế là cảnh 3D vừa dựng bị dẹp, người
+        // chơi thấy cảnh biến mất rồi một hộp thoại khác. Nay chỉ mở khi không có cảnh nào đang chạy.
+        if (c && ctx.mode === 'play' && !ctx.ui.isDialogOpen() && !ctx.anim?.active && !P.inJail(g)) GANGTALK.clashScreen(this as unknown as GANGTALK.TalkHost, c);
+      }
+    }
+    // Ván đánh nhau ngẫu nhiên (lượt 73): bị úp sọt ở địa bàn lạ, hoặc người nhà kẻ bị đe doạ kéo tới.
+    // Mỗi 4 giây hỏi một lần; chỉ mở khi người chơi đang rảnh (không nấu, không hộp thoại, không cảnh khác).
+    if (g.gang) {
+      this.fightT -= dt;
+      if (this.fightT <= 0) {
+        this.fightT = 4;
+        if (ctx.mode === 'play' && !ctx.ui.isDialogOpen() && !ctx.anim?.active && !P.inJail(g)) {
+          const k = GANGSIM.fightAt(g);
+          if (k) this.openFight(k);
+        }
+      }
+    }
+    // Tin xấu của băng (lượt 72): lớp luật chỉ đặt cờ, lớp game mở hộp thoại khi người chơi đang rảnh.
+    if (g.gang?.trouble) {
+      this.troubleT -= dt;
+      if (this.troubleT <= 0) {
+        this.troubleT = 6;
+        const t = GANGS2.find((x) => x.id === g.gang!.trouble);
+        if (t && ctx.mode === 'play' && !ctx.ui.isDialogOpen() && !ctx.anim?.active && !P.inJail(g)) {
+          GANGTALK.troubleScreen(this as unknown as GANGTALK.TalkHost, g.gang.id as 'hem' | 'cho', t, undefined);
+        }
+      }
+    }
     if (this.copT <= 0) {
       this.copT = 2.5;
-      if (ctx.mode === 'play' && P.shouldStop(g)) ctx.npcs.sendPolice();
+      // Lượt 71: đang giữ hàng cấm mà tới giờ bị khám thì công an gọi lại — hộp thoại phạt nặng nằm trong
+      // `caught()` (nhánh `bustedForContraband`), ở đây chỉ xin một chú đi tới.
+      const swept = g.flags.sweepNow === 1;
+      if (ctx.mode === 'play' && (swept || P.shouldStop(g))) {
+        delete g.flags.sweepNow;
+        const cop = ctx.npcs.sendPolice();
+        if (!cop && swept) toast('Có chú công an đang nhìn về phía bạn — kho hàng cấm nên dọn sớm.', 'warn', 'badge');
+      }
     }
     if (g.jailUntil > 0) {
       if (P.jailLeft(g) <= 0) this.jailOver();
@@ -1719,8 +1885,17 @@ export class Acts {
     }
     return out;
   }
-  /** Địa danh theo mã (để lời khuyên của Ông Bảy ghim đúng chỗ). */
-  placeOf(id: string): Way | null { return this.places()[LANDMARK_LIST.findIndex((l) => l.id === id)] ?? null; }
+  /**
+   * Địa danh theo mã (để lời khuyên của Ông Bảy ghim đúng chỗ, kể cả chỗ mới thêm ở lượt 70c).
+   * Dò theo **mã** chứ không theo thứ tự trong `places()`: `places()` bỏ qua đích nào chưa có neo/chỗ bán, nên
+   * lấy theo chỉ số là lệch một cái là ghim sai chỗ.
+   */
+  placeOf(id: string): Way | null {
+    const l = LANDMARK_LIST.find((x) => x.id === id); if (!l) return null;
+    const A = ctx.world.anchors, a = l.anchor ? A[l.anchor] : undefined, sp = l.spot ? spotById(l.spot) : undefined;
+    const p = a ? { x: a.x, z: a.z } : sp ? { x: sp.x, z: sp.z } : null;
+    return p ? { x: p.x, z: p.z, name: l.name } : null;
+  }
   /** Ghim đường đi tới đích đến trong lời khuyên — cùng một cơ chế với Bản đồ (cột sáng vàng + mũi tên). */
   goPlace(id: string): boolean {
     const w = this.placeOf(id); if (!w) return false;

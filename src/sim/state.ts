@@ -3,11 +3,15 @@ import { ING_LIST, INGS } from '../data/ingredients';
 import { RECIPE_LIST, START_RECIPES } from '../data/recipes';
 import { JUNK } from '../data/gear';
 import { FIXED, REGULARS } from '../data/people';
+import { CONTRABAND, GANG_TROUBLE, rankAt } from '../data/gang';
+
+/** Mã tin xấu hợp lệ của băng — dùng khi dọn bản lưu (`cleanGang`). */
+const GANG_TROUBLE_IDS = GANG_TROUBLE.map((t) => t.id);
 import type { WeatherId } from '../data/world';
 import { PLACES } from '../world/layout';
 import { PlayerLookData, defaultLook, cleanLook } from '../data/looks';
 
-export const SAVE_VERSION = 16;
+export const SAVE_VERSION = 19;
 /** Một lô nguyên liệu. fresh 0–100, q chất lượng 0–1, cost giá vốn mỗi đơn vị. */
 export interface Stack { id: string; n: number; fresh: number; q: number; cost: number; }
 /** Mẻ sơ chế sẵn ("cốt" món). */
@@ -85,6 +89,36 @@ export interface Errand {
   back: boolean;
 }
 
+/**
+ * Băng đảng (lượt 71): phe đang theo, uy tín trong băng, bậc, số chuyến đã làm, hàng cấm đang giữ.
+ * `null` = chưa theo băng nào (mặc định, và tương thích bản lưu cũ).
+ */
+export interface GangState {
+  /** Mã phe: `'hem'` (Hùng Sẹo) hoặc `'cho'` (Bà Năm Lửa). */
+  id: string;
+  /** Uy tín trong băng — lên bậc bằng số này, xem `data/gang.ts` → `GANG_RANKS`. */
+  respect: number;
+  /** Bậc hiện tại (1…6), ghi đè để không phải tính lại khi đọc bản lưu cũ. */
+  tier?: number;
+  /** Ngày vào băng (để nói “theo băng được mấy ngày”). */
+  since: number;
+  /** Số chuyến đã làm hôm nay + ngày áp dụng (qua ngày thì đếm lại). */
+  jobsToday: number; jobDay: number;
+  /** Tổng số chuyến đã làm cho băng (điều kiện thăng chức cần “làm đủ việc”, không chỉ uy tín). */
+  paid: number;
+  /** Hàng cấm băng giữ hộ: mã hàng → số lượng. */
+  stock: Record<string, number>;
+  /** Ngày nhận tiền bảo kê gần nhất (bậc 6). */
+  turfDay: number;
+  promotedDay?: number;
+  /** Mã tin xấu đang chờ người chơi xử lý (lượt 72, vd. `'nop_phan'`) — `null`/trống là không có. */
+  trouble?: string;
+  /** Số đàn em đang dắt theo (lượt 72, bậc 5 trở lên) — xem `sim/gang.ts` → `maxCrew`. */
+  crew?: number;
+  /** Số lần đã đe doạ người lạ (lượt 73, bậc 4+) — càng nhiều càng dễ bị báo công an. */
+  threats?: number;
+}
+
 export interface Game {
   v: number; seed: number; ac: 'anh' | 'chị';
   /** Ngoại hình người chơi (đổi ở tiệm cắt tóc / tiệm thời trang, xem ở góc nhìn thứ ba). */
@@ -115,6 +149,8 @@ export interface Game {
   sous2: Helper | null;
   /** Chi nhánh thứ hai của Chuỗi cửa hàng (bậc 7), null = chưa mở chi nhánh. */
   branch: Branch | null;
+  /** Băng đảng đang theo (null = chưa theo băng, xem `sim/gang.ts`). */
+  gang: GangState | null;
   /** Chuyến đi chợ đang giao cho người làm (tối đa 3: phụ quầy + 2 bếp trưởng + người trông coi). */
   errands: Errand[];
   /** Tổng doanh thu của chi nhánh qua các ngày (để tính thành tích). */
@@ -157,7 +193,7 @@ export function newGame(seed = (Math.random() * 1e9) | 0, ac: 'anh' | 'chị' = 
     st: { hunger: 58, thirst: 55, energy: 82, health: 92, hygiene: 42, mood: 45 }, rep: 0, xp: 0,
     pos: { x: PLACES.camp.x, z: PLACES.camp.z - 1.2, yaw: Math.PI, pitch: 0 },
     bag: [], junk: {}, meals: [], lostBag: [], lostDay: -1, wanted: 0, jailUntil: 0, gear: {}, phone: null, housing: 'gamcau', paidUntil: 0, home: [],
-    stall: emptyStall(), helpShift: { 1: 'full', 2: 'sang' }, help: null, help2: null, sous: null, sous2: null, branch: null, errands: [], bookings: [], bookSeq: 1, rec, debts: [], debtSeq: 1, credit: 0,
+    stall: emptyStall(), helpShift: { 1: 'full', 2: 'sang' }, help: null, help2: null, sous: null, sous2: null, branch: null, gang: null, errands: [], bookings: [], bookSeq: 1, rec, debts: [], debtSeq: 1, credit: 0,
     led: newLedger(0), hist: [], rel: {}, met: {}, flags: {}, rentPlan: {},
     weather: { now: 'nang', until: 6 * 60 + 10 + 420, next: 'nang', flood: 0, wet: 0 },
     ev: { active: [], last: {}, check: 9 * 60, lastStart: -999 },
@@ -184,6 +220,42 @@ export function cleanErrands(raw: any[]): Errand[] {
         .slice(0, 24)
         .map((l: any) => ({ id: l.id, n: Math.min(200, Math.max(1, Math.round(l.n))), price: ok(l.price) ? Math.max(0, l.price) : 0, fresh: ok(l.fresh) ? Math.max(0, Math.min(100, l.fresh)) : 80, q: ok(l.q) ? Math.max(0, Math.min(1, l.q)) : 0.9 })) : [],
     }));
+}
+
+/**
+ * Làm sạch dữ liệu băng đảng đọc từ bản lưu (lượt 71): phe phải có thật, uy tín kẹp trong trần, hàng cấm chỉ
+ * nhận mã có trong bảng và số lượng dương. Hỏng cả khối ⇒ coi như chưa theo băng, chứ không để `undefined`
+ * làm sập mọi hàm trong `sim/gang.ts`.
+ */
+export function cleanGang(raw: any): GangState | null {
+  const ok = (v: unknown) => typeof v === 'number' && isFinite(v);
+  if (!raw || typeof raw !== 'object') return null;
+  if (raw.id !== 'hem' && raw.id !== 'cho') return null;
+  const stock: Record<string, number> = {};
+  if (raw.stock && typeof raw.stock === 'object') {
+    for (const [k, v] of Object.entries(raw.stock)) {
+      // Chỉ nhận mã có trong bảng hàng cấm — mã lạ (bản lưu sửa tay, bản cũ) không được sống sót.
+      if (typeof k !== 'string' || !CONTRABAND[k]) continue;
+      if (!ok(v) || (v as number) <= 0) continue;
+      stock[k] = Math.min(999, Math.floor(v as number));
+    }
+  }
+  return {
+    id: raw.id,
+    respect: ok(raw.respect) ? Math.max(0, Math.min(9999, raw.respect)) : 0,
+    tier: ok(raw.tier) ? Math.max(1, Math.min(6, Math.floor(raw.tier))) : undefined,
+    since: ok(raw.since) ? Math.max(0, Math.floor(raw.since)) : 0,
+    jobsToday: ok(raw.jobsToday) ? Math.max(0, Math.floor(raw.jobsToday)) : 0,
+    jobDay: ok(raw.jobDay) ? Math.floor(raw.jobDay) : -1,
+    paid: ok(raw.paid) ? Math.max(0, Math.floor(raw.paid)) : 0,
+    stock,
+    turfDay: ok(raw.turfDay) ? Math.floor(raw.turfDay) : -1,
+    promotedDay: ok(raw.promotedDay) ? Math.floor(raw.promotedDay) : undefined,
+    // Lượt 72: đàn em đang dắt (0–3) và tin xấu đang chờ xử lý. Bản lưu cũ không có thì coi như không dắt ai.
+    crew: ok(raw.crew) ? Math.max(0, Math.min(3, Math.floor(raw.crew))) : 0,
+    threats: ok(raw.threats) ? Math.max(0, Math.min(999, Math.floor(raw.threats))) : 0,
+    trouble: typeof raw.trouble === 'string' && GANG_TROUBLE_IDS.includes(raw.trouble) ? raw.trouble : undefined,
+  };
 }
 
 /** Làm sạch dữ liệu chi nhánh đọc từ bản lưu (có thể thiếu trường, hỏng, hoặc chỗ bán không còn). */
@@ -268,12 +340,25 @@ export function migrate(raw: any): Game | null {
   // v14: chi nhánh của Chuỗi cửa hàng (bậc 7). Bản lưu cũ chưa có chi nhánh nào.
   if ((raw.v ?? 0) < 14 || !raw.branch) g.branch = null;
   else g.branch = cleanBranch(raw.branch);
+  // v17: băng đảng (lượt 71). Bản lưu cũ chưa từng theo băng; dữ liệu hỏng thì coi như chưa theo,
+  // nhưng bản lưu LÀNH thì phải giữ nguyên uy tín/bậc/hàng cấm — mất một lượt là người chơi mất cả chục chuyến.
+  {
+    const raw2 = (raw as any).gang;
+    if ((raw.v ?? 0) < 17 || !raw2 || typeof raw2 !== 'object') g.gang = null;
+    else g.gang = cleanGang(raw2);
+  }
   // v16: ca làm của hai người phụ quầy (sáng / chiều / cả ngày). Bản lưu cũ: người thứ nhất cả ngày, người thứ hai ca sáng.
   const sh = raw.helpShift;
   const okShift = (v: any): v is Shift => v === 'sang' || v === 'chieu' || v === 'full';
   g.helpShift = { 1: okShift(sh?.[1]) ? sh[1] : 'full', 2: okShift(sh?.[2]) ? sh[2] : 'sang' };
   // v15: giao người làm đi chợ (phụ quầy / bếp trưởng / người trông coi chi nhánh). Bản lưu cũ chưa có chuyến nào.
   g.errands = (raw.v ?? 0) < 15 || !Array.isArray(raw.errands) ? [] : cleanErrands(raw.errands);
+  // v18 (lượt 72): đàn em + tin xấu. Bản lưu cũ: không dắt ai, không có tin xấu nào đang chờ.
+  if ((raw.v ?? 0) < 18 && g.gang) { g.gang.crew = 0; delete g.gang.trouble; }
+  // v17 (lượt 71): đọc bản lưu cũ xong phải có `gang` — thiếu thì mọi hàm băng đảng sẽ đọc `undefined`.
+  if (g.gang === undefined) g.gang = null;
+  // Bậc trong băng lưu bằng số; bản lưu chưa có bậc thì suy ra từ uy tín để không bị tụt bậc oan.
+  if (g.gang && !g.gang.tier) g.gang.tier = rankAt(g.gang.respect ?? 0).tier;
   if (typeof g.flags.firstSale !== 'number' && (g.hist.some((h) => h.revenue > 0) || g.led.revenue > 0)) g.flags.firstSale = 0;
   for (const k of Object.keys(g.st) as (keyof Stats)[]) g.st[k] = Math.min(STAT_MAX, Math.max(0, Number.isFinite(g.st[k]) ? g.st[k] : base.st[k]));
   g.v = SAVE_VERSION;

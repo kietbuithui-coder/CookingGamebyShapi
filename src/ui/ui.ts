@@ -26,10 +26,42 @@ import { stallHint } from '../game/stall';
 import { openPanel } from './panels';
 import * as PH from '../sim/phone';
 import { applyLayout, editLayout } from './layout';
+import { rankOf } from '../sim/gang';
 import * as PUI from './phoneUI';
 
 /** Các bảng người chơi mở bằng phím tắt — bấm lại đúng phím đó thì đóng (không áp cho bảng tự mở như tổng kết ngày). */
 const TABS_CLOSE = ['bag', 'book', 'map', 'phone', 'settings', 'feedback'];
+
+/**
+ * NỘI DUNG NGĂN KÉO kiểu Android (lượt 73) — mỗi mục thay một nút nổi cũ.
+ * `p` là mã bảng cho `UI.panel()`; riêng `threat` (đe doạ người lạ) và `stow` (cất gánh) là hành động,
+ * `UI` xử lý riêng. Nút Đe doạ chỉ hiện khi bậc 4 trở lên — xem `androidGrid()`.
+ */
+interface DrawerItem { p: string; icon: string; label: string; tip: string; tone?: string; need?: 'threat' | 'phone' }
+const ANDROID_GRID: { title: string; items: DrawerItem[] }[] = [
+  { title: 'Việc thường dùng', items: [
+    { p: 'bag', icon: 'bag', label: 'Túi đồ', tip: 'Nguyên liệu, món ăn, đồ nghề đang mang (Tab)' },
+    { p: 'book', icon: 'book', label: 'Sổ tay', tip: 'Công thức, sổ sách, nợ, khách quen (B)' },
+    { p: 'map', icon: 'map', label: 'Bản đồ', tip: 'Bản đồ thành phố — chạm một chỗ để ghim đường (M)' },
+    { p: 'phone', icon: 'phone', label: 'Điện thoại', tip: 'Pin, danh bạ, tin nhắn, radio (P)', need: 'phone' },
+  ] },
+  { title: 'Băng đảng', items: [
+    { p: 'threat', icon: 'threat', label: 'Đe doạ', tip: 'Đòi tiền / đồ của người gần nhất — bậc 4 trở lên', tone: 'red', need: 'threat' },
+  ] },
+  { title: 'Khác', items: [
+    { p: 'stow', icon: 'box', label: 'Cất gánh', tip: 'Cất quầy/gánh vào ba lô' },
+    { p: 'feedback', icon: 'note', label: 'Góp ý', tip: 'Gửi góp ý / báo lỗi cho người làm game (G)' },
+    { p: 'settings', icon: 'gear', label: 'Cài đặt', tip: 'Đồ hoạ, cỡ chữ, âm thanh, sắp xếp nút' },
+  ] },
+];
+/** Ngăn kéo đã lọc theo tình trạng ván: chỉ hiện Đe doạ khi bậc 4+, Điện thoại khi đã có máy. */
+export function androidGrid(): { title: string; items: DrawerItem[] }[] {
+  const g = ctx.g;
+  const inGang = !!g?.gang;
+  const rank = inGang && g ? rankOf(g).tier : 0;
+  const hasPhone = !!g && !!g.phone;
+  return ANDROID_GRID.map((sec) => ({ title: sec.title, items: sec.items.filter((it) => it.need === 'threat' ? inGang && rank >= 4 : it.need === 'phone' ? hasPhone : true) })).filter((s) => s.items.length);
+}
 
 const IC: Record<string, string> = {
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/>',
@@ -51,7 +83,10 @@ const IC: Record<string, string> = {
   pin: '<path d="M12 21s7-6 7-12a7 7 0 00-14 0c0 6 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/>', arrow: '<path d="M12 3l7 9h-4v9H9v-9H5z" fill="currentColor"/>', check: '<path d="M5 12l5 5 9-10"/>',
   fist: '<path d="M5.2 12.4V9.6a1.5 1.5 0 013 0v1.6V6.8a1.5 1.5 0 013 0v4.4V7.4a1.5 1.5 0 013 0v6.4"/><path d="M14.2 8.2a1.5 1.5 0 013 0v5.2a6 6 0 01-6 6h-1.2a5.2 5.2 0 01-5.2-5.2v-1.6"/>', jump: '<path d="M12 20V6M6.5 11.5L12 5l5.5 6.5"/><path d="M5 21h14"/>',
   phone: '<rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M10.5 5.5h3M11 18.5h2"/>',
-  x: '<path d="M6 6l12 12M18 6L6 18"/>', note: '<path d="M4 4h16v12H9l-5 4z"/><path d="M8 8h8M8 12h5"/>', info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v.5"/>', chat: '<path d="M4 5h16v11H10l-5 4v-4H4z"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  // Lượt 73: ba biểu tượng của giao diện Android + nút đe doạ.
+  menu: '<path d="M4 7h16M4 12h16M4 17h16"/>', threat: '<path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M8.5 11h2M13.5 11h2M10 15c1.2-1.2 2.8-1.2 4 0"/>',
+  drawer: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M7 13h10M7 16h6"/>', note: '<path d="M4 4h16v12H9l-5 4z"/><path d="M8 8h8M8 12h5"/>', info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v.5"/>', chat: '<path d="M4 5h16v11H10l-5 4v-4H4z"/>',
 };
 export const ic = (n: string) => `<svg class="ic" viewBox="0 0 24 24">${IC[n] ?? IC.info}</svg>`;
 /** k sao đặc + (5−k) sao rỗng, vẽ bằng SVG để máy nào cũng hiện đúng. */
@@ -91,6 +126,16 @@ export class UI {
     add('quest', '<div class="qh"><small>MỤC TIÊU</small><button class="qmin" id="qmin" data-tip="Thu gọn / mở lại ô mục tiêu">–</button></div><span></span>'); add('way', '', 'chip hide'); add('events'); add('cross'); add('focus'); add('stam', '<b></b>', 'hide');
     add('act', `<button class="alt hide"></button><button class="main dim">${ic('hand')}</button>`); add('runb', `<button class="run" data-tip="Chạy nhanh / đi bộ — chạm để bật tắt, hoặc giữ Shift trên máy tính"><i class="rl">ĐI</i>${ic('run')}</button>`);
     add('act2', `<button class="hit" data-tip="Đấm — phím F">${ic('fist')}</button><button class="jump" data-tip="Nhảy — phím Space">${ic('jump')}</button>`);
+    // ── Giao diện kiểu ANDROID (lượt 73) ─────────────────────────────────────────
+    // Thanh trên cùng: giờ · tiền · ☰. Bấm ☰ trượt ra ngăn kéo có đủ mục của bảy nút nổi cũ, cộng nút
+    // ĐE DOẠ (chỉ hiện khi bậc 4+). Cách này gọn hơn hẳn kiểu cũ — màn hình 390×844 của điện thoại dọc
+    // trước đây bị bảy nút chiếm gần nửa bề ngang.
+    add('topbar', `<button class="tb-l" id="tbmoney" data-tip="Tiền mặt đang có — chạm để mở sổ thu chi">0₫</button>
+      <span class="tb-c" id="tbtime"></span>
+      <button class="tb-r" id="tbburger" data-tip="Mở ngăn kéo: túi đồ, sổ tay, bản đồ, điện thoại, cài đặt">${ic('menu')}</button>`);
+    add('drawer', `<div class="scrim" id="dscrim"></div><div class="sheet" id="dsheet">
+      <div class="dh"><b>NGĂN KÉO</b><button class="x" id="dclose">${ic('x')}</button></div>
+      <div class="dg" id="dgrid"></div></div>`, 'hide');
     add('tip', '', 'tip hide');
     add('stick', '<i></i>', 'hide'); add('cart', '', 'chip hide'); add('stallchip', '', 'chip hide'); add('toasts');
     add('cook', `<button class="btn small red quit">${ic('x')} Bỏ dở</button><div class="top"><div class="title"></div><div class="steps"></div><div class="hint"></div><div class="prog hide"><div class="meter"><div class="z"></div><div class="v"></div></div><small></small></div></div><div class="heat hide"><small>LỬA</small><div class="meter"><div class="z"></div><div class="v"></div><div class="n"></div></div></div><div class="slider hide"><i>LỬA</i></div><div class="card hide"></div><div class="custom hide"></div><div class="btns"></div>`, 'hide');
@@ -148,6 +193,40 @@ export class UI {
     };
     tapBtn(hitB, () => ctx.acts.punch());
     tapBtn(jumpB, () => ctx.acts.jump());
+    // ── Giao diện Android: thanh trên cùng + ngăn kéo (lượt 73) ──────────────────
+    const tbMoney = document.getElementById('tbmoney') as HTMLElement, tbTime = document.getElementById('tbtime') as HTMLElement;
+    const tbb = document.getElementById('tbburger') as HTMLElement;
+    tbMoney.onclick = () => { if (ctx.mode === 'play') this.panel('book'); };
+    // Nút ☰ mở ngăn kéo; mỗi mục là một nút thật, to bằng ngón tay (44 px) — kiểu Android.
+    const drawer = this.E.drawer, dsheet = document.getElementById('dsheet') as HTMLElement, dclose = document.getElementById('dclose') as HTMLElement;
+    const dgrid = document.getElementById('dgrid') as HTMLElement;
+    const dscrim = document.getElementById('dscrim') as HTMLElement;
+    // Lượt 73 (lỗi tự bắt bằng probe): `closeDrawer` hẹn 190 ms sau mới thêm lớp .hide để kịp chạy hiệu ứng
+    // trượt ra. Nếu người chơi bấm ☰ lại ngay trong 190 ms đó, bộ hẹn CŨ vẫn nổ và giấu ngăn kéo vừa mở
+    // (ảnh `a73-3` chụp đúng lúc này: ngăn kéo mở trong DOM nhưng màn hình trống, và toạ độ nút ra [0,0]).
+    // Nay giữ mã bộ hẹn và huỷ nó mỗi lần mở.
+    let hideT = 0;
+    const closeDrawer = () => { drawer.classList.remove('on'); clearTimeout(hideT); hideT = window.setTimeout(() => drawer.classList.add('hide'), 190); };
+    this.closeDrawer = closeDrawer;
+    dclose.onclick = closeDrawer; dscrim.onclick = closeDrawer;
+    const openDrawer = () => {
+      clearTimeout(hideT);
+      dgrid.innerHTML = androidGrid().map((g) => g.items.length ? `<div class="dsec">${g.title ? `<h4>${g.title}</h4>` : ''}<div class="drow">${g.items.map((it) => `<button class="dbtn${it.tone ? ' ' + it.tone : ''}" data-p="${it.p}" data-tip="${it.tip}">${ic(it.icon)}<span>${it.label}</span></button>`).join('')}</div></div>` : '').join('');
+      drawer.classList.remove('hide'); void drawer.offsetWidth; drawer.classList.add('on');
+      ctx.sound.play('ui');
+    };
+    tbb.onclick = openDrawer;
+    dgrid.onclick = (e) => {
+      const b = (e.target as HTMLElement).closest('[data-p]') as HTMLElement | null;
+      if (!b) return;
+      const p = b.dataset.p!;
+      closeDrawer();
+      ctx.sound.play('ui');
+      if (p === 'threat') { setTimeout(() => ctx.acts.threat(), 210); return; }
+      if (p === 'stow') { ctx.stall.stow(); return; }
+      setTimeout(() => this.panel(p), 210);
+    };
+    this.applyAndroid();
     const qmin = document.getElementById('qmin')!;
     const toggleQuest = () => { this.questMin = !this.questMin; E.quest.classList.toggle('min', this.questMin); qmin.textContent = this.questMin ? '+' : '–'; };
     qmin.onclick = (e) => { e.stopPropagation(); toggleQuest(); };
@@ -201,6 +280,8 @@ export class UI {
       }
       if (k === 'e' || k === 'enter') ctx.interact.trigger();
       else if (k === 'f') ctx.acts.punch();
+      // Lượt 73: phím T đe doạ người gần nhất (chỉ ăn khi đã là bậc 4 trở lên — `acts.threat` tự báo).
+      else if (k === 't') ctx.acts.threat();
       else if (k === ' ') ctx.acts.jump();
       else if (k === 'r') ctx.interact.triggerAlt();
       else if (ctx.mode === 'play' && (k === 'tab' || k === 'i')) this.panel('bag');
@@ -212,6 +293,31 @@ export class UI {
       else if (ctx.mode === 'play' && k === 'v') this.switchView();
       else if (k === 'escape') { if (this.modalName) this.closePanel(); else if (ctx.mode === 'play') this.panel('settings'); }
     };
+  }
+  // ── Giao diện kiểu Android (lượt 73) ─────────────────────────────────────────
+  /**
+   * Bật/tắt giao diện Android. Bật thì: hiện thanh trên cùng (#topbar), giấu hàng bảy nút nổi (#menub) và
+   * gom chúng vào ngăn kéo (#drawer); giấu luôn chip chỉ số thời tiết để thanh trên cùng không bị chồng.
+   * Các nút còn lại (tương tác, chạy, đấm, nhảy, cần ảo) giữ nguyên — đó là phần chơi, không phải phần menu.
+   */
+  closeDrawer: () => void = () => {};
+  applyAndroid() {
+    const on = !!ctx.set?.android;
+    this.root.classList.toggle('android', on);
+    const tb = this.E.topbar, mb = this.E.menub;
+    // Trong cảnh (root có lớp .cooking) thì thanh trên cùng vẫn phải ẩn, dù vừa mới bật Android.
+    if (tb) tb.classList.toggle('hide', !on || this.root.classList.contains('cooking'));
+    if (mb) mb.classList.toggle('hide', on);
+    if (!on && this.E.drawer) { this.E.drawer.classList.add('hide'); this.E.drawer.classList.remove('on'); }
+  }
+  /** Vẽ lại thanh trên cùng: đồng hồ, tiền, và chip mức bị để ý (chỉ khi bị để ý). */
+  private paintAndroid(g: Game) {
+    const tb = this.E.topbar; if (!tb || tb.classList.contains('hide')) return;
+    const t = document.getElementById('tbtime'), m = document.getElementById('tbmoney');
+    if (t) t.innerHTML = `Ngày ${g.day + 1} · ${hhmm(g.min)}`;
+    if (m) m.textContent = money(g.cash);
+    const bur = document.getElementById('tbburger');
+    if (bur) bur.classList.toggle('alert', g.wanted >= 45);
   }
   /** Đổi góc nhìn thứ nhất / thứ ba (phím V hoặc nút trong Cài đặt). */
   switchView() {
@@ -319,7 +425,7 @@ export class UI {
     if (!arg && this.modalName === name && TABS_CLOSE.includes(name)) { this.closePanel(); return; }
     // Mở máy mới thật sự (không phải vẽ lại) thì mới đưa điện thoại về màn hình chính
     if (name === 'phone' && this.modalName !== 'phone') PUI.resetPhoneView();
-    this.modalArg = arg ?? null; if (ctx.anim?.active) ctx.anim.stop(); this.closeDialog(); this.modalName = name; ctx.mode = 'panel'; ctx.input.reset(); this.E.modal.classList.remove('hide'); openPanel(this, name); }
+    this.modalArg = arg ?? null; if (ctx.anim?.active) ctx.anim.stop(); this.closeDialog(); this.closeDrawer(); this.modalName = name; ctx.mode = 'panel'; ctx.input.reset(); this.E.modal.classList.remove('hide'); openPanel(this, name); }
   /** Vẽ lại bảng đang mở với tham số mới (giữ nguyên tên bảng). */
   reopenPanel(name: string, arg?: any) { if (this.modalName !== name) return this.panel(name, arg); this.modalArg = arg ?? null; openPanel(this, name); }
   closePanel() { if (!this.modalName) return; this.modalName = ''; this.modalArg = null; this.E.modal.classList.add('hide'); this.E.modal.innerHTML = ''; if (ctx.mode === 'panel' && !this.dlgOpen) ctx.mode = 'play'; ctx.stall.refresh(); }
@@ -354,7 +460,14 @@ export class UI {
   cookCustom(html: string | null): HTMLElement { const c = this.E.cook.querySelector('.custom') as HTMLElement; c.classList.toggle('hide', html === null); c.innerHTML = html ?? ''; return c; }
   cookGrade(score: number, text: string) { const g = this.E.grade; g.classList.remove('hide'); const k = Math.max(1, Math.round(score * 5)); g.innerHTML = `${esc(text)}<small>${starsHtml(k)}</small>`; this.gradeT = 1.1; g.style.animation = 'none'; void g.offsetWidth; g.style.animation = ''; }
   cookHide() { this.cookCustom(null); this.E.cook.classList.add('hide'); this.E.grade.classList.add('hide'); for (const a of this.labels) a.life = 0; this.labels = []; this.setHud(true); }
-  private setHud(on: boolean) { for (const k of ['hud-tl', 'hud-tr', 'quest', 'act', 'runb', 'act2', 'cross', 'focus', 'events', 'way', 'cart', 'stallchip']) this.E[k].style.display = on ? '' : 'none'; if (!on) this.E['hud-tl'].style.display = ''; this.root.classList.toggle('cooking', !on); }
+  private setHud(on: boolean) {
+    for (const k of ['hud-tl', 'hud-tr', 'quest', 'act', 'runb', 'act2', 'cross', 'focus', 'events', 'way', 'cart', 'stallchip']) this.E[k].style.display = on ? '' : 'none';
+    if (!on) this.E['hud-tl'].style.display = '';
+    this.root.classList.toggle('cooking', !on); if (!on) this.closeDrawer();
+    // Vào cảnh (nấu ăn, mini-game, ván đánh nhau) thì thanh trên cùng cũng phải ẩn: nếu để nguyên, tiêu đề
+    // cảnh và dòng gợi ý nằm ngay dưới nó và bị thanh đè lên (ảnh probe `a73-7` của lượt 73 cho thấy rõ).
+    this.E.topbar?.classList.toggle('hide', !on || !ctx.set?.android);
+  }
   hud(on: boolean) { for (const k of ['hud-tl', 'hud-tr', 'quest', 'act', 'runb', 'act2', 'cross', 'focus', 'events', 'way', 'cart', 'stallchip', 'toasts', 'stam']) this.E[k].style.display = on ? '' : 'none'; }
 
   update(dt: number) {
@@ -379,6 +492,8 @@ export class UI {
     E.wx.innerHTML = `${ic(hourOf(g) > 18.6 || hourOf(g) < 5.4 ? (w.rain > 0 ? w.icon : 'moon') : w.icon)}${w.name}`;
     E.place.innerHTML = `${ic('pin')}${DISTRICT[districtAt(p.x, p.z)].name}`;
     if (g.cash !== this.lastCash) { this.lastCash = g.cash; E.money.innerHTML = `${ic('cash')}${money(g.cash)}`; }
+    // Thanh trên cùng của giao diện Android vẽ lại cùng nhịp với HUD (0,2 giây một lần).
+    this.paintAndroid(g);
     E.rep.innerHTML = `${ic('star')}${Math.round(g.rep)} · cấp ${level(g)}`;
     E.phoneb.classList.toggle('hide', !PH.hasPhone(g));
     if (PH.hasPhone(g)) E.phonedot.classList.toggle('hide', PH.unread(g) === 0);

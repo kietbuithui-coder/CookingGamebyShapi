@@ -17,9 +17,12 @@ import { ledgerBody } from './panels';
 import { RECIPES } from '../data/recipes';
 import { toast } from '../core/bus';
 import * as NEWS from '../sim/news';
+import * as G from '../data/gang';
+import * as GG from '../sim/gang';
+import type { GangId } from '../data/gang';
 import { SONGS, SONG_BY_ID, songOf } from '../audio/songs';
 
-export type PhoneApp = 'ledger' | 'contacts' | 'sms' | 'radio' | 'music' | 'wap' | 'battery' | 'shop';
+export type PhoneApp = 'ledger' | 'contacts' | 'sms' | 'radio' | 'music' | 'wap' | 'battery' | 'shop' | 'gang';
 
 export { appsOf };
 export interface PhoneView {
@@ -102,6 +105,7 @@ const GLYPH_OLD: Record<string, string> = {
   wap: '<rect x="5" y="4" width="14" height="16" rx="2"/><path d="M5 9h14M5 16h14"/>',
   battery: '<rect x="7" y="3" width="10" height="18" rx="2"/><path d="M10 7h4v6h-4z" fill="currentColor" stroke="none"/>',
   shop: '<path d="M5 10h14v10H5z"/><path d="M4 6h16l-1 4H5z"/><path d="M10 20v-5h4v5"/>',
+  gang: '<path d="M6 20v-6a6 6 0 0 1 12 0v6"/><circle cx="9.5" cy="10" r="1.3" fill="currentColor" stroke="none"/><circle cx="14.5" cy="10" r="1.3" fill="currentColor" stroke="none"/><path d="M9 20h6"/>',
 };
 export const appGlyph = (id: string, old = false) => `<svg viewBox="0 0 24 24" class="pg">${(old ? GLYPH_OLD : GLYPH)[id] ?? (old ? GLYPH_OLD : GLYPH).battery}</svg>`;
 
@@ -166,7 +170,7 @@ const pinner = (g: Game) => `<div class="pinner"><i style="width:${clamp(Math.ro
 
 /** MÀN HÌNH CHÍNH của từng mẫu máy. */
 export function homeScreen(g: Game, m: PhoneDef): string {
-  const apps = appsOf(m), un = PH.unread(g), pin = Math.round(PH.battery(g)), on = PH.isOn(g);
+  const apps = appsOf(m, !!g.gang), un = PH.unread(g), pin = Math.round(PH.battery(g)), on = PH.isOn(g);
   const v = phoneView();
   const head = `${m.name} <span class="muted">${m.brand}</span>`;
   if (m.id === 'cucgach') {
@@ -194,7 +198,7 @@ export function homeScreen(g: Game, m: PhoneDef): string {
 
 /** MÀN HÌNH TRONG MỘT APP. */
 export function appScreen(g: Game, m: PhoneDef, app: PhoneApp): string {
-  const v = phoneView(), on = PH.isOn(g), a = appsOf(m).find((x) => x.id === app)!;
+  const v = phoneView(), on = PH.isOn(g), a = appsOf(m, !!g.gang).find((x) => x.id === app)!;
   const dead = on ? '' : `<p class="pdead">Máy hết pin. Sạc ở nhà hoặc sạc nhờ tạp hoá 5.000₫.</p>`;
   if (app === 'ledger') return `${dead}${ledgerBody(g)}`;
   if (app === 'shop') {
@@ -218,6 +222,7 @@ export function appScreen(g: Game, m: PhoneDef, app: PhoneApp): string {
       <p class="muted">Ngủ ở phòng trọ, nhà nghỉ, căn hộ, nhà riêng, cửa hàng (có ổ điện) là đầy pin sáng hôm sau. Ở gầm cầu hay ghế đá công viên thì không có điện.</p>
       <p class="muted">Máy này nghe được ${m.feats.map((f) => FEAT(f).toLowerCase()).join(', ')}.</p>`;
   }
+  if (app === 'gang') return `${dead}${gangBody(g)}`;
   const rows = rowsOf(g, m, app);
   if (!rows.length) return `${dead}<p class="muted">${app === 'contacts' ? 'Danh bạ trống. Đi chào hỏi trong xóm rồi mở lại.' : 'Hộp thư trống trơn.'}</p>`;
   const list = rows.map((r, i) => {
@@ -228,6 +233,32 @@ export function appScreen(g: Game, m: PhoneDef, app: PhoneApp): string {
   const foot = m.id === 'cucgach' ? '<div class="pfoot mono">Phím giữa để làm · <b>Quay lại</b> để thoát</div>'
     : m.id === 'napgap' ? '<div class="psoft"><button class="sbtn" data-a="phonehome">Quay lại</button><button class="sbtn go" data-a="phoneok">Chọn</button></div>' : '';
   return `${dead}<div class="ptitle">${appGlyph(a.id, m.id !== 'camung')} ${a.name}</div><div class="plist">${list}</div>${foot}`;
+}
+/**
+ * Nội dung app “Sổ băng” (lượt 72). Ba thứ người chơi cần xem từ xa, không phải chạy về chỗ đại ca:
+ * tình trạng băng (bậc, uy tín, ăn chia), **cái giá đang phải chịu** (khách sợ, phí chỗ, công an), và kho hàng cấm.
+ * Chỉ đọc — mọi hành động (mua hàng, nhận việc, rời băng) vẫn phải tới chỗ đại ca, để băng còn là chỗ có người.
+ */
+function gangBody(g: Game): string {
+  if (!g.gang) return '<p class="muted">Chưa theo băng nào.</p>';
+  const def = G.GANGS[g.gang.id as GangId], rank = GG.rankOf(g), d = GG.downside(g);
+  const next = GG.promoteNeed(g);
+  const fear = Math.round(GG.fearRate(g) * 100), rent = GG.gangRentExtra(g);
+  const stock = GG.stockOf(g);
+  const stockLine = Object.keys(stock).length ? Object.entries(stock).map(([id, k]) => `${k} ${G.CONTRABAND[id]?.name ?? id}`).join(', ') : 'kho trống';
+  // Điện thoại trong game chỉ rộng ~15–16 em: mỗi ý một dòng ngắn, không viết câu dài (đã dính lỗi bị cắt ở đáy
+  // máy khi thử bằng probe — chữ dài làm khuất cả mục “Cái giá”).
+  const rows: [string, string][] = [
+    ['Bậc', `${rank.tier}/6 ${esc(rank.name)} · chia ${Math.round(rank.cut * 100)}%`],
+    ['Uy tín', `${Math.round(g.gang.respect)}${next ? ` · còn ${next.need}` : ''} · khách −${fear}%`],
+    ['Cái giá', `${rent > 0 ? `chỗ +${money(rent)} · ` : ''}CA +${d.heat}/ngày`],
+  ];
+  // Kho chỉ hiện khi có hàng — máy nhỏ (cục gạch/nắp gập) không đủ chỗ cho một dòng luôn trống.
+  if (Object.keys(stock).length) rows.push(['Kho', esc(stockLine)]);
+  // Không vẽ thanh tiến trình ở đây: màn hình máy chỉ cao ~16 em, thêm thanh là dòng cuối bị cắt mất
+  // (ảnh probe cho thấy đúng như vậy). Số “còn X uy tín” trong dòng Uy tín đã nói đủ.
+  return `<p><b>${esc(def.name)}</b></p>
+    <div class="plist">${rows.map(([k, v]) => `<div class="row"><span class="g"><b>${k}</b><s>${v}</s></span></div>`).join('')}</div>`;
 }
 const FEAT = (f: PhoneFeat) => ({ ledger: 'Sổ thu chi', contacts: 'Danh bạ', sms: 'Tin nhắn', radio: 'Radio FM', music: 'Nghe nhạc', wap: 'Lướt web' } as Record<PhoneFeat, string>)[f];
 
@@ -335,7 +366,7 @@ const HOT_OR_CALL = 'ĐANG GỌI · 1.000₫/phút';
 
 /** Toàn bộ thân máy (khung viền + màn hình + phím cứng tuỳ mẫu). Thay cho `.body` của bảng. */
 export function phoneShell(g: Game, m: PhoneDef): { title: string; html: string; foot: string } {
-  const v = phoneView(), apps = appsOf(m), a = v.app === 'home' ? null : v.app;
+  const v = phoneView(), apps = appsOf(m, !!g.gang), a = v.app === 'home' ? null : v.app;
   const inner = a ? appScreen(g, m, a) : homeScreen(g, m);
   const back = `<button class="btn small" data-a="phonehome">${a ? '‹ Quay lại' : 'Đóng máy'}</button>`;
   const up = apps.find((x) => x.id === a);
@@ -369,7 +400,7 @@ function smsAct(g: Game) {
 export function phoneKey(k: 'up' | 'down' | 'ok' | 'home' | 'pick' | 'open', arg?: string | number): boolean {
   const v = phoneView(), g = ctx.g, m = PH.phone(g);
   if (!m) return false;
-  const apps = appsOf(m);
+  const apps = appsOf(m, !!g.gang);
   // Về màn hình chính là cúp máy / tắt đài — màn hình trở lại bình thường.
   if (k === 'home') { v.app = 'home'; v.sel = 0; v.sub = ''; stopAct(); return true; }
   if (k === 'open' && typeof arg === 'string') {
@@ -389,7 +420,7 @@ export function phoneKey(k: 'up' | 'down' | 'ok' | 'home' | 'pick' | 'open', arg
   if (k === 'ok') {
     if (v.app === 'home') {
       const pick = apps[v.idx]; if (!pick) return false;
-      v.app = pick.id; v.sel = 0;
+      v.app = pick.id as PhoneApp; v.sel = 0;
       if (pick.id === 'sms') smsAct(g);
       return true;
     }

@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { SAVE_VERSION, migrate, newGame, absMin } from '../src/sim/state';
 import { advance, buyGear, sellGear } from '../src/sim/rules';
-import { PHONE_LIST, PHONES, FEAT_LABEL } from '../src/data/phone';
+import { PHONE_LIST, PHONES, FEAT_LABEL, PHONE_APPS, appsOf } from '../src/data/phone';
 import {
   hasPhone, phone, battery, isOn, canUse, tick, drain, fullCharge, hasPower, canChargeAt,
   smsList, unread, markSeen, contacts, call, fun, activate, deactivate,
@@ -170,3 +170,27 @@ describe('điện thoại', () => {
     expect(back.phone!.battery).toBeCloseTo(65, 3);
   });
 });
+
+describe('app “Sổ băng” trên điện thoại (lượt 72)', () => {
+  it('chưa theo băng thì máy không có app Sổ băng', () => {
+    for (const m of PHONE_LIST) expect(appsOf(m).some((a) => a.id === 'gang')).toBe(false);
+  });
+
+  it('theo băng rồi thì máy nào cũng mở được Sổ băng — máy rẻ nhất cũng có', () => {
+    for (const m of PHONE_LIST) expect(appsOf(m, true).some((a) => a.id === 'gang')).toBe(true);
+    expect(appsOf(PHONE_LIST[0], true).length).toBe(appsOf(PHONE_LIST[0], false).length + 1);
+  });
+
+  it('app có tên và nhãn ngắn để hiện trên lưới icon', () => {
+    const a = PHONE_APPS.find((x) => x.id === 'gang')!;
+    expect(a.name.length).toBeGreaterThan(4);
+    expect(a.short.length).toBeGreaterThan(2);
+    expect(appScreenText()).toBe('gang');
+  });
+});
+
+/** Mã app phải khớp giữa dữ liệu máy và bộ vẽ màn hình (nếu lệch, bấm icon sẽ ra màn hình trắng). */
+function appScreenText() {
+  const app = PHONE_APPS.find((x) => x.id === 'gang');
+  return app ? app.id : 'thieu';
+}

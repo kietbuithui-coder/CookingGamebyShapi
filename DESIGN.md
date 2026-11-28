@@ -1743,3 +1743,165 @@ nhựa cũng đổi theo; `h` (chiều cao) giữ nguyên nghĩa nên các chỗ
 `tools/probe/steps/dbg.mjs` (đã xoá sau khi dùng): bấm 8 lần Cài đặt → PIN `438291` → menu hiện **9 mục `mx_*`** đúng
 thứ tự (`gop_y, mia_xe_moi, mia_quan_lui, ban_ghe_quan_mia, mai_cong_truong, ca_phu_ho_dai, nhat_ky70, hinh_khoai_xucxich,
 tron_moi`) rồi 32 mục `tp_*`; ⑨ vào được ván trộn (`đangChơi: true`, 5 đĩa); ảnh ④⑧⑨ chụp lại đúng thứ cần thấy.
+
+### 4.54 Ông Bảy nói đúng chuyện đang diễn ra trong phố (lượt 70c)
+
+Lỗ hổng của lượt 52: lời khuyên đọc đúng máu / tiền / quầy / nợ / mưa / khuya, nhưng **22 sự kiện của thành phố
+thì chỉ radio và WAP biết**. Có lễ hội ở công viên, có trận bóng, chợ lên giá thịt — người dẫn đường duy nhất
+trong game không nói một câu nào. Nay `eventRule(g, e)` trong `sim/advice.ts` trả về **một câu cho mỗi sự kiện**.
+
+**Ba luật của câu sự kiện** (canh bằng `tests/hobo.test.ts`, 6 bài mới):
+
+1. **Đích phải có thật và đang dùng được.** Mỗi câu khai `place` trong `LANDMARK_LIST`; bộ test chạy **cả 22 sự
+   kiện × 4 mốc giờ** rồi đòi `destOpen()` đúng. Hai đích mới chỉ sống khi sự kiện chạy — `cafe_bongda`
+   (`bong_da`) và `net_tro` (`tan_su_kien`) — khai trong `ONLY_IN_EVENT`, nên “tối nay có trận bóng” không còn
+   được nói vào 9 giờ sáng hôm sau.
+2. **Câu về quầy chỉ nói khi đang bán thật.** Đoàn kiểm tra, nhà phê bình, khách VIP, khách quậy, khách quen ăn
+   chịu, đối thủ mở quán: `selling && s.open` mới nói, và ghim **đúng chỗ quầy đang đứng** (`spot_*`). Vì vậy
+   `LANDMARK_LIST` có thêm `spot_vp`, `spot_matbang_tb`, `spot_matbang_dc` — trước đó lời khuyên chỉ biết Cổng Chợ.
+3. **Mức cấp thiết nằm giữa hai nhóm.** Sự kiện chỉ kéo dài vài giờ nên phải nói **trước** chuyện thường
+   (quầy trên vai 60, thiếu nguyên liệu 55) nhưng **sau** chuyện nguy hiểm tới thân (sắp ngất 100, bão 102,
+   đoàn kiểm tra 90). Lần đầu đặt 44–66 thì câu sự kiện rơi xuống mục “Hỏi chuyện khác” — ảnh probe cho thấy
+   ngay; đã nâng +6 và kiểm lại bằng ảnh.
+
+**Sửa thêm một lỗi thật gặp lúc làm:** `acts.placeOf(id)` lấy `places()[indexOf(id)]`, mà `places()` **bỏ qua**
+đích nào chưa có neo/chỗ bán ⇒ thêm ba đích mới là chỉ số lệch, ghim đường đi sang chỗ khác. Nay `placeOf` dò
+thẳng theo **mã** rồi tự đổi `anchor`/`spot` thành toạ độ.
+
+**Chữ trong câu** lấy từ chính `EVENTS[id]`: mức tăng giá đọc từ `price` (hải sản `1.5` ⇒ “+50%”), thời gian còn
+lại tính từ `g.ev.active[].until` (“còn khoảng 10 tiếng nữa”), nên không có con số viết tay nào trôi khỏi luật.
+
+**Đo.** `tsc` sạch · `vitest` **722 bài / 61 tệp** xanh · `build:pages` OK · probe `steps/ev70c.mjs`: menu ẩn có
+**10 mục `mx_*`** (thêm ⑩), bấm ⑩ thì bật `le_hoi`, đứng cách Ông Bảy **1,6 m**, câu chính là câu sự kiện, nút
+“Chỉ con đường tới Cổng Công Viên”, bấm nút thì `acts.way = Cổng Công Viên (41; −37,3)` — đúng `SPOTS.cv`,
+HUD báo “149 m”. `errors: none`.
+
+**Sổ tra cứu mới:** `SUA_NHANH.md` — bảng “muốn đổi cái này thì mở tệp nào”, 9 nhóm, kèm luật của menu ẩn và ba
+thứ không đo được ở đây, để lần sau sửa khỏi phải dò lại từ đầu.
+
+
+---
+
+## Lượt 71 — BĂNG ĐẢNG
+
+Người chơi xin sáu thứ: *hàng cấm vài loại · hình phạt nặng · xem băng đảng chi tiết · phe phái · nv băng đảng event
+· thăng chức*. Cả sáu đã có, số liệu nằm ở `src/data/gang.ts`, luật ở `src/sim/gang.ts`.
+
+**Hai phe.** `hem` — Băng Hẻm Công Nhân, đại ca **Hùng Sẹo** (neo `v_shark`, lễ 200.000₫), giữ Xóm Lao Động.
+`cho` — Băng Chợ Cá, đại ca **Bà Năm Lửa** (nhân vật mới, neo `c_ba_nam` ở vựa cá trong Chợ Xóm Chiều, lễ
+120.000₫). Mỗi băng có `rival`; đã theo bên này thì bên kia **không nhận và không nói chuyện làm ăn**.
+
+**Sáu bậc** theo uy tín: 0 · 40 · 120 · 260 · 460 · 720 (Đàn em mới → Thằng lính → Giữ hàng → Thu nợ → Cánh tay
+phải → Đại ca). Băng ăn chia `cut` 0 / 5 / 8 / 12 / 20 / 30 % — **càng lên càng ít phần mình trên mỗi chuyến**,
+đổi lại mở việc và món hàng mới, và bậc 6 có tiền bảo kê mỗi ngày. Thăng chức **không mua bằng tiền**: cần đủ
+uy tín **và** đã làm đủ số chuyến (`gang.paid`), và phải tới xin đại ca — bậc lưu ở `gang.tier`, không tự nhảy.
+
+**Bốn món hàng cấm:** thuốc lá lậu, rượu ngoại, pháo, hàng điện tử trôi nổi. Có `buy`/`sell`/`kg`/`fineMul`/
+`jail`/`minTier`. Hàng do **băng giữ hộ** trong `gang.stock`, người chơi không chở trong túi.
+Phạt = `sell × fineMul` (1,2–2,2) + `jail` 2–6 giờ; bị bắt là **mất sạch hàng, tụt 30 uy tín trong băng, −4
+uy tín ngoài phố, +20 mức bị để ý**. Ràng buộc test: *bắt một chuyến pháo phải lỗ hơn tiền lời ba chuyến giao
+hàng* — cái giá luôn nặng hơn cái lời, đó là chủ ý nội dung (không ma tuý, không vũ khí).
+
+**Năm việc:** canh kho · bốc hàng (3–9 giờ) · chở hàng · giữ hàng qua đêm (trả bằng hàng) · thu nợ thuê
+(9–19 giờ). Mỗi việc có `perDay` 1–2, tiền công, heat, uy tín, bậc tối thiểu.
+
+**Bị khám bất ngờ:** `sim/police.ts` → `contrabandRisk` (4–30 % theo mức bị để ý) và `contrabandSweep` gọi mỗi
+giờ; lớp game nhận cờ `flags.sweepNow` rồi cho công an lại gần, `acts.caught()` thấy `bustFine > 0` thì mở
+`bustedForContraband()` (nộp / cãi 25 % / chạy 35 % / theo về phường).
+
+**Sự kiện:** `bang_goi`, `bang_doi` (`need: 'gang'`), `bang_dap` (`need: 'rival'`) — người chưa theo băng không
+bao giờ thấy; Ông Bảy có câu riêng cho cả ba (`advice.ts` → `eventRule`).
+
+**Bản lưu:** `SAVE_VERSION` **17**, `GangState` + `cleanGang()` (chỉ nhận phe có thật, mã hàng có trong bảng, số
+kẹp trần); bản lưu cũ ⇒ `gang = null`, không hỏng ván.
+
+
+---
+
+## Lượt 72 — BĂNG ĐẢNG LÀ CON DAO HAI LƯỠI
+
+Người chơi dặn: *“làm hết cái thứ còn thiếu và đảm bảo băng đảng là con dao hai lưỡi”*. Lượt 71 cho **lưỡi thứ
+nhất** (tiền, uy tín, bậc, hàng cấm). Lượt 72 làm **lưỡi thứ hai** cho nặng, và làm nốt ba thứ còn thiếu.
+
+### Lưỡi thứ hai — cái giá (đều là số thật, trừ vào ván)
+- **Khách bỏ đi vì sợ băng**: `GANG_DOWNSIDE[].fear` 6% → 36% theo bậc. Áp trong `arrivalRate()` bằng
+  `fearMul(g)`. Cộng thêm +8% nếu đang bị băng cũ để mắt (`flags.gangWatch`), +6% nếu từng đi khai băng.
+- **Phí chỗ đội thêm**: `rent` 0 → 60% phí gốc, cộng trong `stallRent()` (⚠ không gọi ngược `stallRent` từ
+  `gangRentExtra` — đệ quy vô hạn).
+- **Công an để ý**: `heat` +1 → +6 mỗi ngày, cộng ở `newDay()` kèm toast.
+- **Cảnh đi làm việc** (`GANG_CUTS`): mỗi việc một cảnh kể 3 đoạn, cuối cảnh **bắt buộc chọn** — làm tới (ăn
+  thêm tiền, mất tinh thần/sức khoẻ/bị để ý/uy tín phố) hay rút (mất 4 uy tín trong băng). Không lựa chọn nào
+  miễn phí; test canh “cảnh nào cũng có ít nhất một cái giá”.
+- **Tin xấu của băng** (`GANG_TROUBLE`): đòi phần tháng, đòi tiền chạy việc, khách quen bỏ đi, công an gọi lên
+  phường. Từ ngày thứ 3 trong băng, tối đa một tin/ngày, **không hai ngày liền**. Nộp tiền hay chịu — cả hai
+  đều mất.
+- **Bốn cách rời băng** (`GANG_LEAVES`): trả nợ máu 400k · phản băng (mất 25 uy tín phố, bị để mắt 10 ngày) ·
+  bỏ đi đổi khu 800k · làm ăn thua lỗ để bị đuổi (mất nhiều tinh thần nhất). Cách nào cũng mất hết bậc.
+
+### Ba thứ còn thiếu của lượt 71 — đã làm
+1. **Đụng độ hai phe**: `clashAt()` — từ bậc 3, bước sang địa bàn đối thủ là bị chặn (mỗi ngày một lần).
+   Ba lựa chọn: nói chuyện (bậc ≥4 thì được nể, dưới thì bị khinh), quay đầu (−10 uy tín băng), đứng lại
+   (mất sức khoẻ theo bậc, +12 bị để ý, −3 uy tín phố, +8 uy tín băng).
+2. **Đàn em đi theo**: bậc 5 dắt 2, đại ca dắt 3. `crewCut` chia thêm 12%/đứa, `crewHeatMul` +25%/đứa bị để ý,
+   `crewCover` gánh 35% tiền phạt mỗi đứa khi bị bắt — và **bị bắt là đàn em bỏ đi hết**.
+3. **App “Sổ băng” trên điện thoại**: chỉ hiện khi đang theo băng (`appsOf(m, inGang)`), chỉ **đọc** — bậc, uy
+   tín còn thiếu, “cái giá” (khách −%, phí chỗ, CA/ngày), kho hàng cấm. Mua hàng/nhận việc vẫn phải tới đại ca.
+
+### Lỗi tự bắt được khi tự thử (probe)
+- Menu chính của lượt 71 bị `slice(0,7)` cắt mất mục hàng cấm/phe phái khi có đủ 5 việc → tách **sổ việc** riêng.
+- Cờ `flags.gangWatch` mặc định 0 so `>= g.day` thành **đúng ở ngày 1** ⇒ cộng oan 8% sợ băng.
+- `stallRent` ↔ `gangRentExtra` gọi vòng ⇒ `RangeError: Maximum call stack size exceeded`.
+- Cảnh đi làm hiện tên “Hùng Sẹo” như thể đại ca đi thu nợ ⇒ đổi tên người nói thành **“Chuyến đi”**.
+- App Sổ băng trên máy cục gạch/nắp gập bị cắt đáy ⇒ viết ngắn, bỏ thanh tiến trình.
+- Câu đụng độ in trùng tên hai băng hai lần.
+
+## Lượt 73 — ĐE DOẠ · ĐÁNH NHAU · GIAO DIỆN ANDROID
+
+Người chơi dặn bốn việc: *“thêm nút đe doạ người lạ (đòi tiền / đồ quý) khi đã là thành viên băng cấp 4 trở
+lên”*, *“thêm event đánh nhau”*, *“animation chuẩn”*, và *“cập nhật giao diện gọn kiểu Android”*. Cộng thêm
+*“sửa lỗi nếu còn”*.
+
+### 1. Đe doạ — cửa kiếm tiền nhanh nhất, và cũng là cửa lỗ nặng nhất
+Ba mức, mỗi mức mở ở một bậc (`THREAT_KINDS`):
+| Mức | Bậc | Tiền | Đồ quý | Bị để ý | Uy tín phố | Bị báo |
+|---|---|---|---|---|---|---|
+| Xin để yên chỗ bán | 4 | 30–70 k | – | +8 | −3 | 12 % |
+| Lấy đồ quý | 5 | 55–95 k | đồng hồ cũ | +14 | −6 | 30 % |
+| Siết nợ người quen | 6 | 120–260 k | – | +22 | −12 | 42 % |
+
+Không phải “bấm là có tiền”: mỗi lần đe cộng dồn **hai** thứ trừ về sau — `g.wanted` (công an để mắt, càng cao
+càng dễ bị gọi lại) và **số lần đã đe**. Số lần ấy làm hai việc: `threatFear()` cộng vào `fearRate` (khách bớt
+ghé, trần 12 %), và làm xác suất bị báo tăng 3 % mỗi lần. Bị báo thì phạt `threatFine(wanted, times)` — **cố ý
+đắt hơn án hàng cấm** vì đây là đe doạ người — cộng 6–12 giờ tạm giữ. Một người chơi đe mười lần sẽ thấy quán
+vắng, công an nhớ mặt, và phần lớn tiền kiếm được trả lại cho phường.
+
+### 2. Đánh nhau — cảnh 3D thật, không phải hộp thoại kể chuyện
+`FIGHTS` có bốn kiểu, mỗi kiểu gắn với một tình trạng thật của ván (`fightAt`): bị úp sọt ở địa bàn băng đối thủ
+(bậc 3+, quan hệ ≤ −20), giang hồ tới đòi nợ (có nợ quá hạn), người nhà kẻ bị đe doạ (đã đe 3 lần), băng khác
+tới phá quán (bán tốt mà không có băng đỡ lưng). Một ngày tối đa một ván.
+
+Cảnh (`AnimSystem.startFight`) dựng 2–3 **rig người thật** — mượn từ hồ của `Npcs` qua `acquire()/release()`,
+`Rig.slot = 'fight'` để hồ không lấy lại người đang đánh — đứng thành vòng cung trước mặt, dồn tới rồi lùi theo
+nhịp. Ba nút: **ĐẤM** (trúng 78 %: đứa đó bật ngửa rồi gục), **ĐỠ** (đòn kế chỉ mất 45 % máu), **LÙI** (hồi 4 máu,
+đối thủ dồn nhanh hơn). Hạ hết thì thắng. Camera đứng chếch một bên, cao 3,1 m — bản đầu đặt sau lưng nên ba
+đứa che kín người chơi (ảnh probe chỉ ra).
+
+Ba dáng mới trong `gfx/people.ts` để cảnh có động tác thật: `block`, `stagger`, `threat`; người đấm cũng chồm
+người tới và nhích chân, chứ không đứng im như tượng.
+
+Ba lựa chọn trước khi vào cảnh đều có giá: đánh (thắng 40–145 k + uy tín băng, thua −20…−26 máu, −6 uy tín phố),
+chạy (−8 uy tín băng, cả xóm thấy), dàn xếp (150–300 k, băng cho là hèn).
+
+### 3. Giao diện Android
+`Settings.android` (mặc định **bật trên điện thoại**): `#menub` (bảy nút nổi) ẩn hẳn, thay bằng `#topbar` (tiền ·
+giờ · ☰) và `#drawer` trượt từ mép phải với các mục Túi đồ / Sổ tay / Bản đồ / Điện thoại / **Đe doạ** / Cất
+gánh / Góp ý / Cài đặt. Mỗi nút cao 3,1 em (≥ 44 px). Màn 390 px dọc trước đây bảy nút chiếm gần nửa bề ngang.
+Phần **chơi** (tương tác, chạy, đấm, nhảy, cần ảo) giữ nguyên chỗ vì người chơi đã quen tay.
+
+### Lỗi tự bắt được trong lượt này (ghi lại để lần sau khỏi lặp)
+- Ngăn kéo mở ra rồi tự giấu: bộ hẹn 190 ms của lần **đóng** trước đó vẫn nổ sau khi đã mở lại.
+- Vào cảnh đánh nhau thì thanh trên cùng che mất tiêu đề cảnh và dòng gợi ý ⇒ `setHud(false)` phải ẩn cả `#topbar`.
+- Hộp thoại **đụng độ băng** mở ngay giữa ván đánh (nó gọi `UI.dialog` → `anim.stop()`), cảnh 3D biến mất;
+  nay mọi hộp thoại tự mở đều phải kiểm `!ctx.anim?.active`.
+- Thanh máu đối thủ tính theo **số đứa còn đứng** nên đấm hai phát vẫn 100 % ⇒ đổi sang tính theo tổng máu.
+- Đặt `player.rig.pose` trong cảnh đánh không có tác dụng: `player.update` ghi đè mỗi khung hình bằng `actPose`.

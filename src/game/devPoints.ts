@@ -10,9 +10,11 @@ import { downloadForOffline } from '../core/offline';
 import * as PUI from '../ui/phoneUI';
 import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
+import * as GANGSIM from '../sim/gang';
 import { advice, destOpen, nowText } from '../sim/advice';
 import { LANDMARK_BY_ID } from '../data/landmarks';
 import { CHANGELOG } from '../data/changelog';
+import { FIGHTS } from '../data/gang';
 import { DAYS_PER_MONTH } from '../data/gear';
 import { RECIPES } from '../data/recipes';
 import { money } from '../core/util';
@@ -240,6 +242,126 @@ function latestSteps(): DevStep[] {
   const g = () => ctx.g;
   const all: DevStep[] = [
     {
+      since: 'Lượt 73', id: 'mx_de_doa', tone: 'yellow',
+      label: '① Đe doạ người lạ — bậc 4 mới có quyền',
+      sub: 'Dựng ván bậc 4 của băng Hẻm rồi đứng giữa phố: thanh tiện ích có nút ĐE DOẠ, bấm vào mở ba mức (xin để yên / lấy đồ quý / siết nợ) kèm mức bị để ý và xác suất bị báo công an',
+      run: () => {
+        const gg = g();
+        if (!gg.gang) { gg.cash = Math.max(gg.cash, 500000); GANGSIM.joinGang(gg, 'hem'); }
+        if (gg.gang) { gg.gang.respect = Math.max(gg.gang.respect, 300); gg.gang.tier = 4; }
+        // Đứng ngay chợ (đông người) để có người mà đe doạ.
+        ctx.player.place(-52, 12, 0);
+        ctx.acts.way = null;
+        toast('Đã dựng ván bậc 4 ở Chợ Xóm Chiều — mở thanh ☰ rồi bấm ĐE DOẠ.', 'info', 'skull');
+        ctx.ui.closePanel();
+      },
+    },
+    {
+      since: 'Lượt 73', id: 'mx_danh_nhau', tone: 'yellow',
+      label: '② Thử một ván đánh nhau có cảnh 3D',
+      sub: 'Dựng ván bậc 4, bật ngay ván “bị úp sọt”: cảnh 3D có ba đứa xông vào, ba nút ĐẤM / ĐỠ / LÙI, đối thủ loạng choạng rồi gục — hết ván mới trả tiền và uy tín',
+      run: () => {
+        const gg = g();
+        if (!gg.gang) { gg.cash = Math.max(gg.cash, 500000); GANGSIM.joinGang(gg, 'hem'); }
+        if (gg.gang) { gg.gang.respect = Math.max(gg.gang.respect, 300); gg.gang.tier = 4; }
+        ctx.ui.closeDialog(); ctx.ui.closePanel();
+        setTimeout(() => ctx.acts.openFight(FIGHTS[0]), 300);
+        toast('Ba đứa đang bước ra từ trong hẻm…', 'bad', 'angry');
+      },
+    },
+    {
+      since: 'Lượt 73', id: 'mx_giao_dien_android', tone: 'green',
+      label: '③ Giao diện kiểu Android — thanh trên cùng + ngăn kéo',
+      sub: 'Bật kiểu giao diện mới: thanh trên cùng có giờ + tiền, và nút ☰ mở ngăn kéo chứa Túi đồ / Sổ tay / Bản đồ / Điện thoại / Cài đặt — HUD chỉ còn hai nút nổi (đấm, nhảy)',
+      run: () => {
+        ctx.set.android = true; saveSettings();
+        ctx.ui.applyAndroid?.();
+        toast('Đã bật giao diện Android: chạm ☰ ở góc phải trên để mở ngăn kéo.', 'good', 'gear', true);
+      },
+    },
+    {
+      since: 'Lượt 72', id: 'mx_bang_cai_gia', tone: 'yellow',
+      label: '① Băng là con dao hai lưỡi — mở bảng “cái giá”',
+      sub: 'Dựng ván đang ở bậc 4 của băng Hẻm rồi mở thẳng bảng cái giá: mất bao nhiêu phần trăm khách, phí chỗ đội thêm bao nhiêu, công an để ý mấy điểm mỗi ngày',
+      run: () => {
+        const gg = g();
+        if (!gg.gang) { gg.cash = Math.max(gg.cash, 500000); GANGSIM.joinGang(gg, 'hem'); }
+        if (gg.gang) { gg.gang.respect = Math.max(gg.gang.respect, 300); gg.gang.tier = 4; gg.gang.paid = Math.max(gg.gang.paid, 6); }
+        if (!standAt('v_shark', 1.7, 'Sào huyệt băng Hẻm — xem cái giá của việc theo băng.')) return toast('Không thấy sào huyệt băng Hẻm.', 'warn');
+        const n = ctx.npcs.fixed.get('shark');
+        if (n) setTimeout(() => ctx.acts.talk(n), 140);
+      },
+    },
+    {
+      since: 'Lượt 72', id: 'mx_bang_canh_lam', tone: 'yellow',
+      label: '② Thử một cảnh đi làm — hai lựa chọn đều có giá',
+      sub: 'Dựng ván bậc 4, đứng trước đại ca: mở Sổ việc rồi chọn “Đi thu nợ thuê” — cảnh kể chuyện bà bán tạp hoá, cuối cảnh phải chọn làm tới (mất tinh thần, uy tín phố) hay rút',
+      run: () => {
+        const gg = g();
+        if (!gg.gang) { gg.cash = Math.max(gg.cash, 500000); GANGSIM.joinGang(gg, 'hem'); }
+        if (gg.gang) { gg.gang.respect = Math.max(gg.gang.respect, 300); gg.gang.tier = 4; gg.st.energy = 100; }
+        if (!standAt('v_shark', 1.7, 'Sào huyệt băng Hẻm — thử một cảnh đi làm việc.')) return toast('Không thấy sào huyệt băng Hẻm.', 'warn');
+        const n = ctx.npcs.fixed.get('shark');
+        if (n) setTimeout(() => ctx.acts.talk(n), 140);
+      },
+    },
+    {
+      since: 'Lượt 72', id: 'mx_bang_tin_xau', tone: 'yellow',
+      label: '③ Bật thử một tin xấu của băng',
+      sub: 'Đặt sẵn tin “băng đòi phần tháng này” rồi đợi vài giây: hộp thoại hiện ra với hai lựa chọn nộp tiền hay chịu mất uy tín — cả hai đều có giá',
+      run: () => {
+        const gg = g();
+        if (!gg.gang) { gg.cash = Math.max(gg.cash, 500000); GANGSIM.joinGang(gg, 'hem'); }
+        if (gg.gang) { gg.gang.trouble = 'nop_phan'; gg.gang.since = Math.min(gg.gang.since, gg.day - 3); }
+        toast('Tin xấu của băng sẽ hiện trong vài giây — để ý hộp thoại.', 'info', 'skull');
+        ctx.ui.closePanel();
+      },
+    },
+    {
+      since: 'Lượt 71', id: 'mx_bang_dang', tone: 'yellow',
+      label: '① Theo băng đảng — đứng trước đại ca, mở sổ việc',
+      sub: 'Dựng sẵn một ván đang ở bậc 2 của băng Hẻm, đủ tiền, đứng ngay trước Hùng Sẹo: xem sáu bậc, nhận một ca việc, mở sổ hàng cấm, rồi thử mua một món để thấy giá và mức phạt',
+      run: () => {
+        const gg = g();
+        // Dựng đúng cảnh cần thử: đã theo băng, có uy tín thật (không phải đồ giả đặt vào biến rồi tự khen).
+        if (!gg.gang) {
+          gg.cash = Math.max(gg.cash, 400000);
+          GANGSIM.joinGang(gg, 'hem');
+        }
+        if (gg.gang) {
+          gg.gang.respect = Math.max(gg.gang.respect, 60);
+          gg.gang.paid = Math.max(gg.gang.paid, 2);
+          gg.cash = Math.max(gg.cash, 500000);
+          gg.st.energy = 100;
+        }
+        if (!standAt('v_shark', 1.7, 'Sào huyệt băng Hẻm — nói chuyện với Hùng Sẹo.')) return toast('Không thấy sào huyệt băng Hẻm.', 'warn');
+        const n = ctx.npcs.fixed.get('shark');
+        if (n) setTimeout(() => ctx.acts.talk(n), 140);
+      },
+    },
+    {
+      since: 'Lượt 71', id: 'mx_bang_dong_nam', tone: 'green',
+      label: '② Băng Chợ Cá — Bà Năm Lửa ở vựa cá',
+      sub: 'Đứng cạnh sạp cá số 3 trong Chợ Xóm Chiều rồi bấm: hội thoại của phe thứ hai (khác giọng Hùng Sẹo), xem phe phái đang đối đầu bên nào',
+      run: () => {
+        if (!standAt('v_ba_nam', 1.7, 'Vựa cá trong chợ — Bà Năm Lửa.')) return toast('Không thấy Bà Năm Lửa trong chợ.', 'warn');
+        const n = ctx.npcs.fixed.get('ba_nam');
+        if (n) setTimeout(() => ctx.acts.talk(n), 140);
+      },
+    },
+    {
+      since: 'Lượt 71', id: 'mx_bang_phat', tone: 'yellow',
+      label: '③ Thử án phạt hàng cấm',
+      sub: 'Đang giữ 3 món hàng cấm (nặng nhất là pháo) rồi gọi thẳng màn hình bị khám: xem tiền phạt, số giờ tù, và mất bao nhiêu uy tín. Huỷ hộp thoại là không mất gì',
+      run: () => {
+        const gg = g();
+        if (!gg.gang) { gg.cash = Math.max(gg.cash, 400000); GANGSIM.joinGang(gg, 'hem'); }
+        if (gg.gang) { gg.gang.stock = { phao: 3, thuocla: 2 }; gg.cash = Math.max(gg.cash, 3000000); }
+        toast(`Nếu bị khám bây giờ: phạt ${money(GANGSIM.bustFine(gg))}, tạm giữ thêm ${GANGSIM.bustJail(gg)} giờ.`, 'warn', 'badge');
+        ctx.ui.panel('devmenu');
+      },
+    },
+    {
       since: 'Lượt 70', id: 'mx_gop_y', tone: 'green',
       label: '① Nút Góp ý & báo lỗi — gửi và đọc lại',
       sub: 'Mở thẳng bảng góp ý: chọn loại, gõ, bấm Gửi rồi xem mục “Đã gửi” bên dưới (cũng mở bằng phím G)',
@@ -349,6 +471,21 @@ function latestSteps(): DevStep[] {
         s.preps.push({ rid: 'banh_trang_tron', n: 1, q: 0.92, at: gg.day * 1440 + gg.min, cost: 2000 });
         ctx.stall.refresh();
         if (!ctx.cook.finish(r)) toast('Chưa đủ nguyên liệu cho bánh tráng trộn.', 'warn');
+      },
+    },
+    {
+      since: 'Lượt 70', id: 'mx_su_kien_ong_bay', tone: 'yellow',
+      label: '⑩ Sự kiện đang chạy — Ông Bảy nói về nó',
+      sub: 'Bật một sự kiện của thành phố rồi tới gầm cầu: câu đầu tiên của Ông Bảy phải nhắc đúng sự kiện đó, kèm nút “Chỉ con đường tới…” ghim thẳng chỗ làm ăn được. Trước lượt này ông chỉ nói máu/tiền/nợ/mưa',
+      run: () => {
+        const gg = g();
+        // Bật một sự kiện nếu đang không có cái nào — dùng đúng hàm của game nên nhật ký sự kiện, dòng tin
+        // trên radio và ảnh hưởng lên giá/dòng người đều chạy như lúc sự kiện tự tới.
+        if (!R.activeEvents(gg).length) R.startEvent(gg, 'le_hoi');
+        if (!standAt('v_hobo', 1.6, 'Gầm cầu — hỏi Ông Bảy chuyện đang xảy ra trong phố.')) return toast('Không thấy gầm cầu ngoài phố.', 'warn');
+        ctx.player.pitch = -0.05;
+        const n = ctx.npcs.fixed.get('hobo');
+        if (n) setTimeout(() => ctx.acts.talk(n), 140);
       },
     },
     {

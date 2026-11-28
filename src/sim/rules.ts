@@ -11,6 +11,8 @@ import { EVENTS, EVENT_LIST, EventDef, WEATHER, WeatherDef, WeatherId, floodZone
 import { EXPR } from '../data/expr';
 import { District, DISTRICT, SPOTS, districtAt, spotById } from '../world/layout';
 import { PLACE_HOURS } from '../data/hours';
+import { contrabandSweep } from './police';
+import { fearMul as gangFearMul, gangRentExtra, dailyGangHeat, troubleToday, gangName as GANG_NAME } from './gang';
 import { Game, Stack, Helper, Booking, Branch, Ready, Errand, STAT_MAX, absMin, addStack, countOf, hourOf, newLedger, purge, spoil, takeFrom, weightOf, junkWeight, emptyStall, Debt, coldWeightOf, ICE_MELT_MUL } from './state';
 import * as PH from './phone';
 
@@ -390,6 +392,9 @@ export function arrivalRate(g: Game): number {
   const variety = 0.8 + Math.min(menu.length, 6) * 0.07;
   let rate = 4.6 * sp.traffic * hourCurve(hourOf(g), sp.district) * w.cust * m.traffic * stallAppeal(g) * (0.75 + g.rep / 50) * priceAppeal * variety;   // quầy mới vẫn có khách đều; uy tín 100 đông gấp ~3,7 lần
   if (m.rival) rate *= 0.68;
+  // Lượt 72 (con dao hai lưỡi): theo băng thì khách sợ, bớt ghé quán. Đây là con số quan trọng nhất của “mặt
+  // trái” — nó trừ thẳng vào doanh thu, nên tiền băng kiếm được không phải tiền chùa.
+  rate *= gangFearMul(g);
   if (floodPct(g) > 0.5 && floodZone(s.x, s.z)) rate *= 0.25;
   return rate;
 }
@@ -799,6 +804,9 @@ function eligible(g: Game, e: EventDef): boolean {
     case 'spot_hem': return s.open && s.spot === 'hem' && (g.flags.gangPaid ?? -9) < g.day;
     case 'poor': return HOUSING[g.housing].safety < 0.5 && (g.home.length > 0 || s.where === 'home');
     case 'home': return g.housing !== 'gamcau';
+    // Lượt 71: ba sự kiện băng đảng chỉ dành cho người đang theo băng (hoặc có băng đối thủ để ý).
+    case 'gang': return !!g.gang;
+    case 'rival': return !!g.gang;
   }
   if (e.weather && (g.weather.now === 'bao')) return false;
   if (e.festive && activeEvents(g).some((x) => x.festive)) return false;
@@ -1054,6 +1062,9 @@ function hourly(g: Game, R: RNG) {
   const coolLimit = has(g, 'tu_kinh') ? 150 : 90;
   for (const rd of s.ready) { const r = RECIPES[rd.rid]; if (absMin(g) - rd.at > coolLimit) rd.q = Math.max(0.15, rd.q - 0.06); void r; }
   if (g.weather.until <= absMin(g) && !activeEvents(g).some((e) => e.weather)) setWeather(g, g.weather.next, R);
+  // Lượt 71: giữ hàng cấm thì thỉnh thoảng bị khám bất ngờ. Chỉ báo hiệu ở đây, còn phạt/tù thì để lớp game lo
+  // (`acts.caught` → `bustedForContraband`) — lớp luật không mở hộp thoại, không kéo người chơi đi đâu.
+  if (contrabandSweep(g)) g.flags.sweepNow = 1;
 }
 // ───────────────────────── Người phụ việc ở quầy ─────────────────────────
 /** Điều kiện nhận phụ việc: quán phải đã bán được tiền thật và đã bán qua vài ngày. */
@@ -1897,6 +1908,16 @@ function newDay(g: Game, R: RNG) {
   g.wd.picked = []; g.wd.sacks = 0; g.wd.plates = 0; g.wd.deliveries = 0; g.wd.cargoShifts = 0; g.wd.cafeShifts = 0; g.wd.miaShifts = 0; g.wd.miaSold = 0; g.wd.miaCups = 0; g.wd.siteShifts = 0; g.wd.siteCups = 0; g.wd.begTired = Math.max(0, g.wd.begTired - 60); g.wd.haggled = {}; g.wd.litterDay = g.day;
   s.dirt = clamp(s.dirt + 6, 0, 100); s.open = false;
   dailyDebts(g); dailyHousing(g);
+  // Lượt 72: ở trong băng thì mỗi ngày bị để ý thêm (bậc càng cao càng nhiều) — nói rõ số vừa cộng, vì đây là
+  // thứ người chơi phải thấy chứ không phải con số ẩn.
+  if (g.gang) {
+    const h = dailyGangHeat(g);
+    if (h > 0) toast(`Băng ${GANG_NAME(g)}: công an khu vực để ý thêm ${h} điểm.`, 'warn', 'badge');
+    // Tin xấu của băng (đòi phần, đòi tiền chạy việc, khách sợ bỏ đi, công an gọi hỏi) — cờ để lớp game mở
+    // hộp thoại có lựa chọn nộp hay chịu; lớp luật không tự mở hộp thoại.
+    const t = troubleToday(g);
+    if (t) { g.gang.trouble = t.id; g.flags.gangTroubleDay = g.day; }
+  }
   // sạp cố định: phí chỗ tính tự động mỗi ngày, thiếu tiền thì quầy phải đóng
   if (stallRent(g) > 0) {
     const rent = stallRent(g);
@@ -1969,7 +1990,9 @@ export function buyGear(g: Game, id: string): 'ok' | 'cash' | 'have' | 'tier' {
 export function stallRent(g: Game): number {
   const s = g.stall;
   if (s.tier < 3 || s.where !== 'placed' || !s.spot) return 0;
-  return SPOTS.find((p) => p.id === s.spot)?.fee ?? 0;
+  const base = SPOTS.find((p) => p.id === s.spot)?.fee ?? 0;
+  // Lượt 72: chủ mặt bằng biết mình có băng “đỡ đầu” thì đòi thêm — phần đội lên nằm trong `sim/gang.ts`.
+  return base + gangRentExtra(g);
 }
 /** Thu phí chỗ đầu ngày. Trả về true nếu đã đóng (hoặc không phải đóng). */
 export function payStallRent(g: Game): boolean {

@@ -11,7 +11,7 @@ import { INGS } from '../data/ingredients';
 import { SHOP_LIST } from '../data/shops';
 import { RECIPE_LIST } from '../data/recipes';
 import { HOUSING } from '../data/gear';
-import { WEATHER, hourCurve } from '../data/world';
+import { WEATHER, hourCurve, EVENTS, EventDef } from '../data/world';
 import { LANDMARK_BY_ID, HOME_LANDMARK } from '../data/landmarks';
 import { District, spotById } from '../world/layout';
 import { money, dist } from '../core/util';
@@ -37,9 +37,17 @@ export interface AdviceWhere {
 const hh = (h: number) => `${Math.floor(h)}h${String(Math.round((h % 1) * 60)).padStart(2, '0')}`;
 
 /** Đích đến này có đang dùng được ở giờ hiện tại không (chỗ gộp nhiều sạp: một sạp mở là được). */
+/**
+ * Những đích CHỈ mở khi một sự kiện đang chạy (lượt 70c). Nếu không có bảng này, câu “trận bóng tối nay ở quán
+ * cà phê Bóng Đá” vẫn được nói vào 9 giờ sáng hôm sau — chỉ tới một quán không có trận nào. Hết sự kiện là đích
+ * đóng lại như mọi chỗ khác, nên lời khuyên lại chỉ còn những chỗ thật sự dùng được.
+ */
+const ONLY_IN_EVENT: Record<string, string> = { cafe_bongda: 'bong_da', net_tro: 'tan_su_kien' };
 export function destOpen(g: Game, id: string): boolean {
   const l = LANDMARK_BY_ID[id];
   if (!l) return false;
+  const need = ONLY_IN_EVENT[id];
+  if (need) return R.eventOn(g, need) && R.placeOpenAt(g, id);
   if (l.always) return true;
   if (l.openWith?.some((s) => R.placeOpenAt(g, s))) return true;
   return R.placeOpenAt(g, id);
@@ -71,6 +79,104 @@ export function shopFor(g: Game, ingId: string, w?: AdviceWhere): { id: string; 
   }
   const s = cands[0];
   return { id: s.id, name: s.name };
+}
+
+// ───────────────────────── Sự kiện đang diễn ra (lượt 70c) ─────────────────────────
+/**
+ * Ông Bảy nói về **sự kiện đang chạy** — trước bản này ông chỉ nói máu/tiền/quầy/nợ/mưa, còn 22 sự kiện của
+ * thành phố thì chỉ radio với WAP biết. Mỗi dòng ở đây trả về: câu nói (đã có tên chỗ thật), chỗ cần tới, và
+ * một luật “câu này có dùng được ngay bây giờ không”.
+ *
+ * Nguyên tắc:
+ * - `where` phải là đích **có thật trong `LANDMARK_LIST`**, và điều kiện `ok` phải bảo đảm chỗ đó đang mở —
+ *   `tests/hobo.test.ts` chạy cả 22 sự kiện × nhiều giờ và đòi `destOpen` đúng.
+ * - Quán đang bán thì câu phải **dùng được cho người đang bán**: “đoàn kiểm tra đang đi từng quầy” chỉ nói khi
+ *   quầy đã mở, và ghim đúng chỗ quầy đang đứng (`spot_*`), không phải một chỗ dựa bừa.
+ * - Không bịa con số: giá/mức tăng đọc từ chính `EVENTS[id]` (nếu có) hoặc viết đúng như sự kiện mô tả.
+ * - **Mức cấp thiết cao hơn các câu thường** (quầy trên vai 60, chưa mở bán 62, thiếu nguyên liệu 55): sự kiện
+ *   chỉ kéo dài vài giờ, bỏ qua là mất luôn cơ hội; còn “quầy trên vai” thì lúc nào nhắc cũng được. Nhưng vẫn
+ *   phải **thấp hơn** chuyện nguy hiểm tới thân (sắp ngất 100, bão 96, đoàn kiểm tra 84).
+ */
+interface EventRule {
+  /** Mã câu — ép theo mã sự kiện để `rememberAdvice` không lặp. */
+  id: string;
+  place: string;
+  urgent: number;
+  text: string;
+}
+/** Chỗ quầy đang đứng, viết thành đích đến trên bản đồ (dùng cho câu “đang làm ăn thì…”). */
+const stallSpot = (g: Game): string | null => (g.stall.where === 'placed' && g.stall.spot ? 'spot_' + g.stall.spot : null);
+/** Giờ kết thúc sự kiện còn lại, viết cho người đọc: “còn 2 tiếng nữa”. */
+function evLeft(g: Game, id: string): string {
+  const a = g.ev.active.find((x) => x.id === id);
+  if (!a) return '';
+  const h = (a.until - (g.day * 1440 + g.min)) / 60;
+  if (h <= 0.5) return ' sắp hết rồi';
+  return h >= 1.5 ? ` còn khoảng ${Math.round(h)} tiếng nữa` : ' còn chưa tới một tiếng';
+}
+/** Sự kiện này có đáng nói với người chơi lúc này không, và nói gì. `null` = đừng nói. */
+function eventRule(g: Game, e: EventDef): EventRule | null {
+  const s = g.stall, spot = stallSpot(g), selling = s.where === 'placed';
+  const left = evLeft(g, e.id);
+  const id = 'ev_' + e.id;
+  switch (e.id) {
+    // ── Nhóm kéo người về một chỗ: nói đúng chỗ đó, kèm thứ khách đang thèm ──
+    case 'le_hoi':
+      return { id, place: 'spot_cv', urgent: 64, text: `Công viên Hoa Phượng đang mở lễ hội, người ta đổ về nườm nượp${left}. Đem quầy ra Cổng Công Viên đi — món ăn vặt, xiên nướng, nước mát bán chạy gấp rưỡi ngày thường.` };
+    case 'hoi_cho':
+      return { id, place: 'spot_cho', urgent: 64, text: `Cổng chợ đang có hội chợ ẩm thực${left}. Dân sành ăn kéo tới đông lắm — quầy bán bún, phở, đồ nướng thì ra đó mà đứng.` };
+    case 'bong_da':
+      return destOpen(g, 'cafe_bongda') ? { id, place: 'cafe_bongda', urgent: 58, text: `Tối nay có trận bóng${left}. Quán cà phê Bóng Đá ở Phố Bến Xe chật kín, ai cũng kêu đồ nướng với nước — ghé đó mà bán, hoặc vô coi ké một trận.` } : null;
+    case 'tan_su_kien':
+      return { id, place: 'spot_hem', urgent: 62, text: `Khu kho bãi tan ca đêm${left} — công nhân đói bụng đổ ra đường. Cơm, bánh mì, mì gói bán chạy lắm, ra Hẻm Công Nhân mà dọn hàng.` };
+    case 'ngay_luong':
+      return { id, place: spot ?? 'spot_cho', urgent: 56, text: `Hôm nay công nhân lĩnh lương${left} — ai cũng rủng rỉnh. Đừng hạ giá, khách sẵn sàng trả hơn ngày thường, nhất là món ăn chơi.` };
+    // ── Nhóm làm giá nguyên liệu nhảy: nói nên trữ gì, và nói thật là đang đắt ──
+    case 'gia_thit':
+    case 'gia_rau':
+    case 'gia_haisan': {
+      const cat = e.id === 'gia_thit' ? 'thịt' : e.id === 'gia_rau' ? 'rau củ' : 'hải sản';
+      const mul = e.price ? Math.round((Object.values(e.price)[0] ?? 1) * 100 - 100) : 0;
+      return { id, place: 'market', urgent: 50, text: `${cat[0].toUpperCase() + cat.slice(1)} ở chợ đang lên giá${mul ? ` ${mul}%` : ''}${left}. Có tiền thì mua trữ sẵn hôm nay, đừng đợi tới lúc nấu mới chạy ra chợ.` };
+    }
+    case 'het_hang':
+      return { id, place: 'market', urgent: 52, text: `Xe hàng về trễ nên chợ đang thiếu món${left}. Ra sớm coi sạp nào còn thì lấy, không thì ghé vựa đầu mối Tám Lúa mua sỉ cho chắc.` };
+    case 'sieu_thi_km':
+      return { id, place: 'mart', urgent: 48, text: `MiniMart đang giảm 25% toàn bộ${left}. Đồ khô, nước ngọt, gia vị — mua dằn một ít, rẻ hơn chợ đấy.` };
+    case 'cup_dien':
+      return { id, place: 'kiosk', urgent: 54, text: `Cúp điện khu trung tâm${left} — MiniMart đóng cửa, tủ lạnh ngừng chạy. Đồ cần lạnh trong quầy lo mà dọn ra, hoặc qua Tạp hoá Cô Ba mua đá.` };
+    case 'bao':
+      return { id, place: R.has(g, 'aomua') ? 'camp' : 'kiosk', urgent: 102, text: `Bão đổ bộ kìa!${left ? left + '.' : ''} Dọn hàng, tìm chỗ trú ngay — chưa có áo mưa thì tạt vô tạp hoá mua cái rồi về, đừng đứng ngoài đường.` };
+    case 'cam_duong':
+      return { id, place: 'spot_cho', urgent: 46, text: `Đường trước chợ bị rào lại để sửa cống${left}. Dòng người dạt sang phố khác — quầy ở Cổng Chợ thì vắng, tính dời sang chỗ khác hoặc bán món giao đi.` };
+    case 'trom':
+      return { id, place: HOME_LANDMARK[g.housing] ?? 'camp', urgent: 72, text: `Đêm nay khu này hay mất trộm${left}. Về nhà ngủ, đừng để tiền với đồ nghề ngoài quầy — mất là mất luôn.` };
+    // ── Nhóm “có người đang tìm tới quầy mình”: chỉ nói khi đang bán thật ──
+    case 'kiem_tra':
+      return selling && s.open ? { id, place: spot!, urgent: 90, text: `Đoàn kiểm tra an toàn thực phẩm đang đi từng quầy${left}. Quầy dơ là bị phạt: lau lại mặt bàn, đậy đồ ăn, đừng để thịt sống gần đồ chín.` } : null;
+    case 'phe_binh':
+      return selling && s.open ? { id, place: spot!, urgent: 76, text: `Nghe đồn có nhà phê bình ẩm thực đang dạo quanh khu này${left}. Nêm nếm cho tử tế, dọn quầy sạch — được một câu khen là khách tới cả tuần.` } : null;
+    case 'khach_vip':
+      return selling && s.open ? { id, place: spot!, urgent: 78, text: `Có vị khách sang đang tìm món ngon đường phố${left}. Bật món tủ của mình lên, đừng tiếc — khách loại này trả hơn giá niêm yết.` } : null;
+    case 'khach_quay':
+      return selling && s.open ? { id, place: spot!, urgent: 80, text: `Có ông khách say đang gây sự quanh đây${left}. Giữ bình tĩnh, đừng đôi co — cùng lắm gọi công an phường, đánh nhau là mình sai trước.` } : null;
+    case 'khach_quen_kho':
+      return selling && s.open ? { id, place: spot!, urgent: 60, text: `Một người khách quen đang kẹt tiền, muốn ăn chịu${left}. Cho chịu thì được lòng, mà nhớ ghi sổ — trong sổ nợ có mục theo dõi.` } : null;
+    // ── Lượt 71: ba sự kiện của băng đảng (chỉ có khi người chơi đang theo băng) ──
+    case 'bang_goi':
+      return { id, place: 'shark', urgent: 68, text: `Đàn em băng chạy tới kêu${left}: “Ra kho, có chuyến gấp, tiền gấp đôi.” Đi thì có tiền mà dễ bị hỏi thăm, không đi thì mất uy tín trong băng.` };
+    case 'bang_doi':
+      return { id, place: 'shark', urgent: 62, text: `Băng cho người lại nhắc phần${left} — tháng này con chưa nộp. Trả cho xong, đừng để tới lúc bị siết.` };
+    case 'bang_dap':
+      return spot ? { id, place: spot, urgent: 88, text: `Băng bên kia cho đàn em qua dằn mặt quầy con${left}. Về quầy mà coi, hoặc tính dời đi — một mình đừng đứng ra cãi.` } : null;
+    case 'bao_ke':
+      return { id, place: spot ?? 'spot_hem', urgent: 84, text: `Đàn em Hùng Sẹo đang đi thu “phí bảo kê” trong hẻm${left}. Bán ở đó thì liệu đường: đóng cho yên, hoặc dọn sang chỗ khác — đừng một mình chống lại.` };
+    case 'doi_thu':
+      return selling ? { id, place: spot!, urgent: 66, text: `Có người mở quầy ngay sát chỗ con bán, giá rẻ hơn hẳn${left}. Đừng đua giá — nêm cho ngon hơn, giữ khách quen, rồi tính chuyện dời sang chỗ đông hơn.` } : null;
+    case 'gia_dinh':
+      return { id, place: HOME_LANDMARK[g.housing] ?? 'camp', urgent: 36, text: `Mẹ ở quê vừa gửi lên ít tiền kèm lá thư: “Ráng lên con.”${left} — cầm lấy mà trả bớt nợ, đừng tiêu hết một lượt.` };
+  }
+  return null;
 }
 
 /**
@@ -140,6 +246,14 @@ export function advice(g: Game, w?: AdviceWhere): Advice[] {
         ? `Nợ Hùng Sẹo trễ ${-left} ngày rồi! Nó tới siết đồ bây giờ. Lo trả ${money(shark.owed)} đi, đừng để nó đập quầy.`
         : `Còn ${left} ngày là tới hạn nợ Hùng Sẹo — ${money(shark.owed)}. Trễ hai ngày là nó siết đồ, liệu mà xoay.`) + tail);
     }
+  }
+
+  // ── 5b. Sự kiện đang diễn ra (lượt 70c): mỗi sự kiện một câu, câu nào cũng chỉ chỗ dùng được ngay ──
+  for (const e of R.activeEvents(g)) {
+    const r = eventRule(g, e);
+    if (!r) continue;
+    if (!destOpen(g, r.place)) continue;
+    add(r.id, r.urgent, r.place, r.text);
   }
 
   // ── 6. Trời: sắp mưa thì nhắc áo mưa / bán món nóng; khuya thì nhắc chỗ ngủ ──
