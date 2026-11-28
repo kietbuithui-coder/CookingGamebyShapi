@@ -27,6 +27,13 @@ Trạng thái đo được hôm nay (2026-11-21, sau lượt 64): **typecheck �
 
 ---
 
+## 0b. Tra nhanh “sửa cái này ở đâu”
+
+`SUA_NHANH.md` là bảng tra: câu chữ người chơi đọc · địa điểm & chỉ đường · nội dung kinh doanh · hình khối 3D ·
+mini-game · menu ẩn · giao diện · lệnh kiểm tra · ba thứ không đo được. Đọc bảng đó trước khi `rg` từ đầu.
+
+---
+
 ## 1. Nguyên tắc làm việc
 
 1. **Đọc trước khi sửa.** `README.md` (người chơi thấy gì) → `DESIGN.md` (luật & con số) → `TODO.md` / `PLAN.md` (đang ở đâu) → mã + test liên quan. Chạy `git status` trước, không đè thay đổi có sẵn.

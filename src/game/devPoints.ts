@@ -352,6 +352,21 @@ function latestSteps(): DevStep[] {
       },
     },
     {
+      since: 'Lượt 70', id: 'mx_su_kien_ong_bay', tone: 'yellow',
+      label: '⑩ Sự kiện đang chạy — Ông Bảy nói về nó',
+      sub: 'Bật một sự kiện của thành phố rồi tới gầm cầu: câu đầu tiên của Ông Bảy phải nhắc đúng sự kiện đó, kèm nút “Chỉ con đường tới…” ghim thẳng chỗ làm ăn được. Trước lượt này ông chỉ nói máu/tiền/nợ/mưa',
+      run: () => {
+        const gg = g();
+        // Bật một sự kiện nếu đang không có cái nào — dùng đúng hàm của game nên nhật ký sự kiện, dòng tin
+        // trên radio và ảnh hưởng lên giá/dòng người đều chạy như lúc sự kiện tự tới.
+        if (!R.activeEvents(gg).length) R.startEvent(gg, 'le_hoi');
+        if (!standAt('v_hobo', 1.6, 'Gầm cầu — hỏi Ông Bảy chuyện đang xảy ra trong phố.')) return toast('Không thấy gầm cầu ngoài phố.', 'warn');
+        ctx.player.pitch = -0.05;
+        const n = ctx.npcs.fixed.get('hobo');
+        if (n) setTimeout(() => ctx.acts.talk(n), 140);
+      },
+    },
+    {
       since: 'Lượt 69', id: 'mx_mia_xe', anchor: 'v_mia_xe', tone: 'green',
       label: '① Xe nước mía trong chợ — bán/mua tại chỗ',
       sub: 'Đứng cạnh xe rồi MỞ SẴN bảng của Cô Hai Mía: mua ly 3.000₫ / ly lớn 5.000₫, xin phụ bán một ca',

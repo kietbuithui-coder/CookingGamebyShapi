@@ -4,6 +4,8 @@
 // thiếu nguyên liệu, nợ Hùng Sẹo, sắp mưa, đã khuya. Không được lặp câu khi ghé liền ba lần.
 import { describe, it, expect } from 'vitest';
 import { advice, pickAdvice, rememberAdvice, destOpen, shopFor, shopLandmark, nowText } from '../src/sim/advice';
+import { EVENT_LIST } from '../src/data/world';
+import * as R from '../src/sim/rules';
 import { LANDMARK_LIST, LANDMARK_BY_ID, HOME_LANDMARK } from '../src/data/landmarks';
 import { SPOTS } from '../src/world/layout';
 import { HOUSING } from '../src/data/gear';
@@ -216,5 +218,84 @@ describe('dữ liệu đích đến', () => {
   });
   it('vẫn còn đủ những chỗ người chơi hay tìm nhất', () => {
     for (const id of ['equip', 'market', 'eatery', 'hospital', 'bank', 'board', 'dock', 'camp']) expect(LANDMARK_BY_ID[id], id).toBeTruthy();
+  });
+});
+
+describe('sự kiện đang diễn ra (lượt 70c)', () => {
+  /** Bật một sự kiện bằng chính hàm của game, ở giờ mà sự kiện đó hợp lệ. */
+  const withEvent = (id: string, min: number, sell = false) => {
+    const g = sell ? withStall() : fresh();
+    g.min = min; g.st.hunger = 100; g.st.energy = 100; g.st.health = 100;
+    if (sell) { g.stall.open = true; g.stall.spot = 'cho'; }
+    expect(R.startEvent(g, id), id).toBe(true);
+    return g;
+  };
+
+  it('mỗi sự kiện trong bảng đều có câu riêng — không sự kiện nào bị bỏ quên', () => {
+    // Chạy đủ 22 sự kiện ở nhiều giờ/hoàn cảnh; sự kiện nào cũng phải có ít nhất một hoàn cảnh ra câu.
+    const hats: Record<string, boolean> = {};
+    for (const e of EVENT_LIST) {
+      const spots: [number, boolean][] = [[6, false], [10, true], [15, true], [19, true], [22, false]];
+      for (const [min, sell] of spots) {
+        const g = withEvent(e.id, min * 60, sell);
+        if (advice(g).some((a) => a.id === 'ev_' + e.id)) hats[e.id] = true;
+      }
+      expect(hats[e.id], `sự kiện ${e.id} không có câu nào`).toBe(true);
+    }
+  });
+
+  it('câu về sự kiện luôn trỏ chỗ ĐANG dùng được, và hết sự kiện là câu biến mất', () => {
+    for (const e of EVENT_LIST) {
+      for (const min of [7, 12, 18, 21]) {
+        const g = withEvent(e.id, min * 60, true);
+        for (const a of advice(g).filter((x) => x.id === 'ev_' + e.id)) {
+          expect(LANDMARK_BY_ID[a.place], `${e.id} → ${a.place}`).toBeTruthy();
+          const lm = LANDMARK_BY_ID[a.place];
+          if (!lm.always) expect(destOpen(g, a.place), `${e.id} · ${nowText(g)} → ${lm.name}`).toBe(true);
+        }
+        R.endEvent(g, e.id);
+        expect(advice(g).some((x) => x.id === 'ev_' + e.id), `${e.id} vẫn nói sau khi hết`).toBe(false);
+      }
+    }
+  });
+
+  it('trận bóng: chỉ nói khi quán cà phê còn mở, và nói đúng tên quán', () => {
+    const g = withEvent('bong_da', 18 * 60);
+    const a = advice(g).find((x) => x.id === 'ev_bong_da')!;
+    expect(a.place).toBe('cafe_bongda');
+    expect(a.text).toContain('Bóng Đá');
+    expect(destOpen(g, 'cafe_bongda')).toBe(true);
+    // Hết sự kiện thì đích đó đóng lại — không còn câu “tối nay có trận bóng” lúc 9 giờ sáng hôm sau.
+    R.endEvent(g, 'bong_da');
+    expect(destOpen(g, 'cafe_bongda')).toBe(false);
+  });
+
+  it('việc liên quan tới quầy (kiểm tra, phê bình, khách VIP…) chỉ nói khi đang bán thật', () => {
+    const closed = withEvent('kiem_tra', 10 * 60, true);
+    closed.stall.open = false;
+    expect(advice(closed).some((x) => x.id === 'ev_kiem_tra')).toBe(false);
+    const openG = withEvent('kiem_tra', 10 * 60, true);
+    const a = advice(openG).find((x) => x.id === 'ev_kiem_tra')!;
+    expect(a.place).toBe('spot_cho');          // ghim ĐÚNG chỗ quầy đang đứng
+    expect(a.urgent).toBeGreaterThan(60);      // việc gấp, phải nói trước chuyện lặt vặt
+  });
+
+  it('bão là câu gấp nhất trong mọi câu về sự kiện, và nhắc áo mưa khi chưa có', () => {
+    const g = withEvent('bao', 15 * 60);
+    const a = advice(g)[0];
+    expect(a.id).toBe('ev_bao');
+    expect(a.text.toLowerCase()).toContain('áo mưa');
+    g.gear.aomua = 100;
+    const b = advice(g).find((x) => x.id === 'ev_bao')!;
+    expect(b.text.toLowerCase()).not.toContain('áo mưa mua');
+    expect(destOpen(g, b.place)).toBe(true);
+  });
+
+  it('sự kiện tăng giá nói đúng nhóm hàng và đúng mức tăng lấy từ chính bảng sự kiện', () => {
+    const g = withEvent('gia_haisan', 9 * 60);
+    const a = advice(g).find((x) => x.id === 'ev_gia_haisan')!;
+    expect(a.text).toContain('Hải sản');
+    expect(a.text).toContain('50%');            // `price: { seafood: 1.5 }` ⇒ +50 %
+    expect(a.place).toBe('market');
   });
 });

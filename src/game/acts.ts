@@ -1719,8 +1719,17 @@ export class Acts {
     }
     return out;
   }
-  /** Địa danh theo mã (để lời khuyên của Ông Bảy ghim đúng chỗ). */
-  placeOf(id: string): Way | null { return this.places()[LANDMARK_LIST.findIndex((l) => l.id === id)] ?? null; }
+  /**
+   * Địa danh theo mã (để lời khuyên của Ông Bảy ghim đúng chỗ, kể cả chỗ mới thêm ở lượt 70c).
+   * Dò theo **mã** chứ không theo thứ tự trong `places()`: `places()` bỏ qua đích nào chưa có neo/chỗ bán, nên
+   * lấy theo chỉ số là lệch một cái là ghim sai chỗ.
+   */
+  placeOf(id: string): Way | null {
+    const l = LANDMARK_LIST.find((x) => x.id === id); if (!l) return null;
+    const A = ctx.world.anchors, a = l.anchor ? A[l.anchor] : undefined, sp = l.spot ? spotById(l.spot) : undefined;
+    const p = a ? { x: a.x, z: a.z } : sp ? { x: sp.x, z: sp.z } : null;
+    return p ? { x: p.x, z: p.z, name: l.name } : null;
+  }
   /** Ghim đường đi tới đích đến trong lời khuyên — cùng một cơ chế với Bản đồ (cột sáng vàng + mũi tên). */
   goPlace(id: string): boolean {
     const w = this.placeOf(id); if (!w) return false;

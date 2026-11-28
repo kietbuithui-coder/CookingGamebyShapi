@@ -1743,3 +1743,38 @@ nhựa cũng đổi theo; `h` (chiều cao) giữ nguyên nghĩa nên các chỗ
 `tools/probe/steps/dbg.mjs` (đã xoá sau khi dùng): bấm 8 lần Cài đặt → PIN `438291` → menu hiện **9 mục `mx_*`** đúng
 thứ tự (`gop_y, mia_xe_moi, mia_quan_lui, ban_ghe_quan_mia, mai_cong_truong, ca_phu_ho_dai, nhat_ky70, hinh_khoai_xucxich,
 tron_moi`) rồi 32 mục `tp_*`; ⑨ vào được ván trộn (`đangChơi: true`, 5 đĩa); ảnh ④⑧⑨ chụp lại đúng thứ cần thấy.
+
+### 4.54 Ông Bảy nói đúng chuyện đang diễn ra trong phố (lượt 70c)
+
+Lỗ hổng của lượt 52: lời khuyên đọc đúng máu / tiền / quầy / nợ / mưa / khuya, nhưng **22 sự kiện của thành phố
+thì chỉ radio và WAP biết**. Có lễ hội ở công viên, có trận bóng, chợ lên giá thịt — người dẫn đường duy nhất
+trong game không nói một câu nào. Nay `eventRule(g, e)` trong `sim/advice.ts` trả về **một câu cho mỗi sự kiện**.
+
+**Ba luật của câu sự kiện** (canh bằng `tests/hobo.test.ts`, 6 bài mới):
+
+1. **Đích phải có thật và đang dùng được.** Mỗi câu khai `place` trong `LANDMARK_LIST`; bộ test chạy **cả 22 sự
+   kiện × 4 mốc giờ** rồi đòi `destOpen()` đúng. Hai đích mới chỉ sống khi sự kiện chạy — `cafe_bongda`
+   (`bong_da`) và `net_tro` (`tan_su_kien`) — khai trong `ONLY_IN_EVENT`, nên “tối nay có trận bóng” không còn
+   được nói vào 9 giờ sáng hôm sau.
+2. **Câu về quầy chỉ nói khi đang bán thật.** Đoàn kiểm tra, nhà phê bình, khách VIP, khách quậy, khách quen ăn
+   chịu, đối thủ mở quán: `selling && s.open` mới nói, và ghim **đúng chỗ quầy đang đứng** (`spot_*`). Vì vậy
+   `LANDMARK_LIST` có thêm `spot_vp`, `spot_matbang_tb`, `spot_matbang_dc` — trước đó lời khuyên chỉ biết Cổng Chợ.
+3. **Mức cấp thiết nằm giữa hai nhóm.** Sự kiện chỉ kéo dài vài giờ nên phải nói **trước** chuyện thường
+   (quầy trên vai 60, thiếu nguyên liệu 55) nhưng **sau** chuyện nguy hiểm tới thân (sắp ngất 100, bão 102,
+   đoàn kiểm tra 90). Lần đầu đặt 44–66 thì câu sự kiện rơi xuống mục “Hỏi chuyện khác” — ảnh probe cho thấy
+   ngay; đã nâng +6 và kiểm lại bằng ảnh.
+
+**Sửa thêm một lỗi thật gặp lúc làm:** `acts.placeOf(id)` lấy `places()[indexOf(id)]`, mà `places()` **bỏ qua**
+đích nào chưa có neo/chỗ bán ⇒ thêm ba đích mới là chỉ số lệch, ghim đường đi sang chỗ khác. Nay `placeOf` dò
+thẳng theo **mã** rồi tự đổi `anchor`/`spot` thành toạ độ.
+
+**Chữ trong câu** lấy từ chính `EVENTS[id]`: mức tăng giá đọc từ `price` (hải sản `1.5` ⇒ “+50%”), thời gian còn
+lại tính từ `g.ev.active[].until` (“còn khoảng 10 tiếng nữa”), nên không có con số viết tay nào trôi khỏi luật.
+
+**Đo.** `tsc` sạch · `vitest` **722 bài / 61 tệp** xanh · `build:pages` OK · probe `steps/ev70c.mjs`: menu ẩn có
+**10 mục `mx_*`** (thêm ⑩), bấm ⑩ thì bật `le_hoi`, đứng cách Ông Bảy **1,6 m**, câu chính là câu sự kiện, nút
+“Chỉ con đường tới Cổng Công Viên”, bấm nút thì `acts.way = Cổng Công Viên (41; −37,3)` — đúng `SPOTS.cv`,
+HUD báo “149 m”. `errors: none`.
+
+**Sổ tra cứu mới:** `SUA_NHANH.md` — bảng “muốn đổi cái này thì mở tệp nào”, 9 nhóm, kèm luật của menu ẩn và ba
+thứ không đo được ở đây, để lần sau sửa khỏi phải dò lại từ đầu.

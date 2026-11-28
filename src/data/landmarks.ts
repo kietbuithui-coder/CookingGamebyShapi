@@ -58,10 +58,20 @@ export const LANDMARK_LIST: Landmark[] = [
   { id: 'xeom', name: 'Chú Ba xe ôm', anchor: 'v_chu_ba' },
   { id: 'board', name: 'Bảng việc làm', anchor: 'board', always: true },
   { id: 'dock', name: 'Bến bốc hàng', anchor: 'v_dock' },
+  // ── Chỗ để Ông Bảy chỉ khi có SỰ KIỆN đang diễn ra (lượt 70c). Chỉ tới được khi sự kiện còn hiệu lực:
+  // `isOpenOf` trong `sim/advice.ts` đóng những đích này lại khi sự kiện đã hết, nên không bao giờ thành lời
+  // chỉ đường chết. Tên ở đây là tên chỗ, KHÔNG phải tên sự kiện (sự kiện đổi luôn, tên chỗ thì cố định).
+  { id: 'cafe_bongda', name: 'Quán cà phê Bóng Đá', anchor: 'tv_bongda' },
+  { id: 'net_tro', name: 'Quán net Xóm Lao Động', anchor: 'v_net' },
   // Chỗ dựng quầy: dùng toạ độ của `SPOTS`, không có neo riêng.
   { id: 'spot_cho', name: 'Cổng Chợ', spot: 'cho', always: true },
   { id: 'spot_cv', name: 'Cổng Công Viên', spot: 'cv', always: true },
   { id: 'spot_hem', name: 'Hẻm Công Nhân', spot: 'hem', always: true },
+  // Ba chỗ dựng quầy còn lại cũng lên bản đồ: lời khuyên của Ông Bảy cần ghim đúng chỗ mình đang bán (ví dụ khi
+  // đoàn kiểm tra đang đi từng quầy) chứ không thể chỉ về Cổng Chợ khi quán nằm ở Phố Văn Phòng.
+  { id: 'spot_vp', name: 'Phố Văn Phòng', spot: 'vp', always: true },
+  { id: 'spot_matbang_tb', name: 'Mặt bằng Phố Văn Phòng', spot: 'matbang_tb', always: true },
+  { id: 'spot_matbang_dc', name: 'Mặt bằng Khu Căn Hộ', spot: 'matbang_dc', always: true },
 ];
 export const LANDMARK_BY_ID: Record<string, Landmark> = Object.fromEntries(LANDMARK_LIST.map((l) => [l.id, l]));
 /** Tra đích đến theo khoá neo (dùng cho Bản đồ: neo nào có tên thì hiện tên đó). */
