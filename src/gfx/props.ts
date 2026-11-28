@@ -14,6 +14,40 @@ export function ingModel(mb: MB, d: IngDef, x: number, y: number, z: number, s =
     case 'long': mb.rod(x, y + 0.028 * s, z, 0.028 * s, 0.19 * s, c, 0, Math.PI / 2, 7, r(-0.3, 0.3), 0.016 * s); mb.sph(x - 0.1 * s, y + 0.028 * s, z, 0.02 * s, 0.02 * s, 0.02 * s, c2, 5); break;
     case 'corn': mb.rod(x, y + 0.035 * s, z, 0.034 * s, 0.2 * s, c, 0, Math.PI / 2, 8, 0, 0.022 * s); mb.rod(x - 0.07 * s, y + 0.035 * s, z, 0.04 * s, 0.1 * s, c2, 0, Math.PI / 2, 6, 0, 0.03 * s); break;
     case 'loaf': mb.sph(x, y + 0.035 * s, z, 0.11 * s, 0.036 * s, 0.042 * s, c, 8, shade(c, 1.15)); for (let i = -1; i <= 1; i++) mb.box(x + i * 0.05 * s, y + 0.062 * s, z, 0.012 * s, 0.01 * s, 0.05 * s, c2); break;
+    // ── Lượt 70b: HAI CỦ/CÂY TRƯỚC ĐÂY DÙNG CHUNG 'long' (một khúc trụ tròn) nên nhìn không ra con gì ──
+    // Khoai lang: củ THON HAI ĐẦU, bụng phình lệch về một bên, vỏ tím đỏ có vệt sẫm dọc thân và mấy chỗ
+    // lồi lõm nhỏ; hai đầu nhọn màu vàng ngà (chỗ vỏ mỏng lộ ruột). Nằm nghiêng, không đứng thẳng.
+    case 'sweetpotato': {
+      // Củ là MỘT khối liền: thân trụ thuôn chạy dọc trục Z + hai đầu vát nhọn + một chỗ phình ở giữa.
+      // Trước đây ghép ba elipxoit nên nhìn ra ba cục tròn dính nhau như con sâu.
+      const L = 0.2 * s, Rr = 0.03 * s;
+      mb.rod(x, y + Rr, z, Rr, L, c, Math.PI / 2, 0, 12, 0, Rr);
+      for (const sz of [-1, 1]) mb.cyl(x, y + Rr, z + sz * L * 0.5, Rr, L * 0.09, c, 10, Rr * 0.18);   // đầu vát
+      mb.sph(x, y + Rr, z - L * 0.06, Rr * 1.12, Rr * 1.06, Rr * 1.34, c, 12);                         // bụng phình
+      // hai đầu lộ ruột vàng cam (vỏ khoai mỏng, chỗ đuôi hay trầy)
+      for (const sz of [-1, 1]) mb.sph(x, y + Rr, z + sz * L * 0.53, Rr * 0.3, Rr * 0.3, Rr * 0.22, c2, 7);
+      // vệt sẫm dọc vỏ + vài mắt củ lồi
+      for (let i = -1; i <= 1; i++) mb.box(x + i * 0.002 * s, y + Rr * 1.92, z + i * L * 0.19, Rr * 0.22, 0.003 * s, L * 0.18, shade(c, 0.84));
+      for (let i = 0; i < 3; i++) { const a = 0.5 + i * 2.1; mb.sph(x + Math.cos(a) * Rr * 0.72, y + Rr * 1.1 + Math.sin(a) * Rr * 0.22, z + (i - 1) * L * 0.22, Rr * 0.16, Rr * 0.12, Rr * 0.16, shade(c, 1.25), 5); }
+      break;
+    }
+    // Xúc xích: cây tròn đỏ hồng, HAI ĐẦU BẤM KẸP (chỗ buộc dây) dẹt lại, vỏ bóng có mấy nếp gấp ngang
+    // và vệt cháy nâu khi nướng. Đặt nằm nghiêng như cây xúc xích vừa gắp khỏi vỉ.
+    case 'sausage': {
+      const L = 0.2 * s, Rr = 0.031 * s, tilt = 0.2;
+      mb.rod(x, y + Rr * 1.02, z, Rr, L, c, 0, Math.PI / 2, 9, tilt, Rr * 0.96);        // thân, hơi thuôn
+      for (const sx of [-1, 1]) {
+        // đầu bấm kẹp: một khoanh dẹt + núm dây buộc
+        mb.cyl(x + sx * L * 0.49, y + Rr * 1.02, z, Rr * 0.9, 0.006 * s, shade(c, 0.9), 8, Rr * 0.9);
+        mb.rod(x + sx * L * 0.53, y + Rr * 1.02, z, Rr * 0.3, 0.026 * s, c2, 0, Math.PI / 2, 5, tilt);
+      }
+      // nếp gấp ngang trên vỏ (ba khoanh hơi sẫm) — nhìn ra là vỏ xúc xích chứ không phải khúc gỗ
+      for (let i = -1; i <= 1; i++) mb.cyl(x + i * L * 0.22, y + Rr * 1.02, z, Rr * 1.02, 0.004 * s, shade(c, 0.86), 9, Rr * 1.02);
+      // vệt bóng trên lưng (ánh dầu) + mấy vết nướng nâu
+      mb.box(x, y + Rr * 1.94, z, L * 0.7, 0.003 * s, Rr * 0.28, shade(c, 1.28));
+      for (let i = 0; i < 3; i++) mb.box(x + (i - 1) * L * 0.24, y + Rr * 1.9, z + Rr * 0.3, L * 0.1, 0.003 * s, Rr * 0.2, 0x7a3520);
+      break;
+    }
     // ── Ba loại bánh của lượt 54, mỗi loại một hình riêng (trước đây dùng chung 'long'/'round' nên
     // bấm vào đâu cũng ra một cục giống nhau) ──
     // Bánh mì que pa-tê: ổ bánh mì THU NHỎ và DÀI đúng kiểu bánh mì que — thon hai đầu, nứt dọc trên lưng,

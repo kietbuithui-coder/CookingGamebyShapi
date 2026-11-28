@@ -5,7 +5,10 @@ export type Cat = 'meat' | 'seafood' | 'veg' | 'starch' | 'spice' | 'drink' | 's
 export type Shape = 'round' | 'long' | 'leafy' | 'head' | 'slab' | 'bird' | 'fish' | 'shrimp' | 'crab' | 'squid' | 'shell' | 'balls' | 'bag' | 'nest'
   | 'bottle' | 'jar' | 'can' | 'carton' | 'box' | 'egg' | 'block' | 'mushroom' | 'stack' | 'roll' | 'cubes' | 'coal' | 'gascan' | 'loaf' | 'corn'
   // Bánh sẵn của lượt 54 — mỗi loại một hình riêng, không dùng chung 'round'/'long' nữa:
-  | 'baguette' | 'sesame' | 'choux';
+  | 'baguette' | 'sesame' | 'choux'
+  // Lượt 70b: khoai lang và xúc xích cũng tách khỏi 'long' — trước đây cả hai là MỘT khúc trụ tròn
+  // y hệt củ cà rốt/cây sả nên nhìn không ra con gì.
+  | 'sweetpotato' | 'sausage';
 export interface Eat { h?: number; t?: number; m?: number; hp?: number; /** hồi thanh thể lực (thang 0–1, 0,3 = đầy thêm 30 %) */ st?: number; }
 export interface IngDef {
   id: string; name: string; cat: Cat; unit: string; price: number; kg: number; shelf: number; cold: boolean;
@@ -28,7 +31,7 @@ const RAW: Row[] = [
   ['ga', 'Thịt gà', 'meat', 'lạng', 9000, 0.1, 128, 1, 'bird', 0xf2d2a9, 0xe9b98a],
   ['vit', 'Thịt vịt', 'meat', 'lạng', 9500, 0.1, 128, 1, 'bird', 0xe6c090, 0xd9a673],
   // Đồ nguội chế biến sẵn (xúc xích, giò, chả, đậu hũ) cũng ×2 hạn dùng — để trong quầy đỡ mất oan.
-  ['xucxich', 'Xúc xích', 'meat', 'cây', 5000, 0.05, 120, 1, 'long', 0xc8523e, 0xa83c2c],
+  ['xucxich', 'Xúc xích', 'meat', 'cây', 5000, 0.05, 120, 1, 'sausage', 0xc8523e, 0xa83c2c],
   ['gio', 'Giò lụa', 'meat', 'lạng', 18000, 0.1, 80, 1, 'roll', 0xf0e2cf, 0x4f8a3f],
   ['pate', 'Pa-tê', 'meat', 'hộp', 25000, 0.2, 96, 1, 'can', 0x9a6a4e, 0xe9c23a],
   // ── Hải sản
@@ -45,7 +48,7 @@ const RAW: Row[] = [
   // Giữ nguyên khoai tây / khoai lang / hành tây / tỏi / gừng / sả — nhóm này vốn đã rất bền.
   ['carot', 'Cà rốt', 'veg', 'củ', 3000, 0.12, 360, 0, 'long', 0xf0802a, 0x4f9a3f],
   ['khoaitay', 'Khoai tây', 'veg', 'củ', 4000, 0.15, 300, 0, 'round', 0xc9a36a, 0xb08a52],
-  ['khoailang', 'Khoai lang', 'veg', 'củ', 5000, 0.2, 300, 0, 'long', 0xa8527a, 0x8a3f62],
+  ['khoailang', 'Khoai lang', 'veg', 'củ', 5000, 0.2, 300, 0, 'sweetpotato', 0xa8527a, 0xe8973a],
   ['hanhtay', 'Hành tây', 'veg', 'củ', 4000, 0.15, 300, 0, 'round', 0xe9d7b0, 0xc9a86a],
   ['toi', 'Tỏi', 'veg', 'củ', 3000, 0.04, 600, 0, 'round', 0xf3efe6, 0xd9cdb8],
   ['cachua', 'Cà chua', 'veg', 'quả', 3000, 0.1, 216, 0, 'round', 0xe23b2e, 0x4f9a3f],

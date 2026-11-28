@@ -15,11 +15,13 @@ export interface LogEntry {
 export const CHANGELOG: LogEntry[] = [
   {
     v: 'Lượt 70',
-    tag: 'Nút Góp ý & báo lỗi có chỗ lưu riêng, xe nước mía dời ra sát cổng chợ, quán mía lùi quầy và kê bàn ghế, công trường dỡ mái bạt, ca phụ hồ dài hơn một phút',
+    tag: 'Nút Góp ý & báo lỗi có chỗ lưu riêng, xe nước mía dời ra sát cổng chợ, quán mía lùi quầy và kê bàn ghế, công trường dỡ mái bạt, khoai lang & xúc xích vẽ lại, mini-game bánh tráng trộn gọn gàng hơn',
     items: [
       'Hàng nút góc phải có thêm nút “Góp ý & báo lỗi”. Bấm vào là một bảng riêng: chọn Báo lỗi / Góp ý / Chuyện khác, gõ điều muốn nói rồi bấm Gửi — góp ý nằm lại trên máy, mở ra đọc lại, sửa, xoá từng cái hoặc xoá hết. Phím G cũng mở bảng này.',
       'Mỗi góp ý tự ghi kèm mã riêng, ngày giờ, chỗ đang đứng, khu phố và bản dựng đang chơi, nên người làm game dựng lại được đúng cảnh mà không phải hỏi lại. Nút “Sao chép hết” gom mọi góp ý thành một khối chữ để dán vào tin nhắn gửi đi.',
       'Xe nước mía dời ra sát cổng trái của Chợ Xóm Chiều, quay mặt vào trong chợ: lối đi chính giữa chợ trống trở lại, không còn tấm biển to chắn ngang tầm mắt dãy sạp. Bảng giá thu về một tấm nhỏ gắn hẳn trên nóc xe bằng hai cọc, nên không còn cảnh biển treo lơ lửng hay thân xe biến mất khi đi xa.',
+      'Khoai lang và xúc xích được vẽ lại: khoai lang là củ thon hai đầu, bụng phình, vỏ tím có mắt củ và hai đầu lộ ruột vàng; xúc xích là cây đỏ hồng có nếp gấp ngang trên vỏ và hai đầu bấm kẹp — trước đây cả hai đều là một khúc trụ tròn giống hệt củ cà rốt.',
+      'Mini-game bánh tráng trộn làm lại phần hình: topping trên đĩa giờ là đồ ăn thật bày sát đĩa — đậu phộng là hạt có vỏ lụa, rau thơm là ngọn có cuống và lá, chanh là lát mỏng sáu múi, tương ớt là chén sốt có vệt rưới quanh miệng, bánh tráng là nắm sợi nằm ngang. Trước đây gói đậu phộng là cả cái hộp nâu dựng đứng giữa đĩa, còn mẩu gắp được là một khối vuông to rơi vào hộp.',
       'Quán Nước Mía 3K: quầy và máy ép lùi sâu vào trong, mặt tiền để trống nên đứng ngoài đường nhìn thẳng vào là thấy trục ép quay, thấy xô nước. Bàn nhựa kê ngay phía trước quầy, hai bên chừa lối đi ở giữa, ghế xếp quanh bàn và ly đặt sẵn trên mặt bàn — khách mua xong là có chỗ ngồi uống tại chỗ.',
       'Công trường bỏ hẳn mái bạt: tấm bạt sọc xanh–trắng trước đây trông như mái hiên quán ăn mọc giữa công trường nên đã dỡ, cùng bốn cọc chống. Chòi tuyển thợ còn bàn ghi tên, sổ điểm danh, hai ghế chờ, còn bảng “TUYỂN PHỤ HỒ” dán thẳng lên vách rào xanh.',
       'Ca phụ bán nước mía giờ là một cái máy ép thật: canh con chạy trên thanh rồi bấm quay cần đúng vùng xanh mới ra nước, bấm lệch là nước tràn ra ngoài. Rót đủ 6 ly thì hết ca, số ly chuẩn quyết định tiền thưởng.',

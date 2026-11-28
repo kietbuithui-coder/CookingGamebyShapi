@@ -1043,8 +1043,32 @@ bóng đổ thay vì xấp bánh mỏng cùng màu đĩa — xấp cũ trông nh
 trong `cook.ts` thêm `!== 'tron'`), không cần dụng cụ (`STEP_TOOLS.tron = []`, món vẫn chỉ cần dao thớt), và biểu tượng
 món trong thực đơn (`dishIcon`) đọc màu topping từ bước `tron` như đọc bước `assemble`.
 
-**Kiểm:** `tests/tron58.test.ts` (10 bài) · probe `tools/probe/steps/tron58.mjs` (2 ảnh `tron58_ban.png`,
-`tron58_thanh_pham.png`) · menu test 3 mục `t58_*` · console sạch.
+**Lượt 70 (bổ sung) — làm lại phần hình, theo lời người chơi *“khối vuông thả xuống quá xấu”*.** Bản lượt 58 gọi
+`ingModel` **nguyên con** cho mỗi topping, nên gói đậu phộng thành **cả cái hộp nâu to** dựng đứng giữa đĩa, rau thơm
+thành chùm que xoè như ngôi sao, còn tương ớt và chanh thì bị đè thêm một cục tròn vô nghĩa. Mẩu gắp được thì luôn là
+một khối hộp to rơi vào hộp. Nay mỗi thứ có hình ăn được bày **sát mặt đĩa** (`TronGame.topping()`), và mẩu bay mang
+đúng hình của thứ đang gắp:
+
+| Topping | Trên đĩa | Mẩu bay vào hộp |
+|---|---|---|
+| bánh tráng | nắm **sợi** nằm ngang chồng chéo, có bóng đổ mờ | một sợi mảnh |
+| đậu phộng | hạt có **vỏ lụa** + đường nứt, rắc lấm tấm | một hạt |
+| rau thơm | ba **ngọn** (cuống + 4 lá có gân) | một chiếc lá |
+| chanh | lát **mỏng 2,5 mm**, vỏ chỉ còn vành mỏng, 6 múi | một lát mỏng |
+| tương ớt | chén sốt đỏ + vệt rưới quanh miệng chén | một vệt sốt |
+
+Hộp thành phẩm cũng đổi theo: trước là cầu bẹp + vòng xuyến (nhìn như đống hạt xốp), nay sợi bánh tráng nằm gọn trong
+lòng hộp (dài ≤ 0,13 m, nghiêng ≤ 0,55 rad để không thò ra ngoài thành), chanh là hai lát trên mặt, tương ớt là vệt đỏ.
+Hộp lùi về `z = 0,31` và vòng rải lùi về `TRON_CZ = −0,10` để **không bị cắt ở mép dưới màn hình 844 × 390**.
+
+**Khoai lang & xúc xích** (cùng lượt): cả hai trước đây dùng chung hình `'long'` — một khúc trụ tròn y hệt củ cà rốt/cây
+sả. Nay có hình riêng: `'sweetpotato'` = **một khối liền** (trụ thuôn + bụng phình + hai đầu vát, đầu lộ ruột vàng cam,
+vệt sẫm dọc vỏ và mấy mắt củ) và `'sausage'` = cây đỏ hồng có **nếp gấp ngang** trên vỏ, **hai đầu bấm kẹp** dẹt + núm
+dây buộc, vệt bóng dầu trên lưng. Trên vỉ nướng món dài được xếp **rộng hơn** (`gap 0,15` thay 0,115) và **xoay mỗi cái
+một góc riêng** — trước đây ba củ nằm sát nhau thành một thanh ngang liền khối.
+
+**Kiểm:** `tests/tron58.test.ts` (10 bài) · `tests/top70.test.ts` (6 bài) · probe `tools/probe/steps/tron58.mjs` (2 ảnh
+`tron58_ban.png`, `tron58_thanh_pham.png`) · menu test 3 mục `t58_*` · console sạch.
 
 ## 5. Điều khiển cảm ứng
 
@@ -1268,6 +1292,7 @@ giờ 546 → 550, người chơi ở `(37,2; 55,1)`; gọi điện ⇒ hẹn +3
 - `tests/xeom.test.ts` — lượt 66: Chú Ba là người thật (neo + xe + biển ở đúng gầm cầu, giờ 5–22h30), giá theo quãng/mưa/chở nặng, ơn thân quen + sàn 2.000₫, xe nhanh hơn đi bộ ~3 lần, gọi điện (cước, 2 lần/ngày, hết pin/ngoài giờ/nợ tiền cơm thì từ chối, hẹn 3 phút, hẹn quá 4 tiếng tự bỏ), danh bạ một dòng, tin radio chỉ hiện đúng giờ + đúng giá.
 - `tests/nau59.test.ts` — lượt 60: tia chạm của bàn nấu ăn cắt ở nhiều độ cao (sửa lỗi không cho được nguyên liệu vào nồi).
 - `tests/jobs59.test.ts` — lượt 59: trần việc làm thêm mỗi ngày (bốc cá 2 ca, chạy bàn 3 ca, vác 20 bao), đếm số còn lại không âm, reset qua ngày, và quét mã nguồn canh số chép tay + bảng việc làm đủ 7 dòng.
+- `tests/top70.test.ts` — lượt 70: khoai lang & xúc xích có hình riêng (và cách xếp trên vỉ nướng), topping bánh tráng trộn là đồ ăn thật, mẩu bay đúng hình.
 - `tests/tron58.test.ts` — lượt 58: bánh tráng trộn có mini game riêng — 5 topping rải ngẫu nhiên mỗi ván, thứ tự do máy gọi, chấm điểm theo số lần chạm nhầm/chậm.
 - `tests/camduong57.test.ts` — lượt 57: rào cấm đường chặn cả xe cộ (quay đầu ở vạch, không sinh xe trong đoạn cấm).
 - `tests/mat56.test.ts` — lượt 56: Bà Chín Ve Chai có nước da rám nắng riêng, không ai khác bị đổi da theo.
