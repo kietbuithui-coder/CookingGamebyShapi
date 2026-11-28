@@ -2,13 +2,14 @@
 //
 // Tách khỏi `game/acts.ts` cho dễ đọc: `acts.talk()` chỉ cần một dòng `case` gọi vào đây. Mọi hàm nhận `host`
 // (đối tượng có `D()` và `g`) để không phải import `Acts` (vòng import).
-import { Game } from '../sim/state';
-import { money } from '../core/util';
+import { Game, STAT_MAX } from '../sim/state';
+import { clamp, money } from '../core/util';
 import { toast } from '../core/bus';
 import { ctx } from './ctx';
 import * as G from '../data/gang';
 import { FIXED } from '../data/people';
 import * as GG from '../sim/gang';
+import * as R from '../sim/rules';
 
 /** Câu mô tả ngắn dùng ngay trong nút hội thoại (“Băng Hẻm · bậc 2/6 …”). */
 export const gangLine = (g: Game) => GG.gangLine(g);
@@ -104,13 +105,23 @@ export function gangMenu(host: TalkHost, gangId: G.GangId, n: Npc | undefined) {
       fn: () => { const p = GG.claimTurf(g); if (p) { toast(`Nhận ${money(p)} tiền bảo kê góc chợ.`, 'good', 'skull'); gangMenu(host, gangId, n); } },
     });
   }
+  // Con dao hai lưỡi (lượt 72): mục “cái giá” đứng ngay trong menu, không giấu ở đâu — người chơi phải thấy
+  // mình đang mất gì để chọn tiếp hay dừng.
+  opts.push({ t: 'Băng đang làm mình mất gì?', sub: GG.downsideLine(g), fn: () => costScreen(host, gangId, n) });
+  // Đàn em (bậc 5+) — dắt theo thì có tiền hơn nhưng bị để ý gấp rưỡi.
+  if (GG.maxCrew(g) > 0) {
+    const crew = GG.crewOf(g);
+    opts.push({
+      t: crew > 0 ? `Đang dắt ${crew} đàn em — cho về bớt` : `Dắt đàn em theo (tối đa ${GG.maxCrew(g)})`,
+      sub: crew > 0 ? `Bị bắt thì đàn em gánh ${Math.round(GG.crewCover(g) * 100)}% tiền phạt, mà bị để ý +${Math.round((GG.crewHeatMul(g) - 1) * 100)}%` : 'Đi đông thì oai, mà công an cũng nhìn theo cả nhóm',
+      fn: () => { const c = GG.setCrew(g, crew > 0 ? 0 : GG.maxCrew(g)); toast(c > 0 ? `Dắt ${c} đàn em theo.` : 'Cho đàn em về hết.', 'info', 'skull'); gangMenu(host, gangId, n); },
+    });
+  }
+  // Bốn cách rời băng, cách nào cũng có giá (lượt 72) — thay nút “rửa tay” miễn phí của lượt 71.
   opts.push({
-    t: 'Con muốn rửa tay, ra băng',
-    sub: `Mất toàn bộ ${Math.round(g.gang?.respect ?? 0)} uy tín trong băng`,
-    fn: () => host.D(n?.name ?? def.name, n, 'Ra thì ra, mà ra rồi đừng quay lại đây làm ăn. Mày chắc chưa?', [
-      { t: 'Con chắc. Rửa tay.', fn: () => { GG.leaveGang(g); toast('Đã ra băng. Băng giữ hộ bao nhiêu hàng cấm thì mất hết.', 'info', 'skull'); } },
-      { t: 'Thôi, con ở lại.', fn: () => gangMenu(host, gangId, n) },
-    ]),
+    t: 'Muốn rời băng',
+    sub: 'Bốn cách, cách nào cũng mất thứ gì — vào xem rồi tính',
+    fn: () => leaveScreen(host, gangId, n),
   });
   host.D(n?.name ?? def.name, n, `${OPEN[gangId].member}\n${GG.gangLine(g)} · kho hàng cấm: ${GG.stockValue(g) > 0 ? money(GG.stockValue(g)) : 'chưa có gì'}.`, [...opts, bye]);
 }
@@ -129,7 +140,10 @@ export function jobMenu(host: TalkHost, gangId: G.GangId, n: Npc | undefined) {
         const r = GG.doJob(g, j.id);
         if (!r) { toast('Không làm được việc này lúc này.', 'warn'); return; }
         toast(`Xong việc: ${money(r.pay)}${r.got ? ` + ${r.got.n} ${contraName(r.got.id)}` : ''}.`, 'good', 'cash');
-        jobMenu(host, gangId, n);
+        // Lượt 72: việc nào có cảnh thì kể lại chuyến đi, và trong cảnh có **lựa chọn** — làm tới thì ăn thêm,
+        // mà mất tinh thần/sức khoẻ/uy tín. Không còn cảnh nào “bấm một cái là xong” vô nghĩa.
+        if (G.GANG_CUTS[j.id]) cutScene(host, gangId, j.id, 0, n);
+        else jobMenu(host, gangId, n);
       },
     };
   });
@@ -203,3 +217,189 @@ export function contrabandMenu(host: TalkHost, gangId: G.GangId, n: Npc | undefi
 
 /** Tên món hàng cấm viết thường — hàm nhỏ cho câu chữ ở trên gọn. */
 export const contraName = (id: string) => G.CONTRABAND[id]?.name.toLowerCase() ?? id;
+
+// ═════════════════════ LƯỠI THỨ HAI — CÁI GIÁ ═════════════════════
+
+/**
+ * Cảnh “đi làm việc cho băng”: kể từng đoạn (mỗi đoạn một nút “Tiếp”), tới cuối thì bắt buộc chọn —
+ * **rút lui** (mất 4 uy tín trong băng, băng coi là nhát) hay **làm tới cùng** (ăn thêm tiền, mất tinh thần,
+ * sức khoẻ, bị để ý, có việc mất cả uy tín ngoài phố). Không có lựa chọn nào miễn phí.
+ */
+export function cutScene(host: TalkHost, gangId: G.GangId, jobId: string, beat: number, n: Npc | undefined) {
+  const g = host.g, c = G.GANG_CUTS[jobId], def = G.GANGS[gangId];
+  if (!c) { jobMenu(host, gangId, n); return; }
+  // Đây là **lời kể chuyến đi**, không phải đại ca đang nói: để tên người nói là “Chuyến đi” cho khỏi hiểu lầm
+  // là Hùng Sẹo kể chuyện mình đi thu nợ. (Ảnh probe lượt 72 cho thấy đúng chỗ này khó hiểu.)
+  const who = 'Chuyến đi';
+  if (beat < c.beats.length) {
+    host.D(who, undefined, `${c.title}\n\n${c.beats[beat]}`, [
+      { t: beat + 1 < c.beats.length ? 'Tiếp…' : 'Rồi sao nữa?', fn: () => cutScene(host, gangId, jobId, beat + 1, n) },
+    ]);
+    return;
+  }
+  const cost = c.cost;
+  const parts: string[] = [];
+  if (cost.mood) parts.push(`tinh thần ${cost.mood}`);
+  if (cost.health) parts.push(`sức khoẻ ${cost.health}`);
+  if (cost.heat) parts.push(`bị để ý +${cost.heat}`);
+  if (cost.rep) parts.push(`uy tín ngoài phố ${cost.rep}`);
+  host.D(who, undefined, `${c.beats[c.beats.length - 1]}\n\nChọn đi. Làm tới thì được thêm ${money(c.bonus)} — mà ${parts.join(', ')}. Rút thì băng coi mày nhát, mất 4 uy tín.`, [
+    {
+      t: `Làm tới — ăn thêm ${money(c.bonus)}`,
+      sub: `Phải trả: ${parts.join(' · ')}`,
+      fn: () => {
+        const r = GG.resolveCut(g, jobId, true);
+        if (r) toast(`Xong chuyến: thêm ${money(r.bonus)} — ${parts.join(', ')}.`, 'warn', 'skull');
+        afterCut(host, gangId, n);
+      },
+    },
+    {
+      t: c.stop,
+      sub: 'Không mất gì ngoài 4 uy tín trong băng',
+      fn: () => {
+        GG.resolveCut(g, jobId, false);
+        toast('Bạn rút lui — băng ghi sổ là nhát, mất 4 uy tín.', 'info', 'skull');
+        afterCut(host, gangId, n);
+      },
+    },
+  ]);
+}
+/** Sau cảnh: nếu có tin xấu đang chờ thì mở luôn, không thì về sổ việc. */
+function afterCut(host: TalkHost, gangId: G.GangId, n: Npc | undefined) {
+  const t = G.GANG_TROUBLE.find((x) => x.id === host.g.gang?.trouble);
+  if (t) troubleScreen(host, gangId, t, n);
+  else jobMenu(host, gangId, n);
+}
+
+/** Màn hình “cái giá”: mọi thứ đang bị mất vì theo băng, tính bằng số thật của ván này. */
+export function costScreen(host: TalkHost, gangId: G.GangId, n: Npc | undefined) {
+  const g = host.g, def = G.GANGS[gangId], d = GG.downside(g), rank = GG.rankOf(g);
+  const fear = Math.round(GG.fearRate(g) * 100), rent = GG.gangRentExtra(g);
+  const body = `Theo băng thì có tiền, mà cũng có giá — tao nói thẳng để mày khỏi kêu sau.\n\n`
+    + `• Khách bỏ đi vì sợ dính tới băng: ${fear}% (bậc ${rank.tier}/6). Người trong xóm thấy mày đi với đàn em là họ né quán.\n`
+    + `• Phí chỗ đội thêm: ${rent > 0 ? `${money(rent)}/ngày` : 'chưa có (chưa đặt sạp cố định)'} — chủ mặt bằng biết mày có băng thì đòi phần.\n`
+    + `• Công an để ý thêm: +${d.heat} điểm mỗi ngày, cộng với mức đang có là ${Math.round(g.wanted)}/100.\n`
+    + `• Bị khám thấy hàng cấm: mất hàng, mất tiền phạt, ngồi buồng, tụt 30 uy tín trong băng và 4 uy tín ngoài phố.\n`
+    + `• Làm việc lớn: mỗi chuyến làm tới cùng đều trừ tinh thần, có chuyến trừ sức khoẻ và uy tín với phố (có khi tới −8).\n`
+    + `• Rời băng: không có đường sạch — bốn cách, cách nào cũng mất tiền, uy tín, hoặc cả hai.\n\n`
+    + `Đổi lại: bậc ${rank.tier} cho mày ăn chia ${Math.round(rank.cut * 100)}% và mở ${G.CONTRA_LIST.filter((c) => c.minTier <= rank.tier).length}/4 món hàng. Cân đi.`;
+  host.D(n?.name ?? def.name, n, body, [
+    { t: 'Xem bốn cách rời băng', fn: () => leaveScreen(host, gangId, n) },
+    { t: 'Quay lại', fn: () => gangMenu(host, gangId, n) },
+    { t: 'Thôi, con đi.' },
+  ]);
+}
+
+/** Bốn cách rời băng — mỗi cách ghi rõ mất gì TRƯỚC khi bấm. */
+export function leaveScreen(host: TalkHost, gangId: G.GangId, n: Npc | undefined) {
+  const g = host.g, def = G.GANGS[gangId], opts: Opt[] = [];
+  for (const w of GG.leaveWays(g)) {
+    const poor = g.cash < w.cost;
+    const loses: string[] = [];
+    if (w.cost) loses.push(`mất ${money(w.cost)}`);
+    loses.push(`mất hết bậc (đang bậc ${GG.rankOf(g).tier}/6)`);
+    if (w.rep) loses.push(`uy tín ngoài phố ${w.rep}`);
+    if (w.mood) loses.push(`tinh thần ${w.mood}`);
+    if (w.watchDays) loses.push(`bị băng để mắt ${w.watchDays} ngày`);
+    opts.push({
+      t: w.name,
+      sub: poor ? `Cần ${money(w.cost)} — còn thiếu ${money(w.cost - g.cash)}` : loses.join(' · '),
+      off: poor,
+      fn: () => host.D(n?.name ?? def.name, n, `${w.line}\n\nChắc chưa? Bấm rồi là không lùi được.`, [
+        {
+          t: 'Chắc. Làm vậy đi.',
+          fn: () => {
+            const r = GG.leaveBy(g, w.id);
+            if (!r) { toast('Không đủ tiền cho cách này.', 'warn', 'cash'); return; }
+            // Rời băng thì hàng cấm trong kho mất hết — băng không giữ hộ người ngoài.
+            g.gang = null;
+            toast(`Đã rời ${def.name}. ${loses.join(', ')}.`, 'warn', 'skull', true);
+          },
+        },
+        { t: 'Thôi, để con tính lại.', fn: () => leaveScreen(host, gangId, n) },
+      ]),
+    });
+  }
+  host.D(n?.name ?? def.name, n, `Rời băng hả?\n\nRời thì được, mà ${GG.rankOf(g).tier > 3 ? 'bậc cao thế này' : 'chỗ đứng hiện tại'} thì bỏ không dễ. Bốn cách, mày chọn:`, [
+    ...opts,
+    { t: 'Thôi, con ở lại.', fn: () => gangMenu(host, gangId, n) },
+  ]);
+}
+
+/** Tin xấu của băng (lượt 72): đòi phần, đòi tiền chạy việc, khách sợ, công an gọi. Nộp hay chịu — đều có giá. */
+export function troubleScreen(host: TalkHost, gangId: G.GangId, t: G.GangTrouble, n: Npc | undefined) {
+  const g = host.g, def = G.GANGS[gangId], canPay = g.cash >= t.cash;
+  const payLine = t.cash > 0 ? `Nộp ${money(t.cash)}.` : 'Làm theo ý băng.';
+  const opts: Opt[] = [
+    {
+      t: payLine,
+      sub: canPay ? 'Mất tiền nhưng không mất uy tín trong băng' : `Không đủ tiền — thiếu ${money(t.cash - g.cash)}`,
+      off: t.cash > 0 && !canPay,
+      fn: () => {
+        if (t.cash > 0) { R.spend(g, t.cash, 'other'); }
+        g.wanted = clamp(g.wanted + t.heat, 0, 100);
+        if (g.gang) delete g.gang.trouble;
+        toast(`Đã xử lý: ${t.title.toLowerCase()}.`, 'info', 'skull');
+        afterTrouble(host, gangId, n);
+      },
+    },
+    {
+      t: 'Không. Kệ nó.',
+      sub: t.refuseText,
+      fn: () => {
+        const r = t.refuse;
+        if (g.gang) {
+          GG.addRespect(g, -r.respect);
+          delete g.gang.trouble;
+        }
+        g.wanted = clamp(g.wanted + r.heat, 0, 100);
+        g.rep = clamp(g.rep + r.rep, 0, 100);
+        g.st.mood = clamp(g.st.mood + r.mood, 0, STAT_MAX);
+        toast(`${t.refuseText} (uy tín trong băng −${r.respect}${r.rep ? `, uy tín phố ${r.rep}` : ''})`, 'bad', 'skull', true);
+        afterTrouble(host, gangId, n);
+      },
+    },
+  ];
+  if (t.cash > 0 && !canPay) opts.push({
+    t: 'Xin khất tới mai',
+    sub: 'Băng giữ nguyên món nợ và để mày đi kiếm tiền — nhưng không quên',
+    fn: () => { g.flags.gangTroubleDay = g.day; delete g.gang?.trouble; toast('Băng cho khất tới mai. Nhớ kiếm tiền.', 'warn', 'cash'); },
+  });
+  // Câu mở đầu chỉ là tiêu đề tin; tên băng đã nằm ở dòng tên người nói nên đừng lặp lại (ảnh probe lượt 72).
+  host.D(def.name, undefined, `${t.title}\n\n${t.text}`, [
+    ...opts,
+    { t: 'Để con nghĩ đã.', fn: () => gangMenu(host, gangId, n) },
+  ]);
+}
+function afterTrouble(host: TalkHost, gangId: G.GangId, n: Npc | undefined) { gangMenu(host, gangId, n); }
+
+// ═════════════════════ ĐỤNG ĐỘ HAI PHE (lượt 72) ═════════════════════
+
+/**
+ * Bị băng đối thủ chặn giữa đường — màn hình chỉ hiện khi người chơi **đang ở trong băng** và bước vào địa bàn
+ * bên kia (`sim/gang.ts` → `clashAt`). Ba lựa chọn, lựa chọn nào cũng có giá, và câu chữ nói trước cái giá đó
+ * để người chơi không bị “úp”.
+ */
+export function clashScreen(host: TalkHost, c: GG.Clash) {
+  const g = host.g, rival = G.GANGS[c.rival], mine = g.gang ? G.GANGS[g.gang.id as G.GangId] : null;
+  const opts: Opt[] = [
+    {
+      t: 'Nói chuyện phải phép',
+      sub: `Bậc ${GG.rankOf(g).tier}/6 — bậc 4 trở lên thì bên kia nể, dưới thì bị khinh`,
+      fn: () => { const r = GG.resolveClash(g, 'noi'); if (r) toast(r.line, r.respect > 0 ? 'info' : 'warn', 'skull', true); },
+    },
+    {
+      t: 'Quay đầu, đi đường khác',
+      sub: 'Không bị đụng, nhưng băng mình coi là nhát: −10 uy tín',
+      fn: () => { const r = GG.resolveClash(g, 'quay'); if (r) toast(r.line, 'warn', 'skull'); },
+    },
+    {
+      t: 'Đứng lại, không nhường',
+      sub: `Mất sức khoẻ, bị để ý +12, uy tín phố −3 — đổi lại +8 uy tín trong băng`,
+      fn: () => { const r = GG.resolveClash(g, 'dung'); if (r) toast(r.line, 'bad', 'skull', true); },
+    },
+  ];
+  // Tên người nói là băng đối thủ, và **không** nhắc lại “Băng Hẻm ↔ Băng Chợ Cá” trong câu: bản đầu in cả
+  // hai nên câu bị trùng tên hai lần (ảnh probe lượt 72).
+  host.D(rival.name, undefined, `${c.line}\n\nMày đang là người của ${mine ? mine.name : 'một băng khác'}.`, opts);
+}

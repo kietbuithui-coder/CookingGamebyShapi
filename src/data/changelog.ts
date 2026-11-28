@@ -14,6 +14,21 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 72',
+    tag: 'Băng đảng thành con dao hai lưỡi: khách bỏ đi vì sợ băng, phí chỗ đội thêm, công an để ý mỗi ngày; cảnh đi làm việc có lựa chọn phải trả giá; bốn cách rời băng mà cách nào cũng mất; đụng độ băng đối thủ, đàn em đi theo, và app Sổ băng trên điện thoại',
+    items: [
+      'Băng đảng giờ có giá thật: theo băng thì khách bớt ghé quán (bậc 1 mất 6% khách, đại ca mất 36%), chủ mặt bằng biết mình có băng thì đòi thêm phí chỗ (tới 60% phí gốc), và mỗi ngày bị công an để ý thêm 1–6 điểm tuỳ bậc. Mấy con số này trừ thẳng vào doanh thu, nên tiền băng kiếm được không còn là tiền chùa.',
+      'Mỗi việc của băng giờ có một cảnh kể lại chuyến đi: canh kho lúc ba giờ sáng có hai thằng lạ đi ngang, bốc hàng thì thùng bung ra thấy hàng không nhãn, đi giao thì công an đứng ở ngã tư nhìn theo cái thùng, giữ hàng qua đêm thì có tiếng gõ cửa, đi thu nợ thì người nợ là bà bán tạp hoá biết mình từ hồi còn bán vé số.',
+      'Cảnh nào cũng bắt phải chọn: làm tới thì ăn thêm tiền nhưng mất tinh thần, có chuyến mất sức khoẻ và uy tín với phố; rút lui thì không mất tiền nhưng băng coi là nhát và trừ uy tín. Không còn cảnh nào bấm một cái là xong mà không có giá.',
+      'Rời băng không còn là nút “rửa tay” miễn phí. Bốn cách: trả nợ máu (mất 400.000₫), phản băng đi khai với công an (không mất tiền nhưng mất 25 uy tín ngoài phố và bị cả xóm nhớ mặt), bỏ đi đổi khu khác bán (mất 800.000₫), hoặc làm ăn thua lỗ để băng tự đuổi (mất nhiều tinh thần nhất). Cách nào cũng mất hết bậc đã gây dựng.',
+      'Đụng độ hai phe có thật: từ bậc 3 trở lên, bước sang địa bàn băng đối thủ là bị chặn. Nói chuyện phải phép thì bậc cao được nể, bậc thấp bị khinh; quay đầu thì không ai đụng mà băng mình trừ 10 uy tín; đứng lại thì hai bên xô nhau giữa đường — mất sức khoẻ, bị để ý, uy tín phố giảm, đổi lại băng mình ghi công.',
+      'Băng đòi phần thật: từ ngày thứ ba trong băng, mỗi ngày có thể có tin xấu — băng đòi phần tháng, đòi tiền chạy việc, khách quen sợ không dám ghé, hoặc công an gọi lên phường hỏi thăm. Nộp thì mất tiền mà yên, không nộp thì mất uy tín trong băng và bị để mắt.',
+      'Bậc 5 dắt được hai đàn em, đại ca dắt ba: đi đông thì tiền công bị chia thêm mà bị để ý gấp rưỡi, đổi lại bị bắt thì đàn em gánh bớt 35% tiền phạt mỗi đứa — và bị bắt là đàn em bỏ đi hết.',
+      'Điện thoại có thêm app Sổ băng, chỉ hiện khi đang theo băng: xem bậc, uy tín còn thiếu bao nhiêu, kho hàng cấm, và nhất là mục “cái giá đang phải chịu” — bao nhiêu phần trăm khách bỏ đi, phí chỗ đội thêm bao nhiêu, công an để ý bao nhiêu. Mua hàng và nhận việc vẫn phải ra chỗ đại ca.',
+      'Menu ẩn (bấm tám lần nút Cài đặt rồi nhập mã) có thêm mục theo băng để tự thấy mặt trái: mở bảng “cái giá”, mở sẵn một cảnh làm việc để thử hai lựa chọn, và bật thử một tin xấu của băng.',
+    ],
+  },
+  {
     v: 'Lượt 71',
     tag: 'Băng đảng: hai phe đối đầu, sáu bậc thăng chức theo uy tín, năm việc làm trả công theo ca, bốn món hàng cấm kèm án phạt nặng — bị bắt là mất hàng, mất tiền, vào buồng',
     items: [
@@ -106,17 +121,6 @@ export const CHANGELOG: LogEntry[] = [
       'Vào Cài đặt, bấm 7 lần chữ “Cài đặt” rồi nhập 7777 thì nay chỉ còn một nhóm: các chỗ dịch chuyển nhanh (tiệm đồ nghề, chợ, công viên, căn hộ, gầm cầu, MiniMart…).',
       'Toàn bộ mục thử của các lượt trước đã được xoá — menu không còn là bãi rác test, mở lên là thấy đúng thứ dùng được.',
       'Bài kiểm thử canh đúng điều đó: nhóm duy nhất phải tên “Địa điểm”, mọi mã mục phải bắt đầu bằng “tp_”, và danh sách phải còn đủ các chỗ quen thuộc.',
-    ],
-  },
-  {
-    v: 'Lượt 62',
-    tag: 'Đá viên tan chậm gấp 3 lần, và chỗ hiển thị ghi “độ lạnh” thay vì “tươi/hỏng”',
-    items: [
-      'Đá viên lâu tan gấp 3 lần: để ngoài trời trước đây chỉ 3,4 giờ là tan sạch, nay dùng được khoảng 11 giờ; để trong thùng đá thì giữ được hơn 5 ngày (trước chưa tới 2 ngày).',
-      'Túi đá, kho quầy và ba lô không còn ghi “tươi …%” hay “hỏng” cho đá — vì đá tan chứ không ôi, ghi “hỏng” làm người chơi tưởng mua phải hàng ôi.',
-      'Nhãn mới: trên nửa thùng là “lạnh 82 %”, dưới nửa là “đá tan 40 %”, gần hết là “tan hết”.',
-      'Đêm qua mà đá tan hết, sáng ra có câu báo riêng “Đá trong thùng tan hết” thay vì gộp vào danh sách “đồ hỏng phải bỏ”.',
-      'App Quản lý cửa hàng và tin trên điện thoại cũng đọc đúng: đá không còn nằm trong mục “đồ sắp hỏng”, chỉ còn cảnh báo thay đá kẻo thịt cá hỏng theo.',
     ],
   },
 ];

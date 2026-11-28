@@ -241,6 +241,44 @@ function latestSteps(): DevStep[] {
   const g = () => ctx.g;
   const all: DevStep[] = [
     {
+      since: 'Lượt 72', id: 'mx_bang_cai_gia', tone: 'yellow',
+      label: '① Băng là con dao hai lưỡi — mở bảng “cái giá”',
+      sub: 'Dựng ván đang ở bậc 4 của băng Hẻm rồi mở thẳng bảng cái giá: mất bao nhiêu phần trăm khách, phí chỗ đội thêm bao nhiêu, công an để ý mấy điểm mỗi ngày',
+      run: () => {
+        const gg = g();
+        if (!gg.gang) { gg.cash = Math.max(gg.cash, 500000); GANGSIM.joinGang(gg, 'hem'); }
+        if (gg.gang) { gg.gang.respect = Math.max(gg.gang.respect, 300); gg.gang.tier = 4; gg.gang.paid = Math.max(gg.gang.paid, 6); }
+        if (!standAt('v_shark', 1.7, 'Sào huyệt băng Hẻm — xem cái giá của việc theo băng.')) return toast('Không thấy sào huyệt băng Hẻm.', 'warn');
+        const n = ctx.npcs.fixed.get('shark');
+        if (n) setTimeout(() => ctx.acts.talk(n), 140);
+      },
+    },
+    {
+      since: 'Lượt 72', id: 'mx_bang_canh_lam', tone: 'yellow',
+      label: '② Thử một cảnh đi làm — hai lựa chọn đều có giá',
+      sub: 'Dựng ván bậc 4, đứng trước đại ca: mở Sổ việc rồi chọn “Đi thu nợ thuê” — cảnh kể chuyện bà bán tạp hoá, cuối cảnh phải chọn làm tới (mất tinh thần, uy tín phố) hay rút',
+      run: () => {
+        const gg = g();
+        if (!gg.gang) { gg.cash = Math.max(gg.cash, 500000); GANGSIM.joinGang(gg, 'hem'); }
+        if (gg.gang) { gg.gang.respect = Math.max(gg.gang.respect, 300); gg.gang.tier = 4; gg.st.energy = 100; }
+        if (!standAt('v_shark', 1.7, 'Sào huyệt băng Hẻm — thử một cảnh đi làm việc.')) return toast('Không thấy sào huyệt băng Hẻm.', 'warn');
+        const n = ctx.npcs.fixed.get('shark');
+        if (n) setTimeout(() => ctx.acts.talk(n), 140);
+      },
+    },
+    {
+      since: 'Lượt 72', id: 'mx_bang_tin_xau', tone: 'yellow',
+      label: '③ Bật thử một tin xấu của băng',
+      sub: 'Đặt sẵn tin “băng đòi phần tháng này” rồi đợi vài giây: hộp thoại hiện ra với hai lựa chọn nộp tiền hay chịu mất uy tín — cả hai đều có giá',
+      run: () => {
+        const gg = g();
+        if (!gg.gang) { gg.cash = Math.max(gg.cash, 500000); GANGSIM.joinGang(gg, 'hem'); }
+        if (gg.gang) { gg.gang.trouble = 'nop_phan'; gg.gang.since = Math.min(gg.gang.since, gg.day - 3); }
+        toast('Tin xấu của băng sẽ hiện trong vài giây — để ý hộp thoại.', 'info', 'skull');
+        ctx.ui.closePanel();
+      },
+    },
+    {
       since: 'Lượt 71', id: 'mx_bang_dang', tone: 'yellow',
       label: '① Theo băng đảng — đứng trước đại ca, mở sổ việc',
       sub: 'Dựng sẵn một ván đang ở bậc 2 của băng Hẻm, đủ tiền, đứng ngay trước Hùng Sẹo: xem sáu bậc, nhận một ca việc, mở sổ hàng cấm, rồi thử mua một món để thấy giá và mức phạt',

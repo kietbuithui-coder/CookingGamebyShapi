@@ -1814,3 +1814,43 @@ bao giờ thấy; Ông Bảy có câu riêng cho cả ba (`advice.ts` → `event
 
 **Bản lưu:** `SAVE_VERSION` **17**, `GangState` + `cleanGang()` (chỉ nhận phe có thật, mã hàng có trong bảng, số
 kẹp trần); bản lưu cũ ⇒ `gang = null`, không hỏng ván.
+
+
+---
+
+## Lượt 72 — BĂNG ĐẢNG LÀ CON DAO HAI LƯỠI
+
+Người chơi dặn: *“làm hết cái thứ còn thiếu và đảm bảo băng đảng là con dao hai lưỡi”*. Lượt 71 cho **lưỡi thứ
+nhất** (tiền, uy tín, bậc, hàng cấm). Lượt 72 làm **lưỡi thứ hai** cho nặng, và làm nốt ba thứ còn thiếu.
+
+### Lưỡi thứ hai — cái giá (đều là số thật, trừ vào ván)
+- **Khách bỏ đi vì sợ băng**: `GANG_DOWNSIDE[].fear` 6% → 36% theo bậc. Áp trong `arrivalRate()` bằng
+  `fearMul(g)`. Cộng thêm +8% nếu đang bị băng cũ để mắt (`flags.gangWatch`), +6% nếu từng đi khai băng.
+- **Phí chỗ đội thêm**: `rent` 0 → 60% phí gốc, cộng trong `stallRent()` (⚠ không gọi ngược `stallRent` từ
+  `gangRentExtra` — đệ quy vô hạn).
+- **Công an để ý**: `heat` +1 → +6 mỗi ngày, cộng ở `newDay()` kèm toast.
+- **Cảnh đi làm việc** (`GANG_CUTS`): mỗi việc một cảnh kể 3 đoạn, cuối cảnh **bắt buộc chọn** — làm tới (ăn
+  thêm tiền, mất tinh thần/sức khoẻ/bị để ý/uy tín phố) hay rút (mất 4 uy tín trong băng). Không lựa chọn nào
+  miễn phí; test canh “cảnh nào cũng có ít nhất một cái giá”.
+- **Tin xấu của băng** (`GANG_TROUBLE`): đòi phần tháng, đòi tiền chạy việc, khách quen bỏ đi, công an gọi lên
+  phường. Từ ngày thứ 3 trong băng, tối đa một tin/ngày, **không hai ngày liền**. Nộp tiền hay chịu — cả hai
+  đều mất.
+- **Bốn cách rời băng** (`GANG_LEAVES`): trả nợ máu 400k · phản băng (mất 25 uy tín phố, bị để mắt 10 ngày) ·
+  bỏ đi đổi khu 800k · làm ăn thua lỗ để bị đuổi (mất nhiều tinh thần nhất). Cách nào cũng mất hết bậc.
+
+### Ba thứ còn thiếu của lượt 71 — đã làm
+1. **Đụng độ hai phe**: `clashAt()` — từ bậc 3, bước sang địa bàn đối thủ là bị chặn (mỗi ngày một lần).
+   Ba lựa chọn: nói chuyện (bậc ≥4 thì được nể, dưới thì bị khinh), quay đầu (−10 uy tín băng), đứng lại
+   (mất sức khoẻ theo bậc, +12 bị để ý, −3 uy tín phố, +8 uy tín băng).
+2. **Đàn em đi theo**: bậc 5 dắt 2, đại ca dắt 3. `crewCut` chia thêm 12%/đứa, `crewHeatMul` +25%/đứa bị để ý,
+   `crewCover` gánh 35% tiền phạt mỗi đứa khi bị bắt — và **bị bắt là đàn em bỏ đi hết**.
+3. **App “Sổ băng” trên điện thoại**: chỉ hiện khi đang theo băng (`appsOf(m, inGang)`), chỉ **đọc** — bậc, uy
+   tín còn thiếu, “cái giá” (khách −%, phí chỗ, CA/ngày), kho hàng cấm. Mua hàng/nhận việc vẫn phải tới đại ca.
+
+### Lỗi tự bắt được khi tự thử (probe)
+- Menu chính của lượt 71 bị `slice(0,7)` cắt mất mục hàng cấm/phe phái khi có đủ 5 việc → tách **sổ việc** riêng.
+- Cờ `flags.gangWatch` mặc định 0 so `>= g.day` thành **đúng ở ngày 1** ⇒ cộng oan 8% sợ băng.
+- `stallRent` ↔ `gangRentExtra` gọi vòng ⇒ `RangeError: Maximum call stack size exceeded`.
+- Cảnh đi làm hiện tên “Hùng Sẹo” như thể đại ca đi thu nợ ⇒ đổi tên người nói thành **“Chuyến đi”**.
+- App Sổ băng trên máy cục gạch/nắp gập bị cắt đáy ⇒ viết ngắn, bỏ thanh tiến trình.
+- Câu đụng độ in trùng tên hai băng hai lần.

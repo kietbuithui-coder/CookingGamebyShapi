@@ -56,6 +56,21 @@ Quy ước cột **“Sửa ở”**: `tệp:dòng` của lần rà gần nhất
 | Dữ liệu băng trong bản lưu | `src/sim/state.ts` → `GangState`, `cleanGang` | `SAVE_VERSION` = **17**; bản lưu cũ tự thành “chưa theo băng” |
 | Ba sự kiện băng đảng | `src/data/world.ts` → `EVENT_LIST` (`bang_goi`, `bang_doi`, `bang_dap`) + `src/sim/advice.ts` | điều kiện `need: 'gang'` / `'rival'` ở `sim/rules.ts` → `eligible` |
 
+## 3c. Con dao hai lưỡi của băng (lượt 72)
+
+| Muốn đổi | Sửa ở | Ghi chú |
+|---|---|---|
+| Mức **khách bỏ đi / phí chỗ / công an để ý** theo từng bậc | `src/data/gang.ts` → `GANG_DOWNSIDE` | ba con số trừ thẳng vào doanh thu; `tests/gang.test.ts` canh bậc sau phải nặng hơn bậc trước |
+| Chỗ khách bị trừ trong công thức khách | `src/sim/rules.ts` → `arrivalRate()` (`gangFearMul`) | **đừng** cộng ở `stallAppeal` — nơi đó còn dùng cho bảng xem trước |
+| Phí chỗ đội thêm | `src/sim/rules.ts` → `stallRent()` + `src/sim/gang.ts` → `gangRentExtra()` | ⚠ `gangRentExtra` **không được gọi lại `stallRent`** (đệ quy vô hạn — đã dính một lần) |
+| Mức bị để ý cộng mỗi ngày | `src/sim/rules.ts` → `newDay()` (`dailyGangHeat`) | có toast nói rõ số vừa cộng |
+| Cảnh đi làm việc (chữ kể + cái giá) | `src/data/gang.ts` → `GANG_CUTS` | mỗi cảnh phải có ít nhất một cái giá; `resolveCut()` trong `sim/gang.ts` áp số |
+| Bốn cách rời băng | `src/data/gang.ts` → `GANG_LEAVES` | cách nào cũng `tierLoss > 0` (test canh) |
+| Tin xấu của băng (đòi phần, khách sợ, công an gọi) | `src/data/gang.ts` → `GANG_TROUBLE` + `sim/gang.ts` → `troubleToday()` | cờ `g.gang.trouble` do lớp luật đặt, `acts.update` mở hộp thoại |
+| Đụng độ băng đối thủ | `src/sim/gang.ts` → `clashAt()/resolveClash()` + `src/game/gangTalk.ts` → `clashScreen()` | chỉ từ bậc 3; mỗi ngày một lần |
+| Đàn em đi theo (bậc 5–6) | `src/sim/gang.ts` → `maxCrew/crewCut/crewCover` | dắt theo: ăn ít hơn, bị để ý hơn, bị bắt thì gánh bớt |
+| App **Sổ băng** trên điện thoại | `src/data/phone.ts` (`appsOf(m, inGang)`) + `src/ui/phoneUI.ts` → `gangBody()` | chỉ hiện khi `g.gang`; **màn máy chỉ ~16 em** — viết ngắn, đừng thêm thanh/dòng dài |
+
 ## 4. Hình khối 3D
 
 | Muốn đổi | Sửa ở | Bẫy |

@@ -9,9 +9,10 @@
 // Nguyên tắc số học — dễ đọc, và quan trọng là **cái giá luôn lớn hơn cái lời**: bị bắt một chuyến là mất
 // nhiều hơn tiền lời của ba chuyến, cộng giờ tù và uy tín ngoài phố. Test canh đúng điều đó.
 import { Game, addStack, hourOf } from './state';
-import { clamp } from '../core/util';
+import { clamp, rnd } from '../core/util';
 import * as G from '../data/gang';
 import * as R from './rules';
+import { SPOTS } from '../world/layout';
 
 /** Người chơi đã vào băng chưa. */
 export const inGang = (g: Game) => (g.gang?.id ? true : false);
@@ -115,10 +116,11 @@ export function doJob(g: Game, id: string): { pay: number; respect: number; heat
   if (g.gang.jobDay !== g.day) { g.gang.jobDay = g.day; g.gang.jobsToday = 0; }
   g.gang.jobsToday = (g.gang.jobsToday ?? 0) + 1;
   g.gang.paid = (g.gang.paid ?? 0) + 1;
-  const pay = Math.round((j.pay * (1 - rank.cut)) / 1000) * 1000;
+  // Đàn em (bậc 5+) ăn thêm một phần công, đổi lại đi theo thì bị để ý gấp rưỡi — hai lưỡi của chính nó.
+  const pay = Math.round((j.pay * (1 - rank.cut) * (1 - crewCut(g))) / 1000) * 1000;
   R.earn(g, pay, 'side');
   addRespect(g, j.respect);
-  g.wanted = clamp(g.wanted + j.heat, 0, 100);
+  g.wanted = clamp(g.wanted + j.heat * crewHeatMul(g), 0, 100);
   g.st.energy = clamp(g.st.energy - 8, 0, R.STAT_MAX);
   let got: { id: string; n: number } | undefined;
   if (j.reward) {
@@ -166,9 +168,12 @@ export const bustJail = (g: Game) => G.contrabandJail(g.gang?.stock ?? {});
  * và **tụt uy tín ngoài phố**. Trả số liệu để câu thoại nói đúng chuyện vừa xảy ra.
  */
 export function bust(g: Game): { fine: number; paid: number; jail: number; respect: number } {
-  const fine = bustFine(g), jail = bustJail(g);
+  // Đàn em gánh bớt: có đứa đi cùng thì công an bắt cả nhóm, phần mình nhẹ hơn — nhưng không bao giờ bằng 0.
+  const fine = Math.round((bustFine(g) * (1 - crewCover(g))) / 1000) * 1000, jail = bustJail(g);
   const paid = Math.min(g.cash, fine);
   if (paid > 0) { g.cash -= paid; g.led.other += paid; }
+  // Bị bắt thì đàn em bỏ đi hết (không ai ở lại với đứa đang bị giữ).
+  if (g.gang?.crew) g.gang.crew = 0;
   const lostRespect = 30;
   g.gang && (g.gang.stock = {});
   g.gang && (g.gang.respect = Math.max(0, (g.gang.respect ?? 0) - lostRespect));
@@ -193,9 +198,226 @@ export function claimTurf(g: Game): number {
   return pay;
 }
 
+/** Tên băng đang theo (chuỗi rỗng nếu chưa theo) — dùng trong câu thông báo của `rules.ts`. */
+export const gangName = (g: Game): string => (g.gang ? G.GANGS[g.gang.id as G.GangId].name : '');
+
 /** Câu mô tả tình trạng băng, dùng cho hội thoại và app điện thoại: “Bậc 3/6 · Giữ hàng · 128 uy tín”. */
 export const gangLine = (g: Game): string => {
   if (!g.gang) return 'Chưa theo băng nào.';
   const def = G.GANGS[g.gang.id as G.GangId], r = rankOf(g);
   return `${def.name} · bậc ${r.tier}/6 ${r.name} · ${Math.round(g.gang.respect ?? 0)} uy tín`;
 };
+
+// ═════════════════════ LƯỠI THỨ HAI ═════════════════════
+// Từ đây trở xuống là **cái giá** của việc theo băng. Người chơi dặn “đảm bảo băng đảng là con dao hai lưỡi”,
+// nên mấy hàm này cố ý **trừ** chứ không cộng: quán vắng khách, phí chỗ đội lên, công an để ý, tinh thần tụt,
+// và bốn cách rời băng — cách nào cũng có giá.
+
+/** Mặt trái theo bậc đang đứng (chưa theo băng ⇒ toàn số 0). */
+export const downside = (g: Game): G.GangDownside =>
+  g.gang ? G.downsideAt(rankOf(g).tier) : { tier: 0, fear: 0, rent: 0, heat: 0, note: '' };
+
+/**
+ * Tỷ lệ khách bị mất vì người ta sợ dính tới băng (0…0,5).
+ * Cộng thêm phần “bị để mắt” sau khi rời băng (`flags.gangWatch` — băng cũ còn dòm mình tới ngày đó).
+ */
+export function fearRate(g: Game): number {
+  let f = downside(g).fear;
+  // Lỗi đã dính: viết `(flags.gangWatch ?? 0) >= g.day` thì ngày 1 của ván mới (day 0, chưa có cờ) cũng thành
+  // “đang bị băng để mắt”, cộng oan 8%. Phải đòi mốc thật > 0.
+  const watch = g.flags.gangWatch ?? 0;
+  if (watch > 0 && watch >= g.day) f += 0.08;
+  if ((g.flags.gangRatted ?? 0) > 0) f += 0.06;      // từng đi khai băng: cả xóm nhớ mặt
+  return clamp(f, 0, 0.5);
+}
+/** Hệ số khách tới quán sau khi trừ phần sợ băng (1 = không mất ai). */
+export const fearMul = (g: Game) => 1 - fearRate(g);
+
+/**
+ * Phí chỗ đội thêm vì băng “đỡ đầu” — cộng vào phí chỗ mỗi ngày.
+ * Tự tính phí gốc ở đây thay vì gọi `rules.stallRent`: `stallRent` **cũng** gọi hàm này để cộng phần băng, nên
+ * gọi ngược lại là đệ quy vô hạn (đã dính một lần: `RangeError: Maximum call stack size exceeded` trong
+ * `tests/stall.test.ts`).
+ */
+export function gangRentExtra(g: Game): number {
+  const s = g.stall;
+  if (!g.gang || s.tier < 3 || s.where !== 'placed' || !s.spot) return 0;
+  const base = SPOTS.find((p) => p.id === s.spot)?.fee ?? 0;
+  if (base <= 0) return 0;
+  return Math.round((base * downside(g).rent) / 1000) * 1000;
+}
+/** Mức bị để ý cộng thêm mỗi ngày vì đang ở trong băng (bậc càng cao càng nhiều). */
+export const gangHeatPerDay = (g: Game): number => downside(g).heat;
+
+/** Gọi đầu ngày: cộng mức bị để ý vì băng. Trả số vừa cộng (0 = không có gì). */
+export function dailyGangHeat(g: Game): number {
+  const h = gangHeatPerDay(g);
+  if (h <= 0) return 0;
+  g.wanted = clamp(g.wanted + h, 0, 100);
+  return h;
+}
+
+/**
+ * Chơi hết một cảnh “đi làm việc cho băng”. `go = true` là làm tới cùng: ăn thêm tiền, nhưng mất tinh thần,
+ * sức khoẻ, bị để ý và có khi mất uy tín ngoài phố. `go = false` là rút lui: không mất gì ngoài một ít uy tín
+ * trong băng (băng coi là nhát).
+ */
+export function resolveCut(g: Game, jobId: string, go: boolean): { bonus: number; respect: number; heat: number; mood: number; health: number; rep: number } | null {
+  const c = G.GANG_CUTS[jobId];
+  if (!c || !g.gang) return null;
+  if (!go) {
+    addRespect(g, -4);
+    return { bonus: 0, respect: -4, heat: 0, mood: 0, health: 0, rep: 0 };
+  }
+  R.earn(g, c.bonus, 'side');
+  g.st.mood = clamp(g.st.mood + c.cost.mood, 0, R.STAT_MAX);
+  g.st.health = clamp(g.st.health + c.cost.health, 0, R.STAT_MAX);
+  g.wanted = clamp(g.wanted + c.cost.heat, 0, 100);
+  g.rep = clamp(g.rep + c.cost.rep, 0, 100);
+  addRespect(g, 6);
+  g.flags.gangHard = (g.flags.gangHard ?? 0) + 1;
+  return { bonus: c.bonus, respect: 6, heat: c.cost.heat, mood: c.cost.mood, health: c.cost.health, rep: c.cost.rep };
+}
+
+/** Tình huống xấu hôm nay có tới không: 60% mỗi ngày, chỉ khi đã ở trong băng ≥ 3 ngày, không hai ngày liền. */
+export function troubleToday(g: Game): G.GangTrouble | null {
+  if (!g.gang) return null;
+  if (g.day - (g.gang.since ?? 0) < 3) return null;
+  if ((g.flags.gangTroubleDay ?? -99) === g.day - 1) return null;
+  if ((g.flags.gangTroubleDay ?? -99) === g.day) return null;
+  const pool = G.GANG_TROUBLE.filter((t) => t.minTier <= rankOf(g).tier);
+  if (!pool.length) return null;
+  return pool[(g.day * 7 + (g.gang.respect | 0)) % pool.length];
+}
+/** Bị đòi tiền nhưng không có tiền: băng tự trừ uy tín (đau hơn mất tiền với người chơi nghèo). */
+export function troubleUnpaid(g: Game, t: G.GangTrouble) { addRespect(g, -(t.respect || 30)); }
+
+/** Bốn cách rời băng — cách nào cũng mất thứ gì. Lọc theo bậc đang đứng và số tiền đang có. */
+export const leaveWays = (g: Game): G.GangLeave[] =>
+  !g.gang ? [] : G.GANG_LEAVES.filter((l) => l.minTier <= rankOf(g).tier);
+
+/**
+ * Rời băng theo một cách. Trả số liệu thật để câu thoại nói đúng — không có đường nào “sạch”.
+ * `tra_no` cần đủ tiền; thiếu thì trả `null` để hội thoại nói “còn thiếu bao nhiêu”.
+ */
+export function leaveBy(g: Game, id: string): { cash: number; rep: number; mood: number; watch: number } | null {
+  const w = G.GANG_LEAVES.find((l) => l.id === id);
+  if (!w || !g.gang) return null;
+  if (g.cash < w.cost) return null;
+  if (w.cost > 0) R.spend(g, w.cost, 'other');
+  g.rep = clamp(g.rep + w.rep, 0, 100);
+  g.st.mood = clamp(g.st.mood + w.mood, 0, R.STAT_MAX);
+  if (w.watchDays > 0) g.flags.gangWatch = g.day + w.watchDays;
+  if (id === 'pha_dao') { g.flags.gangRatted = (g.flags.gangRatted ?? 0) + 1; g.wanted = clamp(g.wanted + 10, 0, 100); }
+  if (id === 'bo_di') g.flags.gangMoved = (g.flags.gangMoved ?? 0) + 1;
+  leaveGang(g);
+  return { cash: w.cost, rep: w.rep, mood: w.mood, watch: w.watchDays };
+}
+
+/** Tóm tắt “cái giá” đang phải chịu — dùng cho bảng chi tiết và app điện thoại. */
+export function downsideLine(g: Game): string {
+  if (!g.gang) return '';
+  const d = downside(g), f = Math.round(fearRate(g) * 100), r = gangRentExtra(g);
+  return `Khách bỏ đi vì sợ băng: ${f}% · phí chỗ đội thêm ${r > 0 ? `${Math.round(r / 1000)}.000₫/ngày` : 'chưa có'} · bị để ý +${d.heat}/ngày`;
+}
+
+// ───────────────────────── ĐÀN EM ĐI THEO (bậc 5–6) ─────────────────────────
+/**
+ * Bậc 5 mở quyền **dắt đàn em**: đi giao hàng có đứa đi kèm. Đàn em không phải “cộng thêm tiền miễn phí” —
+ * nó làm **mức bị để ý tăng gấp rưỡi** (ba thằng đi thành nhóm thì ai cũng nhìn) và **ăn chia thêm một phần**;
+ * đổi lại, bị bắt thì đàn em gánh bớt một phần tiền phạt. Đây là con dao hai lưỡi thu nhỏ của cả hệ thống.
+ */
+export const maxCrew = (g: Game): number => {
+  const t = g.gang ? rankOf(g).tier : 0;
+  return t >= 6 ? 3 : t >= 5 ? 2 : 0;
+};
+/** Đang dắt mấy đứa (0 = đi một mình). */
+export const crewOf = (g: Game): number => (g.gang?.crew ?? 0);
+/** Dắt thêm/bớt đàn em (không vượt `maxCrew`). Trả số đang dắt sau khi đổi. */
+export function setCrew(g: Game, n: number): number {
+  if (!g.gang) return 0;
+  g.gang.crew = Math.max(0, Math.min(maxCrew(g), Math.floor(n)));
+  return g.gang.crew;
+}
+/** Hệ số mức bị để ý khi làm việc có đàn em đi kèm (1 = đi một mình). */
+export const crewHeatMul = (g: Game) => 1 + crewOf(g) * 0.25;
+/** Phần tiền phạt được đàn em gánh khi bị bắt (0,35 mỗi đứa, tối đa 0,7 — có đứa chạy trước). */
+export const crewCover = (g: Game) => clamp(crewOf(g) * 0.35, 0, 0.7);
+/** Tiền công bị chia thêm cho đàn em (mỗi đứa 12% phần của mình). */
+export const crewCut = (g: Game) => clamp(crewOf(g) * 0.12, 0, 0.3);
+
+// ───────────────────────── ĐỤNG ĐỘ HAI PHE (lượt 72) ─────────────────────────
+/**
+ * Đụng độ với băng đối thủ: người chơi đi vào địa bàn bên kia thì bị chặn, và phải chọn — nói chuyện, quay
+ * đầu, hay đứng lại. Mọi lựa chọn đều có giá: **nói chuyện** thì có thể qua được nhưng bị nhớ mặt (heat +
+ * quan hệ xấu hơn); **quay đầu** thì mất uy tín trong băng mình (băng coi là nhát); **đứng lại** thì dễ thành
+ * ẩu đả — mất sức khoẻ, bị để ý, và băng đối thủ ghi tên.
+ *
+ * Không có cửa nào “đi qua mà không ai thấy”: đây là cái giá của việc có phe.
+ */
+export interface Clash {
+  /** Băng đối thủ đang chặn đường. */
+  rival: G.GangId;
+  /** Câu chặn đường. */
+  line: string;
+  /** Đi qua được hay không (tính sẵn để hội thoại nói đúng). */
+  pass: boolean;
+}
+/** Quan hệ với băng đối thủ (−100…0): càng thấp thì càng khó đi qua địa bàn bên kia. */
+export const rivalRel = (g: Game): number => {
+  if (!g.gang) return 0;
+  const key = 'rel_' + G.GANGS[g.gang.id as G.GangId].rival;
+  return Math.min(0, g.flags[key] ?? 0);
+};
+/**
+ * Đi vào địa bàn băng đối thủ: có bị chặn không. Chỉ chặn khi **đang ở trong băng** (người ngoài thì hai bên
+ * không quan tâm), và càng lên bậc thì càng dễ bị nhận ra.
+ */
+export function clashAt(g: Game, district: string): Clash | null {
+  if (!g.gang) return null;
+  const mine = G.GANGS[g.gang.id as G.GangId], rival = G.GANGS[mine.rival];
+  if (district !== rival.turf) return null;
+  // Chỉ chặn khi đủ “mặt mũi”: bậc 3 trở lên, hoặc đang bị băng bên kia để mắt.
+  // Biết mặt mới chặn: bậc 3 trở lên (đã có tên trong băng), hoặc đã có hiềm khích với bên kia từ trước.
+  // (Bản đầu tôi viết thêm một điều kiện ngày tháng sai dấu nên ngày 1 ván mới đã bị chặn oan — test bắt được.)
+  const tier = rankOf(g).tier;
+  if (tier < 3 && rivalRel(g) > -20) return null;
+  if ((g.flags.gangClashDay ?? -99) === g.day) return null;   // mỗi ngày tối đa một lần
+  const pass = tier >= 5 && rnd.chance(0.5);
+  return { rival: rival.id, pass, line: pass
+    ? `Đàn em ${rival.name} nhận ra mày rồi né ra: “Đi đi, đại ca dặn đừng đụng.” — nhưng họ ghi tên mày vào sổ.`
+    : `Hai đứa ${rival.name} chặn trước mặt: “Bên kia qua đây làm gì? Địa bàn này không phải của mày.”` };
+}
+/** Đã xử lý đụng độ hôm nay (để không lặp trong cùng một ngày). */
+export const markClash = (g: Game) => { g.flags.gangClashDay = g.day; };
+
+/** Kết quả ba cách xử lý đụng độ. Trả số liệu để câu thoại nói đúng chuyện vừa xảy ra. */
+export function resolveClash(g: Game, how: 'noi' | 'quay' | 'dung'): { health: number; heat: number; respect: number; rep: number; rel: number; line: string } | null {
+  if (!g.gang) return null;
+  const mine = G.GANGS[g.gang.id as G.GangId], key = 'rel_' + mine.rival;
+  markClash(g);
+  if (how === 'noi') {
+    // Nói chuyện: tuỳ uy tín. Bậc cao thì bên kia nể, bậc thấp thì bị khinh.
+    const ok = rankOf(g).tier >= 4;
+    g.flags[key] = Math.min(0, (g.flags[key] ?? 0) + (ok ? 4 : -8));
+    g.wanted = clamp(g.wanted + 3, 0, 100);
+    return { health: 0, heat: 3, respect: ok ? 4 : -6, rep: 0, rel: ok ? 4 : -8,
+      line: ok ? 'Nói chuyện phải phép, bên kia gật đầu cho qua — nhưng từ nay họ biết mặt mày.' : 'Nói chuyện không lại, bên kia cười khinh rồi cho qua. Băng mình nghe chuyện, trừ uy tín.' };
+  }
+  if (how === 'quay') {
+    g.flags[key] = Math.min(0, (g.flags[key] ?? 0) + 6);
+    addRespect(g, -10);
+    g.st.mood = clamp(g.st.mood - 5, 0, R.STAT_MAX);
+    return { health: 0, heat: 0, respect: -10, rep: 0, rel: 6,
+      line: 'Quay đầu đi đường khác. Bên kia không đụng, mà băng mình nghe chuyện là mất mặt — trừ 10 uy tín.' };
+  }
+  // Đứng lại: ẩu đả. Không ai chết, nhưng mất sức khoẻ, bị để ý, và cả hai băng đều ghi tên.
+  const hurt = 8 + rankOf(g).tier * 2;
+  g.st.health = clamp(g.st.health - hurt, 1, R.STAT_MAX);
+  g.wanted = clamp(g.wanted + 12, 0, 100);
+  g.rep = clamp(g.rep - 3, 0, 100);
+  g.flags[key] = Math.min(0, (g.flags[key] ?? 0) - 12);
+  addRespect(g, 8);
+  return { health: -hurt, heat: 12, respect: 8, rep: -3, rel: -12,
+    line: `Đứng lại, hai bên xô nhau giữa đường. Mày bị đấm một cái vào vai, bên kia cũng rách áo. Công an tới thì cả hai bỏ chạy — băng mình ghi công, mà xóm thì thấy hết.` };
+}

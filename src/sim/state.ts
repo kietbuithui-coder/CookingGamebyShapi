@@ -3,12 +3,15 @@ import { ING_LIST, INGS } from '../data/ingredients';
 import { RECIPE_LIST, START_RECIPES } from '../data/recipes';
 import { JUNK } from '../data/gear';
 import { FIXED, REGULARS } from '../data/people';
-import { CONTRABAND, rankAt } from '../data/gang';
+import { CONTRABAND, GANG_TROUBLE, rankAt } from '../data/gang';
+
+/** Mã tin xấu hợp lệ của băng — dùng khi dọn bản lưu (`cleanGang`). */
+const GANG_TROUBLE_IDS = GANG_TROUBLE.map((t) => t.id);
 import type { WeatherId } from '../data/world';
 import { PLACES } from '../world/layout';
 import { PlayerLookData, defaultLook, cleanLook } from '../data/looks';
 
-export const SAVE_VERSION = 17;
+export const SAVE_VERSION = 18;
 /** Một lô nguyên liệu. fresh 0–100, q chất lượng 0–1, cost giá vốn mỗi đơn vị. */
 export interface Stack { id: string; n: number; fresh: number; q: number; cost: number; }
 /** Mẻ sơ chế sẵn ("cốt" món). */
@@ -108,6 +111,10 @@ export interface GangState {
   /** Ngày nhận tiền bảo kê gần nhất (bậc 6). */
   turfDay: number;
   promotedDay?: number;
+  /** Mã tin xấu đang chờ người chơi xử lý (lượt 72, vd. `'nop_phan'`) — `null`/trống là không có. */
+  trouble?: string;
+  /** Số đàn em đang dắt theo (lượt 72, bậc 5 trở lên) — xem `sim/gang.ts` → `maxCrew`. */
+  crew?: number;
 }
 
 export interface Game {
@@ -242,6 +249,9 @@ export function cleanGang(raw: any): GangState | null {
     stock,
     turfDay: ok(raw.turfDay) ? Math.floor(raw.turfDay) : -1,
     promotedDay: ok(raw.promotedDay) ? Math.floor(raw.promotedDay) : undefined,
+    // Lượt 72: đàn em đang dắt (0–3) và tin xấu đang chờ xử lý. Bản lưu cũ không có thì coi như không dắt ai.
+    crew: ok(raw.crew) ? Math.max(0, Math.min(3, Math.floor(raw.crew))) : 0,
+    trouble: typeof raw.trouble === 'string' && GANG_TROUBLE_IDS.includes(raw.trouble) ? raw.trouble : undefined,
   };
 }
 
@@ -340,6 +350,8 @@ export function migrate(raw: any): Game | null {
   g.helpShift = { 1: okShift(sh?.[1]) ? sh[1] : 'full', 2: okShift(sh?.[2]) ? sh[2] : 'sang' };
   // v15: giao người làm đi chợ (phụ quầy / bếp trưởng / người trông coi chi nhánh). Bản lưu cũ chưa có chuyến nào.
   g.errands = (raw.v ?? 0) < 15 || !Array.isArray(raw.errands) ? [] : cleanErrands(raw.errands);
+  // v18 (lượt 72): đàn em + tin xấu. Bản lưu cũ: không dắt ai, không có tin xấu nào đang chờ.
+  if ((raw.v ?? 0) < 18 && g.gang) { g.gang.crew = 0; delete g.gang.trouble; }
   // v17 (lượt 71): đọc bản lưu cũ xong phải có `gang` — thiếu thì mọi hàm băng đảng sẽ đọc `undefined`.
   if (g.gang === undefined) g.gang = null;
   // Bậc trong băng lưu bằng số; bản lưu chưa có bậc thì suy ra từ uy tín để không bị tụt bậc oan.

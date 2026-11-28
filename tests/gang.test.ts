@@ -3,6 +3,7 @@
 // event / thăng chức”. Bài này canh đúng mấy chữ ấy bằng số.
 import { describe, it, expect } from 'vitest';
 import * as G from '../src/data/gang';
+import * as R from '../src/sim/rules';
 import * as GG from '../src/sim/gang';
 import { fresh } from './helpers';
 import { SAVE_VERSION, cleanGang, Game } from '../src/sim/state';
@@ -269,7 +270,7 @@ describe('tiền bảo kê (bậc đại ca) và câu mô tả', () => {
 
 describe('bản lưu', () => {
   it('bản lưu cũ (chưa có băng) vẫn mở được, gang = null', () => {
-    expect(SAVE_VERSION).toBeGreaterThanOrEqual(17);
+    expect(SAVE_VERSION).toBeGreaterThanOrEqual(18);
     expect(cleanGang(undefined)).toBeNull();
     expect(cleanGang({ id: 'la' })).toBeNull();                     // phe không có thật
   });
@@ -282,5 +283,287 @@ describe('bản lưu', () => {
     expect(ok!.stock).toEqual({ thuocla: 2 });                      // bỏ mã lạ và số âm
     expect(cleanGang({ id: 'cho', respect: -50 })!.respect).toBe(0);
     expect(cleanGang({ id: 'cho', tier: 99 })!.tier).toBe(6);       // bậc kẹp trần
+  });
+});
+
+// ═════════════════════ CON DAO HAI LƯỠI (lượt 72) ═════════════════════
+// Người chơi dặn: *“đảm bảo băng đảng là con dao hai lưỡi”*. Nhóm này canh đúng **cái giá**: mỗi bậc lên thì
+// khách bớt, phí chỗ tăng, công an để ý — và bốn cách rời băng đều mất thứ gì.
+
+describe('mặt trái: bậc càng cao thì càng đắt', () => {
+  it('mỗi bậc có đủ ba con số và bậc sau nặng hơn bậc trước', () => {
+    expect(G.GANG_DOWNSIDE.length).toBe(6);
+    for (let i = 1; i < G.GANG_DOWNSIDE.length; i++) {
+      const a = G.GANG_DOWNSIDE[i - 1], b = G.GANG_DOWNSIDE[i];
+      expect(b.fear).toBeGreaterThan(a.fear);
+      expect(b.rent).toBeGreaterThan(a.rent);
+      expect(b.heat).toBeGreaterThan(a.heat);
+    }
+    for (const d of G.GANG_DOWNSIDE) {
+      expect(d.fear).toBeGreaterThan(0);
+      expect(d.fear).toBeLessThan(0.5);          // không bao giờ mất quá nửa khách — quán vẫn còn để bán
+      expect(d.note.length).toBeGreaterThan(20);
+    }
+  });
+
+  it('chưa theo băng thì không mất gì; theo rồi thì phải mất', () => {
+    const free = fresh();
+    expect(GG.downside(free)).toEqual({ tier: 0, fear: 0, rent: 0, heat: 0, note: '' });
+    expect(GG.fearMul(free)).toBe(1);
+    expect(GG.fearRate(free)).toBe(0);
+    expect(GG.gangRentExtra(free)).toBe(0);
+    expect(GG.gangHeatPerDay(free)).toBe(0);
+
+    const g = withGang('hem', 0, 6);
+    expect(GG.fearMul(g)).toBeLessThan(0.7);
+    expect(GG.fearRate(free)).toBe(0);
+    expect(GG.gangHeatPerDay(g)).toBe(6);
+  });
+
+  it('khách tới quán giảm thật khi đang ở trong băng — đây là chỗ trừ vào doanh thu', () => {
+    const free = fresh(), g = withGang('hem', 0, 4);
+    // So hệ số khách (thuần) chứ không gọi `arrivalRate`: hàm đó còn đọc thời tiết/giờ/ngẫu nhiên nên hai ván
+    // khác nhau có thể ra 0 cả hai và phép so vô nghĩa.
+    expect(GG.fearMul(g)).toBeLessThan(GG.fearMul(free));
+    expect(GG.fearMul(g)).toBeCloseTo(1 - G.GANG_DOWNSIDE[3].fear, 5);
+  });
+
+  it('phí chỗ đội thêm đúng theo bậc, và chỉ khi đã đặt sạp cố định', () => {
+    const g = withGang('hem', 0, 3);
+    g.stall.tier = 3; g.stall.where = 'placed'; g.stall.spot = 'cho';
+    const base = R.stallRent(fresh2(withGang('hem', 0, 1), 'cho'));
+    const extra = GG.gangRentExtra(g);
+    expect(extra).toBeGreaterThan(0);
+    expect(R.stallRent(g)).toBe(base + extra);
+    // Chưa đặt sạp (mang trên vai) thì không có phí chỗ, cũng không có phần đội thêm.
+    const carry = withGang('hem', 0, 6); carry.stall.tier = 1; carry.stall.where = 'carried';
+    expect(GG.gangRentExtra(carry)).toBe(0);
+  });
+
+  it('mỗi ngày trong băng thì bị để ý thêm — và đúng bằng số của bậc', () => {
+    const g = withGang('hem', 0, 2); g.wanted = 10;
+    expect(GG.dailyGangHeat(g)).toBe(G.GANG_DOWNSIDE[1].heat);
+    expect(g.wanted).toBe(10 + G.GANG_DOWNSIDE[1].heat);
+  });
+});
+
+/** Đặt sạp ở một chỗ cho sẵn — dùng để tính phí gốc của chỗ đó. */
+function fresh2(g: Game, spot: string) { g.stall.tier = 3; g.stall.where = 'placed'; g.stall.spot = spot; return g; }
+
+describe('cảnh làm việc: làm tới thì ăn thêm, mà trả giá', () => {
+  it('mỗi việc có một cảnh, đủ đoạn để kể, và có lựa chọn rút / làm tới', () => {
+    for (const j of G.GANG_JOB_LIST) {
+      const c = G.GANG_CUTS[j.id];
+      expect(c, j.id).toBeTruthy();
+      expect(c.beats.length).toBeGreaterThanOrEqual(2);
+      expect(c.stop.length).toBeGreaterThan(10);
+      expect(c.go.length).toBeGreaterThan(10);
+      expect(c.bonus).toBeGreaterThan(0);
+      // Không cảnh nào “cho không”: luôn có ít nhất một cái giá.
+      const cost = c.cost;
+      expect(Math.abs(cost.mood) + Math.abs(cost.health) + cost.heat + Math.abs(cost.rep)).toBeGreaterThan(0);
+    }
+  });
+
+  it('làm tới cùng: được thêm tiền, mất tinh thần/sức khoẻ/uy tín đúng như cảnh ghi', () => {
+    const g = withGang('hem', 0, 4); g.cash = 0; g.st.mood = 70; g.st.health = 90; g.rep = 50; g.wanted = 10;
+    const c = G.GANG_CUTS.thu;
+    const r = GG.resolveCut(g, 'thu', true)!;
+    expect(r.bonus).toBe(c.bonus);
+    expect(g.cash).toBeGreaterThanOrEqual(c.bonus);               // tiền vào thật
+    expect(g.st.mood).toBe(70 + c.cost.mood);
+    expect(g.st.health).toBe(90 + c.cost.health);
+    expect(g.rep).toBe(50 + c.cost.rep);
+    expect(g.wanted).toBe(10 + c.cost.heat);
+    expect(g.gang!.respect).toBe(6);
+  });
+
+  it('rút lui: không mất tiền, nhưng mất uy tín trong băng — không có lựa chọn miễn phí', () => {
+    const g = withGang('hem', 20, 2);
+    const r = GG.resolveCut(g, 'gac', false)!;
+    expect(r.bonus).toBe(0);
+    expect(g.gang!.respect).toBe(16);
+  });
+
+  it('cảnh “thu nợ bà bán tạp hoá” là cảnh nặng nhất về tinh thần và uy tín phố', () => {
+    const worst = G.GANG_JOB_LIST.map((j) => G.GANG_CUTS[j.id]).sort((a, b) => a.cost.mood - b.cost.mood)[0];
+    expect(worst.id).toBe('thu');
+    expect(worst.cost.rep).toBeLessThan(0);
+  });
+});
+
+describe('tin xấu của băng', () => {
+  it('có bốn loại, mỗi loại đều đòi được thứ gì (tiền hoặc uy tín)', () => {
+    expect(G.GANG_TROUBLE.length).toBe(4);
+    for (const t of G.GANG_TROUBLE) {
+      expect(t.title.length).toBeGreaterThan(5);
+      expect(t.text.length).toBeGreaterThan(30);
+      expect(t.refuse.respect + t.refuse.heat + Math.abs(t.refuse.rep) + Math.abs(t.refuse.mood)).toBeGreaterThan(0);
+    }
+  });
+
+  it('mới vào băng thì ba ngày đầu chưa bị đòi gì', () => {
+    const g = withGang('hem', 0, 1); g.day = 2; g.gang!.since = 2;
+    expect(GG.troubleToday(g)).toBeNull();
+  });
+
+  it('không bao giờ hai ngày liền — đời sống băng khó chịu nhưng không dồn dập', () => {
+    const g = withGang('hem', 100, 3); g.gang!.since = 0; g.day = 10;
+    g.flags.gangTroubleDay = 9;
+    expect(GG.troubleToday(g)).toBeNull();
+  });
+
+  it('bậc thấp chưa bị đòi tiền chạy việc', () => {
+    const g = withGang('hem', 0, 1); g.gang!.since = 0;
+    for (let d = 4; d < 40; d++) { g.day = d; const t = GG.troubleToday(g);
+      if (t) expect(t.minTier).toBeLessThanOrEqual(1); }
+  });
+});
+
+describe('bốn cách rời băng — không có đường sạch', () => {
+  it('cách nào cũng mất bậc; có cách mất tiền, có cách mất uy tín phố', () => {
+    const g = withGang('hem', 200, 4);
+    const ways = GG.leaveWays(g);
+    expect(ways.length).toBeGreaterThanOrEqual(3);
+    for (const w of ways) {
+      expect(w.tierLoss).toBeGreaterThan(0);
+      expect(w.line.length).toBeGreaterThan(20);
+    }
+    expect(ways.some((w) => w.cost > 0)).toBe(true);
+    expect(ways.some((w) => w.rep < 0)).toBe(true);
+  });
+
+  it('“trả nợ máu” mất tiền; thiếu tiền thì không đi được cách đó', () => {
+    const g = withGang('hem', 200, 4); g.cash = 1000;
+    expect(GG.leaveBy(g, 'tra_no')).toBeNull();
+    expect(g.gang).not.toBeNull();
+    g.cash = 1000000;
+    const r = GG.leaveBy(g, 'tra_no')!;
+    expect(r.cash).toBe(G.GANG_LEAVES.find((l) => l.id === 'tra_no')!.cost);
+    expect(g.cash).toBe(1000000 - r.cash);
+    expect(g.gang).toBeNull();
+  });
+
+  it('“phản băng” không mất tiền nhưng mất uy tín phố, bị để mắt, và cả xóm nhớ mặt', () => {
+    const g = withGang('hem', 200, 3); g.rep = 60; g.cash = 0;
+    const r = GG.leaveBy(g, 'pha_dao')!;
+    expect(r.cash).toBe(0);
+    expect(g.rep).toBeLessThan(60);
+    expect(g.flags.gangWatch).toBeGreaterThan(g.day);
+    expect(g.flags.gangRatted).toBe(1);
+    // Bị cả xóm nhớ mặt thì khách còn sợ hơn lúc đang trong băng.
+    expect(GG.fearRate(g)).toBeGreaterThan(0);
+  });
+
+  it('“làm ăn thua lỗ để bị đuổi” mất nhiều tinh thần nhất', () => {
+    const worst = G.GANG_LEAVES.slice().sort((a, b) => a.mood - b.mood)[0];
+    expect(worst.id).toBe('bi_duoi');
+  });
+
+  it('rời băng rồi thì mọi thứ trở lại: không sợ băng, không phí đội thêm, không bị để ý thêm', () => {
+    const g = withGang('hem', 200, 4); g.cash = 1000000;
+    g.stall.tier = 3; g.stall.where = 'placed'; g.stall.spot = 'cho';
+    GG.leaveBy(g, 'tra_no');
+    expect(GG.downside(g).fear).toBe(0);
+    expect(GG.gangRentExtra(g)).toBe(0);
+    expect(GG.gangHeatPerDay(g)).toBe(0);
+  });
+});
+
+describe('đàn em đi theo (bậc 5–6)', () => {
+  it('bậc dưới 5 chưa dắt được ai', () => {
+    expect(GG.maxCrew(withGang('hem', 300, 4))).toBe(0);
+    const g = withGang('hem', 300, 4);
+    expect(GG.setCrew(g, 2)).toBe(0);
+  });
+
+  it('bậc 5 dắt 2, đại ca dắt 3 — và không vượt trần', () => {
+    expect(GG.maxCrew(withGang('hem', 500, 5))).toBe(2);
+    const g = withGang('hem', 800, 6);
+    expect(GG.maxCrew(g)).toBe(3);
+    expect(GG.setCrew(g, 9)).toBe(3);
+  });
+
+  it('dắt đàn em thì ăn ít hơn mà bị để ý nhiều hơn — hai lưỡi thu nhỏ', () => {
+    const solo = withGang('hem', 800, 6), crew = withGang('hem', 800, 6);
+    GG.setCrew(crew, 2);
+    for (const x of [solo, crew]) { x.min = 12 * 60; x.st.energy = 100; x.wanted = 0; }
+    const a = GG.doJob(solo, 'gac')!, b = GG.doJob(crew, 'gac')!;
+    expect(b.pay).toBeLessThan(a.pay);
+    expect(crew.wanted).toBeGreaterThan(solo.wanted);
+    expect(GG.crewCover(crew)).toBeGreaterThan(0.5);
+  });
+
+  it('bị bắt thì đàn em gánh bớt tiền phạt, nhưng vẫn mất hàng và mất đàn em', () => {
+    const solo = withGang('hem', 300, 5), crew = withGang('hem', 300, 5);
+    GG.setCrew(crew, 2);
+    for (const x of [solo, crew]) { x.gang!.stock = { phao: 2 }; x.cash = 50000000; }
+    const a = GG.bust(solo), b = GG.bust(crew);
+    expect(b.fine).toBeLessThan(a.fine);
+    expect(b.fine).toBeGreaterThan(0);
+    expect(crew.gang!.crew).toBe(0);                              // bị bắt là đàn em bỏ đi hết
+    expect(crew.gang!.stock).toEqual({});
+  });
+});
+
+describe('đụng độ hai phe (lượt 72)', () => {
+  it('chưa theo băng thì đi đâu cũng không bị chặn', () => {
+    const g = fresh();
+    expect(GG.clashAt(g, 'cho')).toBeNull();
+    expect(GG.clashAt(g, 'laodong')).toBeNull();
+  });
+
+  it('đứng ở địa bàn mình thì không bị chặn; sang địa bàn đối thủ thì bị', () => {
+    const g = withGang('hem', 0, 1);
+    expect(GG.clashAt(g, 'laodong')).toBeNull();            // địa bàn băng mình
+    // bậc 1 nên chưa ai nhận ra — chưa bị chặn
+    expect(GG.clashAt(g, 'cho')).toBeNull();
+    g.gang!.tier = 3;                                       // đủ “mặt mũi” thì bị chặn
+    const c = GG.clashAt(g, 'cho');
+    expect(c).not.toBeNull();
+    expect(c!.rival).toBe('cho');
+    expect(c!.line.length).toBeGreaterThan(30);
+  });
+
+  it('mỗi ngày chỉ một lần đụng độ, và “nói chuyện” lúc bậc thấp bị khinh', () => {
+    const g = withGang('hem', 0, 2);
+    const r = GG.resolveClash(g, 'noi')!;
+    expect(r.respect).toBeLessThan(0);
+    expect(r.rel).toBeLessThan(0);
+    const c = GG.clashAt(g, 'cho');
+    expect(c).toBeNull();                                    // hôm nay xử lý rồi
+  });
+
+  it('quay đầu mất uy tín trong băng nhưng không bị đụng', () => {
+    const g = withGang('hem', 50, 3);
+    const r = GG.resolveClash(g, 'quay')!;
+    expect(g.gang!.respect).toBe(40);
+    expect(r.health).toBe(0);
+    expect(r.heat).toBe(0);
+  });
+
+  it('đứng lại: mất sức khoẻ thật, bị để ý, uy tín phố giảm — đổi lại uy tín trong băng tăng', () => {
+    const g = withGang('hem', 50, 3); g.st.health = 90; g.rep = 40; g.wanted = 0;
+    const r = GG.resolveClash(g, 'dung')!;
+    expect(g.st.health).toBeLessThan(90);
+    expect(g.st.health).toBeGreaterThan(0);                   // không bao giờ đánh chết người chơi
+    expect(g.wanted).toBe(12);
+    expect(g.rep).toBe(37);
+    expect(g.gang!.respect).toBe(58);
+    expect(r.rel).toBeLessThan(0);
+  });
+});
+
+describe('bản lưu (lượt 72: đàn em + tin xấu)', () => {
+  it('bản lưu cũ không dắt đàn em, không có tin xấu đang chờ', () => {
+    const g = cleanGang({ id: 'cho', respect: 100, tier: 3 })!;
+    expect(g.crew ?? 0).toBe(0);
+    expect(g.trouble).toBeUndefined();
+  });
+
+  it('đàn em kẹp trần 3; mã tin xấu lạ thì bỏ', () => {
+    expect(cleanGang({ id: 'cho', respect: 0, crew: 99 })!.crew).toBe(3);
+    expect(cleanGang({ id: 'cho', respect: 0, trouble: 'la_hoac' })!.trouble).toBeUndefined();
+    expect(cleanGang({ id: 'cho', respect: 0, trouble: 'nop_phan' })!.trouble).toBe('nop_phan');
   });
 });

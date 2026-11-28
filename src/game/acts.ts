@@ -35,6 +35,7 @@ import { LANDMARK_LIST } from '../data/landmarks';
 import { advice, pickAdvice, rememberAdvice } from '../sim/advice';
 import * as GANGTALK from './gangTalk';
 import * as GANGSIM from '../sim/gang';
+import { GANG_TROUBLE as GANGS2 } from '../data/gang';
 import { MB, MAT } from '../gfx/mb';
 import { ingModel } from '../gfx/props';
 
@@ -1581,6 +1582,10 @@ export class Acts {
   dropReceiver() { if (this.receiver) { ctx.npcs.remove(this.receiver); this.receiver = null; } }
   setWay(anchor: string, name: string) { const a = ctx.world.anchors[anchor]; if (a) this.way = { x: a.x, z: a.z, name }; }
 
+  /** Nhịp chờ trước khi mở hộp thoại tin xấu của băng (lượt 72). */
+  private troubleT = 6;
+  /** Nhịp kiểm tra đụng độ băng đối thủ (lượt 72). */
+  private clashT = 2.5;
   update(dt: number) {
     const g = this.g, p = ctx.player;
     this.sheltered = ctx.world.covered(p.x, p.z);
@@ -1591,6 +1596,28 @@ export class Acts {
     // mức bị để ý nguôi dần theo giờ trong game
     this.coolT += dt * MIN_PER_SEC; P.cool(g, this.coolT); this.coolT = 0;
     this.copT -= dt;
+    // Đụng độ băng đối thủ (lượt 72): bước vào địa bàn bên kia thì bị chặn. Chỉ hỏi mỗi 2,5 giây một lần và
+    // chỉ khi đang rảnh, để không chen ngang lúc người chơi đang nấu hay đang nói chuyện.
+    if (g.gang) {
+      this.clashT -= dt;
+      if (this.clashT <= 0) {
+        this.clashT = 2.5;
+        const d = districtAt(p.x, p.z);
+        const c = GANGSIM.clashAt(g, d);
+        if (c && ctx.mode === 'play' && !ctx.ui.isDialogOpen()) GANGTALK.clashScreen(this as unknown as GANGTALK.TalkHost, c);
+      }
+    }
+    // Tin xấu của băng (lượt 72): lớp luật chỉ đặt cờ, lớp game mở hộp thoại khi người chơi đang rảnh.
+    if (g.gang?.trouble) {
+      this.troubleT -= dt;
+      if (this.troubleT <= 0) {
+        this.troubleT = 6;
+        const t = GANGS2.find((x) => x.id === g.gang!.trouble);
+        if (t && ctx.mode === 'play' && !ctx.ui.isDialogOpen()) {
+          GANGTALK.troubleScreen(this as unknown as GANGTALK.TalkHost, g.gang.id as 'hem' | 'cho', t, undefined);
+        }
+      }
+    }
     if (this.copT <= 0) {
       this.copT = 2.5;
       // Lượt 71: đang giữ hàng cấm mà tới giờ bị khám thì công an gọi lại — hộp thoại phạt nặng nằm trong

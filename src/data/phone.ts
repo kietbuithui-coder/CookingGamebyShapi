@@ -36,7 +36,7 @@ export const FEAT_LABEL: Record<PhoneFeat, string> = {
 };
 
 /** Danh mục app trên máy — dùng cho cả ba giao diện (cục gạch, nắp gập, cảm ứng). */
-export type AppId = PhoneFeat | 'battery' | 'shop';
+export type AppId = PhoneFeat | 'battery' | 'shop' | 'gang';
 export interface AppDef { id: AppId; name: string; short: string; }
 export const PHONE_APPS: AppDef[] = [
   { id: 'ledger', name: 'Sổ thu chi', short: 'Sổ sách' },
@@ -47,8 +47,15 @@ export const PHONE_APPS: AppDef[] = [
   { id: 'wap', name: 'Lướt web', short: 'WAP' },
   { id: 'battery', name: 'Pin & sạc', short: 'Pin' },
   { id: 'shop', name: 'Quản lý cửa hàng', short: 'Cửa hàng' },
+  // Lượt 72: app riêng của băng đảng. Chỉ hiện khi người chơi ĐANG theo băng (`appsOf` lọc theo `g.gang`).
+  { id: 'gang', name: 'Sổ băng', short: 'Sổ băng' },
 ];
 /** Máy này mở được app nào: theo `feats` của máy, riêng mục Pin thì máy nào cũng có. */
 /** App "Quản lý cửa hàng" mở được trên mọi máy (điện thoại nào cũng xem được quầy của mình). */
 export const ALWAYS_APPS: AppId[] = ['battery', 'shop'];
-export const appsOf = (m: PhoneDef): AppDef[] => PHONE_APPS.filter((a) => ALWAYS_APPS.includes(a.id) || m.feats.includes(a.id as PhoneFeat));
+/**
+ * App theo **tình trạng trong ván**, không phải theo máy: “Sổ băng” chỉ có khi đang theo băng (lượt 72).
+ * Truyền `inGang` từ nơi gọi để tệp dữ liệu thuần này không phải import `Game`.
+ */
+export const appsOf = (m: PhoneDef, inGang = false): AppDef[] =>
+  PHONE_APPS.filter((a) => (a.id === 'gang' ? inGang : ALWAYS_APPS.includes(a.id) || m.feats.includes(a.id as PhoneFeat)));
