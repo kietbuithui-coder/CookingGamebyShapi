@@ -560,3 +560,52 @@ svg.pg { width: 1.85em; height: 1.85em; fill: none; stroke: currentColor; stroke
 .plist .row s.warnline { color: #b4462c; font-weight: 600; opacity: 1; }
 .plist .row .btn.small { flex: none; align-self: center; }
 .plist .row b em { white-space: nowrap; }
+
+/* ───────────────── GIAO DIỆN KIỂU ANDROID (lượt 73) ─────────────────
+   Người chơi dặn: *“cập nhật giao diện gọn kiểu Android”*. Bật `ctx.set.android` (mặc định trên điện thoại,
+   hoặc mục ③ của menu ẩn) thì #ui mang lớp .android:
+     • #topbar  — thanh trên cùng: tiền · giờ · ☰, nền đặc, dính sát mép, không nút nổi nào đè lên;
+     • #menub   — ẩn hẳn (bảy nút nổi dời vào ngăn kéo);
+     • #drawer  — ngăn kéo trượt ra từ mép phải, mỗi nút cao 3em (≥44 px, đúng chuẩn chạm của Android).
+   Các nút của phần CHƠI (tương tác, chạy, đấm, nhảy, cần ảo) giữ nguyên chỗ — người chơi đã quen tay. */
+#topbar { display: none; }
+#ui.android #topbar {
+  display: flex; align-items: center; gap: .5em; position: absolute; left: 0; right: 0; top: 0;
+  padding: .28em .55em; padding-top: max(.28em, env(safe-area-inset-top));
+  background: linear-gradient(180deg, rgba(24, 16, 10, .93), rgba(24, 16, 10, .82));
+  color: #fff7e4; pointer-events: auto; font-weight: 700; font-size: .95em;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, .28); z-index: 6;
+}
+#ui.android #topbar .tb-l { color: #ffe38a; font-weight: 800; font-variant-numeric: tabular-nums; padding: .1em .5em; border-radius: 1em; background: rgba(255, 255, 255, .08); }
+#ui.android #topbar .tb-c { flex: 1; text-align: center; opacity: .92; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#ui.android #topbar .tb-r { width: 2.4em; height: 2.4em; min-width: 40px; min-height: 40px; border-radius: .55em; display: grid; place-items: center; background: rgba(255, 255, 255, .1); color: #fff7e4; }
+#ui.android #topbar .tb-r:active { background: rgba(255, 255, 255, .22); }
+#ui.android #topbar .tb-r.alert { background: var(--red); animation: pulse 1.2s infinite; }
+#ui.android #topbar .tb-r svg.ic { width: 1.55em; height: 1.55em; }
+/* HUD hai bên tụt xuống dưới thanh trên cùng, và bỏ những chip đã có trên thanh (tiền, giờ). */
+#ui.android #hud-tl { top: 3.05em; }
+#ui.android #hud-tr { top: 3.05em; }
+#ui.android #money, #ui.android #clock, #ui.android #wx { display: none; }
+#ui.android #quest { top: 3.05em; }
+#ui.android.qlow #quest { top: var(--q-top, 6.4em) !important; }
+#ui.android #way { top: 7.8em; } #ui.android #events { top: 9.6em; }
+#ui.android #menub { display: none !important; }
+/* Ngăn kéo */
+#drawer { position: absolute; inset: 0; pointer-events: auto; z-index: 12; }
+#drawer .scrim { position: absolute; inset: 0; background: rgba(12, 8, 5, .55); opacity: 0; transition: opacity .18s; }
+#drawer.on .scrim { opacity: 1; }
+#drawer .sheet { position: absolute; right: 0; top: 0; bottom: 0; width: min(19em, 82vw); background: var(--paper); border-left: 3px solid var(--ink); box-shadow: -6px 0 22px rgba(0, 0, 0, .35); transform: translateX(103%); transition: transform .2s ease-out; display: flex; flex-direction: column; padding: max(.5em, env(safe-area-inset-top)) .7em 1em; overflow-y: auto; }
+#drawer.on .sheet { transform: translateX(0); }
+#drawer .dh { display: flex; align-items: center; justify-content: space-between; padding: .2em 0 .5em; border-bottom: 2px solid var(--line); margin-bottom: .5em; }
+#drawer .dh b { letter-spacing: .05em; font-size: .92em; color: var(--ink2); }
+#drawer .dh .x { width: 2.2em; height: 2.2em; min-width: 40px; min-height: 40px; border-radius: 50%; background: var(--paper2); border: 2px solid var(--ink); display: grid; place-items: center; }
+#drawer .dsec { margin-bottom: .55em; }
+#drawer .dsec h4 { margin: .2em 0 .35em; font-size: .8em; letter-spacing: .05em; color: var(--ink2); text-transform: uppercase; }
+#drawer .drow { display: grid; grid-template-columns: 1fr 1fr; gap: .4em; }
+#drawer .dbtn { display: flex; align-items: center; gap: .45em; min-height: 3.1em; padding: .35em .55em; border-radius: .7em; background: var(--paper2); border: 2px solid var(--ink); border-bottom-width: 3px; font-weight: 700; font-size: .92em; text-align: left; color: var(--ink); }
+#drawer .dbtn:active { transform: translateY(2px); border-bottom-width: 2px; }
+#drawer .dbtn svg.ic { width: 1.5em; height: 1.5em; flex: none; }
+#drawer .dbtn span { line-height: 1.1; }
+#drawer .dbtn.red { background: var(--red); color: #fff; border-color: #7a1e18; }
+/* Máy tính mà bật Android thì ngăn kéo chỉ rộng vừa phải, không choáng màn hình. */
+@media (min-width: 900px) { #drawer .sheet { width: 20em; } }

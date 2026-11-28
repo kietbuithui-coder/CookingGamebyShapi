@@ -11,7 +11,7 @@ import type { WeatherId } from '../data/world';
 import { PLACES } from '../world/layout';
 import { PlayerLookData, defaultLook, cleanLook } from '../data/looks';
 
-export const SAVE_VERSION = 18;
+export const SAVE_VERSION = 19;
 /** Một lô nguyên liệu. fresh 0–100, q chất lượng 0–1, cost giá vốn mỗi đơn vị. */
 export interface Stack { id: string; n: number; fresh: number; q: number; cost: number; }
 /** Mẻ sơ chế sẵn ("cốt" món). */
@@ -115,6 +115,8 @@ export interface GangState {
   trouble?: string;
   /** Số đàn em đang dắt theo (lượt 72, bậc 5 trở lên) — xem `sim/gang.ts` → `maxCrew`. */
   crew?: number;
+  /** Số lần đã đe doạ người lạ (lượt 73, bậc 4+) — càng nhiều càng dễ bị báo công an. */
+  threats?: number;
 }
 
 export interface Game {
@@ -251,6 +253,7 @@ export function cleanGang(raw: any): GangState | null {
     promotedDay: ok(raw.promotedDay) ? Math.floor(raw.promotedDay) : undefined,
     // Lượt 72: đàn em đang dắt (0–3) và tin xấu đang chờ xử lý. Bản lưu cũ không có thì coi như không dắt ai.
     crew: ok(raw.crew) ? Math.max(0, Math.min(3, Math.floor(raw.crew))) : 0,
+    threats: ok(raw.threats) ? Math.max(0, Math.min(999, Math.floor(raw.threats))) : 0,
     trouble: typeof raw.trouble === 'string' && GANG_TROUBLE_IDS.includes(raw.trouble) ? raw.trouble : undefined,
   };
 }

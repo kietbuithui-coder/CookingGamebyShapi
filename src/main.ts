@@ -12,6 +12,7 @@ import { Npcs, placeOpen } from './game/npc';
 import { StallSys } from './game/stall';
 import { ShopBrowse } from './game/shopbrowse';
 import * as Life from './sim/life';
+import * as GANG_DATA from './data/gang';
 import { Interact } from './game/interact';
 import { Acts } from './game/acts';
 import { Cook } from './cook/cook';
@@ -174,6 +175,8 @@ async function boot() {
     w.__open = (id: string) => placeOpen(id);
     // Bảng công thức, để kịch bản thử mở đúng món mà không phải dò trong thực đơn.
     w.__rec = RECIPES;
+    // Lượt 73: bảng ẩu đả, để kịch bản thử mở đúng ván “bị úp sọt” mà không phải dò trong hộp thoại.
+    w.__FIGHTS = GANG_DATA.FIGHTS;
     w.__cam3 = (on?: boolean) => { if (on !== undefined) ctx.set.cam3 = on; else ctx.player.toggleView(); return ctx.set.cam3; };
     // Bảng tra biểu cảm: vẽ nguyên atlas mặt lên màn hình để chụp ảnh kiểm tra.
     w.__faces = () => {

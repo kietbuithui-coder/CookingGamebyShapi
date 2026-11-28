@@ -1854,3 +1854,54 @@ nhất** (tiền, uy tín, bậc, hàng cấm). Lượt 72 làm **lưỡi thứ 
 - Cảnh đi làm hiện tên “Hùng Sẹo” như thể đại ca đi thu nợ ⇒ đổi tên người nói thành **“Chuyến đi”**.
 - App Sổ băng trên máy cục gạch/nắp gập bị cắt đáy ⇒ viết ngắn, bỏ thanh tiến trình.
 - Câu đụng độ in trùng tên hai băng hai lần.
+
+## Lượt 73 — ĐE DOẠ · ĐÁNH NHAU · GIAO DIỆN ANDROID
+
+Người chơi dặn bốn việc: *“thêm nút đe doạ người lạ (đòi tiền / đồ quý) khi đã là thành viên băng cấp 4 trở
+lên”*, *“thêm event đánh nhau”*, *“animation chuẩn”*, và *“cập nhật giao diện gọn kiểu Android”*. Cộng thêm
+*“sửa lỗi nếu còn”*.
+
+### 1. Đe doạ — cửa kiếm tiền nhanh nhất, và cũng là cửa lỗ nặng nhất
+Ba mức, mỗi mức mở ở một bậc (`THREAT_KINDS`):
+| Mức | Bậc | Tiền | Đồ quý | Bị để ý | Uy tín phố | Bị báo |
+|---|---|---|---|---|---|---|
+| Xin để yên chỗ bán | 4 | 30–70 k | – | +8 | −3 | 12 % |
+| Lấy đồ quý | 5 | 55–95 k | đồng hồ cũ | +14 | −6 | 30 % |
+| Siết nợ người quen | 6 | 120–260 k | – | +22 | −12 | 42 % |
+
+Không phải “bấm là có tiền”: mỗi lần đe cộng dồn **hai** thứ trừ về sau — `g.wanted` (công an để mắt, càng cao
+càng dễ bị gọi lại) và **số lần đã đe**. Số lần ấy làm hai việc: `threatFear()` cộng vào `fearRate` (khách bớt
+ghé, trần 12 %), và làm xác suất bị báo tăng 3 % mỗi lần. Bị báo thì phạt `threatFine(wanted, times)` — **cố ý
+đắt hơn án hàng cấm** vì đây là đe doạ người — cộng 6–12 giờ tạm giữ. Một người chơi đe mười lần sẽ thấy quán
+vắng, công an nhớ mặt, và phần lớn tiền kiếm được trả lại cho phường.
+
+### 2. Đánh nhau — cảnh 3D thật, không phải hộp thoại kể chuyện
+`FIGHTS` có bốn kiểu, mỗi kiểu gắn với một tình trạng thật của ván (`fightAt`): bị úp sọt ở địa bàn băng đối thủ
+(bậc 3+, quan hệ ≤ −20), giang hồ tới đòi nợ (có nợ quá hạn), người nhà kẻ bị đe doạ (đã đe 3 lần), băng khác
+tới phá quán (bán tốt mà không có băng đỡ lưng). Một ngày tối đa một ván.
+
+Cảnh (`AnimSystem.startFight`) dựng 2–3 **rig người thật** — mượn từ hồ của `Npcs` qua `acquire()/release()`,
+`Rig.slot = 'fight'` để hồ không lấy lại người đang đánh — đứng thành vòng cung trước mặt, dồn tới rồi lùi theo
+nhịp. Ba nút: **ĐẤM** (trúng 78 %: đứa đó bật ngửa rồi gục), **ĐỠ** (đòn kế chỉ mất 45 % máu), **LÙI** (hồi 4 máu,
+đối thủ dồn nhanh hơn). Hạ hết thì thắng. Camera đứng chếch một bên, cao 3,1 m — bản đầu đặt sau lưng nên ba
+đứa che kín người chơi (ảnh probe chỉ ra).
+
+Ba dáng mới trong `gfx/people.ts` để cảnh có động tác thật: `block`, `stagger`, `threat`; người đấm cũng chồm
+người tới và nhích chân, chứ không đứng im như tượng.
+
+Ba lựa chọn trước khi vào cảnh đều có giá: đánh (thắng 40–145 k + uy tín băng, thua −20…−26 máu, −6 uy tín phố),
+chạy (−8 uy tín băng, cả xóm thấy), dàn xếp (150–300 k, băng cho là hèn).
+
+### 3. Giao diện Android
+`Settings.android` (mặc định **bật trên điện thoại**): `#menub` (bảy nút nổi) ẩn hẳn, thay bằng `#topbar` (tiền ·
+giờ · ☰) và `#drawer` trượt từ mép phải với các mục Túi đồ / Sổ tay / Bản đồ / Điện thoại / **Đe doạ** / Cất
+gánh / Góp ý / Cài đặt. Mỗi nút cao 3,1 em (≥ 44 px). Màn 390 px dọc trước đây bảy nút chiếm gần nửa bề ngang.
+Phần **chơi** (tương tác, chạy, đấm, nhảy, cần ảo) giữ nguyên chỗ vì người chơi đã quen tay.
+
+### Lỗi tự bắt được trong lượt này (ghi lại để lần sau khỏi lặp)
+- Ngăn kéo mở ra rồi tự giấu: bộ hẹn 190 ms của lần **đóng** trước đó vẫn nổ sau khi đã mở lại.
+- Vào cảnh đánh nhau thì thanh trên cùng che mất tiêu đề cảnh và dòng gợi ý ⇒ `setHud(false)` phải ẩn cả `#topbar`.
+- Hộp thoại **đụng độ băng** mở ngay giữa ván đánh (nó gọi `UI.dialog` → `anim.stop()`), cảnh 3D biến mất;
+  nay mọi hộp thoại tự mở đều phải kiểm `!ctx.anim?.active`.
+- Thanh máu đối thủ tính theo **số đứa còn đứng** nên đấm hai phát vẫn 100 % ⇒ đổi sang tính theo tổng máu.
+- Đặt `player.rig.pose` trong cảnh đánh không có tác dụng: `player.update` ghi đè mỗi khung hình bằng `actPose`.

@@ -228,6 +228,7 @@ export function fearRate(g: Game): number {
   const watch = g.flags.gangWatch ?? 0;
   if (watch > 0 && watch >= g.day) f += 0.08;
   if ((g.flags.gangRatted ?? 0) > 0) f += 0.06;      // từng đi khai băng: cả xóm nhớ mặt
+  f += threatFear(g);                                 // đã đe doạ người trong xóm: càng nhiều càng vắng khách
   return clamp(f, 0, 0.5);
 }
 /** Hệ số khách tới quán sau khi trừ phần sợ băng (1 = không mất ai). */
@@ -420,4 +421,123 @@ export function resolveClash(g: Game, how: 'noi' | 'quay' | 'dung'): { health: n
   addRespect(g, 8);
   return { health: -hurt, heat: 12, respect: 8, rep: -3, rel: -12,
     line: `Đứng lại, hai bên xô nhau giữa đường. Mày bị đấm một cái vào vai, bên kia cũng rách áo. Công an tới thì cả hai bỏ chạy — băng mình ghi công, mà xóm thì thấy hết.` };
+}
+
+// ───────────────────────── ĐE DOẠ NGƯỜI LẠ (bậc 4+) ─────────────────────────
+/**
+ * Đe doạ người lạ: **ra tiền ngay**, không tốn sức, nhưng là chỗ lỗ nặng nhất của hệ thống băng.
+ * - Mỗi lần: +heat theo loại, −uy tín ngoài phố, +1 lần đe (`g.gang.threats`).
+ * - Xác suất `report`: người bị đe đi báo công an ⇒ phạt **theo mức bị để ý** (nặng hơn án hàng cấm), tù 6–12 giờ,
+ *   mất toàn bộ tiền vừa lấy (trả lại) và tụt uy tín phố thêm.
+ * - Đe nhiều thì `fearRate` càng tăng (khách sợ), và công an để ý sẵn ⇒ lần sau càng dễ bị bắt.
+ */
+export const canThreat = (g: Game): boolean => !!g.gang && rankOf(g).tier >= 4;
+/** Đe doạ người lạ. `rnd` lấy ngẫu nhiên trong khoảng; trả số liệu thật để câu thoại nói đúng. */
+export function threaten(g: Game, id: string): { cash: number; loot: string | null; heat: number; rep: number; reported: boolean; fine: number; jail: number } | null {
+  const k = G.THREAT_KINDS.find((x) => x.id === id);
+  if (!k || !canThreat(g) || !g.gang) return null;
+  const r = Math.random();
+  const cash = Math.round((k.cash[0] + (k.cash[1] - k.cash[0]) * r) / 1000) * 1000;
+  R.earn(g, cash, 'side');
+  const loot = k.loot && Math.random() < 0.6 ? k.loot : null;
+  if (loot) g.junk[loot] = (g.junk[loot] ?? 0) + 1;
+  g.wanted = clamp(g.wanted + k.heat, 0, 100);
+  g.rep = clamp(g.rep + k.rep, 0, 100);
+  g.st.mood = clamp(g.st.mood - 4, 0, R.STAT_MAX);
+  const times = (g.gang.threats = (g.gang.threats ?? 0) + 1);
+  addRespect(g, 3);
+  // Bị báo công an: xác suất tăng theo số lần đã đe (người trong xóm truyền tai nhau).
+  const reported = Math.random() < Math.min(0.85, k.report + times * 0.03);
+  if (!reported) return { cash, loot, heat: k.heat, rep: k.rep, reported: false, fine: 0, jail: 0 };
+  const fine = G.threatFine(g.wanted, times);
+  const paid = Math.min(g.cash, fine);
+  if (paid > 0) { g.cash -= paid; g.led.other += paid; }
+  g.rep = clamp(g.rep - 6, 0, 100);
+  addRespect(g, -20);
+  return { cash, loot, heat: k.heat, rep: k.rep - 6, reported: true, fine, jail: G.threatJail(times) };
+}
+/** Số lần đã đe doạ (dùng cho câu thoại và app điện thoại). */
+export const threatsOf = (g: Game): number => g.gang?.threats ?? 0;
+/** Phần khách bỏ đi thêm vì đã đe doạ người trong xóm (tối đa +12%). */
+export const threatFear = (g: Game): number => clamp(threatsOf(g) * 0.015, 0, 0.12);
+
+// ───────────────────────── SỰ KIỆN ĐÁNH NHAU (lượt 73) ─────────────────────────
+// Bảng bốn kiểu ẩu đả nằm ở `data/gang.ts` (`FIGHTS`) để test đọc được; ở đây là luật: khi nào xảy ra, đánh
+// thắng bao nhiêu phần, và ba lựa chọn có giá thế nào.
+export type FightKind = G.FightKind;
+const FIGHTS = G.FIGHTS;
+
+/** Cơ hội thắng ván đánh (0,12…0,95): bậc, máu, đàn em và uy tín phố đều tính. */
+export const fightChance = (g: Game, k: FightKind): number => {
+  const tier = g.gang ? rankOf(g).tier : 0;
+  const base = 0.34 + tier * 0.055 + (g.st.health - 50) / 420 + crewOf(g) * 0.05 + (g.rep - 40) / 900;
+  return clamp(base - (k.foes - 1) * 0.07, 0.12, 0.95);
+};
+
+/** Có nợ quá hạn thật (không tính sổ nợ của quán) — dùng cho ván “giang hồ tới đòi nợ”. */
+export const hasLateDebt = (g: Game): boolean => g.debts.some((d) => d.lender !== 'tab' && g.day > d.due);
+
+/**
+ * Có nên mở ván đánh nhau không — mỗi ngày tối đa một ván.
+ *
+ * Bốn kiểu, bốn điều kiện khác nhau (không kiểu nào là “đánh nhau vô cớ”):
+ * - `up_sot`: đã trong băng từ bậc 3, quan hệ với băng đối thủ ≤ −20 (đi vào địa bàn bên kia là bị úp sọt);
+ * - `chap_nhan`: đã đe doạ người ta từ 3 lần (người nhà kéo tới);
+ * - `doi_no`: có nợ quá hạn, bất kể có theo băng hay không (giang hồ đòi nợ là chuyện của chủ nợ);
+ * - `bao_ke`: quán đang bán tốt mà chưa theo băng nào (không có băng đỡ lưng thì ai cũng muốn ăn phần).
+ *
+ * Cơ hội mở mỗi lần gọi rất thấp (8–12 %) và `acts` chỉ hỏi 4 giây một lần, nên một ngày chơi bình thường
+ * gần như không gặp; gặp hay không là do tình trạng thật của ván, không phải tung xúc xắc cho vui.
+ */
+export function fightAt(g: Game): FightKind | null {
+  if ((g.flags.gangFightDay ?? -99) === g.day) return null;
+  // Bị úp sọt: đang ở địa bàn đối thủ, quan hệ đã xấu hẳn, bậc 3 trở lên.
+  if (g.gang && rankOf(g).tier >= 3 && rivalRel(g) <= -20 && g.flags.sweepNow !== 1 && rnd.chance(0.3)) return FIGHTS[0];
+  // Người nhà tới hỏi chuyện: đã đe doạ từ 3 lần trở lên.
+  if (g.gang && threatsOf(g) >= 3 && rnd.chance(0.22)) return FIGHTS[2];
+  // Giang hồ tới đòi nợ: có nợ quá hạn (không tính sổ ghi nợ của quán).
+  if (hasLateDebt(g) && rnd.chance(0.12)) return FIGHTS[1];
+  // Băng khác tới phá quán: đang bán tốt, có quầy đặt ở chỗ bán, và KHÔNG thuộc băng nào (không có ai đỡ lưng).
+  if (!g.gang && g.stall.where === 'placed' && (g.led.sold >= 8 || g.tot.served >= 20) && rnd.chance(0.1)) return FIGHTS[3];
+  return null;
+}
+export const markFight = (g: Game) => { g.flags.gangFightDay = g.day; };
+
+/** Kết quả một ván đánh. `win` do cảnh 3D quyết định (người chơi đấm trúng nhiều hơn). */
+export function resolveFight(g: Game, k: FightKind, how: 'danh' | 'chay' | 'dan_xep', win = false): { hp: number; rep: number; respect: number; cash: number; heat: number; mood: number; line: string } {
+  markFight(g);
+  if (how === 'chay') {
+    addRespect(g, -8);
+    g.st.mood = clamp(g.st.mood - 4, 0, R.STAT_MAX);
+    g.wanted = clamp(g.wanted + 4, 0, 100);
+    return { hp: -3, rep: 0, respect: -8, cash: 0, heat: 4, mood: -4,
+      line: 'Bỏ chạy. Không mất máu, nhưng cả xóm thấy, và băng mình coi là nhát — trừ 8 uy tín.' };
+  }
+  if (how === 'dan_xep') {
+    const paid = Math.min(g.cash, k.settle);
+    if (paid > 0) { g.cash -= paid; g.led.other += paid; }
+    addRespect(g, -4);
+    g.wanted = clamp(g.wanted + 2, 0, 100);
+    return { hp: 0, rep: 0, respect: -4, cash: -paid, heat: 2, mood: -2,
+      line: `Dàn xếp: đưa ${Math.round(paid / 1000)} nghìn, họ bỏ đi. Không mất máu — mà băng mình nghe chuyện thì cho là hèn.` };
+  }
+  if (win) {
+    const spoils = 40000 + k.foes * 35000;
+    R.earn(g, spoils, 'side');
+    g.wanted = clamp(g.wanted + 9, 0, 100);
+    g.rep = clamp(g.rep - 2, 0, 100);
+    g.st.health = clamp(g.st.health - k.hit, 1, R.STAT_MAX);
+    addRespect(g, k.respectWin);
+    g.st.mood = clamp(g.st.mood + 3, 0, R.STAT_MAX);
+    return { hp: -k.hit, rep: -2, respect: k.respectWin, cash: spoils, heat: 9, mood: 3,
+      line: `Thắng. ${k.foes} đứa bỏ chạy, để lại ${Math.round(spoils / 1000)} nghìn trong túi rơi. Công an sẽ hỏi thăm.` };
+  }
+  const lost = k.loseHp;
+  g.st.health = clamp(g.st.health - lost, 1, R.STAT_MAX);
+  g.wanted = clamp(g.wanted + 14, 0, 100);
+  g.rep = clamp(g.rep - 6, 0, 100);
+  addRespect(g, -2);
+  g.st.mood = clamp(g.st.mood - 6, 0, R.STAT_MAX);
+  return { hp: -lost, rep: -6, respect: -2, cash: 0, heat: 14, mood: -6,
+    line: `Bị đánh gục. Máu −${lost}, uy tín phố −6 — may mà người đi đường can.` };
 }

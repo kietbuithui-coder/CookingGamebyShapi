@@ -71,6 +71,28 @@ Quy ước cột **“Sửa ở”**: `tệp:dòng` của lần rà gần nhất
 | Đàn em đi theo (bậc 5–6) | `src/sim/gang.ts` → `maxCrew/crewCut/crewCover` | dắt theo: ăn ít hơn, bị để ý hơn, bị bắt thì gánh bớt |
 | App **Sổ băng** trên điện thoại | `src/data/phone.ts` (`appsOf(m, inGang)`) + `src/ui/phoneUI.ts` → `gangBody()` | chỉ hiện khi `g.gang`; **màn máy chỉ ~16 em** — viết ngắn, đừng thêm thanh/dòng dài |
 
+## 3d. Đe doạ người lạ · đánh nhau · giao diện Android (lượt 73)
+
+| Muốn đổi | Sửa ở | Ghi chú / bẫy |
+|---|---|---|
+| Ba mức **đe doạ** (tiền, đồ quý, mức bị để ý, xác suất bị báo) | `src/data/gang.ts` → `THREAT_KINDS` | `minTier` 4 / 5 / 6; test canh mức sau phải đắt và rủi ro hơn mức trước |
+| Điều kiện được đe doạ (bậc 4+) | `src/sim/gang.ts` → `canThreat()` | **chỉ một chỗ này** — `acts.threat()` và ngăn kéo Android đều đọc nó |
+| Luật đe doạ (tiền, heat, bị báo, phạt) | `src/sim/gang.ts` → `threaten()` | trả số liệu thật để câu thoại nói đúng; đừng tự tính lại trong `acts.ts` |
+| Tiền phạt / giờ tù khi bị báo | `src/data/gang.ts` → `threatFine()`, `threatJail()` | cố ý **nặng hơn án hàng cấm**; `tests/danhnhau73.test.ts` canh |
+| Khách sợ vì đã đe doạ | `src/sim/gang.ts` → `threatFear()` (cộng trong `fearRate`) | trần 12 % |
+| Số lần đã đe (lưu vào bản lưu) | `src/sim/state.ts` → `GangState.threats`, `cleanGang`, `SAVE_VERSION` = **19** | thiếu trường ⇒ 0, không NaN |
+| Nút ĐE DOẠ | `src/ui/ui.ts` → ngăn kéo (`ANDROID_GRID`, lọc ở `androidGrid()`) + phím **T** | chỉ hiện từ bậc 4; ẩn hẳn dưới bậc đó chứ không chỉ mờ đi |
+| Bốn kiểu **đánh nhau** (số đối thủ, máu, tiền, dàn xếp) | `src/data/gang.ts` → `FIGHTS` | `settle: 0` = không dàn xếp được (chỉ kiểu đòi nợ) |
+| Khi nào mở ván đánh | `src/sim/gang.ts` → `fightAt()` (nhịp hỏi 4 s ở `acts.update`, `fightT`) | một ngày một ván (`g.flags.gangFightDay`); **phải có `!ctx.anim.active`** khi mở hộp thoại khác, không là cảnh bị dẹp giữa chừng |
+| Cơ hội thắng | `src/sim/gang.ts` → `fightChance()` | bậc, máu, đàn em, uy tín phố; kẹp 0,12…0,95 |
+| Kết quả ba lựa chọn | `src/sim/gang.ts` → `resolveFight()` | đánh thắng / đánh thua / chạy / dàn xếp — không cửa nào miễn phí |
+| Cảnh đánh 3D (ba nút, máu, camera) | `src/game/anim.ts` → `startFight()` / `fightPunch()` / `fightGuard()` / `fightBack()` | `AnimKind` = `'danh_nhau'`; khối `update` cùng tên |
+| Ba dáng người mới | `src/gfx/people.ts` → `Pose` + `Rig.update()` | `block` (đỡ), `stagger` (trúng đòn), `threat` (đe doạ); thêm dáng thì phải thêm cả nhánh trong `update` |
+| Mượn/trả rig người cho cảnh | `src/game/npc.ts` → `acquire()` / `release()` + `Rig.slot` | dùng hồ, **đừng `new Rig()`** mỗi ván (cấp phát hình học = giật hình trên máy yếu) |
+| Giao diện Android (thanh trên cùng, ngăn kéo) | `src/ui/ui.ts` → `#topbar`, `#drawer`, `applyAndroid()`, `ANDROID_GRID` + `src/ui/style.css` → khối `#ui.android` | bật/tắt ở `Settings.android` (`src/game/ctx.ts`, mặc định bật trên điện thoại) và Cài đặt › **Giao diện** |
+| Nút nào nằm trong ngăn kéo | `src/ui/ui.ts` → `ANDROID_GRID` | mỗi mục là `{ p, icon, label, tip }`; `need: 'threat' | 'phone'` để lọc theo tình trạng ván |
+| Đóng ngăn kéo | `UI.closeDrawer` (gọi trong `panel()` và `setHud(false)`) | ⚠ bộ hẹn 190 ms của lần đóng **phải được huỷ khi mở lại**, không là ngăn kéo tự giấu mình |
+
 ## 4. Hình khối 3D
 
 | Muốn đổi | Sửa ở | Bẫy |
@@ -115,7 +137,7 @@ mục nào trùng neo**; `latestSteps()` không được gán `g.min` (đi nhanh
 | Việc | Lệnh |
 |---|---|
 | Soát kiểu | `npx tsc --noEmit` |
-| Toàn bộ luật chơi | `npx vitest run` (~13 s, 722 bài) |
+| Toàn bộ luật chơi | `npx vitest run` (~15 s, 797 bài / 64 tệp) |
 | Dựng bản chơi được (ghi vào `docs/`) | `npm run build:pages` — **probe đọc `docs/`, sửa nguồn mà không build là probe ra bản cũ** |
 | Chụp ảnh / bấm chuột thật trong game | `cd tools/probe && node play.mjs steps/<tên>.mjs` → ảnh ở `tools/probe/out/<tên>/` |
 | Soát hình học (mặt trùng phẳng, biển bị che) | `steps/audit.mjs` |

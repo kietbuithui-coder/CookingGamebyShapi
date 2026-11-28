@@ -4,6 +4,10 @@ import { ctx } from './ctx';
 import { MB, MAT } from '../gfx/mb';
 import { Pose } from '../gfx/people';
 import { Npc, cupProp } from './npc';
+import { ARCH } from '../data/people';
+import { lookFromArch, Rig } from '../gfx/people';
+import { RNG } from '../core/util';
+import { FIGHTS } from '../data/gang';
 import { clamp } from '../core/util';
 import { toast } from '../core/bus';
 import { STAT_MAX } from '../sim/state';
@@ -217,7 +221,9 @@ export type AnimKind =
   | 'rap' | 'danh_co' | 'barber' | 'hat_rong' | 'danh_giay' | 'sua_xe'
   | 'tra_da' | 'phu_tra_da' | 'swing' | 'cafe_sua' | 'karaoke' | 'bong_da'
   | 'net' | 'temple_huong' | 'temple_com' | 'labour' | 'cafe_shift' | 'dock_shift'
-  | 'mia_uong' | 'mia_phu' | 'site_phu';
+  | 'mia_uong' | 'mia_phu' | 'site_phu'
+  /** Lượt 73: ván đánh nhau có cảnh 3D — đấm, đỡ, loạng choạng, ngã. */
+  | 'danh_nhau';
 
 export class AnimSystem {
   active = false;
@@ -243,6 +249,17 @@ export class AnimSystem {
   private sitePts: [number, number, number][] = [];
   private siteAt: [number, number, number] = [0, 0, 0];
   private miaLabel = ''; private miaPts: [number, number, number][] = []; private miaBarX: [number, number, number] = [0, 1, 0];
+  // ── Ván đánh nhau (lượt 73): đối thủ dựng bằng rig thật, người chơi đấm bằng nút ──
+  /** Máu của người chơi và của cả nhóm đối thủ trong cảnh (0…100). */
+  fightHp = 100; foeHp = 100;
+  /** Đòn đang diễn ra: ai vừa đấm (0 = không), và nhịp đếm để tung đòn kế. */
+  private fightBeat = 0; private fightHitT = 0; private foeAtk = 0; private fightPoseT = 0;
+  /** Kết thúc ván: thắng/thua, và hàm trả kết quả về lớp game. */
+  fightWin = false; private fightDone: ((win: boolean) => void) | null = null;
+  /** Số đối thủ + máu mất mỗi đòn (lấy từ `data/gang.ts → FIGHTS`). */
+  private fightFoes = 2; private fightHitDmg = 5;
+  /** Tổng máu ban đầu của cả nhóm đối thủ — thanh tiến trình tính theo tỉ lệ này, không theo số đứa còn đứng. */
+  private fightTotalHp = 1; private fightRigs: { rig: Rig; x: number; z: number; hp: number; down: boolean; t: number; mesh: THREE.Group }[] = [];
   // Trạng thái bàn cờ vua 8×8 với Ông Tư
   chessPresetIdx = 0;
   chessBoard: Board = boardFromRows(CHESS_PRESETS[0].rows);
@@ -1758,6 +1775,120 @@ export class AnimSystem {
     ]);
   }
 
+  // ── 14. VÁN ĐÁNH NHAU (lượt 73) ────────────────────────────────────────────────
+  /**
+   * Cảnh ẩu đả có đánh thật: đối thủ là **rig người thật** đứng vòng quanh, có ba nút ĐẤM / ĐỠ / LÙI.
+   * - **Đấm**: trúng thì đối thủ gần nhất mất máu, loạng choạng (`stagger`); trượt thì mất một nhịp và ăn đòn.
+   * - **Đỡ**: hai tay che mặt (`block`) — đòn kế của đối thủ chỉ mất nửa máu.
+   * - **Lùi**: nhảy ra xa, hồi một ít máu, nhưng đối thủ dồn lại nhanh hơn.
+   * Hết máu (hoặc hạ hết đối thủ) là dừng cảnh và trả kết quả về `acts` qua `onDone`.
+   *
+   * Đây là phần người chơi dặn *“animation phải chuẩn”*: người đấm chồm tới, người ăn đòn bật ngửa, người
+   * đỡ co tay — không có khối nào đứng im như tượng.
+   */
+  startFight(kindId: string, onDone: (win: boolean) => void) {
+    const k = FIGHTS.find((x) => x.id === kindId) ?? FIGHTS[0];
+    const p = ctx.player, g = ctx.g;
+    // Đứng nguyên chỗ, quay camera sang ngang nhìn cả hai bên — chỗ đánh là chỗ người chơi đang đứng.
+    const px = p.x, pz = p.z, py = groundY(px, pz);
+    const yaw = p.yaw;
+    // Camera đứng CHẾCH SANG MỘT BÊN, cao hơn đầu người: nhìn ngang thấy được cả người chơi lẫn ba đứa đang vây.
+    // Bản đầu đặt camera ngay sau lưng nên ba đứa che kín người chơi — ảnh probe trông như một đám chen chúc.
+    this.begin('danh_nhau', 'ẨU ĐẢ NGAY GIỮA ĐƯỜNG', ['Đỡ đòn mở màn', 'Đánh trả', 'Dứt điểm'],
+      k.line, px, py, pz, yaw, 'block', false, null,
+      [px - Math.sin(yaw) * 1.4 + Math.cos(yaw) * 5.2, py + 3.1, pz - Math.cos(yaw) * 1.4 - Math.sin(yaw) * 5.2],
+      [px + Math.sin(yaw) * 1.0, py + 1.0, pz + Math.cos(yaw) * 1.0],
+      90, null);
+    this.dur = 90;               // cảnh tự do: chỉ kết thúc khi phân thắng bại
+    this.fightHp = 100; this.foeHp = 100; this.fightWin = false; this.fightDone = onDone;
+    this.fightFoes = k.foes; this.fightHitDmg = k.hit; this.fightBeat = 0; this.fightHitT = 0; this.foeAtk = 0;
+    // Dựng đối thủ: giang hồ, đứng thành vòng cung trước mặt người chơi.
+    const R = new RNG((Math.random() * 1e9) | 0), a = ARCH.giangho;
+    this.fightRigs = [];
+    for (let i = 0; i < k.foes; i++) {
+      const rig = ctx.npcs.acquire(R); rig.slot = 'fight'; const fem = false; rig.setLook(lookFromArch(a, R, fem));
+      // Ba đứa đứng thành vòng cung trước mặt, cách người chơi 2,1 m, mỗi đứa một hướng — nhìn ra là bị vây.
+      const ang = yaw + (i - (k.foes - 1) / 2) * 0.9, rr = 2.5;
+      rig.pose = 'angry'; rig.root.position.set(px + Math.sin(ang) * rr, py, pz + Math.cos(ang) * rr);
+      rig.root.rotation.y = ang + Math.PI;
+      ctx.scene.add(rig.root);
+      this.fightRigs.push({ rig, x: rig.root.position.x, z: rig.root.position.z, hp: 60, down: false, t: 0, mesh: rig.root });
+    }
+    // Thanh máu nhóm đối thủ tính theo TỔNG máu, chứ không theo số đứa còn đứng: ba đứa mỗi đứa 60 máu thì
+    // phải đấm 6 phát mới hạ hết, và mỗi phát phải thấy thanh tụt — bản đầu tính theo đầu người nên đấm
+    // hai phát vẫn thấy 100 % (probe `danhnhau73` bắt được).
+    this.fightTotalHp = this.fightRigs.reduce((a, f) => a + f.hp, 0);
+    ctx.ui.cookHeat(null); ctx.ui.cookSlider(null); ctx.ui.cookCard(null);
+    ctx.ui.cookShow('ẨU ĐẢ NGAY GIỮA ĐƯỜNG', ['Đỡ đòn', 'Đánh trả', 'Dứt điểm'], 0);
+    ctx.ui.cookProg(this.foeHp / 100, 0, 1, `đối thủ còn ${Math.max(0, Math.round(this.foeHp))}% · máu bạn ${Math.round(this.fightHp)}`);
+    this.fightBtns();
+  }
+  /** Ba nút của ván đánh; gọi lại mỗi lượt để nhãn đổi theo tình hình. */
+  private fightBtns() {
+    const alive = this.fightRigs.filter((f) => !f.down).length;
+    this.setBtns([
+      { label: `ĐẤM (${alive} đứa còn đứng)`, hot: true, fn: () => this.fightPunch() },
+      { label: 'ĐỠ ĐÒN', hot: false, fn: () => this.fightGuard() },
+      { label: 'LÙI RA', hot: false, fn: () => this.fightBack() },
+      { label: 'Bỏ chạy khỏi đây', hot: false, fn: () => this.endFight('chay') },
+    ]);
+  }
+  /** Một cú đấm: trúng đứa gần nhất thì nó mất máu và loạng choạng, trượt thì mình ăn đòn. */
+  private fightPunch() {
+    this.fightBeat = 0;
+    const p = ctx.player;
+    // `actPose` chứ không phải `rig.pose`: `player.update` ghi đè `rig.pose` bằng `actPose` mỗi khung hình,
+    // nên đặt thẳng `rig.pose` thì cú đấm không bao giờ hiện ra (bẫy đã dính một lần ở lượt 46).
+    p.actPose = 'punch'; if (p.actRigPos) { p.actRigPos.x -= Math.sin(p.actRigPos.yaw) * 0.16; p.actRigPos.z -= Math.cos(p.actRigPos.yaw) * 0.16; }
+    this.fightPoseT = 0.4;
+    sfx('whoosh');
+    const target = this.fightRigs.filter((f) => !f.down).sort((a, b) => b.hp - a.hp)[0];
+    if (!target) return;
+    // Trúng 78% (bậc cao thì chắc tay hơn nhờ `fightChance` đã tính trong máu đối thủ — ở đây là cảm giác tay).
+    if (Math.random() < 0.78) {
+      const dmg = 26 + (ctx.g.gang ? 6 : 0);
+      target.hp -= dmg; target.rig.pose = 'stagger'; target.rig.setExpr(4, 0.6); target.rig.exprT = 0.6;
+      ctx.sound.play('thud');
+      this.flt(target.mesh.position.x, 1.6, target.mesh.position.z, 'BỐP!', 'good');
+      if (target.hp <= 0) { target.down = true; target.rig.pose = 'lie'; this.flt(target.mesh.position.x, 1.2, target.mesh.position.z, 'GỤC!', 'good'); }
+      this.foeHp = (this.fightRigs.reduce((a, f) => a + Math.max(0, f.hp), 0) / this.fightTotalHp) * 100;
+    } else {
+      this.fightHp -= this.fightHitDmg * 0.6;
+      this.flt(p.x, 1.7, p.z, 'HỤT!', 'bad');
+    }
+    // Đối thủ còn đứng thì đánh trả ngay sau nhịp này.
+    this.foeAtk = 0.42;
+    ctx.ui.cookProg(this.foeHp / 100, 0, 1, `đối thủ còn ${Math.max(0, Math.round(this.foeHp))}% · máu bạn ${Math.round(this.fightHp)}`);
+    this.fightCheck();
+  }
+  /** Đỡ: co tay che mặt, đòn kế chỉ mất nửa máu. */
+  private fightGuard() {
+    const p = ctx.player;
+    p.actPose = 'block'; this.fightPoseT = 0.5; this.foeAtk = 0.3; this.fightBeat = 0;
+    sfx('skim');
+    this.flt(p.x, 1.7, p.z, 'ĐỠ!', 'info');
+  }
+  /** Lùi ra: nhích ra sau, hồi nhẹ máu, đổi lại đối thủ dồn nhanh hơn. */
+  private fightBack() {
+    const p = ctx.player, rp = p.actRigPos;
+    if (rp) { rp.x -= Math.sin(rp.yaw) * 0.7; rp.z -= Math.cos(rp.yaw) * 0.7; rp.y = groundY(rp.x, rp.z); }
+    this.fightHp = Math.min(100, this.fightHp + 4); this.foeAtk = 0.25; this.fightBeat = 0;
+    sfx('step');
+    this.flt(p.x, 1.7, p.z, '+4 máu', 'info');
+  }
+  /** Kiểm tra hết ván: hạ hết đối thủ thì thắng, máu về 0 thì thua. */
+  private fightCheck() {
+    if (this.fightRigs.every((f) => f.down)) { this.endFight('danh', true); return; }
+    if (this.fightHp <= 0) this.endFight('danh', false);
+  }
+  private endFight(how: 'danh' | 'chay', win = false) {
+    const cb = this.fightDone; this.fightDone = null; this.fightWin = win;
+    for (const f of this.fightRigs) { ctx.scene.remove(f.mesh); ctx.npcs.release(f.rig); }
+    this.fightRigs = [];
+    this.stop();
+    cb?.(win);
+  }
+
   // ── Cập nhật hoạt ảnh 3D mỗi khung hình ──────────────────────────────────────────
   update(dt: number) {
     if (!this.active) return;
@@ -1819,6 +1950,41 @@ export class AnimSystem {
       ctx.ui.cookHint('Canh con chạy vào VÙNG XANH rồi bấm “QUAY CẦN ÉP!” — lệch là tràn nước, chủ trừ tiền mía.');
       // cần quay của máy ép xoay theo nhịp: mượn chuyển động của người chơi + cánh tay
       if (rp) rp.pitch = -0.18 + 0.24 * Math.sin(this.miaPhase * 1.6 + this.t * 2.2);
+    } else if (this.kind === 'danh_nhau') {
+      // Ván đánh: đối thủ xông vào theo nhịp, người chơi đỡ/đấm bằng ba nút (xem `fightBtns`).
+      // Mỗi nhịp ~1,9 giây thì bên kia tung một đòn vào người chơi — đỡ thì mất nửa máu.
+      this.fightBeat += dt;
+      // Cú đấm/đỡ chỉ giữ dáng trong ~0,4 giây rồi về thế thủ, để người chơi thấy rõ từng đòn.
+      if (this.fightPoseT > 0) { this.fightPoseT -= dt; if (this.fightPoseT <= 0) ctx.player.actPose = 'block'; }
+      for (const f of this.fightRigs) {
+        f.t += dt;
+        if (f.down) { f.rig.pose = 'lie'; f.rig.root.position.y = groundY(f.x, f.z); f.rig.update(dt, 0, 4); continue; }
+        // Dồn tới rồi lùi lại theo nhịp: nhìn ra được là chúng đang vây, không phải đứng im.
+        const k = (f.t * 1.15) % 2;
+        const push = k < 1 ? Math.sin(k * Math.PI) : 0;
+        const px2 = ctx.player.actRigPos, bx = px2 ? px2.x : ctx.player.x, bz = px2 ? px2.z : ctx.player.z;
+        const dx = bx - f.x, dz = bz - f.z, len = Math.hypot(dx, dz) || 1;
+        f.rig.root.position.x = f.x + (dx / len) * push * 0.42;
+        f.rig.root.position.z = f.z + (dz / len) * push * 0.42;
+        f.rig.root.position.y = groundY(f.x, f.z);
+        f.rig.root.rotation.y = Math.atan2(dx, dz);
+        if (f.rig.pose === 'stagger') { if (f.t > 0.35) f.rig.pose = 'punch'; }
+        else f.rig.pose = push > 0.55 ? 'punch' : 'angry';
+        f.rig.update(dt, 0, 4);
+      }
+      // Cảnh chỉ tự kết thúc khi một bên gục; còn lại thì chờ người chơi bấm nút.
+      if (this.fightRigs.length && this.foeAtk > 0) {
+        this.foeAtk -= dt;
+        if (this.foeAtk <= 0) {
+          const p2 = ctx.player, guarding = p2.actPose === 'block';
+          const dmg = this.fightHitDmg * (guarding ? 0.45 : 1);
+          this.fightHp -= dmg;
+          ctx.ui.hitFlash(guarding ? 0.2 : 0.45); ctx.sound.play('thud');
+          this.flt(p2.actRigPos ? p2.actRigPos.x : p2.x, 1.7, p2.actRigPos ? p2.actRigPos.z : p2.z, `−${Math.round(dmg)} máu`, 'bad');
+          ctx.ui.cookProg(this.foeHp / 100, 0, 1, `đối thủ còn ${Math.max(0, Math.round(this.foeHp))}% · máu bạn ${Math.round(this.fightHp)}`);
+          this.fightCheck();
+        }
+      }
     } else if (this.kind === 'barber') {
       const prog = clamp(this.t / this.dur, 0, 1);
       ctx.ui.cookProg(prog, 0.2, 1.0, 'đang cắt tỉa');

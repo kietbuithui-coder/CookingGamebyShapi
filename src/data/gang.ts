@@ -355,3 +355,123 @@ export const GANG_TROUBLE: GangTrouble[] = [
     refuse: { respect: 0, heat: 14, rep: -4, mood: -6 }, minTier: 2,
   },
 ];
+
+// ───────────────────────── ĐE DOẠ NGƯỜI LẠ (bậc 4+) ─────────────────────────
+/**
+ * Người chơi dặn: *“thêm nút đe doạ người lạ (tiền/đồ quý giá) khi trở thành thành viên cấp 4+”*.
+ *
+ * Đây là bản lề của con dao hai lưỡi: đe doạ **ra tiền nhanh** (không mất sức, không cần chợ), nhưng mỗi lần
+ * đe là **+mức bị để ý rất nặng**, uy tín ngoài phố tụt, và **có xác suất người bị đe doạ đi báo công an** —
+ * lúc đó phạt theo mức bị để ý, nặng hơn cả một chuyến hàng cấm. Ai đe nhiều thì quán vắng, công an nhớ mặt.
+ */
+export interface ThreatKind {
+  id: string;
+  name: string;
+  /** Câu người chơi nói ra (hiện trong hộp thoại). */
+  say: string;
+  /** Tiền lấy được: ngẫu nhiên trong khoảng này (đồng). */
+  cash: [number, number];
+  /** Món quý lấy được (mã trong `GEAR`), không có thì chỉ lấy tiền. */
+  loot?: string;
+  /** Mức bị để ý cộng thêm. */
+  heat: number;
+  /** Uy tín ngoài phố bị trừ. */
+  rep: number;
+  /** Xác suất người ta đi báo công an (0…1). */
+  report: number;
+  /** Bậc tối thiểu. */
+  minTier: number;
+  /** Mô tả ngắn cho nút bấm. */
+  desc: string;
+}
+export const THREAT_KINDS: ThreatKind[] = [
+  {
+    id: 'xin_de', name: 'Xin để yên chỗ bán',
+    say: '“Chỗ này băng tao giữ. Đưa ít gọi là lễ, tao để mày bán yên.”',
+    cash: [30000, 70000], heat: 8, rep: -3, report: 0.12, minTier: 4,
+    desc: 'Nhẹ nhất: lấy ít tiền lẻ, hầu như không ai dám cãi — mà cũng chẳng được bao nhiêu.',
+  },
+  {
+    id: 'lay_do', name: 'Lấy đồ quý của người ta',
+    say: '“Cái đồng hồ/cái dây đó đẹp. Đưa đây, tao coi rồi trả.”',
+    cash: [55000, 95000], loot: 'dongho', heat: 14, rep: -6, report: 0.3, minTier: 5,
+    desc: 'Lấy được món đồ quý bán lại ở tiệm cầm đồ, nhưng người mất đồ nhớ mặt rất kỹ.',
+  },
+  {
+    id: 'siet_quy', name: 'Siết nợ người quen',
+    say: '“Mày nợ băng tao. Không có tiền thì dọn đồ ra đây.”',
+    cash: [120000, 260000], heat: 22, rep: -12, report: 0.42, minTier: 6,
+    desc: 'Được nhiều tiền nhất — và cũng dễ bị báo công an nhất. Chỉ đại ca mới dám làm.',
+  },
+];
+export const THREAT_LIST = THREAT_KINDS;
+
+/**
+ * Tiền phạt khi bị báo công an vì đe doạ: **nặng hơn hàng cấm**, vì đây là đe doạ người, không phải hàng hoá.
+ * Tính theo mức bị để ý (càng để ý càng bị xử nặng) + số lần đã đe.
+ */
+export function threatFine(heat: number, times: number): number {
+  return Math.round((400000 + heat * 22000 + Math.max(0, times) * 60000) / 1000) * 1000;
+}
+/** Số giờ tạm giữ khi bị báo vì đe doạ: ít nhất 6 giờ, càng đe nhiều càng lâu (tối đa 12). */
+export const threatJail = (times: number) => Math.min(12, 6 + Math.floor(Math.max(0, times) / 2));
+
+// ───────────────────────── SỰ KIỆN ĐÁNH NHAU (lượt 73) ─────────────────────────
+/**
+ * Người chơi dặn: *“thêm event đánh nhau”* — và dặn luôn *“animation phải chuẩn”*, nên ván đánh **có cảnh 3D
+ * thật** (`AnimSystem.startFight`): đối thủ được dựng bằng rig người thật, có đấm–đỡ–loạng choạng–ngã.
+ *
+ * Bốn kiểu ẩu đả, **mỗi kiểu là một cái giá của việc có phe** (không có vụ đánh nhau vô cớ):
+ *   `up_sot`    — đi vào địa bàn băng đối thủ khi quan hệ đã xấu;
+ *   `doi_no`    — giang hồ tới đòi nợ quá hạn;
+ *   `chap_nhan` — người nhà của người từng bị mình đe doạ kéo tới;
+ *   `bao_ke`    — băng khác tới phá quán đang bán tốt mà mình không có băng đỡ lưng.
+ *
+ * Ba lựa chọn, không có cửa miễn phí: **đánh tới** (thắng được tiền + uy tín trong băng, thua mất máu + uy tín
+ * phố), **bỏ chạy** (giữ máu, mất uy tín trong băng), **dàn xếp** (mất tiền, băng coi là hèn — chỉ vài kiểu
+ * dàn xếp được).
+ */
+export interface FightKind {
+  id: 'up_sot' | 'doi_no' | 'chap_nhan' | 'bao_ke';
+  name: string;
+  /** Câu của kẻ gây sự. */
+  line: string;
+  /** Số đứa xông vào (1–3) — quyết định độ khó. */
+  foes: number;
+  /** Máu mất mỗi đòn của đối thủ. */
+  hit: number;
+  /** Uy tín trong băng được cộng nếu thắng. */
+  respectWin: number;
+  /** Máu mất khi thua (đã tính cả `hit`). */
+  loseHp: number;
+  /** Tiền dàn xếp (0 = không dàn xếp được). */
+  settle: number;
+  /** Một dòng gợi ý cho hộp thoại. */
+  note: string;
+}
+export const FIGHTS: FightKind[] = [
+  {
+    id: 'up_sot', name: 'Bị úp sọt ở địa bàn lạ',
+    line: 'Ba đứa từ trong hẻm bước ra, một đứa cầm cây gậy: “Đi một mình qua đây hả? Bữa nay mày ở lại đây chơi.”',
+    foes: 3, hit: 5, respectWin: 10, loseHp: 26, settle: 220000,
+    note: 'Bậc càng cao thì bên kia càng nể — nhưng cũng càng muốn thử mày.',
+  },
+  {
+    id: 'doi_no', name: 'Giang hồ tới đòi nợ',
+    line: 'Hai đứa đứng chắn cửa, một đứa gõ gậy xuống đất: “Nợ tới hạn rồi. Tiền đâu?”',
+    foes: 2, hit: 6, respectWin: 6, loseHp: 22, settle: 0,
+    note: 'Không dàn xếp được với chủ nợ — chỉ có trả, đánh, hoặc chạy.',
+  },
+  {
+    id: 'chap_nhan', name: 'Người nhà kéo tới hỏi chuyện',
+    line: 'Một người đàn ông chỉ thẳng mặt: “Mày đe doạ em tao hôm trước hả? Ra đây nói chuyện.”',
+    foes: 2, hit: 5, respectWin: 5, loseHp: 20, settle: 150000,
+    note: 'Đe doạ nhiều thì người ta nhớ mặt — và có người nhà.',
+  },
+  {
+    id: 'bao_ke', name: 'Băng khác tới phá quán',
+    line: 'Ba đứa dựng xe trước quầy: “Quán này bán tốt ghê. Chưa nộp phí cho ai hết hả?”',
+    foes: 3, hit: 4, respectWin: 8, loseHp: 24, settle: 300000,
+    note: 'Đang bán tốt mà không có băng đỡ lưng thì ai cũng muốn ăn phần.',
+  },
+];

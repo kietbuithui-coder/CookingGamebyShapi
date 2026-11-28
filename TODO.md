@@ -20,6 +20,7 @@ chuỗi cửa hàng (chi nhánh thứ hai, người trông coi, sổ từng đi�
 | ~~1~~ | ~~Băng nhóm~~ — **XONG lượt 71 (bản cơ bản đầy đủ)** | Lỗ hổng nội dung lớn nhất: có sự kiện thu tiền bảo kê + chủ nợ Hùng Sẹo nhưng **không có lãnh địa, không đụng độ, không nhiệm vụ**. Đây là mạch người chơi còn thiếu hẳn | lớn (2–3 lượt) |
 | ~~2~~ | ~~Câu Ông Bảy cho sự kiện đang diễn ra~~ — **XONG lượt 70c** | `eventRule()` trong `sim/advice.ts`, 22 sự kiện có câu riêng, `tests/hobo.test.ts` thêm 6 bài | — |
 | ~~1b~~ | ~~Băng đảng phần còn thiếu + “con dao hai lưỡi”~~ — **XONG lượt 72** | đụng độ phe, đàn em, app Sổ băng, cảnh làm việc có giá, bốn cách rời băng | — |
+| ~~1c~~ | ~~Đe doạ người lạ · sự kiện đánh nhau · giao diện Android~~ — **XONG lượt 73** | ba mức đe doạ (bậc 4+), bốn kiểu ẩu đả có cảnh 3D, ba dáng người mới, ngăn kéo ☰ | — |
 | 3 | **Bậc 7: nhiều chi nhánh + quản lý từ điện thoại** (§1) | Hiện đúng **1** chi nhánh; app điện thoại đã bật/tắt bán từ xa nhưng chưa quản chi nhánh | vừa |
 | 4 | **Nhắc nợ qua điện thoại** (§8) | Bảng “Nợ & khách quen” chỉ nhắc khi gặp mặt; gọi điện là chỗ tự nhiên nhất | nhỏ |
 | 5 | **Lưu đám mây** (§6) | Xoá dữ liệu trình duyệt là mất sạch bản lưu. Rủi ro thật với người chơi thật | vừa (cần quyết định: tài khoản? mã hoá?) |

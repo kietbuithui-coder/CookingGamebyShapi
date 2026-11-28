@@ -35,7 +35,7 @@ import { LANDMARK_LIST } from '../data/landmarks';
 import { advice, pickAdvice, rememberAdvice } from '../sim/advice';
 import * as GANGTALK from './gangTalk';
 import * as GANGSIM from '../sim/gang';
-import { GANG_TROUBLE as GANGS2 } from '../data/gang';
+import { GANG_TROUBLE as GANGS2, THREAT_KINDS, FIGHTS } from '../data/gang';
 import { MB, MAT } from '../gfx/mb';
 import { ingModel } from '../gfx/props';
 
@@ -1049,6 +1049,88 @@ export class Acts {
     ctx.npcs.hit(best);
     P.addHeat(g, P.HEAT_PUNCH);
   }
+
+  // ───────────────────────── Đe doạ người lạ (lượt 73) ─────────────────────────
+  /** Bậc 4 trở lên mới có quyền “dọa người”: mở bảng chọn đe doạ người gần nhất. */
+  threat() {
+    const g = this.g, p = ctx.player;
+    if (ctx.mode !== 'play') return;
+    if (!GANGSIM.canThreat(g)) {
+      toast('Chưa đủ tầm để dọa người ta. Phải là thành viên băng từ bậc 4 trở lên.', 'warn', 'skull');
+      return;
+    }
+    // Người bị đe: người đi đường gần nhất trong tầm 4 m, không phải trẻ con, không phải công an.
+    let best: Npc | null = null, bd = 4 * 4;
+    for (const n of ctx.npcs.list) {
+      if (n.hidden || n.kind === 'kid' || n.arch.id === 'congan') continue;
+      const d = dist2(n.x, n.z, p.x, p.z); if (d < bd) { bd = d; best = n; }
+    }
+    if (!best) { toast('Không có ai gần đây để nói chuyện. Kiếm một người đứng gần (dưới 4 m).', 'info', 'chat'); return; }
+    const who = best, tier = GANGSIM.rankOf(g).tier;
+    const opts: Opt[] = THREAT_KINDS.filter((k) => k.minTier <= tier).map((k) => ({
+      t: `${k.name} — ${money(k.cash[0])}…${money(k.cash[1])}`,
+      sub: `${k.desc} · bị để ý +${k.heat} · ${Math.round(k.report * 100)}% bị báo công an`,
+      fn: () => this.doThreat(who, k.id),
+    }));
+    this.D(`Đe doạ ${who.name}`, who, `Bạn chặn ${who.name} lại giữa đường. Hắn nhìn quanh xem có ai không. Muốn nói gì?`, [...opts, { t: 'Thôi, bỏ qua.', fn: () => { ctx.npcs.say(who, '…Đi đâu vậy?', 2); } }]);
+  }
+  /** Thực hiện một lời đe doạ đã chọn: tính tiền/đồ, tăng mức bị để ý, và có thể bị báo công an. */
+  private doThreat(who: Npc, id: string) {
+    const g = this.g, k = THREAT_KINDS.find((x) => x.id === id)!;
+    ctx.npcs.say(who, k.say, 3.4, EXPR.pain);
+    const r = GANGSIM.threaten(g, id);
+    if (!r) return;
+    ctx.player.gesture('threat', 0.9); ctx.sound.play('shout'); ctx.ui.hitFlash(0.25);
+    ctx.ui.float(`+${money(r.cash)}`, who, 'good');
+    if (r.loot) ctx.ui.float('+ đồ quý', who, 'good');
+    toast(`Lấy được ${money(r.cash)}${r.loot ? ' và một món đồ quý' : ''} của ${who.name}. Bị để ý +${r.heat}, uy tín phố ${r.rep}.`, 'warn', 'skull', true);
+    ctx.npcs.leave(who);
+    if (r.reported) {
+      // Bị báo công an: phạt nặng theo mức bị để ý, và ngồi buồng. Đây là cái giá của nghề đe doạ.
+      const cop = ctx.npcs.sendPolice();
+      setTimeout(() => {
+        toast(`Người bị đe doạ chạy thẳng ra đồn. Phạt ${money(r.fine)} và ${r.jail} giờ tạm giữ.`, 'bad', 'badge', true);
+        this.sendToJail(cop ?? null, `Bị báo công an vì đe doạ ${who.name}.`, r.jail);
+      }, 900);
+    } else if (rnd.chance(0.5)) {
+      // Một người đi đường thấy cảnh đó: uy tín phố tụt thêm, và khách quanh đây nghe chuyện.
+      g.rep = clamp(g.rep - 1, 0, 100);
+      toast('Người đi đường nhìn thấy, xì xào. Xóm bắt đầu để ý bạn.', 'warn');
+    }
+    bus.emit('save', 'de doa');
+  }
+
+  // ───────────────────────── Đánh nhau (lượt 73) ─────────────────────────
+  /** Mở một ván đánh nhau có cảnh 3D. Bao gồm ba lựa chọn: đánh, chạy, dàn xếp. */
+  openFight(k: import('../data/gang').FightKind) {
+    const g = this.g, chance = GANGSIM.fightChance(g, k);
+    const opts: Opt[] = [
+      { t: `Đánh tới — cơ hội thắng ${Math.round(chance * 100)}%`, sub: `Thắng: +${Math.round((40000 + k.foes * 35000) / 1000)} nghìn, +${k.respectWin} uy tín băng · Thua: −${k.loseHp} máu, −6 uy tín phố`, hot: true, fn: () => this.startFightScene(k) } as Opt,
+      { t: 'Bỏ chạy', sub: 'Không mất máu, nhưng −8 uy tín trong băng và cả xóm thấy', fn: () => this.fightResult(k, 'chay') },
+    ];
+    if (k.settle > 0) opts.push({ t: `Dàn xếp — ${money(k.settle)}`, sub: g.cash >= k.settle ? 'Mất tiền, giữ được người; băng coi là hèn (−4 uy tín)' : `Còn thiếu ${money(k.settle - g.cash)}`, off: g.cash < k.settle, fn: () => this.fightResult(k, 'dan_xep') });
+    this.D(k.name, undefined, `${k.line}\n\n${k.note}`, opts);
+  }
+  /** Cảnh đánh 3D: người chơi tự đấm/đỡ/lùi trong `AnimSystem.startFight`. */
+  private startFightScene(k: import('../data/gang').FightKind) {
+    ctx.ui.closeDialog();
+    ctx.anim.startFight(k.id, (win) => this.fightResult(k, 'danh', win));
+  }
+  /** Áp kết quả ván đánh lên người chơi, kèm hậu quả (công an, ngất). */
+  private fightResult(k: import('../data/gang').FightKind, how: 'danh' | 'chay' | 'dan_xep', win = false) {
+    const g = this.g;
+    const r = GANGSIM.resolveFight(g, k, how, win);
+    ctx.ui.closeDialog();
+    sfx(win ? 'coin' : 'boo');
+    toast(r.line, win ? 'good' : how === 'dan_xep' ? 'info' : 'bad', 'skull', true);
+    if (r.cash > 0) ctx.ui.float(`+${money(r.cash)}`, ctx.player, 'good');
+    if (r.heat >= 9) toast(`Mức bị để ý giờ là ${Math.round(g.wanted)} — ra đường là công an để mắt.`, 'warn', 'badge');
+    if (g.st.health <= 0) this.checkFaint();
+    else if (r.hp <= -18) toast('Người ê ẩm, về nhà nằm nghỉ một chút đi.', 'warn', 'heart');
+    bus.emit('save', 'danh nhau');
+  }
+  /** Nhịp kiểm tra ván đánh ngẫu nhiên (mỗi 4 giây một lần, chỉ khi đang rảnh tay). */
+  private fightT = 4;
   // ───────────────────────── Bệnh viện Phước An ─────────────────────────
   /** Ngất vì sức khoẻ về 0: mất tiền, mất đồ, tỉnh dậy ở bệnh viện sáng hôm sau. */
   checkFaint() {
@@ -1604,7 +1686,22 @@ export class Acts {
         this.clashT = 2.5;
         const d = districtAt(p.x, p.z);
         const c = GANGSIM.clashAt(g, d);
-        if (c && ctx.mode === 'play' && !ctx.ui.isDialogOpen()) GANGTALK.clashScreen(this as unknown as GANGTALK.TalkHost, c);
+        // Lượt 73 (lỗi tự bắt bằng probe `danhnhau73`): thiếu `!ctx.anim?.active` nên hộp thoại đụng độ mở
+        // NGAY GIỮA ván đánh nhau — mà `UI.dialog` gọi `anim.stop()`, thế là cảnh 3D vừa dựng bị dẹp, người
+        // chơi thấy cảnh biến mất rồi một hộp thoại khác. Nay chỉ mở khi không có cảnh nào đang chạy.
+        if (c && ctx.mode === 'play' && !ctx.ui.isDialogOpen() && !ctx.anim?.active && !P.inJail(g)) GANGTALK.clashScreen(this as unknown as GANGTALK.TalkHost, c);
+      }
+    }
+    // Ván đánh nhau ngẫu nhiên (lượt 73): bị úp sọt ở địa bàn lạ, hoặc người nhà kẻ bị đe doạ kéo tới.
+    // Mỗi 4 giây hỏi một lần; chỉ mở khi người chơi đang rảnh (không nấu, không hộp thoại, không cảnh khác).
+    if (g.gang) {
+      this.fightT -= dt;
+      if (this.fightT <= 0) {
+        this.fightT = 4;
+        if (ctx.mode === 'play' && !ctx.ui.isDialogOpen() && !ctx.anim?.active && !P.inJail(g)) {
+          const k = GANGSIM.fightAt(g);
+          if (k) this.openFight(k);
+        }
       }
     }
     // Tin xấu của băng (lượt 72): lớp luật chỉ đặt cờ, lớp game mở hộp thoại khi người chơi đang rảnh.
@@ -1613,7 +1710,7 @@ export class Acts {
       if (this.troubleT <= 0) {
         this.troubleT = 6;
         const t = GANGS2.find((x) => x.id === g.gang!.trouble);
-        if (t && ctx.mode === 'play' && !ctx.ui.isDialogOpen()) {
+        if (t && ctx.mode === 'play' && !ctx.ui.isDialogOpen() && !ctx.anim?.active && !P.inJail(g)) {
           GANGTALK.troubleScreen(this as unknown as GANGTALK.TalkHost, g.gang.id as 'hem' | 'cho', t, undefined);
         }
       }

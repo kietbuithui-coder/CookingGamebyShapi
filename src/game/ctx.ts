@@ -48,6 +48,12 @@ export interface Settings {
   mouseLock: boolean;
   /** Máy tính vẫn hiện bốn nút cảm ứng (Tương tác / Chạy / Đấm / Nhảy). Mặc định tắt trên máy tính. */
   touchBtns: boolean;
+  /**
+   * Giao diện kiểu ANDROID (lượt 73, mặc định BẬT trên điện thoại): thay bảy nút nổi ở góc phải bằng
+   * một thanh trên cùng (giờ · tiền · ☰) và một ngăn kéo trượt ra chứa Túi đồ / Sổ tay / Bản đồ /
+   * Điện thoại / Cài đặt / Góp ý. Người chơi dặn *“giao diện gọn kiểu Android”*.
+   */
+  android: boolean;
 }
 /**
  * pr: tỉ lệ điểm ảnh tối đa (so với điểm ảnh CSS) · blob: bóng tròn dưới chân NPC khi không có bóng đổ thật.
@@ -92,8 +98,10 @@ export function loadSettings(mobile: boolean): Settings {
     quality: mobile ? Q_DEFAULT_MOBILE : Q_DEFAULT_DESKTOP, sfx: 0.8, music: 0.5, sens: 1,
     fps: !mobile, auto: true, ui: cleanLayout(null), cam3: false,
     portraitOk: false, mouseLock: false, touchBtns: mobile,
+    // Giao diện gọn: điện thoại bật sẵn, máy tính để nguyên kiểu cũ (nhiều chỗ trống, bảy nút không chật).
+    android: mobile,
   };
-  try { const s = { ...def, ...JSON.parse(localStorage.getItem(SET_KEY) || '{}') }; s.quality = Math.max(0, Math.min(QUALITY.length - 1, s.quality | 0)); s.ui = cleanLayout(s.ui); return s; } catch { return def; }
+  try { const s = { ...def, ...JSON.parse(localStorage.getItem(SET_KEY) || '{}') }; s.android = s.android !== false && (s.android ?? def.android); s.quality = Math.max(0, Math.min(QUALITY.length - 1, s.quality | 0)); s.ui = cleanLayout(s.ui); return s; } catch { return def; }
 }
 export function saveSettings() { try { localStorage.setItem(SET_KEY, JSON.stringify(ctx.set)); } catch { /* bộ nhớ đầy hoặc bị chặn */ } }
 

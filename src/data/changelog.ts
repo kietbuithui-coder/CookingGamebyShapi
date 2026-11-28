@@ -14,6 +14,21 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 73',
+    tag: 'Đe doạ người lạ (bậc 4 trở lên) đổi tiền lấy mức bị để ý và nguy cơ bị báo công an; sự kiện đánh nhau có cảnh 3D đấm–đỡ–ngã; ba dáng người mới; giao diện gọn kiểu Android với thanh trên cùng và ngăn kéo ☰',
+    items: [
+      'Bậc 4 trở lên mới có quyền dọa người. Chặn một người giữa đường rồi chọn ba mức: “xin để yên chỗ bán” (30–70 nghìn, nhẹ nhất), “lấy đồ quý” (55–95 nghìn kèm một món đồ quý bán được ở tiệm cầm đồ), “siết nợ người quen” (120–260 nghìn, chỉ đại ca bậc 6 mới dám). Bấm nút ĐE DOẠ trong ngăn kéo ☰, hoặc phím T trên máy tính.',
+      'Mỗi lần đe là một vết: mức bị để ý tăng 8–22 điểm, uy tín ngoài phố tụt 3–12, và người trong xóm nghe chuyện nên khách bớt ghé quán. Đe từ ba lần trở lên là có người nhà kéo tới hỏi chuyện.',
+      'Bị báo công an là mất thật: người bị đe chạy thẳng ra đồn, phạt tính theo mức bị để ý (đắt hơn án hàng cấm, vì đây là đe doạ người chứ không phải hàng hoá) cộng 6–12 giờ tạm giữ. Đe càng nhiều thì càng dễ bị báo — lần đầu 12 %, tới lần thứ mười là gần 40 %.',
+      'Bốn kiểu ẩu đả có cảnh 3D thật: bị úp sọt ở địa bàn băng đối thủ, giang hồ tới đòi nợ (có nợ quá hạn là có người gõ cửa), người nhà của người từng bị mình đe doạ, và băng khác tới phá quán đang bán tốt mà mình không có băng đỡ lưng. Mỗi ngày tối đa một ván, chỉ mở khi đang rảnh tay.',
+      'Trong cảnh đánh nhau: hai tới ba đứa xông vào, mỗi đứa là một người dựng bằng hình 3D chứ không phải khối hộp. Ba nút ĐẤM / ĐỠ ĐÒN / LÙI RA — đấm trúng thì đứa đó loạng choạng rồi gục, đỡ thì chỉ mất nửa máu, lùi thì hồi nhẹ máu nhưng chúng dồn nhanh hơn. Hạ hết thì thắng; máu về 0 thì thua.',
+      'Ba lựa chọn trước khi đánh, không có cửa miễn phí: đánh tới (thắng được 40–145 nghìn và uy tín trong băng, thua mất 20–26 máu và 6 uy tín phố), bỏ chạy (giữ máu nhưng băng coi là nhát, −8 uy tín), hoặc dàn xếp bằng tiền (150–300 nghìn, không mất máu mà băng cho là hèn).',
+      'Ba dáng người mới cho cảnh đánh nhau: ĐỠ ĐÒN (co hai tay che mặt, hơi cúi), TRÚNG ĐÒN (bật ngửa, tay vung, chân loạng choạng) và ĐE DOẠ (chồm tới, một tay chỉ thẳng mặt). Người đấm cũng chồm người tới theo cú đấm chứ không đứng im như tượng.',
+      'Giao diện gọn kiểu Android, bật sẵn trên điện thoại: bảy nút nổi ở góc phải gom hết vào một ngăn kéo kéo ra từ mép phải (bấm ☰ ở góc trên), thanh trên cùng hiện tiền và giờ, mỗi nút trong ngăn kéo cao hơn 44 px cho dễ chạm. Điện thoại dọc 390 px trước đây bị bảy nút chiếm gần nửa bề ngang, giờ chỉ còn một nút ☰. Máy tính giữ kiểu cũ; đổi bằng Cài đặt › Giao diện.',
+      'Nút Đe doạ nằm trong ngăn kéo, chỉ hiện khi đã là thành viên bậc 4 trở lên — chưa đủ bậc thì không thấy nút, và bấm phím T cũng chỉ hiện lời nhắc.',
+    ],
+  },
+  {
     v: 'Lượt 72',
     tag: 'Băng đảng thành con dao hai lưỡi: khách bỏ đi vì sợ băng, phí chỗ đội thêm, công an để ý mỗi ngày; cảnh đi làm việc có lựa chọn phải trả giá; bốn cách rời băng mà cách nào cũng mất; đụng độ băng đối thủ, đàn em đi theo, và app Sổ băng trên điện thoại',
     items: [
@@ -112,15 +127,6 @@ export const CHANGELOG: LogEntry[] = [
       'Bàn phím có thêm nút “Xoá” (bỏ một số vừa gõ nhầm) và nút “C” (xoá hết), hai nút rộng rãi, bấm được trên màn hình thấp.',
       'Mã đổi từ 7777 sang mã 6 số không lặp, khó đoán hơn nhiều; bấm 8 lần vào chữ “Cài đặt” mới hiện bàn phím.',
       'Gõ sai 5 lần liên tiếp thì bàn phím khoá 30 giây — hết dò mã bằng cách bấm lần lượt.',
-    ],
-  },
-  {
-    v: 'Lượt 63',
-    tag: 'Dọn menu test ẩn: xoá hết mục thử, chỉ còn nhóm “Địa điểm — dịch chuyển nhanh”',
-    items: [
-      'Vào Cài đặt, bấm 7 lần chữ “Cài đặt” rồi nhập 7777 thì nay chỉ còn một nhóm: các chỗ dịch chuyển nhanh (tiệm đồ nghề, chợ, công viên, căn hộ, gầm cầu, MiniMart…).',
-      'Toàn bộ mục thử của các lượt trước đã được xoá — menu không còn là bãi rác test, mở lên là thấy đúng thứ dùng được.',
-      'Bài kiểm thử canh đúng điều đó: nhóm duy nhất phải tên “Địa điểm”, mọi mã mục phải bắt đầu bằng “tp_”, và danh sách phải còn đủ các chỗ quen thuộc.',
     ],
   },
 ];

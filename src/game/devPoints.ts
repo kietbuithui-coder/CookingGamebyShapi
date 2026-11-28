@@ -14,6 +14,7 @@ import * as GANGSIM from '../sim/gang';
 import { advice, destOpen, nowText } from '../sim/advice';
 import { LANDMARK_BY_ID } from '../data/landmarks';
 import { CHANGELOG } from '../data/changelog';
+import { FIGHTS } from '../data/gang';
 import { DAYS_PER_MONTH } from '../data/gear';
 import { RECIPES } from '../data/recipes';
 import { money } from '../core/util';
@@ -240,6 +241,44 @@ function latestSteps(): DevStep[] {
   const v = CHANGELOG[0]?.v ?? '';
   const g = () => ctx.g;
   const all: DevStep[] = [
+    {
+      since: 'Lượt 73', id: 'mx_de_doa', tone: 'yellow',
+      label: '① Đe doạ người lạ — bậc 4 mới có quyền',
+      sub: 'Dựng ván bậc 4 của băng Hẻm rồi đứng giữa phố: thanh tiện ích có nút ĐE DOẠ, bấm vào mở ba mức (xin để yên / lấy đồ quý / siết nợ) kèm mức bị để ý và xác suất bị báo công an',
+      run: () => {
+        const gg = g();
+        if (!gg.gang) { gg.cash = Math.max(gg.cash, 500000); GANGSIM.joinGang(gg, 'hem'); }
+        if (gg.gang) { gg.gang.respect = Math.max(gg.gang.respect, 300); gg.gang.tier = 4; }
+        // Đứng ngay chợ (đông người) để có người mà đe doạ.
+        ctx.player.place(-52, 12, 0);
+        ctx.acts.way = null;
+        toast('Đã dựng ván bậc 4 ở Chợ Xóm Chiều — mở thanh ☰ rồi bấm ĐE DOẠ.', 'info', 'skull');
+        ctx.ui.closePanel();
+      },
+    },
+    {
+      since: 'Lượt 73', id: 'mx_danh_nhau', tone: 'yellow',
+      label: '② Thử một ván đánh nhau có cảnh 3D',
+      sub: 'Dựng ván bậc 4, bật ngay ván “bị úp sọt”: cảnh 3D có ba đứa xông vào, ba nút ĐẤM / ĐỠ / LÙI, đối thủ loạng choạng rồi gục — hết ván mới trả tiền và uy tín',
+      run: () => {
+        const gg = g();
+        if (!gg.gang) { gg.cash = Math.max(gg.cash, 500000); GANGSIM.joinGang(gg, 'hem'); }
+        if (gg.gang) { gg.gang.respect = Math.max(gg.gang.respect, 300); gg.gang.tier = 4; }
+        ctx.ui.closeDialog(); ctx.ui.closePanel();
+        setTimeout(() => ctx.acts.openFight(FIGHTS[0]), 300);
+        toast('Ba đứa đang bước ra từ trong hẻm…', 'bad', 'angry');
+      },
+    },
+    {
+      since: 'Lượt 73', id: 'mx_giao_dien_android', tone: 'green',
+      label: '③ Giao diện kiểu Android — thanh trên cùng + ngăn kéo',
+      sub: 'Bật kiểu giao diện mới: thanh trên cùng có giờ + tiền, và nút ☰ mở ngăn kéo chứa Túi đồ / Sổ tay / Bản đồ / Điện thoại / Cài đặt — HUD chỉ còn hai nút nổi (đấm, nhảy)',
+      run: () => {
+        ctx.set.android = true; saveSettings();
+        ctx.ui.applyAndroid?.();
+        toast('Đã bật giao diện Android: chạm ☰ ở góc phải trên để mở ngăn kéo.', 'good', 'gear', true);
+      },
+    },
     {
       since: 'Lượt 72', id: 'mx_bang_cai_gia', tone: 'yellow',
       label: '① Băng là con dao hai lưỡi — mở bảng “cái giá”',
