@@ -42,6 +42,20 @@ Quy ước cột **“Sửa ở”**: `tệp:dòng` của lần rà gần nhất
 | Sự kiện của thành phố (22 cái) | `src/data/world.ts` → `EVENT_LIST` |
 | Thời tiết | `src/data/world.ts` → `WEATHER` |
 
+## 3b. Băng đảng (lượt 71)
+
+| Muốn đổi | Sửa ở | Ghi chú |
+|---|---|---|
+| Hai băng, đại ca, địa bàn, tiền lễ vào băng, phe đối đầu | `src/data/gang.ts` → `GANGS` | thêm băng thì phải có **nhân vật trong `data/people.ts` → `FIXED`** và **một neo** trong `src/world` |
+| Sáu bậc, mốc uy tín, phần ăn chia, quyền lợi mỗi bậc | `src/data/gang.ts` → `GANG_RANKS` | bậc là **do đại ca công nhận**, lưu ở `g.gang.tier` — đổi mốc uy tín không tự nhảy bậc |
+| Bốn món hàng cấm: giá mua/bán, kg, hệ số phạt, giờ tù, bậc tối thiểu | `src/data/gang.ts` → `CONTRABAND` | bị bắt = `sell × mul` + giờ tù; **test canh “bắt một chuyến pháo lỗ hơn ba chuyến giao hàng”** |
+| Năm việc làm: ca/ngày, tiền công, heat, uy tín, bậc tối thiểu, giờ được làm | `src/data/gang.ts` → `GANG_JOBS` | `mins` là phút trong game; `boc` chỉ 3–9 giờ, `thu` chỉ 9–19 giờ (viết trong `sim/gang.ts` → `jobWhy`) |
+| Luật: vào/ra băng, làm việc, mua–bán, thăng chức, án phạt, tiền bảo kê | `src/sim/gang.ts` | phần **thuần**, `tests/gang.test.ts` canh |
+| Câu thoại của đại ca / màn hình chi tiết băng / phe phái / sổ hàng cấm | `src/game/gangTalk.ts` | `gangMenu`, `detailScreen`, `rivalScreen`, `contrabandMenu` |
+| Chỗ bị khám hàng cấm (hộp thoại phạt nặng) | `src/game/acts.ts` → `bustedForContraband()` | vào từ `caught()` khi `bustFine > 0`; xác suất ở `sim/police.ts` → `contrabandRisk`/`contrabandSweep` |
+| Dữ liệu băng trong bản lưu | `src/sim/state.ts` → `GangState`, `cleanGang` | `SAVE_VERSION` = **17**; bản lưu cũ tự thành “chưa theo băng” |
+| Ba sự kiện băng đảng | `src/data/world.ts` → `EVENT_LIST` (`bang_goi`, `bang_doi`, `bang_dap`) + `src/sim/advice.ts` | điều kiện `need: 'gang'` / `'rival'` ở `sim/rules.ts` → `eligible` |
+
 ## 4. Hình khối 3D
 
 | Muốn đổi | Sửa ở | Bẫy |

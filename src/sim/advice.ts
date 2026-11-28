@@ -162,6 +162,13 @@ function eventRule(g: Game, e: EventDef): EventRule | null {
       return selling && s.open ? { id, place: spot!, urgent: 80, text: `Có ông khách say đang gây sự quanh đây${left}. Giữ bình tĩnh, đừng đôi co — cùng lắm gọi công an phường, đánh nhau là mình sai trước.` } : null;
     case 'khach_quen_kho':
       return selling && s.open ? { id, place: spot!, urgent: 60, text: `Một người khách quen đang kẹt tiền, muốn ăn chịu${left}. Cho chịu thì được lòng, mà nhớ ghi sổ — trong sổ nợ có mục theo dõi.` } : null;
+    // ── Lượt 71: ba sự kiện của băng đảng (chỉ có khi người chơi đang theo băng) ──
+    case 'bang_goi':
+      return { id, place: 'shark', urgent: 68, text: `Đàn em băng chạy tới kêu${left}: “Ra kho, có chuyến gấp, tiền gấp đôi.” Đi thì có tiền mà dễ bị hỏi thăm, không đi thì mất uy tín trong băng.` };
+    case 'bang_doi':
+      return { id, place: 'shark', urgent: 62, text: `Băng cho người lại nhắc phần${left} — tháng này con chưa nộp. Trả cho xong, đừng để tới lúc bị siết.` };
+    case 'bang_dap':
+      return spot ? { id, place: spot, urgent: 88, text: `Băng bên kia cho đàn em qua dằn mặt quầy con${left}. Về quầy mà coi, hoặc tính dời đi — một mình đừng đứng ra cãi.` } : null;
     case 'bao_ke':
       return { id, place: spot ?? 'spot_hem', urgent: 84, text: `Đàn em Hùng Sẹo đang đi thu “phí bảo kê” trong hẻm${left}. Bán ở đó thì liệu đường: đóng cho yên, hoặc dọn sang chỗ khác — đừng một mình chống lại.` };
     case 'doi_thu':

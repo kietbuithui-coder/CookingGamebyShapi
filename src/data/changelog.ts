@@ -14,6 +14,23 @@ export interface LogEntry {
 /** Mới nhất ở đầu. */
 export const CHANGELOG: LogEntry[] = [
   {
+    v: 'Lượt 71',
+    tag: 'Băng đảng: hai phe đối đầu, sáu bậc thăng chức theo uy tín, năm việc làm trả công theo ca, bốn món hàng cấm kèm án phạt nặng — bị bắt là mất hàng, mất tiền, vào buồng',
+    items: [
+      'Băng Hẻm Công Nhân (đại ca Hùng Sẹo, sào huyệt trong hẻm xóm lao động) và băng Chợ Cá (đại ca Bà Năm Lửa, sạp cá trong Chợ Xóm Chiều) là hai phe đối đầu. Muốn theo bên nào thì tới nói chuyện với đại ca bên đó, nộp tiền lễ rồi làm việc; đã theo bên này thì bên kia không nhận, và đi ngang địa bàn bên kia cũng bị nhìn mặt.',
+      'Theo băng thì lên bậc bằng uy tín chứ không mua bằng tiền: Đàn em mới → Thằng lính → Giữ hàng → Thu nợ → Cánh tay phải → Đại ca. Sáu bậc, mỗi bậc mở thêm việc và món hàng mới, nhưng băng cũng ăn chia phần nhiều hơn — bậc càng cao thì phần mình còn lại càng ít trên mỗi chuyến.',
+      'Sổ việc của băng có năm việc, mỗi việc một cái ca riêng: canh kho (30 phút), bốc hàng (chỉ 3–9 giờ sáng, đúng lúc xe về), chở hàng, giữ hàng qua đêm (trả bằng hàng chứ không bằng tiền) và đi thu nợ thuê (chỉ ban ngày). Mỗi việc có số ca tối đa trong ngày, tiền công, mức bị để ý và uy tín khác nhau.',
+      'Bốn món hàng cấm: thuốc lá lậu, rượu ngoại, pháo, hàng điện tử trôi nổi. Băng giữ hàng hộ trong kho chứ không bắt mình chở trong túi, và bậc thấp chưa được đụng món nặng.',
+      'Hình phạt nặng thật: bị công an khám thấy hàng cấm thì phạt theo giá trị hàng nhân hệ số từng món (pháo nặng nhất), cộng thêm giờ tạm giữ, mất sạch hàng, tụt uy tín trong băng và mất uy tín ngoài phố. Bắt một chuyến pháo là mất hơn tiền lời của ba chuyến giao hàng — nên giữ hàng cấm là chuyện có rủi ro thật, không phải món hời.',
+      'Bị khám bất ngờ: đang giữ hàng cấm thì mỗi giờ trong game đều có khả năng bị công an gọi lại, mức bị để ý càng cao thì càng dễ. Hộp thoại hiện rõ số hàng, tiền phạt và số giờ tù trước khi mình chọn nộp, cãi, chạy hay theo về phường.',
+      'Xem chi tiết băng ngay trong hội thoại: tên băng, đại ca, địa bàn, bậc đang đứng và cả sáu bậc kèm quyền lợi, phần ăn chia, số chuyến đã làm, kho hàng cấm còn bao nhiêu. Có thêm màn hình “phe phái” nói rõ bên nào giữ đâu và mình đang đứng ở đâu giữa hai bên.',
+      'Lên tới Đại ca thì mỗi ngày nhận được tiền bảo kê một góc chợ; ra băng (rửa tay) thì mất toàn bộ uy tín đã gây dựng và mất chỗ đứng trong băng.',
+      'Băng đảng có chuyện riêng ngoài đường: đàn em chạy tới kêu đi chuyến gấp, người của băng lại nhắc nộp phần, và băng đối thủ cho đàn em qua dằn mặt quầy của mình. Cả ba đều hiện trong bảng sự kiện của thành phố, và Ông Bảy ở gầm cầu cũng nói được — kèm nút chỉ đường tới đúng chỗ.',
+      'Bà Năm Lửa là nhân vật mới, đứng bán cá ở vựa đầu mối trong Chợ Xóm Chiều; Hùng Sẹo ngoài chuyện cho vay nóng nay nói thêm chuyện băng.',
+      'Menu ẩn (bấm tám lần nút Cài đặt rồi nhập mã) có thêm mục theo băng ngay tại chỗ: đứng trước mặt đại ca, theo băng, nhận một ca việc, mở sổ hàng cấm và xem bảng sáu bậc.',
+    ],
+  },
+  {
     v: 'Lượt 70',
     tag: 'Ông Bảy nói đúng chuyện đang diễn ra trong phố, nút Góp ý & báo lỗi có chỗ lưu riêng, xe nước mía dời ra sát cổng chợ, quán mía lùi quầy và kê bàn ghế, công trường dỡ mái bạt, khoai lang & xúc xích vẽ lại, mini-game bánh tráng trộn gọn gàng hơn',
     items: [
@@ -100,16 +117,6 @@ export const CHANGELOG: LogEntry[] = [
       'Nhãn mới: trên nửa thùng là “lạnh 82 %”, dưới nửa là “đá tan 40 %”, gần hết là “tan hết”.',
       'Đêm qua mà đá tan hết, sáng ra có câu báo riêng “Đá trong thùng tan hết” thay vì gộp vào danh sách “đồ hỏng phải bỏ”.',
       'App Quản lý cửa hàng và tin trên điện thoại cũng đọc đúng: đá không còn nằm trong mục “đồ sắp hỏng”, chỉ còn cảnh báo thay đá kẻo thịt cá hỏng theo.',
-    ],
-  },
-  {
-    v: 'Lượt 61',
-    tag: 'Menu test ẩn dựng sẵn bếp, nồi, than và đủ nguyên liệu cho cả trà đá lẫn trà chanh — chạm một lần là vào nồi',
-    items: [
-      'Mục “Dựng sẵn bếp cho TRÀ ĐÁ và TRÀ CHANH”: đặt sẵn quầy, mua bếp than, nồi, dao thớt, cho than và đủ nguyên liệu cả hai món, rồi hỏi bạn muốn vào nồi món nào.',
-      'Thêm hai mục gọi thẳng “Vào thẳng nồi TRÀ ĐÁ” và “Vào thẳng nồi TRÀ CHANH”: một cú bấm là đứng ngay ở bước cho nguyên liệu, không hỏi gì thêm.',
-      'Lý do: bấm mục cũ trên ván mới thì nồi không mở — ván mới chỉ có 18.000₫ nên chưa mua được gánh, quầy chưa đặt được chỗ, và thiếu bếp, nồi, than. Nay các mục này tự lo đủ, chỉ còn việc chạm chén.',
-      'Chạm chén là chén bay vào nồi, nồi chuyển sang bước giữ lửa và hiện nút “Quạt lửa” / “Lọc ra” như chơi bình thường.',
     ],
   },
 ];

@@ -687,6 +687,10 @@ export function buildPlace(b: Builder, l: Lot, R: RNG) {
       for (let i = 0; i < 7; i++) for (let j = 0; j < 3; j++) U.box(0.9 + i * 1.6, 0.13 + j * 0.3, 7.4, 1.3, 0.28, 0.7, j % 2 ? 0xd9cdb0 : 0xc9b890, undefined, 0.1);
       b.collide(0.2, 7.0, 11.8, 7.9);
       b.anchor('v_wholesale', 10.9, 0.13, 1.2, Math.PI);
+      // Bà Năm Lửa (băng Chợ Cá, lượt 71): đứng ở quầy sỉ cá, bên trái chỗ khách mua — vẫn là người bán cá
+      // của vựa, chỉ khác là ai theo băng thì tối ghé đây nói việc riêng. Neo phải đặt tên `v_ba_nam`:
+      // `game/npc.ts` chỉ dựng nhân vật cố định khi có neo `'v_' + mã nhân vật`.
+      b.anchor('v_ba_nam', 4.2, 0.13, 1.0, Math.PI);
       for (const x of [3.5, 8.5]) ceilLight(b, x, 4.56, 4, 2.4);
       b.shutter('wholesale', 2.2, 9.8, 0.1, 4.2);
       break;

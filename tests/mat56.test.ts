@@ -28,7 +28,8 @@ describe('mặt Bà Chín Ve Chai (lượt 56)', () => {
     const withSkin = Object.values(FIXED).filter((f) => f.skin !== undefined).map((f) => f.id);
     // Bà Chín ve chai (lượt 56) + Chú Ba xe ôm (lượt 66: chạy xe ngoài đường cả ngày, da ngăm)
     // + Anh Sáu Lực cai công trình (lượt 69: đứng ngoài nắng cả ngày ở công trường).
-    expect(withSkin.sort()).toEqual(['chu_ba', 'scrap2', 'site']);
+    // + Bà Năm Lửa (lượt 71: bán cá ngoài chợ cả ngày, da nâu sạm — không phải người ngồi phòng lạnh).
+    expect(withSkin.sort()).toEqual(['ba_nam', 'chu_ba', 'scrap2', 'site']);
   });
 
   it('màu da khai riêng thắng công thức chọn da của bảng', () => {

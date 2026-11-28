@@ -33,6 +33,8 @@ import { rnd, RNG, clamp, money, dist2, round1k, round500, qty, hhmm } from '../
 import { NAV, groundY, districtAt, DISTRICT, SPOTS, spotById } from '../world/layout';
 import { LANDMARK_LIST } from '../data/landmarks';
 import { advice, pickAdvice, rememberAdvice } from '../sim/advice';
+import * as GANGTALK from './gangTalk';
+import * as GANGSIM from '../sim/gang';
 import { MB, MAT } from '../gfx/mb';
 import { ingModel } from '../gfx/props';
 
@@ -199,7 +201,9 @@ export class Acts {
       case 'hospital': this.hospitalMenu(n); break;
       case 'police': this.policeMenu(n); break;
       case 'bank': this.bankMenu(n); break;
+      // Hùng Sẹo kiêm đại ca băng Hẻm Công Nhân (lượt 71): vay nóng vẫn như cũ, thêm mục băng đảng.
       case 'shark': this.sharkMenu(n); break;
+      case 'ba_nam': GANGTALK.gangMenu(this as unknown as GANGTALK.TalkHost, 'cho', n); break;
       case 'motel': case 'hotel': case 'tro': case 'canho': case 'nharieng': case 'cuahang': {
         const hid = HOME_OF[id] ?? id, h = HOUSING[hid], mine = g.housing === hid, owned = !!g.flags['owned_' + hid], due = !owned && mine && g.day >= g.paidUntil, need = R.rentNeed(hid), opts: Opt[] = [];
         if (!mine && need > 0 && !R.canRent(g, hid)) opts.push({ t: `Cần uy tín ${need} mới cho thuê / bán`, sub: `Uy tín của bạn hiện là ${Math.round(g.rep)} — bán hàng đều tay rồi hãy quay lại.`, off: true });
@@ -402,7 +406,10 @@ export class Acts {
     const g = this.g, L = LENDERS.shark, lim = R.loanLimit(g, 'shark'), debt = g.debts.filter((d) => d.lender === 'shark'), opts: Opt[] = [];
     for (const a of L.amounts) if (a <= lim) opts.push({ t: `Vay nóng ${money(a)}`, sub: `Lãi 3%/ngày, ${L.term} ngày phải trả ~ ${money(a * (1 + L.rate * L.term))}. Trễ là bị siết đồ!`, fn: () => { R.borrow(g, 'shark', a); sfx('coin'); ctx.npcs.say(n, 'Tiền đây. Năm ngày. Nhớ mặt tao đó.', 3, 0); toast(`Đã vay nóng ${money(a)} của Hùng Sẹo.`, 'warn', 'skull', true); } });
     for (const d of debt) { opts.push({ t: `Trả ${money(Math.min(d.owed, g.cash))} / ${money(d.owed)}`, off: g.cash < 1000, fn: () => { R.repay(g, d.id, g.cash); sfx('coin'); this.sharkMenu(n); } }); opts.push({ t: 'Xin khất thêm 3 ngày', sub: 'Mất phí 8%', fn: () => { const r = R.extend(g, d.id); ctx.npcs.say(n, r.line, 3.5, r.ok ? 0 : 4); } }); }
-    this.D(who(n), n, debt.length ? `Mày còn nợ tao ${money(debt.reduce((a, d) => a + d.owed, 0))}. Hạn ngày ${debt[0].due}. Hôm nay là ngày ${g.day}.` : 'Cần tiền hả? Ở đây không cần giấy tờ. Chỉ cần mày nhớ trả đúng hẹn.', [...opts.slice(0, 7), { t: 'Dạ thôi, em đi.' }]);
+    // Băng đảng (lượt 71) đặt lên đầu: đã theo băng thì việc băng mới là chuyện chính, vay nóng là chuyện phụ.
+    // (Trước đây tôi `push` xuống cuối rồi `slice(0, 7)` — có nợ là mục băng bị cắt mất, không ai bấm được.)
+    const gang: Opt = { t: 'Nói chuyện băng đảng', sub: GANGTALK.gangLine(g), fn: () => GANGTALK.gangMenu(this as unknown as GANGTALK.TalkHost, 'hem', n) };
+    this.D(who(n), n, debt.length ? `Mày còn nợ tao ${money(debt.reduce((a, d) => a + d.owed, 0))}. Hạn ngày ${debt[0].due}. Hôm nay là ngày ${g.day}.` : 'Cần tiền hả? Ở đây không cần giấy tờ. Chỉ cần mày nhớ trả đúng hẹn.', [gang, ...opts.slice(0, 6), { t: 'Dạ thôi, em đi.' }]);
   }
   /** Dọn đồ khỏi chỗ ở cũ (mang theo phần xách nổi). */
   private moveOut() { const g = this.g; for (const s of g.home.slice()) { const room = R.carryCap(g) - R.bagWeight(g), k = INGS[s.id].kg > 0 ? Math.min(s.n, Math.floor(room / INGS[s.id].kg)) : s.n; if (k > 0) addStack(g.bag, { ...s, n: k }); } g.home = []; if (g.stall.where === 'home') g.stall.where = 'carried'; }
@@ -1117,6 +1124,10 @@ export class Acts {
     const g = this.g;
     if (P.inJail(g)) return;
     ctx.sound.play('siren');
+    // Lượt 71: đang giữ hàng cấm trong kho băng thì bị khám thêm — phạt theo bảng hàng cấm + tù cộng thêm,
+    // mất sạch hàng và tụt uy tín cả trong băng lẫn ngoài phố. Đây là “hình phạt nặng” người chơi xin.
+    const bustFine = GANGSIM.bustFine(g);
+    if (bustFine > 0) { this.bustedForContraband(n); return; }
     const f = P.fine(g), canPay = g.cash >= f;
     this.D(n.name, n, 'Chú là công an khu vực. Đánh người giữa đường là gây rối trật tự rồi nghen. Giấy tờ đâu, đưa chú xem.', [
       { t: `Nộp phạt hành chính — ${money(f)}`, sub: canPay ? 'Xong chuyện, đi tiếp' : 'Không đủ tiền nộp', off: !canPay, fn: () => {
@@ -1135,9 +1146,33 @@ export class Acts {
       { t: 'Đi theo chú về phường', fn: () => this.sendToJail(n) },
     ]);
   }
+  /**
+   * Bị khám vì hàng cấm (lượt 71): phạt theo bảng hàng cấm, mất hết hàng, tù cộng thêm theo món nặng nhất.
+   * Người chơi vẫn có lựa chọn như mọi lần bị gọi — nộp, cãi, chạy — nhưng mức phạt hiện rõ ngay trong câu thoại.
+   */
+  private bustedForContraband(n: Npc) {
+    const g = this.g, fine = GANGSIM.bustFine(g), jail = GANGSIM.bustJail(g), canPay = g.cash >= fine;
+    this.D(n.name, n, `Đứng lại. Trong sổ băng của mày có hàng không giấy tờ — ${Object.entries(GANGSIM.stockOf(g)).filter(([, k]) => k > 0).map(([id, k]) => `${k} ${GANGTALK.contraName(id)}`).join(', ')}. Đây là phạt ${money(fine)} cộng ${jail} giờ tạm giữ.`, [
+      { t: `Nộp phạt — ${money(fine)}`, sub: canPay ? 'Mất hàng, mất tiền, nhưng xong chuyện' : 'Không đủ tiền nộp', off: !canPay, fn: () => {
+        const r = GANGSIM.bust(g);
+        if (r.paid < r.fine) { toast('Không đủ tiền nộp phạt — theo chú về phường.', 'bad', 'badge'); }
+        toast(`Mất ${money(r.paid)}, mất hết hàng cấm, tụt ${r.respect} uy tín trong băng.`, 'bad', 'skull', true);
+        ctx.npcs.leave(n); bus.emit('save', 'nop phat hang cam');
+      } },
+      { t: 'Cãi: “Hàng đó của người ta gửi”', sub: 'Khoảng 25% chú tin — hàng cấm khó cãi hơn đánh nhau', fn: () => {
+        if (rnd.chance(0.25)) { P.letGo(g); toast('Chú công an ghi sổ rồi nhắc: “Lần này bỏ qua, đừng để tôi thấy nữa.”', 'info', 'badge'); ctx.npcs.leave(n); }
+        else { const r = GANGSIM.bust(g); this.sendToJail(n, `Cãi không được. Mất ${money(r.paid)} tiền phạt, mất hết hàng.`, P.sentenceHours(g) + r.jail); }
+      } },
+      { t: 'Bỏ chạy', sub: 'Khoảng 35% thoát — hàng cấm mà chạy là bị để ý nặng', fn: () => {
+        if (rnd.chance(0.35)) { P.addHeat(g, 20); toast('Bạn lách vào hẻm, chạy thoát — nhưng hàng vẫn nằm trong kho băng.', 'warn', 'badge'); ctx.npcs.leave(n); }
+        else { const r = GANGSIM.bust(g); P.addHeat(g, 15); this.sendToJail(n, `Chạy không thoát. Mất ${money(r.paid)}, mất hết hàng.`, P.sentenceHours(g) + r.jail); }
+      } },
+      { t: 'Đi theo chú về phường', fn: () => { const r = GANGSIM.bust(g); this.sendToJail(n, `Theo chú về phường. Mất ${money(r.paid)} tiền phạt, mất hết hàng.`, P.sentenceHours(g) + r.jail); } },
+    ]);
+  }
   /** Đưa người chơi vào buồng tạm giữ ở Công an phường. */
-  sendToJail(n: Npc | null, why = '') {
-    const g = this.g, hours = P.sentenceHours(g);
+  sendToJail(n: Npc | null, why = '', extraHours = 0) {
+    const g = this.g, hours = P.sentenceHours(g) + Math.max(0, Math.round(extraHours));
     ctx.ui.fade(true, 0.9); ctx.player.frozen = true;
     setTimeout(() => {
       P.jail(g, hours);
@@ -1558,7 +1593,14 @@ export class Acts {
     this.copT -= dt;
     if (this.copT <= 0) {
       this.copT = 2.5;
-      if (ctx.mode === 'play' && P.shouldStop(g)) ctx.npcs.sendPolice();
+      // Lượt 71: đang giữ hàng cấm mà tới giờ bị khám thì công an gọi lại — hộp thoại phạt nặng nằm trong
+      // `caught()` (nhánh `bustedForContraband`), ở đây chỉ xin một chú đi tới.
+      const swept = g.flags.sweepNow === 1;
+      if (ctx.mode === 'play' && (swept || P.shouldStop(g))) {
+        delete g.flags.sweepNow;
+        const cop = ctx.npcs.sendPolice();
+        if (!cop && swept) toast('Có chú công an đang nhìn về phía bạn — kho hàng cấm nên dọn sớm.', 'warn', 'badge');
+      }
     }
     if (g.jailUntil > 0) {
       if (P.jailLeft(g) <= 0) this.jailOver();

@@ -48,7 +48,7 @@ export interface EventDef {
   w: number;                   // xác suất tương đối mỗi lần Đạo diễn sự kiện gieo
   cool: number;                // số ngày tối thiểu giữa hai lần lặp lại
   minDay?: number; hours?: [number, number];   // điều kiện kích hoạt
-  need?: 'stall' | 'open' | 'debt' | 'home' | 'rep20' | 'rep40' | 'spot_hem' | 'poor';
+  need?: 'stall' | 'open' | 'debt' | 'home' | 'rep20' | 'rep40' | 'spot_hem' | 'poor' | 'gang' | 'rival';
   // Tác động kinh tế & NPC:
   traffic?: Partial<Record<District | 'all', number>>;   // lượng người qua lại theo khu
   budget?: number;                                       // túi tiền của khách
@@ -92,6 +92,11 @@ export const EVENT_LIST: EventDef[] = [
   { id: 'khach_quay', name: 'Khách quậy', text: 'Có ông khách say xỉn đang gây sự quanh đây.', icon: 'angry', dur: 2, w: 1, cool: 4, minDay: 3, hours: [11, 22], need: 'open', actor: 'rowdy', danger: true },
   { id: 'khach_quen_kho', name: 'Khách quen gặp khó', text: 'Một người khách quen đang kẹt tiền, muốn ăn chịu.', icon: 'heart', dur: 4, w: 1, cool: 4, minDay: 4, hours: [10, 19], need: 'open', actor: 'credit' },
   { id: 'trom', name: 'Trộm đêm', text: 'Dạo này khu gầm cầu hay mất trộm lắm.', icon: 'skull', dur: 8, w: 1, cool: 4, minDay: 2, hours: [21, 23], need: 'poor', theft: true, danger: true },
+  // ── Lượt 71: sự kiện riêng của băng đảng. Chỉ chạy khi người chơi ĐANG THEO BĂNG (`need: 'gang'`), nên
+  // người chơi chưa dính băng không bao giờ thấy mấy tin này — đúng ý “nv băng đảng event”.
+  { id: 'bang_goi', name: 'Băng gọi đi chuyến gấp', text: 'Đàn em chạy tới: “Anh kêu mày ra kho, có chuyến gấp, tiền gấp đôi.”', icon: 'skull', dur: 4, w: 1.4, cool: 3, minDay: 2, hours: [17, 22], need: 'gang', danger: true },
+  { id: 'bang_doi', name: 'Băng đòi phần', text: 'Băng cho người lại nhắc: “Tháng này mày chưa nộp phần.”', icon: 'down', dur: 5, w: 1.0, cool: 4, minDay: 3, hours: [10, 19], need: 'gang' },
+  { id: 'bang_dap', name: 'Băng đối thủ đập sạp', text: 'Băng bên kia cho đàn em qua dằn mặt quầy của mày.', icon: 'angry', dur: 3, w: 0.9, cool: 5, minDay: 4, hours: [9, 20], need: 'rival', actor: 'gang', danger: true },
   { id: 'gia_dinh', name: 'Thư nhà', text: 'Mẹ ở quê gửi lên ít tiền kèm lá thư: "Ráng lên con."', icon: 'heart', dur: 1, w: 3, cool: 20, minDay: 3, need: 'debt', gift: 300000 },
 ];
 export const EVENTS: Record<string, EventDef> = Object.fromEntries(EVENT_LIST.map((e) => [e.id, e]));

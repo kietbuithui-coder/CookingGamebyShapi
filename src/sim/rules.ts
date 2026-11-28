@@ -11,6 +11,7 @@ import { EVENTS, EVENT_LIST, EventDef, WEATHER, WeatherDef, WeatherId, floodZone
 import { EXPR } from '../data/expr';
 import { District, DISTRICT, SPOTS, districtAt, spotById } from '../world/layout';
 import { PLACE_HOURS } from '../data/hours';
+import { contrabandSweep } from './police';
 import { Game, Stack, Helper, Booking, Branch, Ready, Errand, STAT_MAX, absMin, addStack, countOf, hourOf, newLedger, purge, spoil, takeFrom, weightOf, junkWeight, emptyStall, Debt, coldWeightOf, ICE_MELT_MUL } from './state';
 import * as PH from './phone';
 
@@ -799,6 +800,9 @@ function eligible(g: Game, e: EventDef): boolean {
     case 'spot_hem': return s.open && s.spot === 'hem' && (g.flags.gangPaid ?? -9) < g.day;
     case 'poor': return HOUSING[g.housing].safety < 0.5 && (g.home.length > 0 || s.where === 'home');
     case 'home': return g.housing !== 'gamcau';
+    // Lượt 71: ba sự kiện băng đảng chỉ dành cho người đang theo băng (hoặc có băng đối thủ để ý).
+    case 'gang': return !!g.gang;
+    case 'rival': return !!g.gang;
   }
   if (e.weather && (g.weather.now === 'bao')) return false;
   if (e.festive && activeEvents(g).some((x) => x.festive)) return false;
@@ -1054,6 +1058,9 @@ function hourly(g: Game, R: RNG) {
   const coolLimit = has(g, 'tu_kinh') ? 150 : 90;
   for (const rd of s.ready) { const r = RECIPES[rd.rid]; if (absMin(g) - rd.at > coolLimit) rd.q = Math.max(0.15, rd.q - 0.06); void r; }
   if (g.weather.until <= absMin(g) && !activeEvents(g).some((e) => e.weather)) setWeather(g, g.weather.next, R);
+  // Lượt 71: giữ hàng cấm thì thỉnh thoảng bị khám bất ngờ. Chỉ báo hiệu ở đây, còn phạt/tù thì để lớp game lo
+  // (`acts.caught` → `bustedForContraband`) — lớp luật không mở hộp thoại, không kéo người chơi đi đâu.
+  if (contrabandSweep(g)) g.flags.sweepNow = 1;
 }
 // ───────────────────────── Người phụ việc ở quầy ─────────────────────────
 /** Điều kiện nhận phụ việc: quán phải đã bán được tiền thật và đã bán qua vài ngày. */

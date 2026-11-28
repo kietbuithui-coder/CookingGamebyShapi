@@ -1778,3 +1778,39 @@ HUD báo “149 m”. `errors: none`.
 
 **Sổ tra cứu mới:** `SUA_NHANH.md` — bảng “muốn đổi cái này thì mở tệp nào”, 9 nhóm, kèm luật của menu ẩn và ba
 thứ không đo được ở đây, để lần sau sửa khỏi phải dò lại từ đầu.
+
+
+---
+
+## Lượt 71 — BĂNG ĐẢNG
+
+Người chơi xin sáu thứ: *hàng cấm vài loại · hình phạt nặng · xem băng đảng chi tiết · phe phái · nv băng đảng event
+· thăng chức*. Cả sáu đã có, số liệu nằm ở `src/data/gang.ts`, luật ở `src/sim/gang.ts`.
+
+**Hai phe.** `hem` — Băng Hẻm Công Nhân, đại ca **Hùng Sẹo** (neo `v_shark`, lễ 200.000₫), giữ Xóm Lao Động.
+`cho` — Băng Chợ Cá, đại ca **Bà Năm Lửa** (nhân vật mới, neo `c_ba_nam` ở vựa cá trong Chợ Xóm Chiều, lễ
+120.000₫). Mỗi băng có `rival`; đã theo bên này thì bên kia **không nhận và không nói chuyện làm ăn**.
+
+**Sáu bậc** theo uy tín: 0 · 40 · 120 · 260 · 460 · 720 (Đàn em mới → Thằng lính → Giữ hàng → Thu nợ → Cánh tay
+phải → Đại ca). Băng ăn chia `cut` 0 / 5 / 8 / 12 / 20 / 30 % — **càng lên càng ít phần mình trên mỗi chuyến**,
+đổi lại mở việc và món hàng mới, và bậc 6 có tiền bảo kê mỗi ngày. Thăng chức **không mua bằng tiền**: cần đủ
+uy tín **và** đã làm đủ số chuyến (`gang.paid`), và phải tới xin đại ca — bậc lưu ở `gang.tier`, không tự nhảy.
+
+**Bốn món hàng cấm:** thuốc lá lậu, rượu ngoại, pháo, hàng điện tử trôi nổi. Có `buy`/`sell`/`kg`/`fineMul`/
+`jail`/`minTier`. Hàng do **băng giữ hộ** trong `gang.stock`, người chơi không chở trong túi.
+Phạt = `sell × fineMul` (1,2–2,2) + `jail` 2–6 giờ; bị bắt là **mất sạch hàng, tụt 30 uy tín trong băng, −4
+uy tín ngoài phố, +20 mức bị để ý**. Ràng buộc test: *bắt một chuyến pháo phải lỗ hơn tiền lời ba chuyến giao
+hàng* — cái giá luôn nặng hơn cái lời, đó là chủ ý nội dung (không ma tuý, không vũ khí).
+
+**Năm việc:** canh kho · bốc hàng (3–9 giờ) · chở hàng · giữ hàng qua đêm (trả bằng hàng) · thu nợ thuê
+(9–19 giờ). Mỗi việc có `perDay` 1–2, tiền công, heat, uy tín, bậc tối thiểu.
+
+**Bị khám bất ngờ:** `sim/police.ts` → `contrabandRisk` (4–30 % theo mức bị để ý) và `contrabandSweep` gọi mỗi
+giờ; lớp game nhận cờ `flags.sweepNow` rồi cho công an lại gần, `acts.caught()` thấy `bustFine > 0` thì mở
+`bustedForContraband()` (nộp / cãi 25 % / chạy 35 % / theo về phường).
+
+**Sự kiện:** `bang_goi`, `bang_doi` (`need: 'gang'`), `bang_dap` (`need: 'rival'`) — người chưa theo băng không
+bao giờ thấy; Ông Bảy có câu riêng cho cả ba (`advice.ts` → `eventRule`).
+
+**Bản lưu:** `SAVE_VERSION` **17**, `GangState` + `cleanGang()` (chỉ nhận phe có thật, mã hàng có trong bảng, số
+kẹp trần); bản lưu cũ ⇒ `gang = null`, không hỏng ván.

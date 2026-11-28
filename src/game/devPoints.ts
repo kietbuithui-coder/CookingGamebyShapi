@@ -10,6 +10,7 @@ import { downloadForOffline } from '../core/offline';
 import * as PUI from '../ui/phoneUI';
 import * as PH from '../sim/phone';
 import { REGULARS } from '../data/people';
+import * as GANGSIM from '../sim/gang';
 import { advice, destOpen, nowText } from '../sim/advice';
 import { LANDMARK_BY_ID } from '../data/landmarks';
 import { CHANGELOG } from '../data/changelog';
@@ -239,6 +240,50 @@ function latestSteps(): DevStep[] {
   const v = CHANGELOG[0]?.v ?? '';
   const g = () => ctx.g;
   const all: DevStep[] = [
+    {
+      since: 'Lượt 71', id: 'mx_bang_dang', tone: 'yellow',
+      label: '① Theo băng đảng — đứng trước đại ca, mở sổ việc',
+      sub: 'Dựng sẵn một ván đang ở bậc 2 của băng Hẻm, đủ tiền, đứng ngay trước Hùng Sẹo: xem sáu bậc, nhận một ca việc, mở sổ hàng cấm, rồi thử mua một món để thấy giá và mức phạt',
+      run: () => {
+        const gg = g();
+        // Dựng đúng cảnh cần thử: đã theo băng, có uy tín thật (không phải đồ giả đặt vào biến rồi tự khen).
+        if (!gg.gang) {
+          gg.cash = Math.max(gg.cash, 400000);
+          GANGSIM.joinGang(gg, 'hem');
+        }
+        if (gg.gang) {
+          gg.gang.respect = Math.max(gg.gang.respect, 60);
+          gg.gang.paid = Math.max(gg.gang.paid, 2);
+          gg.cash = Math.max(gg.cash, 500000);
+          gg.st.energy = 100;
+        }
+        if (!standAt('v_shark', 1.7, 'Sào huyệt băng Hẻm — nói chuyện với Hùng Sẹo.')) return toast('Không thấy sào huyệt băng Hẻm.', 'warn');
+        const n = ctx.npcs.fixed.get('shark');
+        if (n) setTimeout(() => ctx.acts.talk(n), 140);
+      },
+    },
+    {
+      since: 'Lượt 71', id: 'mx_bang_dong_nam', tone: 'green',
+      label: '② Băng Chợ Cá — Bà Năm Lửa ở vựa cá',
+      sub: 'Đứng cạnh sạp cá số 3 trong Chợ Xóm Chiều rồi bấm: hội thoại của phe thứ hai (khác giọng Hùng Sẹo), xem phe phái đang đối đầu bên nào',
+      run: () => {
+        if (!standAt('v_ba_nam', 1.7, 'Vựa cá trong chợ — Bà Năm Lửa.')) return toast('Không thấy Bà Năm Lửa trong chợ.', 'warn');
+        const n = ctx.npcs.fixed.get('ba_nam');
+        if (n) setTimeout(() => ctx.acts.talk(n), 140);
+      },
+    },
+    {
+      since: 'Lượt 71', id: 'mx_bang_phat', tone: 'yellow',
+      label: '③ Thử án phạt hàng cấm',
+      sub: 'Đang giữ 3 món hàng cấm (nặng nhất là pháo) rồi gọi thẳng màn hình bị khám: xem tiền phạt, số giờ tù, và mất bao nhiêu uy tín. Huỷ hộp thoại là không mất gì',
+      run: () => {
+        const gg = g();
+        if (!gg.gang) { gg.cash = Math.max(gg.cash, 400000); GANGSIM.joinGang(gg, 'hem'); }
+        if (gg.gang) { gg.gang.stock = { phao: 3, thuocla: 2 }; gg.cash = Math.max(gg.cash, 3000000); }
+        toast(`Nếu bị khám bây giờ: phạt ${money(GANGSIM.bustFine(gg))}, tạm giữ thêm ${GANGSIM.bustJail(gg)} giờ.`, 'warn', 'badge');
+        ctx.ui.panel('devmenu');
+      },
+    },
     {
       since: 'Lượt 70', id: 'mx_gop_y', tone: 'green',
       label: '① Nút Góp ý & báo lỗi — gửi và đọc lại',

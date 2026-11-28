@@ -47,6 +47,32 @@ export function letGo(g: Game) {
   g.flags.policeCool = absMin(g) + 45;
 }
 
+/**
+ * Có bị khám vì hàng cấm không (lượt 71): chỉ khi đang giữ hàng và mức bị để ý đã cao, hoặc bị gọi lại hỏi
+ * giấy tờ đúng lúc. Tỷ lệ nhỏ để không thành “cứ giữ hàng là bị bắt”, nhưng **không bao giờ bằng 0** — giữ
+ * hàng cấm là luôn có rủi ro, đúng như câu thoại của đại ca.
+ */
+export function contrabandRisk(g: Game): number {
+  const kinds = g.gang ? Object.keys(g.gang.stock).length : 0;
+  if (!g.gang || kinds === 0) return 0;
+  return clamp(0.04 + g.wanted / 400, 0.04, 0.3);
+}
+
+/**
+ * Mỗi 60 phút trong game: nếu đang giữ hàng cấm thì có một lần “khám bất ngờ”. Trả `true` khi vừa bị khám —
+ * nơi gọi (`game/update`) sẽ cho công an gọi lại (`acts.caught`), ở đó có màn hình phạt nặng đầy đủ.
+ * Xác suất nhỏ nhưng **người chơi luôn nhìn thấy rủi ro** khi mua hàng: câu thoại ghi rõ mức phạt, và mức
+ * bị để ý càng cao thì càng dễ bị khám (`contrabandRisk`).
+ */
+export function contrabandSweep(g: Game): boolean {
+  const p = contrabandRisk(g);
+  if (p <= 0 || inJail(g)) return false;
+  if (g.flags.sweepDay === g.day && (g.flags.sweepMin ?? -99) > absMin(g) - 120) return false; // đừng dồn dập
+  if (Math.random() > p / 12) return false;   // mỗi giờ ~4 số ⇒ 4 giờ giữ hàng có ~15–30% bị khám
+  g.flags.sweepDay = g.day; g.flags.sweepMin = absMin(g);
+  return true;
+}
+
 /** Số giờ tạm giữ: theo mức bị để ý, tái phạm thì lâu hơn. */
 export function sentenceHours(g: Game): number {
   const times = g.flags.jail ?? 0;
