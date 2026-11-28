@@ -14,6 +14,43 @@ export function ingModel(mb: MB, d: IngDef, x: number, y: number, z: number, s =
     case 'long': mb.rod(x, y + 0.028 * s, z, 0.028 * s, 0.19 * s, c, 0, Math.PI / 2, 7, r(-0.3, 0.3), 0.016 * s); mb.sph(x - 0.1 * s, y + 0.028 * s, z, 0.02 * s, 0.02 * s, 0.02 * s, c2, 5); break;
     case 'corn': mb.rod(x, y + 0.035 * s, z, 0.034 * s, 0.2 * s, c, 0, Math.PI / 2, 8, 0, 0.022 * s); mb.rod(x - 0.07 * s, y + 0.035 * s, z, 0.04 * s, 0.1 * s, c2, 0, Math.PI / 2, 6, 0, 0.03 * s); break;
     case 'loaf': mb.sph(x, y + 0.035 * s, z, 0.11 * s, 0.036 * s, 0.042 * s, c, 8, shade(c, 1.15)); for (let i = -1; i <= 1; i++) mb.box(x + i * 0.05 * s, y + 0.062 * s, z, 0.012 * s, 0.01 * s, 0.05 * s, c2); break;
+    // ── Lượt 70b: HAI CỦ/CÂY TRƯỚC ĐÂY DÙNG CHUNG 'long' (một khúc trụ tròn) nên nhìn không ra con gì ──
+    // Khoai lang: củ THON HAI ĐẦU, bụng phình lệch về một bên, vỏ tím đỏ có vệt sẫm dọc thân và mấy chỗ
+    // lồi lõm nhỏ; hai đầu nhọn màu vàng ngà (chỗ vỏ mỏng lộ ruột). Nằm nghiêng, không đứng thẳng.
+    case 'sweetpotato': {
+      // Củ khoai lang: một khối THUÔN HAI ĐẦU (fusiform), DÀI gấp ~3,4 lần đường kính, nằm ngang trục X và
+      // hơi cong. Trước đây dùng chung 'long' nên ra khúc trụ trơn; ghép chùm elipxoit tròn thì ra con sâu.
+      const L = 0.23 * s, Rr = 0.038 * s, cy = y + Rr;
+      mb.sph(x, cy, z, L * 0.55, Rr, Rr * 0.9, c, 14);                        // thân thuôn, nhọn dần hai đầu
+      mb.sph(x - L * 0.12, cy + Rr * 0.06, z, L * 0.3, Rr * 1.02, Rr * 0.95, c, 12);   // bụng phình lệch
+      mb.sph(x + L * 0.56, cy - Rr * 0.3, z, L * 0.2, Rr * 0.34, Rr * 0.4, c, 10);     // mũi củ cong xuống
+      mb.sph(x - L * 0.5, cy + Rr * 0.34, z, L * 0.19, Rr * 0.3, Rr * 0.36, c, 10);    // đầu cuống hơi vểnh
+      // cuống khô ngắn ở đầu to
+      mb.rod(x - L * 0.62, cy + Rr * 0.6, z, Rr * 0.12, L * 0.1, shade(c, 0.6), 0.35, 1.35, 5, 0, Rr * 0.05);
+      // chỗ vỏ mỏng lộ ruột vàng + vệt vỏ sẫm dọc lưng
+      mb.sph(x + L * 0.36, cy + Rr * 0.66, z + Rr * 0.16, L * 0.09, Rr * 0.18, Rr * 0.2, c2, 8);
+      mb.box(x - L * 0.04, cy + Rr * 0.93, z, L * 0.46, Rr * 0.12, Rr * 0.4, shade(c, 0.82));
+      // mắt củ: mấy chấm nhỏ nổi trên lưng
+      for (let i = 0; i < 3; i++) mb.cyl(x + (i - 1) * L * 0.26, cy + Rr * 0.98, z + (i % 2 ? Rr * 0.24 : -Rr * 0.22), Rr * 0.09, Rr * 0.08, shade(c, 0.66), 5);
+      break;
+    }
+    // Xúc xích: cây tròn đỏ hồng, HAI ĐẦU BẤM KẸP (chỗ buộc dây) dẹt lại, vỏ bóng có mấy nếp gấp ngang
+    // và vệt cháy nâu khi nướng. Đặt nằm ngang theo trục X như cây xúc xích vừa gắp khỏi vỉ.
+    case 'sausage': {
+      const L = 0.2 * s, Rr = 0.031 * s;
+      mb.rod(x, y + Rr * 1.0, z, Rr, L * 0.94, c, 0, Math.PI / 2, 10, 0.06, Rr * 0.9);     // thân, hơi thuôn
+      for (const sx of [-1, 1]) {
+        // đầu bấm kẹp: chỏm bầu kín + núm dây buộc nhô ra (không để hở miệng ống)
+        mb.sph(x + sx * L * 0.47, y + Rr * 1.0, z, Rr * 0.5, Rr * 0.34, Rr * 0.36, shade(c, 0.94), 8);
+        mb.rod(x + sx * L * 0.53, y + Rr * 1.0, z, Rr * 0.26, 0.022 * s, c2, 0, Math.PI / 2, 5, 0, Rr * 0.12);
+      }
+      // nếp gấp ngang trên vỏ (ba khoanh hơi sẫm) — nhìn ra là vỏ xúc xích chứ không phải khúc gỗ
+      for (let i = -1; i <= 1; i++) mb.cyl(x + i * L * 0.22, y + Rr * 1.0, z, Rr * 1.0, 0.004 * s, shade(c, 0.86), 10);
+      // vệt bóng trên lưng (ánh dầu) + mấy vết nướng nâu
+      mb.box(x, y + Rr * 1.96, z, L * 0.62, 0.003 * s, Rr * 0.24, shade(c, 1.3));
+      for (let i = 0; i < 3; i++) mb.box(x + (i - 1) * L * 0.24, y + Rr * 1.94, z + Rr * 0.28, L * 0.1, 0.003 * s, Rr * 0.16, 0x7a3520);
+      break;
+    }
     // ── Ba loại bánh của lượt 54, mỗi loại một hình riêng (trước đây dùng chung 'long'/'round' nên
     // bấm vào đâu cũng ra một cục giống nhau) ──
     // Bánh mì que pa-tê: ổ bánh mì THU NHỎ và DÀI đúng kiểu bánh mì que — thon hai đầu, nứt dọc trên lưng,
@@ -150,8 +187,17 @@ export function signBoardModel(mb: MB, x: number, y: number, z: number, w = 0.7,
   mb.box(x, y, z, w, h, 0.03, 0x2a3a2e, 0x6a4a32, 0, true);
   for (const sx of [-1, 1]) mb.box(x + sx * (w / 2 - 0.03), y - 0.5, z + 0.04, 0.03, 0.5, 0.03, 0x6a4a32);
 }
+/**
+ * Ghế nhựa vuông: MẶT NGỒI là tấm phẳng bo nhẹ + bốn chân chụm nhẹ vào trong, y như ghế nhựa vỉa hè.
+ * Trước đây là một khối trụ 4 cạnh (thuôn lên) nên đứng xa nhìn ra “cái thùng nhựa”, không ra cái ghế.
+ */
 export function plasticStool(mb: MB, x: number, y: number, z: number, col: number, h = 0.4) {
-  mb.cyl(x, y, z, 0.17, h, col, 4, 0.13, true, shade(col, 1.15));
+  const w = 0.36, legR = 0.022;
+  mb.box(x, y + h - 0.035, z, w, 0.035, w, col, shade(col, 1.2), 0, true);       // mặt ngồi
+  for (const sx of [-1, 1]) for (const sz of [-1, 1])
+    mb.rod(x + sx * w * 0.4, y + (h - 0.05) / 2, z + sz * w * 0.4, legR, h - 0.05, shade(col, 0.9), 0, 0, 5, 0, legR * 0.85);
+  // gờ dưới mặt ngồi cho dày dặn, khỏi trông như tấm bìa
+  mb.box(x, y + h - 0.06, z, w * 0.92, 0.018, w * 0.92, shade(col, 0.94), undefined, 0, true);
 }
 export function plasticTable(mb: MB, x: number, y: number, z: number, col = 0xd9463c) {
   mb.box(x, y + 0.55, z, 0.7, 0.04, 0.7, col, shade(col, 1.15), 0, true);

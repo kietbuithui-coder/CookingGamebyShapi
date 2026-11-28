@@ -23,7 +23,7 @@ export class CutGame implements Mini {
   constructor(private cook: Cook, private step: CutStep) { this.mince = step.style === 'băm'; this.n = step.n; }
   start() {
     const st = this.cook.stage, d = INGS[this.step.ing], mb = new MB(); boardModel(mb, 0, 0, 0, 0.56, 0.34); st.add(this.cook.meshOf(mb));
-    const L = 0.36, n = this.n, round = ['round', 'long', 'corn', 'roll', 'egg', 'bottle', 'head'].includes(d.shape), flat = ['stack', 'leafy', 'nest'].includes(d.shape);
+    const L = 0.36, n = this.n, round = ['round', 'long', 'corn', 'roll', 'egg', 'bottle', 'head', 'sausage'].includes(d.shape), flat = ['stack', 'leafy', 'nest'].includes(d.shape);
     if (this.mince) {
       const R = new RNG(hashStr(d.id)); for (let i = 0; i < 16; i++) { const m = mk(GEO.box, i % 3 ? d.c : d.c2, 0.045, 0.03, 0.04, R.range(-0.09, 0.09), 0.04, R.range(-0.05, 0.05), st); m.rotation.y = R.range(0, 3); this.bits.push(m); }
       ctx.ui.cookHint(`Băm ${d.name.toLowerCase()}: chạm liên tục thật nhanh tay!`); ctx.ui.cookProg(0, 0, 0, 'Độ nhuyễn');
@@ -86,7 +86,7 @@ export class FryGame implements Mini {
       for (let k = 0; k < Math.min(2, this.portions); k++) { const x = (k - (Math.min(2, this.portions) - 1) / 2) * 0.13; const m = mk(GEO.disc, egg ? 0xfdfbf2 : 0xa8554a, egg ? 0.12 : 0.11, egg ? 0.008 : 0.024, egg ? 0.11 : 0.11, x, 0.018, 0, this.pan); m.material = pm(egg ? 0xfdfbf2 : 0xa8554a, {}); this.pieces.push({ m, base: new THREE.Color(egg ? 0xfdfbf2 : 0xa8554a), vy: 0, y: 0.018 });
         if (egg) mk(GEO.sph, 0xf5a81e, 0.3, 2.2, 0.32, 0, 0.6, 0, m); }
     } else for (const id of ings) for (let i = 0; i < clamp(Math.round(12 / ings.length), 3, 7); i++) {
-      const d = INGS[id], a = R.range(0, 6.28), r = Math.sqrt(R.next()) * 0.105, ball = ['balls', 'round', 'egg', 'shrimp'].includes(d.shape), long = ['nest', 'leafy', 'long'].includes(d.shape);
+      const d = INGS[id], a = R.range(0, 6.28), r = Math.sqrt(R.next()) * 0.105, ball = ['balls', 'round', 'egg', 'shrimp', 'sweetpotato'].includes(d.shape), long = ['nest', 'leafy', 'long', 'sausage'].includes(d.shape);
       const m = mk(ball ? GEO.sph : GEO.box, d.c, ball ? 0.034 : long ? 0.06 : 0.03, ball ? 0.034 : long ? 0.008 : 0.02, ball ? 0.034 : long ? 0.01 : 0.03, Math.cos(a) * r, 0.025, Math.sin(a) * r, this.pan);
       m.material = pm(d.c, {}); m.rotation.y = R.range(0, 3); this.pieces.push({ m, base: new THREE.Color(i % 2 ? d.c : d.c2), vy: 0, y: 0.025 });
     }
@@ -147,9 +147,18 @@ export class GrillGame implements Mini {
     const st = this.cook.stage, d = INGS[this.step.ing]; this.heat = new Heat(this.cook, st); const top = this.heat.top + 0.014; this.planeH = top + 0.03;
     const mb = new MB(); grateModel(mb, 0, top, 0, 0.5, 0.32); st.add(this.cook.meshOf(mb, MAT.lit));
     const n = clamp(this.portions, 1, 4), look = this.step.look ?? 'whole';
+    // Món DÀI (khoai lang, xúc xích, bắp, sả…) phải xếp RỘNG hơn và vẽ NHỎ hơn, nếu không ba củ nằm sát nhau
+    // chồng lên nhau thành một thanh ngang liền khối (đúng như ảnh người chơi chê).
+    const long = ['sweetpotato', 'sausage', 'long', 'corn'].includes(d.shape), gap = long ? 0.15 : 0.115, k = long ? (d.shape === 'sweetpotato' ? 0.62 : 0.54) : 1;
     for (let i = 0; i < n; i++) {
-      const x = (i - (n - 1) / 2) * 0.115, g = new THREE.Group(), mat = new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 30, specular: 0x222222 }), im = new MB();
-      if (look === 'whole') { im.frame(0, 0, Math.PI / 2); ingModel(im, d, 0, -0.03, 0, d.shape === 'corn' || d.shape === 'long' ? 1.05 : 0.95); }
+      const x = (i - (n - 1) / 2) * gap, g = new THREE.Group(), mat = new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 30, specular: 0x222222 }), im = new MB();
+      // Mỗi món được xoay thêm một góc riêng quanh trục đứng: củ khoai/xúc xích nằm nghiêng mỗi cái một kiểu
+      // nên ba món trên vỉ không dính thành một thanh ngang (người chơi báo “trông như một khúc gỗ”).
+      if (look === 'whole') {
+        const tilt = Math.PI / 2 + (n > 1 ? (i - (n - 1) / 2) * (d.shape === 'sweetpotato' || d.shape === 'sausage' ? 0.42 : 0.1) : 0.22);
+        im.frame(0, 0, tilt);
+        ingModel(im, d, 0, -0.03, 0, (long ? 1.0 : 0.95) * k);
+      }
       else if (look === 'skewer') { im.rod(0, 0, 0.02, 0.004, 0.3, 0xd9c38a, Math.PI / 2, 0, 5); for (let k = 0; k < 4; k++) im.sph(0, 0, -0.1 + k * 0.055, 0.026, 0.022, 0.026, k % 2 ? d.c : d.c2, 7); }
       else { im.box(0, -0.012, 0, 0.09, 0.024, 0.15, d.c, d.c2, 0, true); im.box(0.02, 0.012, 0, 0.012, 0.004, 0.13, d.c2); }
       g.add(new THREE.Mesh(im.build(), mat)); g.position.set(x, top + 0.035, 0); st.add(g);
@@ -399,6 +408,88 @@ export class TronGame implements Mini {
   constructor(private cook: Cook, private step: TronStep, private r: RecipeDef) {
     this.R = new RNG((Math.random() * 2 ** 31) | 0);
   }
+  /**
+   * Bày một loại topping lên đĩa — MỖI THỨ MỘT HÌNH THẬT, nằm SÁT MẶT ĐĨA.
+   *
+   * Người chơi báo (lượt 70b): “khối vuông thả xuống quá xấu”. Nguyên nhân: bản trước gọi `ingModel` nguyên
+   * con cho mỗi topping, nên gói đậu phộng thành **cả cái hộp nâu to** dựng đứng giữa đĩa, rau thơm thành chùm
+   * que xoè ra như ngôi sao, còn tương ớt/chanh thì bị đè thêm một cục tròn vô nghĩa. Nay mỗi thứ là thứ ăn
+   * được bày trên đĩa: đậu phộng là hạt rải lấm tấm, rau thơm là lá nằm ngang, chanh là múi chanh, tương ớt là
+   * chén nhỏ sốt đỏ có vệt rưới, bánh tráng là nắm sợi.
+   */
+  private topping(top: THREE.Group, ing: string, look: string, c: number) {
+    const R = this.R;
+    switch (look) {
+      case 'nest': {
+        // Bánh tráng cắt sợi: nắm sợi vàng ngà, sợi nằm ngang chồng chéo (không dựng đứng thành cục).
+        mk(GEO.sph, 0x8a7a52, 0.11, 0.005, 0.07, 0, 0.016, 0, top).material = pm(0x8a7a52, { opacity: 0.22 });
+        for (let j = 0; j < 16; j++) {
+          const a = R.range(0, Math.PI), len = R.range(0.06, 0.13), off = R.range(-0.022, 0.022);
+          mk(GEO.box, j % 3 ? c : shade(c, 0.9), len, 0.003, 0.004, Math.cos(a + 1.57) * off, 0.02 + (j % 4) * 0.003, Math.sin(a + 1.57) * off, top).rotation.y = a + R.range(-0.3, 0.3);
+        }
+        break;
+      }
+      case 'sprinkle': {
+        // Đậu phộng rang: hạt có vỏ lụa màu gạch, hai nửa hạt thấy rõ đường nứt — rắc lấm tấm khắp đĩa.
+        for (let j = 0; j < 15; j++) {
+          const a = R.range(0, 6.28), rr = Math.sqrt(R.next()) * 0.082, hx = Math.cos(a) * rr, hz = Math.sin(a) * rr;
+          const m = mk(GEO.sph, j % 4 ? c : shade(c, 0.88), 0.019, 0.009, 0.011, hx, 0.019, hz, top);
+          m.rotation.set(0, a + R.range(-0.5, 0.5), R.range(-0.2, 0.2));
+          mk(GEO.box, shade(c, 0.78), 0.016, 0.002, 0.002, hx, 0.0245, hz, top).rotation.y = a;
+        }
+        break;
+      }
+      case 'greens': {
+        // Rau thơm (húng quế/răm): từng lá nhỏ nằm ngang, sống lá sẫm hơn phiến lá.
+        // Bày thành BA NGỌN RAU (mỗi ngọn = cuống + 5 lá toả ra) chứ không rắc vụn: rắc vụn thì đứng xa
+        // chỉ thấy mấy mẩu xanh lổn nhổn, không ra bó rau thơm.
+        for (let b = 0; b < 3; b++) {
+          const ba = b * 2.09 + R.range(-0.3, 0.3), br = 0.036 + (b % 2) * 0.014;
+          const bx = Math.cos(ba) * br, bz = Math.sin(ba) * br;
+          mk(GEO.box, 0x6f9a3a, 0.006, 0.004, 0.05, bx, 0.021, bz, top).rotation.y = ba + 1.2;      // cuống non
+          for (let j = 0; j < 4; j++) {
+            // lá to, hơi vểnh lên ở đầu lá như lá húng ngoài đời; gân giữa sẫm màu
+            const la = ba + j * 1.5708 + 0.5, len = 0.042 - j * 0.002;
+            const lf = mk(GEO.sph, shade(c, 0.9), len, 0.005, len * 0.58,
+              bx + Math.cos(la) * 0.02, 0.024 + j * 0.0015, bz + Math.sin(la) * 0.02, top);
+            lf.rotation.set(0.14, la, 0.16);
+            mk(GEO.box, shade(c, 0.68), len * 0.86, 0.0016, 0.002, bx + Math.cos(la) * 0.02, 0.0265 + j * 0.0015, bz + Math.sin(la) * 0.02, top).rotation.y = la;
+          }
+        }
+        break;
+      }
+      case 'drizzle': {
+        if (ing === 'chanh') {
+          // Chanh: ba múi chanh cong, vỏ xanh đậm viền ngoài, ruột vàng nhạt — đặt úp trên đĩa.
+          for (let j = 0; j < 3; j++) {
+            const a = j * 2.09 + 0.4, wx = Math.cos(a) * 0.034, wz = Math.sin(a) * 0.034;
+            // lát mỏng (2,5 mm), vỏ chanh chỉ còn một VÀNH MỎNG ngoài, ruột vàng ngà chia 6 múi — trước đây
+            // vỏ dày 10 mm nên trông y như khoanh dưa leo.
+            const g0 = mk(GEO.disc, 0xb7cf42, 0.056, 0.0035, 0.056, wx, 0.0195, wz, top); g0.rotation.set(0.05, a, 0);
+            mk(GEO.disc, 0xf3f6c4, 0.05, 0.002, 0.05, wx, 0.0215, wz, top);
+            for (let k = 0; k < 6; k++) mk(GEO.box, 0xe9f2a0, 0.046, 0.0018, 0.0035, wx, 0.0225, wz, top).rotation.set(0, a + k * 0.5236, 0);
+            mk(GEO.sph, 0xfbfde6, 0.007, 0.0012, 0.007, wx, 0.0232, wz, top);
+          }
+        } else {
+          // Tương ớt: chén nhỏ đỏ + mấy vệt sốt rưới ra quanh miệng chén (không phải cục tròn).
+          mk(GEO.disc, 0xf3ece0, 0.052, 0.014, 0.052, 0, 0.02, 0, top);
+          mk(GEO.disc, c, 0.044, 0.005, 0.044, 0, 0.03, 0, top);
+          mk(GEO.disc, shade(c, 1.25), 0.026, 0.003, 0.026, -0.004, 0.033, 0.004, top);
+          for (let j = 0; j < 4; j++) {
+            const a = R.range(0, 6.28), rr = R.range(0.05, 0.088);
+            mk(GEO.box, c, R.range(0.016, 0.034), 0.003, 0.005, Math.cos(a) * rr, 0.017, Math.sin(a) * rr, top).rotation.y = a + R.range(-0.4, 0.4);
+          }
+        }
+        break;
+      }
+      default:
+        for (let j = 0; j < 6; j++) {
+          const a = R.range(0, 6.28), rr = Math.sqrt(R.next()) * 0.07;
+          mk(GEO.sph, c, 0.02, 0.006, 0.018, Math.cos(a) * rr, 0.019, Math.sin(a) * rr, top);
+        }
+        break;
+    }
+  }
   start() {
     const st = this.cook.stage, L = this.step.layers, n = L.length, rand = () => this.R.next();
     // hộp giấy có thành: đáy + 4 vách mỏng, để nhìn ra là cái hộp chứ không phải tấm giấy dán bàn
@@ -406,22 +497,12 @@ export class TronGame implements Mini {
     mb.box(0, 0, 0, 0.24, 0.012, 0.15, 0xf7f3e6, 0xfdfbf2, 0.06);
     for (const sx of [-1, 1]) mb.box(sx * 0.116, 0.022, 0, 0.008, 0.024, 0.15, 0xf7f3e6, 0xfdfbf2, 0.03);
     for (const sz of [-1, 1]) mb.box(0, 0.022, sz * 0.071, 0.24, 0.024, 0.008, 0xf7f3e6, 0xfdfbf2, 0.03);
-    this.box.add(this.cook.meshOf(mb, MAT.food)); this.box.position.set(0, 0, 0.32); st.add(this.box);
+    this.box.add(this.cook.meshOf(mb, MAT.food)); this.box.position.set(0, 0, 0.31); st.add(this.box);
     this.calls = tronCalls(rand, n, TRON_ROUNDS);
     tronSpots(rand, n).forEach((p, i) => {
       const l = L[i], c = ingCol(l.ing, l.col), g = new THREE.Group(), top = new THREE.Group();
       mk(GEO.disc, 0xe8e2cf, 0.15, 0.012, 0.15, 0, 0.006, 0, g); mk(GEO.disc, 0xf2ecd9, 0.126, 0.002, 0.126, 0, 0.013, 0, g);
-      // hình nguyên liệu thật của món (bánh tráng = nắm sợi, đậu phộng = gói, rau thơm = bó, tương ớt = chai, chanh = quả)
-      if (INGS[l.ing].shape === 'stack') {
-        // Bánh tráng là xấp bánh mỏng, cùng màu với đĩa nên đứng xa là trông như đĩa trống — bày thành nắm SỢI
-        // vàng ngà có bóng đổ bên dưới cho nhìn rõ là còn topping trên đĩa.
-        mk(GEO.sph, 0x8a7a52, 0.115, 0.006, 0.075, 0, 0.016, 0, top).material = pm(0x8a7a52, { opacity: 0.28 });
-        for (let j = 0; j < 9; j++) {
-          const a = (j / 9) * Math.PI * 2, r = 0.016 + (j % 3) * 0.012;
-          mk(GEO.box, j % 2 ? c : shade(c, 0.9), 0.085 - (j % 3) * 0.012, 0.005, 0.006, Math.cos(a) * r, 0.028 + (j % 3) * 0.008, Math.sin(a) * r, top).rotation.set(0, a, (j % 2 ? 1 : -1) * 0.12);
-        }
-      } else { const im = new MB(); ingModel(im, INGS[l.ing], 0, 0.014, 0, 0.6); top.add(this.cook.meshOf(im)); }
-      if (l.look === 'drizzle' || l.look === 'sprinkle' || l.look === 'greens') mk(GEO.sph, c, 0.055, 0.018, 0.055, 0, 0.055, 0, top);
+      this.topping(top, l.ing, l.look, c);
       g.add(top); g.position.set(p.x, 0, p.z); st.add(g);
       this.spots.push({ x: p.x, z: p.z, li: i }); this.dishes.push({ g, top, bit: null, fly: 0, full: 1, shake: 0 });
     });
@@ -469,15 +550,20 @@ export class TronGame implements Mini {
   private takeBit(d: { full: number }, l: { ing: string; col?: number; look: string }, i: number) {
     d.full = Math.max(0, d.full - 1);
     const c = ingCol(l.ing, l.col), sp = this.spots[i];
-    const m = l.look === 'nest' ? mk(GEO.ring, c, 0.07, 0.024, 0.05, sp.x, 0.05, sp.z, this.cook.stage)
-      : l.look === 'drizzle' ? mk(GEO.box, c, 0.05, 0.003, 0.006, sp.x, 0.055, sp.z, this.cook.stage)
-      : mk(GEO.sph, c, l.look === 'sprinkle' ? 0.014 : 0.026, l.look === 'sprinkle' ? 0.009 : 0.008, l.look === 'sprinkle' ? 0.014 : 0.02, sp.x, 0.05, sp.z, this.cook.stage);
+    // Mẩu bay đúng hình thứ đang gắp: sợi bánh tráng là một sợi mảnh, đậu phộng là hạt nhỏ, rau thơm là một
+    // chiếc lá, chanh là lát mỏng, tương ớt là vệt sốt. Trước đây cái gì cũng là một khối hộp/sph tròn.
+    const m = l.look === 'nest' ? mk(GEO.box, c, 0.055, 0.003, 0.005, sp.x, 0.05, sp.z, this.cook.stage)
+      : l.look === 'drizzle' ? (l.ing === 'chanh' ? mk(GEO.disc, c, 0.036, 0.003, 0.036, sp.x, 0.05, sp.z, this.cook.stage)
+        : mk(GEO.box, c, 0.045, 0.0025, 0.005, sp.x, 0.05, sp.z, this.cook.stage))
+      : l.look === 'greens' ? mk(GEO.sph, c, 0.03, 0.003, 0.016, sp.x, 0.05, sp.z, this.cook.stage)
+      : l.look === 'sprinkle' ? mk(GEO.sph, c, 0.016, 0.008, 0.01, sp.x, 0.05, sp.z, this.cook.stage)
+      : mk(GEO.sph, c, 0.022, 0.008, 0.018, sp.x, 0.05, sp.z, this.cook.stage);
     this.bits.push({ m, from: new THREE.Vector3(sp.x, 0.05, sp.z), f: 0.001 });
   }
-  private penalty(msg: string) { this.miss++; sfx('bad'); ctx.ui.floatAt(msg, this.cook.world(0, 0.3, 0.08), 'bad'); }
+  private penalty(msg: string) { this.miss++; sfx('bad'); ctx.ui.floatAt(msg, this.cook.world(0, 0.3, 0.06), 'bad'); }
   /** Hết một vòng (đủ 5 thứ) thì đảo một lượt cho trông như đã trộn. */
   private mix() {
-    for (let i = 0; i < 5; i++) this.cook.puff((this.R.next() - 0.5) * 0.16, 0.06, 0.32 + (this.R.next() - 0.5) * 0.08, 0xf0dfb0, 1, 0.045);
+    for (let i = 0; i < 5; i++) this.cook.puff((this.R.next() - 0.5) * 0.16, 0.06, 0.31 + (this.R.next() - 0.5) * 0.08, 0xf0dfb0, 1, 0.045);
     sfx('skim');
   }
   private done() {
@@ -491,26 +577,51 @@ export class TronGame implements Mini {
       const P = (geo: THREE.BufferGeometry, cc: number, sx: number, sy: number, sz: number, x: number, y: number, z: number) => {
         const m = mk(geo, cc, sx, sy, sz, x, y, z, g); m.userData.pop = 0; return m;
       };
+      // Hộp thành phẩm cũng phải là ĐỒ ĂN THẬT trong hộp: sợi bánh tráng nằm ngang chồng chéo, đậu phộng
+      // là hạt có vỏ lụa, rau thơm là lá, chanh là lát mỏng, tương ớt là vệt sốt. Bản trước nhồi toàn cầu
+      // bẹp + vòng xuyến nên thành phẩm trông như một đống hạt xốp.
       switch (l.look) {
-        case 'nest':   // bánh tráng cắt sợi: một nắm sợi vàng ngà nằm gọn trong hộp
-          P(GEO.sph, c, 0.19, 0.028, 0.1, 0, y0, 0);
-          for (let j = 0; j < 4; j++) P(GEO.ring, shade(c, 0.94), 0.055 + j * 0.032, 0.02, 0.03 + j * 0.02, R.range(-0.01, 0.01), y0 + 0.008, R.range(-0.008, 0.008));
+        case 'nest': {   // bánh tráng cắt sợi: lớp sợi vàng ngà phủ kín đáy hộp
+          P(GEO.sph, c, 0.2, 0.02, 0.11, 0, y0, 0);
+          // Sợi phải NẰM GỌN trong hộp (hộp rộng 0,24 × sâu 0,15): sợi dài tối đa 0,13 và chỉ nghiêng nhẹ,
+          // nếu xoay thoải mái thì sợi thò ra ngoài thành hộp như ảnh chụp thử.
+          for (let j = 0; j < 26; j++) {
+            const a = R.range(-0.55, 0.55);
+            P(GEO.box, j % 3 ? c : shade(c, 0.9), R.range(0.07, 0.13), 0.0025, 0.004, R.range(-0.04, 0.04), y0 + 0.012 + (j % 4) * 0.003, R.range(-0.03, 0.03)).rotation.y = a;
+          }
           break;
-        case 'drizzle': {  // rưới thành từng vệt mảnh, không phải cục tròn
-          for (let j = 0; j < 7; j++) P(GEO.box, c, 0.13 - Math.abs(j - 3) * 0.012, 0.003, 0.006, R.range(-0.008, 0.008), y0 + 0.004, (j - 3) * 0.013).rotation.y = j % 2 ? 0.22 : -0.22;
+        }
+        case 'drizzle': {
+          if (l.ing === 'chanh') {   // chanh: hai lát mỏng đặt nghiêng trên mặt hộp
+            for (let j = 0; j < 2; j++) {
+              const lx = -0.05 + j * 0.1, lz = R.range(-0.02, 0.02);
+              P(GEO.disc, 0x4f8f2f, 0.062, 0.004, 0.062, lx, y0 + 0.004, lz).rotation.set(0.12, j * 1.1, 0);
+              P(GEO.disc, 0xf2f7c8, 0.052, 0.002, 0.052, lx, y0 + 0.007, lz);
+              for (let k = 0; k < 4; k++) P(GEO.box, 0xdff09a, 0.04, 0.0015, 0.004, lx, y0 + 0.0085, lz).rotation.y = k * 0.78;
+            }
+          } else {   // tương ớt: rưới thành từng vệt mảnh, không phải cục tròn
+            for (let j = 0; j < 7; j++) P(GEO.box, c, 0.13 - Math.abs(j - 3) * 0.012, 0.0025, 0.005, R.range(-0.008, 0.008), y0 + 0.004, (j - 3) * 0.013).rotation.y = j % 2 ? 0.22 : -0.22;
+          }
           break;
         }
         case 'sprinkle':   // đậu phộng rang rắc lấm tấm
-          for (let j = 0; j < 14; j++) P(GEO.sph, j % 3 ? c : shade(c, 0.85), 0.011, 0.007, 0.011, R.range(-0.075, 0.075), y0 + 0.006, R.range(-0.04, 0.04));
+          for (let j = 0; j < 16; j++) {
+            const px = R.range(-0.075, 0.075), pz = R.range(-0.04, 0.04);
+            P(GEO.sph, j % 3 ? c : shade(c, 0.85), 0.016, 0.008, 0.01, px, y0 + 0.006, pz).rotation.y = R.range(0, 3.14);
+          }
           break;
-        case 'greens':     // rau thơm: lá nhỏ nằm ngang
-          for (let j = 0; j < 8; j++) P(GEO.sph, j % 2 ? c : shade(c, 1.18), 0.026, 0.004, 0.014, R.range(-0.07, 0.07), y0 + 0.006, R.range(-0.038, 0.038)).rotation.y = R.range(0, 3.14);
+        case 'greens':     // rau thơm: lá nhỏ nằm ngang, có gân
+          for (let j = 0; j < 10; j++) {
+            const lx = R.range(-0.07, 0.07), lz = R.range(-0.038, 0.038), lay = R.range(0, 3.14);
+            P(GEO.sph, j % 2 ? c : shade(c, 1.18), 0.032, 0.004, 0.017, lx, y0 + 0.006, lz).rotation.set(0, lay, 0.06);
+            P(GEO.box, shade(c, 0.82), 0.028, 0.0015, 0.002, lx, y0 + 0.0085, lz).rotation.y = lay;
+          }
           break;
         default:
           for (let j = 0; j < 6; j++) P(GEO.sph, c, 0.02, 0.006, 0.018, R.range(-0.07, 0.07), y0 + 0.005, R.range(-0.038, 0.038));
           break;
       }
-      g.position.set(0, 0, 0.32); this.cook.stage.add(g); this.pops.push(g);
+      g.position.set(0, 0, 0.31); this.cook.stage.add(g); this.pops.push(g);
     });
     sfx('good');
   }
@@ -528,8 +639,8 @@ export class TronGame implements Mini {
     for (let i = this.bits.length - 1; i >= 0; i--) {
       const b = this.bits[i];
       b.f = Math.min(1, b.f + dt * 2.8); const k = b.f;
-      b.m.position.set(lerp(b.from.x, 0, k), 0.05 + Math.sin(k * Math.PI) * 0.09, lerp(b.from.z, 0.32, k));
-      b.m.scale.setScalar(1 - k * 0.35);
+      b.m.position.set(lerp(b.from.x, 0, k), 0.05 + Math.sin(k * Math.PI) * 0.09, lerp(b.from.z, 0.31, k));
+      b.m.scale.setScalar(1 - k * 0.2);
       if (k >= 1) { this.cook.stage.remove(b.m); this.bits.splice(i, 1); }
     }
     for (const g of this.pops) for (const m of g.children) if (m.userData.pop !== undefined && m.userData.pop < 1) m.userData.pop = Math.min(1, m.userData.pop + dt * 5);

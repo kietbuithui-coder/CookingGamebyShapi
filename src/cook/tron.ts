@@ -11,7 +11,7 @@ export const TRON_ROUNDS = 2;
 export const TRON_RX = 0.36;
 export const TRON_RZ = 0.2;
 /** Tâm vòng rải lệch về phía xa người nấu, chừa chỗ đặt hộp bánh tráng ở phía trước. */
-export const TRON_CZ = -0.06;
+export const TRON_CZ = -0.1;
 /** Hai chỗ đặt topping phải cách nhau ít nhất chừng này (m) — ngón tay chạm bán kính 0,105 m. */
 export const TRON_GAP = 0.15;
 /** Bán kính ăn tay của một chỗ đặt topping. */

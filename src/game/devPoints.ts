@@ -16,6 +16,7 @@ import { CHANGELOG } from '../data/changelog';
 import { DAYS_PER_MONTH } from '../data/gear';
 import { RECIPES } from '../data/recipes';
 import { money } from '../core/util';
+import * as THREE from 'three';
 const PUIphone = () => PUI;
 
 /**
@@ -208,12 +209,17 @@ export interface DevStep extends DevAction {
   since: string;
 }
 
-/** Đứng đúng `d` mét từ neo rồi QUAY MẶT vào nó — dùng cho mục “vừa thay đổi” (không cần đứng chéo như `tpNear`). */
-function standAt(anchor: string, d = 1.6, msg?: string) {
+/**
+ * Đứng đúng `d` mét từ neo rồi QUAY MẶT vào nó — dùng cho mục “vừa thay đổi” (không cần đứng chéo như `tpNear`).
+ * `dirs` là thứ tự hướng thử (radian, 0 = phía +z của neo). Quán mía là ví dụ cần đổi: hướng 0 rơi vào phía
+ * đường, người chơi quay lưng vào quán nên ảnh “vừa thay đổi” chụp ra toàn đường phố — muốn ngó bàn ghế và
+ * bảng giá thì phải đứng phía trong (π), nhìn ra quầy.
+ */
+function standAt(anchor: string, d = 1.6, msg?: string, dirs?: number[]) {
   const a = ctx.world.anchors[anchor];
   if (!a) return false;
   for (const dd of [d, d + 0.4, d - 0.3, d + 0.9]) {
-    for (const ang of [0, 0.5, -0.5, 1.0, -1.0, Math.PI, Math.PI / 2, -Math.PI / 2]) {
+    for (const ang of dirs ?? [0, 0.5, -0.5, 1.0, -1.0, Math.PI, Math.PI / 2, -Math.PI / 2]) {
       const x = a.x + Math.sin(ang) * dd, z = a.z + Math.cos(ang) * dd;
       if (ctx.world.blocked(x, z, 0.34)) continue;
       ctx.player.place(x, z, Math.atan2(a.x - x, a.z - z));
@@ -251,8 +257,8 @@ function latestSteps(): DevStep[] {
     },
     {
       since: 'Lượt 70', id: 'mx_mia_quan_lui', anchor: 'v_mia_quan', tone: 'green',
-      label: '③ Quán Nước Mía 3K — quầy đã lùi sâu',
-      sub: 'Đứng ngoài đường nhìn vào: thấy máy ép quay ra, thấy bàn khách, không còn quầy chắn ngang mặt tiền',
+      label: '③ Quán Nước Mía 3K — quầy lùi sâu, có bàn ghế ngồi',
+      sub: 'Hai bàn nhựa kê TRƯỚC quầy (đỏ bên trái, xanh bên phải), mỗi bàn ba ghế và ly đặt sẵn trên mặt — chừa lối đi ở giữa. Bảng giá áp vách trái, không còn treo lơ lửng',
       run: () => {
         if (!standAt('v_mia_quan', 1.8, 'Quán Nước Mía 3K — quầy lùi sâu, mặt tiền trống.')) return toast('Không thấy quán nước mía ngoài phố.', 'warn');
         const n = ctx.npcs.fixed.get('mia_quan');
@@ -260,17 +266,28 @@ function latestSteps(): DevStep[] {
       },
     },
     {
-      since: 'Lượt 70', id: 'mx_mai_cong_truong', anchor: 'v_site', tone: 'yellow',
-      label: '④ Công trường — mái bạt còn khi đứng dưới',
-      sub: 'Chòi tuyển thợ dời ra khoảng trống sát lối vào; đứng dưới ngẩng lên vẫn thấy mặt dưới tấm bạt',
+      since: 'Lượt 70', id: 'mx_ban_ghe_quan_mia', tone: 'green',
+      label: '④ Quán mía — bàn ghế & bảng giá đã sửa',
+      sub: 'Đứng trong quán ngó quanh: bàn nhựa + ghế nằm ngay trước quầy cho khách ngồi uống, bảng giá dán sát vách thay vì lơ lửng giữa quán',
       run: () => {
-        if (!standAt('v_site', 1.5, 'Chòi tuyển phụ hồ — mái bạt có cả mặt dưới, nhìn từ đâu cũng thấy.')) return toast('Không thấy chòi công trình.', 'warn');
-        ctx.player.pitch = -0.45;
+        // Đứng PHÍA TRONG quán (dirs π) nhìn ra quầy: hướng 0 là phía đường nên trước đây bấm vào là quay
+        // lưng lại quán, chẳng thấy bàn ghế lẫn bảng giá.
+        if (!standAt('v_mia_quan', 3.0, 'Quán nước mía — bàn ghế trước quầy, bảng giá dán vách.', [Math.PI, Math.PI + 0.35, Math.PI - 0.35, Math.PI + 0.7, Math.PI - 0.7])) return toast('Không thấy quán nước mía ngoài phố.', 'warn');
+        ctx.player.pitch = -0.22;
+      },
+    },
+    {
+      since: 'Lượt 70', id: 'mx_mai_cong_truong', anchor: 'v_site', tone: 'yellow',
+      label: '⑤ Công trường — chòi tuyển thợ không còn mái bạt',
+      sub: 'Bạt sọc xanh–trắng đã dỡ; bàn ghi tên + ghế chờ đứng trơ dưới nắng, bảng “TUYỂN PHỤ HỒ” dán trên vách rào',
+      run: () => {
+        if (!standAt('v_site', 1.5, 'Chòi tuyển phụ hồ — hết mái bạt, bảng dán thẳng lên vách rào xanh.')) return toast('Không thấy chòi công trình.', 'warn');
+        ctx.player.pitch = -0.2;
       },
     },
     {
       since: 'Lượt 70', id: 'mx_ca_phu_ho_dai', anchor: 'site_phu', tone: 'yellow',
-      label: '⑤ Ca phụ hồ dài hơn một phút — thử ngay',
+      label: '⑥ Ca phụ hồ dài hơn một phút — thử ngay',
       sub: 'Ba xe cút kít × năm xẻng, giữa các xe có nhịp đẩy xe; cả ca khoảng 1 phút 10 giây thời gian thực',
       run: () => {
         if (!standAt('site_phu', 1.7, 'Chòi công trình — xin ca phụ hồ để chơi mini-game xúc đất.')) return toast('Không thấy chòi công trình ngoài phố.', 'warn');
@@ -280,9 +297,59 @@ function latestSteps(): DevStep[] {
     },
     {
       since: 'Lượt 70', id: 'mx_nhat_ky70', tone: 'green',
-      label: '⑥ Đọc lại nhật ký bản này',
+      label: '⑦ Đọc lại nhật ký bản này',
       sub: 'Mở đúng trang Nhật ký phát triển (cũng là cách kiểm bản dựng đã lên chưa)',
       run: () => ctx.ui.panel('changelog'),
+    },
+    {
+      since: 'Lượt 70', id: 'mx_hinh_khoai_xucxich', tone: 'yellow',
+      label: '⑧ Khoai lang & xúc xích — đã vẽ lại',
+      sub: 'Dựng ba củ khoai và mấy cây xúc xích ngay trước mặt (cỡ phóng to) để soi hình mới: củ thon hai đầu có mắt củ, xúc xích có nếp gấp ngang và hai đầu bấm kẹp',
+      run: async () => {
+        // Gắn thẳng bốn món vào ỐNG KÍNH (toạ độ cục bộ của camera) — luôn nằm giữa khung hình, không bị
+        // quầy/bàn/tường che, không bị mô hình người chơi chắn. 3,5 giây sau tự dọn.
+        const g0 = ctx as unknown as { camera: import('three').Object3D; scene: { add(o: unknown): void; remove(o: unknown): void } };
+        g0.scene.add(g0.camera);            // camera chưa nằm trong scene ⇒ đồ gắn vào nó sẽ không được vẽ
+        const mod = await import('../gfx/props');
+        const w = window as unknown as { __devShapes?: unknown[] };
+        (w.__devShapes ?? []).forEach((m) => g0.camera.remove(m as import('three').Object3D));
+        const keep: unknown[] = [];
+        ['khoailang', 'xucxich', 'khoailang', 'xucxich'].forEach((id, i) => {
+          const m = mod.ingMesh(id, 0.9);
+          m.position.set((i - 1.5) * 0.26, -0.02 + (i % 2) * 0.05, -0.62);
+          // thân món dựng dọc trục Z ⇒ xoay thêm 90° quanh Y để cả cây nằm NGANG khung hình,
+          // không thì nhìn dọc trục, củ khoai chỉ còn là một cục tròn.
+          m.rotation.set(0.1, -0.22 + i * 0.12, 0.05);
+          g0.camera.add(m); keep.push(m);
+        });
+        w.__devShapes = keep;
+        toast('Khoai lang (tím, có mắt củ) & xúc xích (đỏ, có nếp gấp) — soi trước ống kính 3,5 giây.', 'info', 'pin');
+        setTimeout(() => { keep.forEach((m) => g0.camera.remove(m as import('three').Object3D)); w.__devShapes = []; }, 3500);
+      },
+    },
+    {
+      since: 'Lượt 70', id: 'mx_tron_moi', tone: 'green',
+      label: '⑨ Bánh tráng trộn — topping mới trên đĩa',
+      sub: 'Mở thẳng mini-game trộn: đậu phộng là hạt có vỏ lụa, rau thơm là ngọn có lá, chanh là lát mỏng sáu múi — hết cảnh hộp nâu to đùng và khối vuông rơi xuống',
+      run: () => {
+        const gg = g();
+        const r = RECIPES.banh_trang_tron;
+        if (gg.stall.where !== 'placed') {
+          const sp = SPOTS.find((x) => x.id === 'cv');
+          if (sp) { if (gg.cash < 400000) gg.cash = 400000; ctx.stall.placeAt(sp); }
+        }
+        const s = gg.stall;
+        if (!R.has(gg, 'ganh')) R.buyGear(gg, 'ganh');
+        if (!R.has(gg, 'daothot')) R.buyGear(gg, 'daothot');
+        gg.rec.banh_trang_tron.known = true; gg.rec.banh_trang_tron.on = true;
+        const have = (id: string) => [s.store, gg.bag].some((l) => l.some((x) => x.id === id && x.n > 0));
+        for (const id of Object.keys(r.ings)) {
+          if (!have(id)) s.store.push({ id, n: 6, fresh: 100, q: 1, cost: R.unitCost(gg, id) });
+        }
+        s.preps.push({ rid: 'banh_trang_tron', n: 1, q: 0.92, at: gg.day * 1440 + gg.min, cost: 2000 });
+        ctx.stall.refresh();
+        if (!ctx.cook.finish(r)) toast('Chưa đủ nguyên liệu cho bánh tráng trộn.', 'warn');
+      },
     },
     {
       since: 'Lượt 69', id: 'mx_mia_xe', anchor: 'v_mia_xe', tone: 'green',

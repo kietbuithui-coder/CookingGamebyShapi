@@ -766,11 +766,11 @@ export function buildPlace(b: Builder, l: Lot, R: RNG) {
       // giờ làm) ngay trong cổng để người chơi có chỗ đứng nói chuyện với người phụ trách thay vì chạm
       // vào tấm biển cấm vào rồi không ra gì.
       {
-        // LƯỢT 70 — chòi tuyển thợ DỜI ra chỗ thoáng (sát lối vào, trước giàn giáo) và MÁI CHE sửa lại.
-        // Lỗi người chơi báo (ảnh 4, "nghiêm trọng"): mái bạt biến mất khi đứng dưới nhìn lên. Nguyên nhân:
-        // bản lượt 69 vẽ mái bằng MỘT `L.quad` — quad chỉ có một mặt, mặt kia bị loại khi vẽ ⇒ đứng phía dưới
-        // (đúng chỗ người chơi đứng nói chuyện) là trần trơn, không thấy bạt. Nay dùng `b.awning()` — hàm này
-        // vẽ cả mặt trên và mặt dưới + diềm — nên nhìn từ đâu cũng thấy mái.
+        // Chòi tuyển thợ: bàn ghi tên + sổ điểm danh + hai ghế chờ, dựng ngay trong cổng công trình để người
+        // chơi có chỗ đứng nói chuyện với Anh Sáu Lực.
+        // BỎ MÁI BẠT: người chơi chỉ đúng ảnh chụp và bảo "bỏ mái che bạc xanh chỗ này" ⇒ tấm bạt sọc
+        // xanh–trắng (nhìn như mái hiên quán ăn mọc giữa công trường) cùng bốn cọc chống đã dỡ hết. Bảng
+        // "TUYỂN PHỤ HỒ" thay vì treo lơ lửng dưới mép bạt nay dán thẳng lên vách rào xanh của công trình.
         const W = b.unlit, D2 = b.detail, cx = 5.2, cz = 1.5;
         W.box(cx, 0.13, cz, 3.0, 0.74, 0.7, 0x8a6a4a, 0xb99a72, 0.1);            // bàn ghi tên
         b.collide(cx - 1.5, cz - 0.35, cx + 1.5, cz + 0.35, 0.86);
@@ -779,14 +779,11 @@ export function buildPlace(b: Builder, l: Lot, R: RNG) {
         for (let i = 0; i < 4; i++) D2.box(cx - 1.24 + i * 0.09, 0.899, cz + 0.02, 0.05, 0.002, 0.22, 0x55585e);
         D2.cyl(cx + 0.2, 0.87, cz - 0.12, 0.05, 0.14, 0xd9dde2, 8);              // ca nước
         for (let i = 0; i < 2; i++) plasticStool(D2, cx + 1.85 + i * 0.55, 0.13, cz + 0.15, i ? 0x2f8fd5 : 0xd9463c, 0.4);
-        // MÁI BẠT hai mặt (trước là một mặt nên từ dưới nhìn lên mất mái) + bốn cọc chống xuống đất
-        for (const [px, pz] of [[cx - 1.95, cz + 1.05], [cx + 1.95, cz + 1.05], [cx - 1.95, cz - 1.05], [cx + 1.95, cz - 1.05]] as const) {
-          D2.cyl(px, 0.13, pz, 0.042, 2.08, 0x8a8f96, 6);
-        }
-        b.awning(cx - 2.05, cx + 2.05, 2.2, 1.15, 0x2f6fa8, 0xdfe9f7);           // bạt xanh kẻ trắng, có diềm
-        L.quad(cx - 2.05, 2.2, cz + 1.15, cx + 2.05, 2.2, cz + 1.15, cx + 2.05, 2.2, cz - 1.15, cx - 2.05, 2.2, cz - 1.15, 0x2f6fa8);   // tấm trên (mặt phẳng)
-        L.quad(cx - 2.05, 2.16, cz - 1.15, cx + 2.05, 2.16, cz - 1.15, cx + 2.05, 2.16, cz + 1.15, cx - 2.05, 2.16, cz + 1.15, 0x255a8a); // tấm dưới, quay xuống
-        b.signAt(cx, 1.72, cz + 1.12, 2.2, 0.46, 'TUYỂN PHỤ HỒ', { bg: '#ffd400', fg: '#1b1c1f', border: '#1b1c1f', sub: '7h–16h · trả theo ca', subFg: '#7a0f1e' }, 0, 1, 56);
+        // Người chơi: "bỏ mái che bạc xanh chỗ này" ⇒ chòi tuyển thợ KHÔNG còn mái bạt sọc xanh–trắng nữa
+        // (cả bốn cọc chống mái cũng bỏ luôn cho khỏi trơ cọc giữa trời). Chòi giờ là bàn ghi tên + sổ + hai
+        // ghế chờ, đứng cạnh bảng "TUYỂN PHỤ HỒ" treo trên vách rào xanh của công trường.
+        // vách rào xanh ở z = 0,1 (dày 0,06) ⇒ bảng dán sát mặt trong, quay ra phía khách, cao 1,49–1,95 m
+        b.signAt(cx, 1.49, 0.15, 2.2, 0.46, 'TUYỂN PHỤ HỒ', { bg: '#ffd400', fg: '#1b1c1f', border: '#1b1c1f', sub: '7h–16h · trả theo ca', subFg: '#7a0f1e' }, 0, 1, 56);
         // Lượt 70: neo cũ (y = 0,9; cz + 0,15) nằm ĐÚNG TRÊN mặt bàn nên Anh Sáu Lực đứng chênh lên
         // bàn ghi tên (thấy rõ trong ảnh chụp mini-game). Nay neo ở SAU bàn, chân chạm đất, và `yaw = 0`
         // = hướng nhìn về phía khách (cùng quy ước với neo xe mía/quán mía) để camera mini-game tính đúng.

@@ -1043,8 +1043,32 @@ bóng đổ thay vì xấp bánh mỏng cùng màu đĩa — xấp cũ trông nh
 trong `cook.ts` thêm `!== 'tron'`), không cần dụng cụ (`STEP_TOOLS.tron = []`, món vẫn chỉ cần dao thớt), và biểu tượng
 món trong thực đơn (`dishIcon`) đọc màu topping từ bước `tron` như đọc bước `assemble`.
 
-**Kiểm:** `tests/tron58.test.ts` (10 bài) · probe `tools/probe/steps/tron58.mjs` (2 ảnh `tron58_ban.png`,
-`tron58_thanh_pham.png`) · menu test 3 mục `t58_*` · console sạch.
+**Lượt 70 (bổ sung) — làm lại phần hình, theo lời người chơi *“khối vuông thả xuống quá xấu”*.** Bản lượt 58 gọi
+`ingModel` **nguyên con** cho mỗi topping, nên gói đậu phộng thành **cả cái hộp nâu to** dựng đứng giữa đĩa, rau thơm
+thành chùm que xoè như ngôi sao, còn tương ớt và chanh thì bị đè thêm một cục tròn vô nghĩa. Mẩu gắp được thì luôn là
+một khối hộp to rơi vào hộp. Nay mỗi thứ có hình ăn được bày **sát mặt đĩa** (`TronGame.topping()`), và mẩu bay mang
+đúng hình của thứ đang gắp:
+
+| Topping | Trên đĩa | Mẩu bay vào hộp |
+|---|---|---|
+| bánh tráng | nắm **sợi** nằm ngang chồng chéo, có bóng đổ mờ | một sợi mảnh |
+| đậu phộng | hạt có **vỏ lụa** + đường nứt, rắc lấm tấm | một hạt |
+| rau thơm | ba **ngọn** (cuống + 4 lá có gân) | một chiếc lá |
+| chanh | lát **mỏng 2,5 mm**, vỏ chỉ còn vành mỏng, 6 múi | một lát mỏng |
+| tương ớt | chén sốt đỏ + vệt rưới quanh miệng chén | một vệt sốt |
+
+Hộp thành phẩm cũng đổi theo: trước là cầu bẹp + vòng xuyến (nhìn như đống hạt xốp), nay sợi bánh tráng nằm gọn trong
+lòng hộp (dài ≤ 0,13 m, nghiêng ≤ 0,55 rad để không thò ra ngoài thành), chanh là hai lát trên mặt, tương ớt là vệt đỏ.
+Hộp lùi về `z = 0,31` và vòng rải lùi về `TRON_CZ = −0,10` để **không bị cắt ở mép dưới màn hình 844 × 390**.
+
+**Khoai lang & xúc xích** (cùng lượt): cả hai trước đây dùng chung hình `'long'` — một khúc trụ tròn y hệt củ cà rốt/cây
+sả. Nay có hình riêng: `'sweetpotato'` = **một khối liền** (trụ thuôn + bụng phình + hai đầu vát, đầu lộ ruột vàng cam,
+vệt sẫm dọc vỏ và mấy mắt củ) và `'sausage'` = cây đỏ hồng có **nếp gấp ngang** trên vỏ, **hai đầu bấm kẹp** dẹt + núm
+dây buộc, vệt bóng dầu trên lưng. Trên vỉ nướng món dài được xếp **rộng hơn** (`gap 0,15` thay 0,115) và **xoay mỗi cái
+một góc riêng** — trước đây ba củ nằm sát nhau thành một thanh ngang liền khối.
+
+**Kiểm:** `tests/tron58.test.ts` (10 bài) · `tests/top70.test.ts` (6 bài) · probe `tools/probe/steps/tron58.mjs` (2 ảnh
+`tron58_ban.png`, `tron58_thanh_pham.png`) · menu test 3 mục `t58_*` · console sạch.
 
 ## 5. Điều khiển cảm ứng
 
@@ -1268,6 +1292,7 @@ giờ 546 → 550, người chơi ở `(37,2; 55,1)`; gọi điện ⇒ hẹn +3
 - `tests/xeom.test.ts` — lượt 66: Chú Ba là người thật (neo + xe + biển ở đúng gầm cầu, giờ 5–22h30), giá theo quãng/mưa/chở nặng, ơn thân quen + sàn 2.000₫, xe nhanh hơn đi bộ ~3 lần, gọi điện (cước, 2 lần/ngày, hết pin/ngoài giờ/nợ tiền cơm thì từ chối, hẹn 3 phút, hẹn quá 4 tiếng tự bỏ), danh bạ một dòng, tin radio chỉ hiện đúng giờ + đúng giá.
 - `tests/nau59.test.ts` — lượt 60: tia chạm của bàn nấu ăn cắt ở nhiều độ cao (sửa lỗi không cho được nguyên liệu vào nồi).
 - `tests/jobs59.test.ts` — lượt 59: trần việc làm thêm mỗi ngày (bốc cá 2 ca, chạy bàn 3 ca, vác 20 bao), đếm số còn lại không âm, reset qua ngày, và quét mã nguồn canh số chép tay + bảng việc làm đủ 7 dòng.
+- `tests/top70.test.ts` — lượt 70: khoai lang & xúc xích có hình riêng (và cách xếp trên vỉ nướng), topping bánh tráng trộn là đồ ăn thật, mẩu bay đúng hình.
 - `tests/tron58.test.ts` — lượt 58: bánh tráng trộn có mini game riêng — 5 topping rải ngẫu nhiên mỗi ván, thứ tự do máy gọi, chấm điểm theo số lần chạm nhầm/chậm.
 - `tests/camduong57.test.ts` — lượt 57: rào cấm đường chặn cả xe cộ (quay đầu ở vạch, không sinh xe trong đoạn cấm).
 - `tests/mat56.test.ts` — lượt 56: Bà Chín Ve Chai có nước da rám nắng riêng, không ai khác bị đổi da theo.
@@ -1509,7 +1534,8 @@ trong `switch` của `talkTo`. Nhánh `case 'mia_xe' | 'mia_quan' | 'site'` tron
 (truy hồi: `sideMenu` đã `return` trước đó).
 
 **⑤ Nghề phụ hồ.** Chỗ “công trình thi công” (`site '02N'`) trước chỉ có tấm biển. Nay trong `places.ts` dựng thêm chòi
-công trình: bàn ghi tên + sổ chấm công, ghế, bạt xanh, biển **“TUYỂN PHỤ HỒ”**, neo `site_phu` + `v_site`; phụ đề của
+công trình: bàn ghi tên + sổ chấm công, ghế chờ, biển **“TUYỂN PHỤ HỒ”** dán trên vách rào xanh (**đã bỏ mái bạt** —
+người chơi chỉ ảnh bảo bỏ, nên không còn bạt sọc xanh–trắng lẫn bốn cọc chống giữa công trường), neo `site_phu` + `v_site`; phụ đề của
 biển đổi thành *“… · Cần người phụ hồ”*. `rules.ts`: `SITE_SHIFT_MIN = 90`, `SITE_SHIFTS_DAY = 3`, `SITE_HOURS = [7, 16]`,
 `SITE_WAGE_MIN = 38000`, `SITE_WAGE_MAX = 52000`, `siteWage(roll)`, `siteOpenAt`, `siteShiftsLeft`. Một ca: tiên 90 phút,
 công 38–52k, hao `e-24 h-7 t-8 hy-7`, cần energy ≥ 30, `wd.siteShifts++`. Anh Sáu Lực (`FIXED.site`, vai *“Cai công trình”*)
@@ -1661,7 +1687,7 @@ và người bán, nên không phải đoán toạ độ nữa.
 `site_phu` đặt ở `y = 0,9` — đúng độ cao mặt bàn — thay vì dưới đất. Nay neo dời ra **sau bàn** (`cx; cz − 0,55; y = 0,13`)
 với `yaw = 0`, tức cùng quy ước “neo = chỗ người đứng, `yaw` = hướng nhìn ra phía khách” như neo xe mía/quán mía. Người chơi
 đứng trước bàn 1,15 m (quay mặt vào bàn, tay chống xẻng); camera lùi sâu vào trong sân 0,75 m sau neo, lệch hông 2,9 m, cao
-1,85 m — **thấp hơn mái bạt 2,2 m** (đứng cao hơn là nhìn lên nóc bạt xanh trơn). Trục cột giàn giáo ở `cx − 0,6` lại đúng
+1,85 m — thấp hơn tầm mắt người đứng nói chuyện (bản trước còn mái bạt 2,2 m, nay mái đã dỡ nên chỉ cần tránh cột). Trục cột giàn giáo ở `cx − 0,6` lại đúng
 đường nối camera–chủ thể nếu đứng thẳng phía trước, nên phải lệch hẳn sang hông: khung hình mới thấy cả người xúc lẫn bàn ghi tên.
 
 Bài học dùng lại được: với mọi cảnh quay trong nhà/hàng quán, **kiểm tra ba thứ theo thứ tự** — (1) độ cao camera so với mái
@@ -1672,5 +1698,48 @@ Cả ba lỗi trên đều lọt qua vì trước đó chỉ chỉnh `side`/`fro
 ý, mã, cắt chữ, sửa/xoá, trần 40, hỏng dữ liệu không làm sập game, xuất khối chữ; và hai bài canh độ dài ca phụ hồ);
 `npm run build:pages` OK. Probe `tools/probe/steps/fix70.mjs` (bấm chuột thật, 13 bước): nút góp ý đứng **ngay trước** Túi đồ,
 gửi được góp ý `L001-1` kèm bối cảnh, khối chữ xuất đúng, phím G mở / Esc đóng; xe mía cách cổng trái chợ **5 m**, người
-bán đứng ở `y = 0,13` (dưới đất); quán mía khách–chủ cách nhau **1,5 m**; chòi công trường nhìn từ dưới vẫn thấy bạt; mini-game
+bán đứng ở `y = 0,13` (dưới đất); quán mía khách–chủ cách nhau **1,5 m**; chòi công trường không còn mái bạt nên không vướng tầm nhìn; mini-game
 ép mía chạy đủ 6 ly, mini-game xúc đất chạy đủ 3 xe và trả thưởng. `errors: none`.
+
+### 4.53 Nhóm “Vừa thay đổi” có thêm mục cho củ khoai / xúc xích / bánh tráng trộn, và mấy chỗ chỉnh hình (lượt 70b)
+
+Người chơi: *“bạn forgot update menu ẩn”*. Yêu cầu không phải “thêm một mục cho có”: vào menu ẩn, bấm đúng mục thì
+phải **đứng ngay chỗ nhìn thấy cái vừa sửa**, không phải tự đi tìm.
+
+Ba mục mới (giữ số của bảy mục cũ, mục mới xếp sau để người đã quen menu không phải học lại):
+
+| # | id | Bấm vào thì |
+|---|---|---|
+| ④ | `mx_ban_ghe_quan_mia` | đứng **trong** quán mía, cách neo `v_mia_quan` 3,0 m nhìn ra quầy — thấy cùng lúc hai bàn nhựa + ghế + ly trên mặt bàn + bảng giá áp vách trái |
+| ⑧ | `mx_hinh_khoai_xucxich` | bày củ khoai và cây xúc xích **trước ống kính** 3,5 s (xem dưới) |
+| ⑨ | `mx_tron_moi` | dựng sạp bánh tráng trộn nếu chưa có, mua gánh + dao thớt, bật món, cấp sẵn 6 nguyên liệu rồi `cook.finish()` — vào thẳng ván trộn |
+
+**④ — hướng đứng quan trọng hơn khoảng cách.** `standAt()` thử hướng 0 trước (phía +z của neo), mà neo `v_mia_quan` nằm
+phía trước quầy ⇒ hướng 0 rơi ra ngoài đường, người chơi **quay lưng vào quán** và ảnh “vừa thay đổi” toàn là mặt đường.
+Nay `standAt(anchor, d, msg, dirs?)` nhận thêm **thứ tự hướng ưu tiên**; mục ④ truyền `[π, π±0,35, π±0,7]` (đứng phía trong),
+`pitch −0,22` để khung hình hạ xuống ngang mặt bàn. Đây là tham số tuỳ chọn nên ⑤⑥ (công trường, ca phụ hồ) không đổi.
+
+**⑧ — vì sao phải gắn vào camera.** Ba cách đặt món “trước mặt người chơi” đều hỏng: đặt cách 2 m thì đầu/thân nhân vật
+che mất; lùi ra 2,2 m thì món nhỏ như hạt đậu; đặt theo `camTo` (camera lùi sau lưng) thì đâm vào quầy, vào bàn hoặc chui
+vào mái. Ẩn `rig.root` cũng vô ích vì `player.update()` ghi lại `rig.root.visible` **mỗi khung**.
+Cách chạy được: đặt bốn món ở **toạ độ cục bộ của camera** (`x` lệch `±0,39`, `y −0,02…+0,03`, `z −0,62`) — luôn nằm giữa
+khung hình, không bị gì che — **và** `scene.add(camera)`, vì camera không nằm trong scene thì mọi thứ con của nó **không
+được vẽ**. Renderer dùng camera riêng nên `camTo`/`set.cam3` không ảnh hưởng. 3,5 s sau tự `remove()` và xoá `__devShapes`.
+Quan trọng: xoay `rotation.y ≈ 0` (thân món dựng dọc **trục Z**, tức hướng về camera) — lần đầu để nguyên nên nhìn **dọc
+trục**, củ khoai chỉ còn là một cục tròn, không đọc được hình gì.
+
+**Hình củ khoai — lần thứ ba mới ra.** (1) Ghép ba elipxoit ⇒ ra **con sâu**; (2) ghép trụ vát nối tiếp ⇒ **lộ mối nối**,
+nhìn thành đùi gà; (3) trụ liền + hai đầu vát ngược ⇒ ra **khúc ống** cụt, vẫn không ra củ. Chốt: **một elipxoit dài làm
+thân** (`L·0,55 × Rr × Rr·0,9`, tức dài ≈ 3,4 lần đường kính), thêm **một bụng phình lệch phía cuống**, hai đầu cong nhẹ
+(mũi củ vểnh xuống, đầu cuống hơi ngửa lên), một cuống khô ngắn, một chỗ vỏ mỏng lộ ruột vàng và ba mắt củ nhỏ nổi.
+Xúc xích giữ nguyên dáng trụ hai đầu bấm kẹp nhưng **bỏ mặt cắt hở** ở hai chỏm (thêm chỏm bầu kín) — trước đó nhìn đầu
+ống rỗng. Trên vỉ nướng, `k` (hệ số thu nhỏ) nay tách riêng: khoai `0,62`, xúc xích `0,54`, `gap 0,15`.
+
+**Ghế nhựa.** `plasticStool` cũ là **một khối trụ 4 cạnh thuôn lên** ⇒ đứng xa nhìn ra “cái thùng nhựa”. Nay: mặt ngồi
+0,36 × 0,36 dày 3,5 cm + gờ dưới + bốn chân thon chụm nhẹ. Hàm dùng chung ở ~15 chỗ trong thành phố nên chỗ nào có ghế
+nhựa cũng đổi theo; `h` (chiều cao) giữ nguyên nghĩa nên các chỗ gọi không phải sửa.
+
+**Đo.** `npx tsc --noEmit` sạch; `npx vitest run` **715 bài / 61 tệp xanh**; `npm run build:pages` OK. Probe
+`tools/probe/steps/dbg.mjs` (đã xoá sau khi dùng): bấm 8 lần Cài đặt → PIN `438291` → menu hiện **9 mục `mx_*`** đúng
+thứ tự (`gop_y, mia_xe_moi, mia_quan_lui, ban_ghe_quan_mia, mai_cong_truong, ca_phu_ho_dai, nhat_ky70, hinh_khoai_xucxich,
+tron_moi`) rồi 32 mục `tp_*`; ⑨ vào được ván trộn (`đangChơi: true`, 5 đĩa); ảnh ④⑧⑨ chụp lại đúng thứ cần thấy.

@@ -96,14 +96,14 @@ export default [boot, fresh(9 * 60),
     return { cắtNgang: scan.join(''), haiBênCóBàn: scan.slice(0, 4).includes(1) && scan.slice(-4).includes(1),
       lốiGiữaTrống: scan[midIdx] === 0 && scan[midIdx + 1] === 0, quầySau: +(c.z - a.z).toFixed(2) };
   } },
-  { label: '⑧ công trường: chòi tuyển thợ ở khoảng trống, mái bạt còn khi đứng dưới nhìn lên' },
+  { label: '⑧ công trường: chòi tuyển thợ ở khoảng trống, KHÔNG còn mái bạt sọc xanh' },
   { eval: () => { const g0 = window.__game, v = g0.world.anchors.v_site;
     g0.player.place(v.x, v.z + 1.2, Math.PI, 0); window.__cam(v.x, 1.7, v.z + 3.0, v.x, 1.6, v.z - 0.6); return { chòi: { x: +v.x.toFixed(2), z: +v.z.toFixed(2) } }; }, quiet: true, wait: 2800 },
   { shot: OUT + '07_chòi_tuyển_thợ' },
-  { label: '⑨ nhìn TỪ DƯỚI LÊN mái: phải thấy mặt dưới của bạt (lỗi ảnh 4 là mất hẳn)' },
+  { label: '⑨ nhìn CHẾCH LÊN từ chỗ khách đứng: không còn tấm bạt nào, bảng TUYỂN PHỤ HỒ dán trên vách rào' },
   { eval: () => { const g0 = window.__game, v = g0.world.anchors.v_site;
-    window.__cam(v.x + 0.2, 0.6, v.z + 1.6, v.x, 2.5, v.z); return 1; }, quiet: true, wait: 2400 },
-  { shot: OUT + '08_mai_nhin_tu_duoi' },
+    window.__cam(v.x - 1.5, 0.8, v.z + 1.4, v.x, 2.3, v.z - 0.2); return 1; }, quiet: true, wait: 2400 },
+  { shot: OUT + '08_khong_con_mai_bat' },
   { label: '⑩ mini-game ép mía: bấm lệch bị tràn, canh vùng xanh mới ra ly' },
   { eval: () => { const g0 = window.__game, n = g0.npcs.fixed.get('mia_xe'), g = g0.g;
     g.min = 9 * 60; g.cash = 50000; g.st.energy = 90; g0.acts.talk(n); return [...document.querySelectorAll('#dlg .opts .btn')].length; }, wait: 700 },

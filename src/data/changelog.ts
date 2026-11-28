@@ -15,16 +15,20 @@ export interface LogEntry {
 export const CHANGELOG: LogEntry[] = [
   {
     v: 'Lượt 70',
-    tag: 'Nút Góp ý & báo lỗi có chỗ lưu riêng, xe nước mía dời ra sát cổng chợ, quán mía lùi quầy cho thấy máy ép, công trường có lại mái che và ca phụ hồ dài hơn một phút',
+    tag: 'Nút Góp ý & báo lỗi có chỗ lưu riêng, xe nước mía dời ra sát cổng chợ, quán mía lùi quầy và kê bàn ghế, công trường dỡ mái bạt, khoai lang & xúc xích vẽ lại, mini-game bánh tráng trộn gọn gàng hơn',
     items: [
       'Hàng nút góc phải có thêm nút “Góp ý & báo lỗi”. Bấm vào là một bảng riêng: chọn Báo lỗi / Góp ý / Chuyện khác, gõ điều muốn nói rồi bấm Gửi — góp ý nằm lại trên máy, mở ra đọc lại, sửa, xoá từng cái hoặc xoá hết. Phím G cũng mở bảng này.',
       'Mỗi góp ý tự ghi kèm mã riêng, ngày giờ, chỗ đang đứng, khu phố và bản dựng đang chơi, nên người làm game dựng lại được đúng cảnh mà không phải hỏi lại. Nút “Sao chép hết” gom mọi góp ý thành một khối chữ để dán vào tin nhắn gửi đi.',
       'Xe nước mía dời ra sát cổng trái của Chợ Xóm Chiều, quay mặt vào trong chợ: lối đi chính giữa chợ trống trở lại, không còn tấm biển to chắn ngang tầm mắt dãy sạp. Bảng giá thu về một tấm nhỏ gắn hẳn trên nóc xe bằng hai cọc, nên không còn cảnh biển treo lơ lửng hay thân xe biến mất khi đi xa.',
+      'Khoai lang và xúc xích được vẽ lại: khoai lang là củ thon hai đầu, bụng phình, vỏ tím có mắt củ và hai đầu lộ ruột vàng; xúc xích là cây đỏ hồng có nếp gấp ngang trên vỏ và hai đầu bấm kẹp — trước đây cả hai đều là một khúc trụ tròn giống hệt củ cà rốt.',
+      'Mini-game bánh tráng trộn làm lại phần hình: topping trên đĩa giờ là đồ ăn thật bày sát đĩa — đậu phộng là hạt có vỏ lụa, rau thơm là ngọn có cuống và lá, chanh là lát mỏng sáu múi, tương ớt là chén sốt có vệt rưới quanh miệng, bánh tráng là nắm sợi nằm ngang. Trước đây gói đậu phộng là cả cái hộp nâu dựng đứng giữa đĩa, còn mẩu gắp được là một khối vuông to rơi vào hộp.',
       'Quán Nước Mía 3K: quầy và máy ép lùi sâu vào trong, mặt tiền để trống nên đứng ngoài đường nhìn thẳng vào là thấy trục ép quay, thấy xô nước. Bàn nhựa kê ngay phía trước quầy, hai bên chừa lối đi ở giữa, ghế xếp quanh bàn và ly đặt sẵn trên mặt bàn — khách mua xong là có chỗ ngồi uống tại chỗ.',
-      'Công trường lấy lại mái che: tấm bạt nay có cả mặt trên lẫn mặt dưới, đứng ngay dưới nhìn lên vẫn thấy mái chứ không còn trần trơn. Chòi tuyển thợ dời ra khoảng trống sát lối vào, có bàn ghi tên, sổ điểm danh, ghế chờ và bảng “TUYỂN PHỤ HỒ”.',
+      'Công trường bỏ hẳn mái bạt: tấm bạt sọc xanh–trắng trước đây trông như mái hiên quán ăn mọc giữa công trường nên đã dỡ, cùng bốn cọc chống. Chòi tuyển thợ còn bàn ghi tên, sổ điểm danh, hai ghế chờ, còn bảng “TUYỂN PHỤ HỒ” dán thẳng lên vách rào xanh.',
       'Ca phụ bán nước mía giờ là một cái máy ép thật: canh con chạy trên thanh rồi bấm quay cần đúng vùng xanh mới ra nước, bấm lệch là nước tràn ra ngoài. Rót đủ 6 ly thì hết ca, số ly chuẩn quyết định tiền thưởng.',
       'Ca phụ hồ cũng thành việc thật và dài hơn một phút: ba xe cút kít, mỗi xe năm xẻng. Giữ nút cho kim dâng rồi buông đúng vùng vàng mới được xẻng đất, xúc đủ năm xẻng thì đẩy xe ra chân công trình rồi quay lại xe mới — cả ca khoảng 1 phút 10 giây thời gian thực.',
       'Tấm bảng giá trong quán mía hết lơ lửng giữa quán: trước nó đứng cách vách gần cả mét, nhìn vào cứ tưởng tấm biển treo trên không. Nay bảng áp sát vách, ngang tầm mắt người mua nên vừa đọc rõ, vừa không che máy ép.',
+      'Ghế nhựa trong thành phố vẽ lại cho ra cái ghế: mặt ngồi vuông có gờ, bốn chân thon — trước đây là một khối trụ bốn cạnh nên đứng xa nhìn cứ như cái thùng nhựa.',
+      'Menu ẩn (bấm tám lần nút Cài đặt rồi nhập mã) có thêm mục cho đúng những thứ vừa sửa: đứng trong quán mía ngó bàn ghế và bảng giá, bày củ khoai với cây xúc xích ngay trước ống kính để soi hình mới, và mở thẳng ván bánh tráng trộn để xem topping bày trên đĩa.',
       'Góc máy trong hai ca làm được chỉnh lại: trước là camera đứng sau lưng hoặc lọt hẳn vào trong thùng xe, màn hình chỉ còn mặt kệ. Nay ca ép mía nhìn chéo qua vai thấy rõ trục ép, xô nước và tay mình; ca phụ hồ đứng lùi trong sân, thấy cả bàn ghi tên lẫn người đang xúc đất. Anh Sáu Lực cũng hết đứng chênh lên mặt bàn — chân đặt xuống đất sau quầy.',
     ],
   },
