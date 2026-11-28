@@ -18,34 +18,37 @@ export function ingModel(mb: MB, d: IngDef, x: number, y: number, z: number, s =
     // Khoai lang: củ THON HAI ĐẦU, bụng phình lệch về một bên, vỏ tím đỏ có vệt sẫm dọc thân và mấy chỗ
     // lồi lõm nhỏ; hai đầu nhọn màu vàng ngà (chỗ vỏ mỏng lộ ruột). Nằm nghiêng, không đứng thẳng.
     case 'sweetpotato': {
-      // Củ là MỘT khối liền: thân trụ thuôn chạy dọc trục Z + hai đầu vát nhọn + một chỗ phình ở giữa.
-      // Trước đây ghép ba elipxoit nên nhìn ra ba cục tròn dính nhau như con sâu.
-      const L = 0.2 * s, Rr = 0.03 * s;
-      mb.rod(x, y + Rr, z, Rr, L, c, Math.PI / 2, 0, 12, 0, Rr);
-      for (const sz of [-1, 1]) mb.cyl(x, y + Rr, z + sz * L * 0.5, Rr, L * 0.09, c, 10, Rr * 0.18);   // đầu vát
-      mb.sph(x, y + Rr, z - L * 0.06, Rr * 1.12, Rr * 1.06, Rr * 1.34, c, 12);                         // bụng phình
-      // hai đầu lộ ruột vàng cam (vỏ khoai mỏng, chỗ đuôi hay trầy)
-      for (const sz of [-1, 1]) mb.sph(x, y + Rr, z + sz * L * 0.53, Rr * 0.3, Rr * 0.3, Rr * 0.22, c2, 7);
-      // vệt sẫm dọc vỏ + vài mắt củ lồi
-      for (let i = -1; i <= 1; i++) mb.box(x + i * 0.002 * s, y + Rr * 1.92, z + i * L * 0.19, Rr * 0.22, 0.003 * s, L * 0.18, shade(c, 0.84));
-      for (let i = 0; i < 3; i++) { const a = 0.5 + i * 2.1; mb.sph(x + Math.cos(a) * Rr * 0.72, y + Rr * 1.1 + Math.sin(a) * Rr * 0.22, z + (i - 1) * L * 0.22, Rr * 0.16, Rr * 0.12, Rr * 0.16, shade(c, 1.25), 5); }
+      // Củ khoai lang: một khối THUÔN HAI ĐẦU (fusiform), DÀI gấp ~3,4 lần đường kính, nằm ngang trục X và
+      // hơi cong. Trước đây dùng chung 'long' nên ra khúc trụ trơn; ghép chùm elipxoit tròn thì ra con sâu.
+      const L = 0.23 * s, Rr = 0.038 * s, cy = y + Rr;
+      mb.sph(x, cy, z, L * 0.55, Rr, Rr * 0.9, c, 14);                        // thân thuôn, nhọn dần hai đầu
+      mb.sph(x - L * 0.12, cy + Rr * 0.06, z, L * 0.3, Rr * 1.02, Rr * 0.95, c, 12);   // bụng phình lệch
+      mb.sph(x + L * 0.56, cy - Rr * 0.3, z, L * 0.2, Rr * 0.34, Rr * 0.4, c, 10);     // mũi củ cong xuống
+      mb.sph(x - L * 0.5, cy + Rr * 0.34, z, L * 0.19, Rr * 0.3, Rr * 0.36, c, 10);    // đầu cuống hơi vểnh
+      // cuống khô ngắn ở đầu to
+      mb.rod(x - L * 0.62, cy + Rr * 0.6, z, Rr * 0.12, L * 0.1, shade(c, 0.6), 0.35, 1.35, 5, 0, Rr * 0.05);
+      // chỗ vỏ mỏng lộ ruột vàng + vệt vỏ sẫm dọc lưng
+      mb.sph(x + L * 0.36, cy + Rr * 0.66, z + Rr * 0.16, L * 0.09, Rr * 0.18, Rr * 0.2, c2, 8);
+      mb.box(x - L * 0.04, cy + Rr * 0.93, z, L * 0.46, Rr * 0.12, Rr * 0.4, shade(c, 0.82));
+      // mắt củ: mấy chấm nhỏ nổi trên lưng
+      for (let i = 0; i < 3; i++) mb.cyl(x + (i - 1) * L * 0.26, cy + Rr * 0.98, z + (i % 2 ? Rr * 0.24 : -Rr * 0.22), Rr * 0.09, Rr * 0.08, shade(c, 0.66), 5);
       break;
     }
     // Xúc xích: cây tròn đỏ hồng, HAI ĐẦU BẤM KẸP (chỗ buộc dây) dẹt lại, vỏ bóng có mấy nếp gấp ngang
-    // và vệt cháy nâu khi nướng. Đặt nằm nghiêng như cây xúc xích vừa gắp khỏi vỉ.
+    // và vệt cháy nâu khi nướng. Đặt nằm ngang theo trục X như cây xúc xích vừa gắp khỏi vỉ.
     case 'sausage': {
-      const L = 0.2 * s, Rr = 0.031 * s, tilt = 0.2;
-      mb.rod(x, y + Rr * 1.02, z, Rr, L, c, 0, Math.PI / 2, 9, tilt, Rr * 0.96);        // thân, hơi thuôn
+      const L = 0.2 * s, Rr = 0.031 * s;
+      mb.rod(x, y + Rr * 1.0, z, Rr, L * 0.94, c, 0, Math.PI / 2, 10, 0.06, Rr * 0.9);     // thân, hơi thuôn
       for (const sx of [-1, 1]) {
-        // đầu bấm kẹp: một khoanh dẹt + núm dây buộc
-        mb.cyl(x + sx * L * 0.49, y + Rr * 1.02, z, Rr * 0.9, 0.006 * s, shade(c, 0.9), 8, Rr * 0.9);
-        mb.rod(x + sx * L * 0.53, y + Rr * 1.02, z, Rr * 0.3, 0.026 * s, c2, 0, Math.PI / 2, 5, tilt);
+        // đầu bấm kẹp: chỏm bầu kín + núm dây buộc nhô ra (không để hở miệng ống)
+        mb.sph(x + sx * L * 0.47, y + Rr * 1.0, z, Rr * 0.5, Rr * 0.34, Rr * 0.36, shade(c, 0.94), 8);
+        mb.rod(x + sx * L * 0.53, y + Rr * 1.0, z, Rr * 0.26, 0.022 * s, c2, 0, Math.PI / 2, 5, 0, Rr * 0.12);
       }
       // nếp gấp ngang trên vỏ (ba khoanh hơi sẫm) — nhìn ra là vỏ xúc xích chứ không phải khúc gỗ
-      for (let i = -1; i <= 1; i++) mb.cyl(x + i * L * 0.22, y + Rr * 1.02, z, Rr * 1.02, 0.004 * s, shade(c, 0.86), 9, Rr * 1.02);
+      for (let i = -1; i <= 1; i++) mb.cyl(x + i * L * 0.22, y + Rr * 1.0, z, Rr * 1.0, 0.004 * s, shade(c, 0.86), 10);
       // vệt bóng trên lưng (ánh dầu) + mấy vết nướng nâu
-      mb.box(x, y + Rr * 1.94, z, L * 0.7, 0.003 * s, Rr * 0.28, shade(c, 1.28));
-      for (let i = 0; i < 3; i++) mb.box(x + (i - 1) * L * 0.24, y + Rr * 1.9, z + Rr * 0.3, L * 0.1, 0.003 * s, Rr * 0.2, 0x7a3520);
+      mb.box(x, y + Rr * 1.96, z, L * 0.62, 0.003 * s, Rr * 0.24, shade(c, 1.3));
+      for (let i = 0; i < 3; i++) mb.box(x + (i - 1) * L * 0.24, y + Rr * 1.94, z + Rr * 0.28, L * 0.1, 0.003 * s, Rr * 0.16, 0x7a3520);
       break;
     }
     // ── Ba loại bánh của lượt 54, mỗi loại một hình riêng (trước đây dùng chung 'long'/'round' nên
@@ -184,8 +187,17 @@ export function signBoardModel(mb: MB, x: number, y: number, z: number, w = 0.7,
   mb.box(x, y, z, w, h, 0.03, 0x2a3a2e, 0x6a4a32, 0, true);
   for (const sx of [-1, 1]) mb.box(x + sx * (w / 2 - 0.03), y - 0.5, z + 0.04, 0.03, 0.5, 0.03, 0x6a4a32);
 }
+/**
+ * Ghế nhựa vuông: MẶT NGỒI là tấm phẳng bo nhẹ + bốn chân chụm nhẹ vào trong, y như ghế nhựa vỉa hè.
+ * Trước đây là một khối trụ 4 cạnh (thuôn lên) nên đứng xa nhìn ra “cái thùng nhựa”, không ra cái ghế.
+ */
 export function plasticStool(mb: MB, x: number, y: number, z: number, col: number, h = 0.4) {
-  mb.cyl(x, y, z, 0.17, h, col, 4, 0.13, true, shade(col, 1.15));
+  const w = 0.36, legR = 0.022;
+  mb.box(x, y + h - 0.035, z, w, 0.035, w, col, shade(col, 1.2), 0, true);       // mặt ngồi
+  for (const sx of [-1, 1]) for (const sz of [-1, 1])
+    mb.rod(x + sx * w * 0.4, y + (h - 0.05) / 2, z + sz * w * 0.4, legR, h - 0.05, shade(col, 0.9), 0, 0, 5, 0, legR * 0.85);
+  // gờ dưới mặt ngồi cho dày dặn, khỏi trông như tấm bìa
+  mb.box(x, y + h - 0.06, z, w * 0.92, 0.018, w * 0.92, shade(col, 0.94), undefined, 0, true);
 }
 export function plasticTable(mb: MB, x: number, y: number, z: number, col = 0xd9463c) {
   mb.box(x, y + 0.55, z, 0.7, 0.04, 0.7, col, shade(col, 1.15), 0, true);

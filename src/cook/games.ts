@@ -149,7 +149,7 @@ export class GrillGame implements Mini {
     const n = clamp(this.portions, 1, 4), look = this.step.look ?? 'whole';
     // Món DÀI (khoai lang, xúc xích, bắp, sả…) phải xếp RỘNG hơn và vẽ NHỎ hơn, nếu không ba củ nằm sát nhau
     // chồng lên nhau thành một thanh ngang liền khối (đúng như ảnh người chơi chê).
-    const long = ['sweetpotato', 'sausage', 'long', 'corn'].includes(d.shape), gap = long ? 0.15 : 0.115, k = long ? 0.6 : 1;
+    const long = ['sweetpotato', 'sausage', 'long', 'corn'].includes(d.shape), gap = long ? 0.15 : 0.115, k = long ? (d.shape === 'sweetpotato' ? 0.62 : 0.54) : 1;
     for (let i = 0; i < n; i++) {
       const x = (i - (n - 1) / 2) * gap, g = new THREE.Group(), mat = new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 30, specular: 0x222222 }), im = new MB();
       // Mỗi món được xoay thêm một góc riêng quanh trục đứng: củ khoai/xúc xích nằm nghiêng mỗi cái một kiểu

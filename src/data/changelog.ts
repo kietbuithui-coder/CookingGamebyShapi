@@ -27,6 +27,8 @@ export const CHANGELOG: LogEntry[] = [
       'Ca phụ bán nước mía giờ là một cái máy ép thật: canh con chạy trên thanh rồi bấm quay cần đúng vùng xanh mới ra nước, bấm lệch là nước tràn ra ngoài. Rót đủ 6 ly thì hết ca, số ly chuẩn quyết định tiền thưởng.',
       'Ca phụ hồ cũng thành việc thật và dài hơn một phút: ba xe cút kít, mỗi xe năm xẻng. Giữ nút cho kim dâng rồi buông đúng vùng vàng mới được xẻng đất, xúc đủ năm xẻng thì đẩy xe ra chân công trình rồi quay lại xe mới — cả ca khoảng 1 phút 10 giây thời gian thực.',
       'Tấm bảng giá trong quán mía hết lơ lửng giữa quán: trước nó đứng cách vách gần cả mét, nhìn vào cứ tưởng tấm biển treo trên không. Nay bảng áp sát vách, ngang tầm mắt người mua nên vừa đọc rõ, vừa không che máy ép.',
+      'Ghế nhựa trong thành phố vẽ lại cho ra cái ghế: mặt ngồi vuông có gờ, bốn chân thon — trước đây là một khối trụ bốn cạnh nên đứng xa nhìn cứ như cái thùng nhựa.',
+      'Menu ẩn (bấm tám lần nút Cài đặt rồi nhập mã) có thêm mục cho đúng những thứ vừa sửa: đứng trong quán mía ngó bàn ghế và bảng giá, bày củ khoai với cây xúc xích ngay trước ống kính để soi hình mới, và mở thẳng ván bánh tráng trộn để xem topping bày trên đĩa.',
       'Góc máy trong hai ca làm được chỉnh lại: trước là camera đứng sau lưng hoặc lọt hẳn vào trong thùng xe, màn hình chỉ còn mặt kệ. Nay ca ép mía nhìn chéo qua vai thấy rõ trục ép, xô nước và tay mình; ca phụ hồ đứng lùi trong sân, thấy cả bàn ghi tên lẫn người đang xúc đất. Anh Sáu Lực cũng hết đứng chênh lên mặt bàn — chân đặt xuống đất sau quầy.',
     ],
   },

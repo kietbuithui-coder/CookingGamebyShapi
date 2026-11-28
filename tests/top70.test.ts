@@ -59,3 +59,12 @@ describe('bánh tráng trộn: topping là đồ ăn thật (lượt 70)', () =>
     expect(tron).toMatch(/1 - k \* 0\.2/);
   });
 });
+
+describe('ghế nhựa & menu ẩn (lượt 70b)', () => {
+  it('ghế nhựa là mặt ngồi + bốn chân, không còn một khối trụ bốn cạnh', () => {
+    const stool = propsSrc.slice(propsSrc.indexOf('export function plasticStool'), propsSrc.indexOf('export function plasticTable'));
+    expect(stool).toMatch(/mặt ngồi/);
+    expect((stool.match(/mb\.rod\(/g) ?? []).length).toBe(1);      // một vòng lặp bốn chân, không phải bốn khối
+    expect(stool).toMatch(/for \(const sx of \[-1, 1\]\) for \(const sz of \[-1, 1\]\)/);
+  });
+});
